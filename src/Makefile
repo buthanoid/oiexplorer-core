@@ -92,13 +92,14 @@ PY_SCRIPTS_L   =
 
 #
 # Jarfiles and their directories
+# oiexplorer-core have been renamed because mcs makefiles can't run with - in its name
 # ---------------------------------
-JARFILES        =
+JARFILES        = oiexplorer_core
 
 #
-# <brief description of jjjfff jar files>
-jjjfff_DIRS     =
-jjjfff_EXTRAS   = 
+# <brief description of oiexplorer-core jar files>
+oiexplorer_core_DIRS     = fr
+oiexplorer_core_EXTRAS   = 
 
 #
 # Java programs
