@@ -146,6 +146,8 @@ CSOURCENAMES = \
 MAKEDIR = $(MCSROOT)/include
 include $(MAKEDIR)/mkfMakefile
 
+JNLP=OIExplorerCoreLibs
+
 #
 # TARGETS
 # -------
@@ -159,6 +161,12 @@ man   : do_man
 	@echo " . . . man page(s) done"
 
 install : install_all
+	@echo "Deploy $(JNLP).jnlp"
+	jmcsDeployJnlp $(JNLP).jnlp
+	@echo "Install $(JNLP).jar"
+# Big Libs contains only shared libraries used to package
+# application single jar file
+	@cp $$HOME/public_html/$(JNLP)/$(JNLP).jar $(INSTALL_ROOT)/lib
 	@echo " . . . installation done"
 
 #___oOo___
