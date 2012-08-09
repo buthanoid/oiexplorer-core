@@ -6,8 +6,6 @@ package fr.jmmc.oiexplorer.core.model;
 import fr.jmmc.oitools.model.Analyzer;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
-import fr.jmmc.oitools.model.OITable;
-import fr.jmmc.oitools.model.OITarget;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,6 +33,13 @@ public class OIFitsCollection {
      */
     protected OIFitsCollection() {
         super();
+    }
+
+    /** 
+     * Return one OifitsFile container per target found in loaded files.
+     * 
+    public Map<String, OIFitsFile> getOiFitsPerTarget() {
+        return oiFitsPerTarget;
     }
 
     /**
