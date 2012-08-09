@@ -99,7 +99,9 @@ JARFILES        = oiexplorer_core
 #
 # <brief description of oiexplorer-core jar files>
 oiexplorer_core_DIRS     = fr
-oiexplorer_core_EXTRAS   = 
+oiexplorer_core_EXTRAS   = \ 
+			   fr/jmmc/oiexplorer/core/resource/*.xml \
+			   fr/jmmc/oiexplorer/core/resource/*.xsl
 
 #
 # Java programs
