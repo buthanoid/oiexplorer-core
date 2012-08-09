@@ -37,7 +37,7 @@ public class OIFitsCollection {
 
     /** 
      * Return one OifitsFile container per target found in loaded files.
-     * 
+     */
     public Map<String, OIFitsFile> getOiFitsPerTarget() {
         return oiFitsPerTarget;
     }
