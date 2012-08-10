@@ -158,10 +158,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         if (this.oiFitsFile != null) {
             final StringBuilder sb = new StringBuilder(32).append("Vis2_");
 
-            final String targetName = this.oiFitsFile.getOiTarget().getTarget()[0];
-            final String altName = targetName.replaceAll(Constants.REGEXP_INVALID_TEXT_CHARS, "_");
+            if (this.oiFitsFile.hasOiTarget()) {
+                final String targetName = this.oiFitsFile.getOiTarget().getTarget()[0];
+                final String altName = targetName.replaceAll(Constants.REGEXP_INVALID_TEXT_CHARS, "_");
 
-            sb.append(altName).append('_');
+                sb.append(altName).append('_');
+            }
 
             final OIVis2 vis2 = this.oiFitsFile.getOiVis2()[0];
 
@@ -170,12 +172,14 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
             sb.append(insName).append('_');
 
-            final OIArray array = this.oiFitsFile.getOiArray(arrayName);
-            for (String station : array.getStaName()) {
-                sb.append(station).append('-');
+            if (this.oiFitsFile.hasOiArray()) {
+                final OIArray array = this.oiFitsFile.getOiArray(arrayName);
+                for (String station : array.getStaName()) {
+                    sb.append(station).append('-');
+                }
+                sb.deleteCharAt(sb.length() - 1);
+                sb.append('_');
             }
-            sb.deleteCharAt(sb.length() - 1);
-            sb.append('_');
 
             final String dateObs = vis2.getDateObs();
 
@@ -643,7 +647,9 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final OIVis2 vis2 = this.oiFitsFile.getOiVis2()[0];
         final String arrayName = vis2.getArrName();
         final String insName = vis2.getInsName();
-        final OIArray array = this.oiFitsFile.getOiArray(arrayName);
+
+//        final OIArray array = this.oiFitsFile.getOiArray(arrayName);
+        final OIArray array = vis2.getOiArray();
 
         final float[] effWaves = vis2.getOiWavelength().getEffWave();
         final double wlMin = 1e6d * effWaves[0];
@@ -665,15 +671,19 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             sb.append(insName);
             sb.append(" [").append(df4.format(wlMin)).append(" \u00B5m - ").append(df4.format(wlMax)).append(" \u00B5m] - ");
 
-            for (String station : array.getStaName()) {
-                sb.append(station).append(' ');
+            if (array == null) {
+                sb.append("missing OIArray");
+            } else {
+                for (String station : array.getStaName()) {
+                    sb.append(station).append(' ');
+                }
             }
 
             ChartUtils.addSubtitle(this.chart, sb.toString());
 
             // date - Source:
             ChartUtils.addSubtitle(this.chart, "Day: " + vis2.getDateObs()
-                    + " - Source: " + this.oiFitsFile.getOiTarget().getTarget()[0]);
+                    + (this.oiFitsFile.hasOiTarget() ? " - Source: " + this.oiFitsFile.getOiTarget().getTarget()[0] : ""));
 
             // change the scaling factor ?
             setUvPlotScalingFactor(MEGA_LAMBDA_SCALE);
