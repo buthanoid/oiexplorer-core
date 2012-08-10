@@ -16,8 +16,8 @@ import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ImageUtils;
 import fr.jmmc.oiexplorer.core.gui.action.ExportPDFAction;
+import fr.jmmc.oiexplorer.core.model.TargetUID;
 import fr.jmmc.oiexplorer.core.util.Constants;
-import fr.jmmc.oitools.model.OIArray;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIT3;
@@ -34,8 +34,10 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jfree.chart.ChartMouseEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,8 +86,13 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
 
     /* members */
+    /** current target */
+    private TargetUID target = null;
+    /** current oifits file */
+    private OIFitsFile oiFitsFile = null;
     /** flag to indicate if this plot has data */
     private boolean hasData = false;
+    /* plot data */
     /** jFreeChart instance */
     private JFreeChart chart;
     /** combined xy plot sharing domain axis */
@@ -95,19 +102,15 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     /** mapping between subplot index and xy plot (reverse) */
     private Map<Integer, XYPlot> plotIndexMapping = new HashMap<Integer, XYPlot>();
     /** xy plot instance for VIS2 */
-    private XYPlot xyPlotVis2;
+    private XYPlot xyPlotV2;
     /** xy plot instance for T3 */
     private XYPlot xyPlotT3;
     /** JMMC annotation */
-    private XYTextAnnotation aJMMCVis2 = null;
+    private XYTextAnnotation aJMMCV2 = null;
     /** JMMC annotation */
     private XYTextAnnotation aJMMCT3 = null;
     /** uv coordinates scaling factor */
     private double uvPlotScalingFactor = MEGA_LAMBDA_SCALE;
-    /* plot data */
-    /** current oifits file to track changes */
-    private OIFitsFile oiFitsFile = null;
-    /* swing */
     /** chart panel */
     private ChartPanel chartPanel;
     /** crosshair overlay */
@@ -156,34 +159,91 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     @Override
     public String getPDFDefaultFileName() {
         if (this.oiFitsFile != null) {
-            final StringBuilder sb = new StringBuilder(32).append("Vis2_");
+            final boolean hasVis2 = this.oiFitsFile.hasOiVis2();
+            final boolean hasT3 = this.oiFitsFile.hasOiT3();
 
-            if (this.oiFitsFile.hasOiTarget()) {
-                final String targetName = this.oiFitsFile.getOiTarget().getTarget()[0];
-                final String altName = targetName.replaceAll(Constants.REGEXP_INVALID_TEXT_CHARS, "_");
+            final Set<String> distinct = new LinkedHashSet<String>();
 
-                sb.append(altName).append('_');
+            // TODO: fix this code as the plot will become generic !
+
+            // TODO: keep values from dataset: insName, baselines, dateObs ... IF HAS DATA (filtered)
+
+            final StringBuilder sb = new StringBuilder(32);
+
+            if (hasVis2) {
+                sb.append("Vis2_");
+            }
+            if (this.oiFitsFile.hasOiT3()) {
+                sb.append("T3_");
             }
 
-            final OIVis2 vis2 = this.oiFitsFile.getOiVis2()[0];
+            // Add target name:
+            final String targetName = this.target.getTarget();
+            final String altName = targetName.replaceAll(Constants.REGEXP_INVALID_TEXT_CHARS, "_");
 
-            final String arrayName = vis2.getArrName();
-            final String insName = vis2.getInsName();
+            sb.append(altName).append('_');
 
-            sb.append(insName).append('_');
-
-            if (this.oiFitsFile.hasOiArray()) {
-                final OIArray array = this.oiFitsFile.getOiArray(arrayName);
-                for (String station : array.getStaName()) {
-                    sb.append(station).append('-');
+            // Add distinct arrNames:
+            final GetOIDataString arrNameOperator = new GetOIDataString() {
+                public String getString(final OIData oiData) {
+                    return oiData.getArrName();
                 }
-                sb.deleteCharAt(sb.length() - 1);
-                sb.append('_');
+            };
+            if (hasVis2) {
+                getDistinct(this.oiFitsFile.getOiVis2(), distinct, arrNameOperator);
+            }
+            if (hasT3) {
+                getDistinct(this.oiFitsFile.getOiT3(), distinct, arrNameOperator);
+            }
+            if (!distinct.isEmpty()) {
+                toString(distinct, sb, "_", "_");
             }
 
-            final String dateObs = vis2.getDateObs();
+            // Add unique insNames:
+            final GetOIDataString insNameOperator = new GetOIDataString() {
+                public String getString(final OIData oiData) {
+                    return oiData.getInsName();
+                }
+            };
+            distinct.clear();
+            if (hasVis2) {
+                getDistinct(this.oiFitsFile.getOiVis2(), distinct, insNameOperator);
+            }
+            if (hasT3) {
+                getDistinct(this.oiFitsFile.getOiT3(), distinct, insNameOperator);
+            }
+            if (!distinct.isEmpty()) {
+                toString(distinct, sb, "_", "_");
+            }
 
-            sb.append(dateObs);
+            // Add unique baselines:
+            distinct.clear();
+            if (hasVis2) {
+                getDistinctStaNames(this.oiFitsFile.getOiVis2(), distinct);
+            }
+            if (hasT3) {
+                getDistinctStaNames(this.oiFitsFile.getOiT3(), distinct);
+            }
+            if (!distinct.isEmpty()) {
+                toString(distinct, sb, "-", "_");
+            }
+
+            // Add unique dateObs:
+            final GetOIDataString dateObsOperator = new GetOIDataString() {
+                public String getString(final OIData oiData) {
+                    return oiData.getDateObs();
+                }
+            };
+            distinct.clear();
+            if (hasVis2) {
+                getDistinct(this.oiFitsFile.getOiVis2(), distinct, dateObsOperator);
+            }
+            if (hasT3) {
+                getDistinct(this.oiFitsFile.getOiT3(), distinct, dateObsOperator);
+            }
+            if (!distinct.isEmpty()) {
+                toString(distinct, sb, "_", "_");
+            }
 
             sb.append('.').append(PDF_EXT);
 
@@ -226,12 +286,13 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final boolean usePlotCrossHairSupport = false;
         final boolean useSelectionSupport = false;
 
-        this.xyPlotVis2 = createScientificScatterPlot("UV radius (M\u03BB)", "V²", usePlotCrossHairSupport);
+        this.xyPlotV2 = createScientificScatterPlot("UV radius (M\u03BB)", "V²", usePlotCrossHairSupport);
+        this.xyPlotV2.setNoDataMessage("No square visiblity data (OI_VIS2)");
 
-        this.aJMMCVis2 = ChartUtils.createXYTextAnnotation(Constants.JMMC_ANNOTATION, 0, 0);
-        this.aJMMCVis2.setTextAnchor(TextAnchor.BOTTOM_RIGHT);
-        this.aJMMCVis2.setPaint(Color.DARK_GRAY);
-        this.xyPlotVis2.getRenderer().addAnnotation(this.aJMMCVis2, Layer.BACKGROUND);
+        this.aJMMCV2 = ChartUtils.createXYTextAnnotation(Constants.JMMC_ANNOTATION, 0, 0);
+        this.aJMMCV2.setTextAnchor(TextAnchor.BOTTOM_RIGHT);
+        this.aJMMCV2.setPaint(Color.DARK_GRAY);
+        this.xyPlotV2.getRenderer().addAnnotation(this.aJMMCV2, Layer.BACKGROUND);
 
         this.xyPlotT3 = createScientificScatterPlot("UV radius (M\u03BB)", "Closure phase (deg)", usePlotCrossHairSupport);
         this.xyPlotT3.setNoDataMessage("No closure phase data (OI_T3)");
@@ -241,17 +302,18 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         this.aJMMCT3.setPaint(Color.DARK_GRAY);
         this.xyPlotT3.getRenderer().addAnnotation(this.aJMMCT3, Layer.BACKGROUND);
 
-        final ValueAxis domainAxis = this.xyPlotVis2.getDomainAxis();
+        final ValueAxis domainAxis = this.xyPlotV2.getDomainAxis();
 
         // create chart and add listener :
         this.combinedXYPlot = new CombinedDomainXYPlot(domainAxis);
         this.combinedXYPlot.setGap(10.0D);
         this.combinedXYPlot.setOrientation(PlotOrientation.VERTICAL);
-        this.combinedXYPlot.add(this.xyPlotVis2, 1);
-        this.combinedXYPlot.add(this.xyPlotT3, 1);
-
-        this.plotMapping.put(this.xyPlotVis2, Integer.valueOf(1));
-        this.plotIndexMapping.put(Integer.valueOf(1), this.xyPlotVis2);
+        /*        
+         this.combinedXYPlot.add(this.xyPlotV2, 1);
+         this.combinedXYPlot.add(this.xyPlotT3, 1);
+         */
+        this.plotMapping.put(this.xyPlotV2, Integer.valueOf(1));
+        this.plotIndexMapping.put(Integer.valueOf(1), this.xyPlotV2);
         this.plotMapping.put(this.xyPlotT3, Integer.valueOf(2));
         this.plotIndexMapping.put(Integer.valueOf(2), this.xyPlotT3);
 
@@ -287,6 +349,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         if (useSelectionSupport || !usePlotCrossHairSupport) {
             this.chartPanel.addChartMouseListener(this);
         }
+
+        applyColorTheme();
 
         this.add(this.chartPanel);
     }
@@ -483,50 +547,53 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private static Point2D findDataPoint(final XYPlot plot, final double anchorX, final double anchorY, final double xRatio, final double yRatio) {
         final XYDataset dataset = plot.getDataset();
 
-        // TODO: move such code elsewhere : ChartUtils or XYDataSetUtils ?
+        if (dataset != null) {
 
-        final long startTime = System.nanoTime();
+            // TODO: move such code elsewhere : ChartUtils or XYDataSetUtils ?
 
-        double minDistance = Double.POSITIVE_INFINITY;
-        int matchSerie = -1;
-        int matchItem = -1;
+            final long startTime = System.nanoTime();
 
-        double x, y, dx, dy, distance;
+            double minDistance = Double.POSITIVE_INFINITY;
+            int matchSerie = -1;
+            int matchItem = -1;
 
-        // NOTE: not optimized
+            double x, y, dx, dy, distance;
 
-        // standard case - plain XYDataset
-        for (int serie = 0, seriesCount = dataset.getSeriesCount(), item, itemCount; serie < seriesCount; serie++) {
-            itemCount = dataset.getItemCount(serie);
-            for (item = 0; item < itemCount; item++) {
-                x = dataset.getXValue(serie, item);
-                y = dataset.getYValue(serie, item);
+            // NOTE: not optimized
 
-                if (!Double.isNaN(x) && !Double.isNaN(y)) {
-                    // converted in pixels:
-                    dx = (x - anchorX) * xRatio;
-                    dy = (y - anchorY) * yRatio;
+            // standard case - plain XYDataset
+            for (int serie = 0, seriesCount = dataset.getSeriesCount(), item, itemCount; serie < seriesCount; serie++) {
+                itemCount = dataset.getItemCount(serie);
+                for (item = 0; item < itemCount; item++) {
+                    x = dataset.getXValue(serie, item);
+                    y = dataset.getYValue(serie, item);
 
-                    distance = dx * dx + dy * dy;
+                    if (!Double.isNaN(x) && !Double.isNaN(y)) {
+                        // converted in pixels:
+                        dx = (x - anchorX) * xRatio;
+                        dy = (y - anchorY) * yRatio;
 
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        matchSerie = serie;
-                        matchItem = item;
+                        distance = dx * dx + dy * dy;
+
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            matchSerie = serie;
+                            matchItem = item;
+                        }
                     }
                 }
             }
-        }
 
-        logger.warn("findDataPoint: time = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+            logger.warn("findDataPoint: time = {} ms.", 1e-6d * (System.nanoTime() - startTime));
 
-        if (matchItem != -1) {
-            final double matchX = dataset.getXValue(matchSerie, matchItem);
-            final double matchY = dataset.getYValue(matchSerie, matchItem);
+            if (matchItem != -1) {
+                final double matchX = dataset.getXValue(matchSerie, matchItem);
+                final double matchY = dataset.getYValue(matchSerie, matchItem);
 
-            logger.warn("Matching item [serie = " + matchSerie + ", item = " + matchItem + "] : (" + matchX + ", " + matchY + ")");
+                logger.warn("Matching item [serie = " + matchSerie + ", item = " + matchItem + "] : (" + matchX + ", " + matchY + ")");
 
-            return new Point2D.Double(matchX, matchY);
+                return new Point2D.Double(matchX, matchY);
+            }
         }
 
         logger.warn("No Matching item.");
@@ -540,61 +607,65 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * @return found list of Point2D (data coordinates) or empty list
      */
     private List<Point2D> findDataPoints(final Shape shape) {
-        final XYDataset dataset = this.xyPlotVis2.getDataset();
-
-        // TODO: move such code elsewhere : ChartUtils or XYDataSetUtils ?
-
-        final long startTime = System.nanoTime();
-        /*
-         int matchSerie = -1;
-         int matchItem = -1;
-         */
-        double x, y;
+        final XYDataset dataset = this.xyPlotV2.getDataset();
 
         final List<Point2D> points = new ArrayList<Point2D>();
 
-        // NOTE: not optimized
+        if (dataset != null) {
+            // TODO: move such code elsewhere : ChartUtils or XYDataSetUtils ?
 
-        // standard case - plain XYDataset
-        for (int serie = 0, seriesCount = dataset.getSeriesCount(), item, itemCount; serie < seriesCount; serie++) {
-            itemCount = dataset.getItemCount(serie);
-            for (item = 0; item < itemCount; item++) {
-                x = dataset.getXValue(serie, item);
-                y = dataset.getYValue(serie, item);
-
-                if (!Double.isNaN(x) && !Double.isNaN(y)) {
-
-                    if (shape.contains(x, y)) {
-                        // TODO: keep data selection (pointer to real data)
+            final long startTime = System.nanoTime();
             /*
-                         matchSerie = serie;
-                         matchItem = item;
-                         */
-                        points.add(new Point2D.Double(x, y));
+             int matchSerie = -1;
+             int matchItem = -1;
+             */
+            double x, y;
+
+            // NOTE: not optimized
+
+            // standard case - plain XYDataset
+            for (int serie = 0, seriesCount = dataset.getSeriesCount(), item, itemCount; serie < seriesCount; serie++) {
+                itemCount = dataset.getItemCount(serie);
+                for (item = 0; item < itemCount; item++) {
+                    x = dataset.getXValue(serie, item);
+                    y = dataset.getYValue(serie, item);
+
+                    if (!Double.isNaN(x) && !Double.isNaN(y)) {
+
+                        if (shape.contains(x, y)) {
+                            // TODO: keep data selection (pointer to real data)
+                /*
+                             matchSerie = serie;
+                             matchItem = item;
+                             */
+                            points.add(new Point2D.Double(x, y));
+                        }
                     }
                 }
             }
-        }
 
-        logger.warn("findDataPoints: time = {} ms.", 1e-6d * (System.nanoTime() - startTime));
-        if (false) {
-            logger.warn("Matching points: {}", points);
+            logger.warn("findDataPoints: time = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+            if (false) {
+                logger.warn("Matching points: {}", points);
+            }
         }
-
         return points;
     }
 
     /**
      * Plot the generated file synchronously.
      * This code must be executed by the Swing Event Dispatcher thread (EDT)
+     * @param target target unique identifier to use
      * @param oiFitsFile OIFits file to use
      */
-    public void plot(final OIFitsFile oiFitsFile) {
+    public void plot(final TargetUID target, final OIFitsFile oiFitsFile) {
         logger.debug("plot : {}", oiFitsFile);
 
-        // refresh the plot :
+        // memorize plot data:
+        this.target = target;
         this.oiFitsFile = oiFitsFile;
 
+        // refresh the plot :
         logger.debug("plot : refresh");
 
         final long start = System.nanoTime();
@@ -613,14 +684,16 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         this.hasData = false;
         // disable chart & plot notifications:
         this.chart.setNotify(false);
-        this.xyPlotVis2.setNotify(false);
+        this.xyPlotV2.setNotify(false);
         this.xyPlotT3.setNotify(false);
         try {
             // reset title:
             ChartUtils.clearTextSubTitle(this.chart);
 
+            removeAllSubPlots();
+
             // reset dataset:
-            this.xyPlotVis2.setDataset(null);
+            this.xyPlotV2.setDataset(null);
             this.xyPlotT3.setDataset(null);
 
             this.resetOverlays();
@@ -628,9 +701,19 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         } finally {
             // restore chart & plot notifications:
             this.xyPlotT3.setNotify(true);
-            this.xyPlotVis2.setNotify(true);
+            this.xyPlotV2.setNotify(true);
             this.chart.setNotify(true);
         }
+    }
+
+    private void removeAllSubPlots() {
+
+        // remove all sub plots: 
+        // Note: use toArray() to avoid concurrentModification exceptions:
+        for (Object plot : this.combinedXYPlot.getSubplots().toArray()) {
+            this.combinedXYPlot.remove((XYPlot) plot);
+        }
+
     }
 
     /**
@@ -643,47 +726,117 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             resetPlot();
             return;
         }
-
-        final OIVis2 vis2 = this.oiFitsFile.getOiVis2()[0];
-        final String arrayName = vis2.getArrName();
-        final String insName = vis2.getInsName();
-
-//        final OIArray array = this.oiFitsFile.getOiArray(arrayName);
-        final OIArray array = vis2.getOiArray();
-
-        final float[] effWaves = vis2.getOiWavelength().getEffWave();
-        final double wlMin = 1e6d * effWaves[0];
-        final double wlMax = 1e6d * effWaves[effWaves.length - 1];
-
         this.hasData = false;
 
         // disable chart & plot notifications:
         this.chart.setNotify(false);
-        this.xyPlotVis2.setNotify(false);
+        this.xyPlotV2.setNotify(false);
         this.xyPlotT3.setNotify(false);
 
         try {
             // title :
             ChartUtils.clearTextSubTitle(this.chart);
 
-            final StringBuilder sb = new StringBuilder(32);
-            sb.append(arrayName).append(" - ");
-            sb.append(insName);
-            sb.append(" [").append(df4.format(wlMin)).append(" \u00B5m - ").append(df4.format(wlMax)).append(" \u00B5m] - ");
+            final boolean hasVis2 = this.oiFitsFile.hasOiVis2();
+            final boolean hasT3 = this.oiFitsFile.hasOiT3();
 
-            if (array == null) {
-                sb.append("missing OIArray");
-            } else {
-                for (String station : array.getStaName()) {
-                    sb.append(station).append(' ');
+            final Set<String> distinct = new LinkedHashSet<String>();
+
+            // TODO: fix this code as the plot will become generic !
+
+            // TODO: keep values from dataset: insName, baselines, dateObs ... IF HAS DATA (filtered)
+
+            final StringBuilder sb = new StringBuilder(32);
+
+            // Add distinct arrNames:
+            final GetOIDataString arrNameOperator = new GetOIDataString() {
+                public String getString(final OIData oiData) {
+                    return oiData.getArrName();
                 }
+            };
+            if (hasVis2) {
+                getDistinct(this.oiFitsFile.getOiVis2(), distinct, arrNameOperator);
+            }
+            if (hasT3) {
+                getDistinct(this.oiFitsFile.getOiT3(), distinct, arrNameOperator);
+            }
+            if (!distinct.isEmpty()) {
+                toString(distinct, sb, " ", " / ");
+            }
+
+            sb.append(" - ");
+
+            // Add unique insNames:
+            final GetOIDataString insNameOperator = new GetOIDataString() {
+                public String getString(final OIData oiData) {
+                    return oiData.getInsName();
+                }
+            };
+            distinct.clear();
+            if (hasVis2) {
+                getDistinct(this.oiFitsFile.getOiVis2(), distinct, insNameOperator);
+            }
+            if (hasT3) {
+                getDistinct(this.oiFitsFile.getOiT3(), distinct, insNameOperator);
+            }
+            if (!distinct.isEmpty()) {
+                toString(distinct, sb, " ", " / ");
+            }
+
+            sb.append(" ");
+
+            // Add wavelength ranges:
+            distinct.clear();
+            if (hasVis2) {
+                getDistinctWaveLengthRange(this.oiFitsFile.getOiVis2(), distinct);
+            }
+            if (hasT3) {
+                getDistinctWaveLengthRange(this.oiFitsFile.getOiT3(), distinct);
+            }
+            if (!distinct.isEmpty()) {
+                toString(distinct, sb, " ", " / ");
+            }
+
+            sb.append(" - ");
+
+            // Add unique baselines:
+            distinct.clear();
+            if (hasVis2) {
+                getDistinctStaNames(this.oiFitsFile.getOiVis2(), distinct);
+            }
+            if (hasT3) {
+                getDistinctStaNames(this.oiFitsFile.getOiT3(), distinct);
+            }
+            if (!distinct.isEmpty()) {
+                toString(distinct, sb, " ", " / ");
             }
 
             ChartUtils.addSubtitle(this.chart, sb.toString());
 
             // date - Source:
-            ChartUtils.addSubtitle(this.chart, "Day: " + vis2.getDateObs()
-                    + (this.oiFitsFile.hasOiTarget() ? " - Source: " + this.oiFitsFile.getOiTarget().getTarget()[0] : ""));
+            sb.setLength(0);
+            sb.append("Day: ");
+
+            // Add unique dateObs:
+            final GetOIDataString dateObsOperator = new GetOIDataString() {
+                public String getString(final OIData oiData) {
+                    return oiData.getDateObs();
+                }
+            };
+            distinct.clear();
+            if (hasVis2) {
+                getDistinct(this.oiFitsFile.getOiVis2(), distinct, dateObsOperator);
+            }
+            if (hasT3) {
+                getDistinct(this.oiFitsFile.getOiT3(), distinct, dateObsOperator);
+            }
+            if (!distinct.isEmpty()) {
+                toString(distinct, sb, " ", " / ");
+            }
+
+            sb.append(" - Source: ").append(this.target.getTarget());
+
+            ChartUtils.addSubtitle(this.chart, sb.toString());
 
             // change the scaling factor ?
             setUvPlotScalingFactor(MEGA_LAMBDA_SCALE);
@@ -692,24 +845,17 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             this.hasData = updateChart();
 
             if (this.hasData) {
-                // update theme at end :
-                ChartUtilities.applyCurrentTheme(this.chart);
-
-                this.xyPlotVis2.setBackgroundPaint(Color.WHITE);
-                this.xyPlotVis2.setDomainGridlinePaint(Color.LIGHT_GRAY);
-                this.xyPlotVis2.setRangeGridlinePaint(Color.LIGHT_GRAY);
-
-                this.xyPlotT3.setBackgroundPaint(Color.WHITE);
-                this.xyPlotT3.setDomainGridlinePaint(Color.LIGHT_GRAY);
-                this.xyPlotT3.setRangeGridlinePaint(Color.LIGHT_GRAY);
+                applyColorTheme();
             }
 
             this.resetOverlays();
 
+            this.chartPanel.setVisible(this.hasData);
+
         } finally {
             // restore chart & plot notifications:
             this.xyPlotT3.setNotify(true);
-            this.xyPlotVis2.setNotify(true);
+            this.xyPlotV2.setNotify(true);
             this.chart.setNotify(true);
         }
     }
@@ -741,47 +887,116 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * @return true if vis2 has data to plot
      */
     private boolean updateChart() {
-        Range xRangeVis2 = null;
+
+        removeAllSubPlots();
+
+        Range xRangeV2 = null;
         Range xRangeT3 = null;
 
         if (this.oiFitsFile.hasOiVis2()) {
-            final OIVis2 vis2 = this.oiFitsFile.getOiVis2()[0];
+            this.xyPlotV2.setDataset(new DefaultIntervalXYDataset());
 
-            // compute derived data i.e. spatial frequencies:
-            final double[][] spatialFreq = vis2.getSpatialFreq();
+            Range yRangePlot = null;
+            for (OIVis2 vis2 : this.oiFitsFile.getOiVis2()) {
 
-            xRangeVis2 = updatePlot(xyPlotVis2, vis2, vis2.getVis2Data(), vis2.getVis2Err(), spatialFreq);
+                // TODO: compute derived data i.e. spatial frequencies:
+                final double[][] spatialFreq = vis2.getSpatialFreq();
+
+                final Range xRange = updatePlot(this.xyPlotV2, vis2, vis2.getVis2Data(), vis2.getVis2Err(), spatialFreq);
+
+                // combine X range:
+                if (xRangeV2 == null) {
+                    xRangeV2 = xRange;
+                } else if (xRange != null) {
+                    xRangeV2 = new Range(
+                            Math.min(xRangeV2.getLowerBound(), xRange.getLowerBound()),
+                            Math.max(xRangeV2.getUpperBound(), xRange.getUpperBound()));
+                }
+                // combine Y range:
+                final Range yRange = this.xyPlotV2.getRangeAxis().getRange();
+
+                if (yRangePlot == null) {
+                    yRangePlot = yRange;
+                } else if (yRangePlot != null) {
+                    yRangePlot = new Range(
+                            Math.min(yRangePlot.getLowerBound(), yRange.getLowerBound()),
+                            Math.max(yRangePlot.getUpperBound(), yRange.getUpperBound()));
+                }
+            }
+            BoundedNumberAxis axis;
+
+            if (xyPlotV2.getRangeAxis() instanceof BoundedNumberAxis) {
+                axis = (BoundedNumberAxis) xyPlotV2.getRangeAxis();
+                axis.setBounds(yRangePlot);
+                axis.setRange(yRangePlot.getLowerBound(), yRangePlot.getUpperBound());
+            }
+
+        } else {
+            // reset Vis2 dataset:
+            this.xyPlotV2.setDataset(null);
+        }
+
+        if (xRangeV2 != null) {
+            this.combinedXYPlot.add(this.xyPlotV2, 1);
         }
 
         if (this.oiFitsFile.hasOiT3()) {
-            final OIT3 t3 = this.oiFitsFile.getOiT3()[0];
+            this.xyPlotT3.setDataset(new DefaultIntervalXYDataset());
 
-            // compute derived data i.e. spatial frequencies:
-            final double[][] spatialFreq = t3.getSpatial();
+            Range yRangePlot = null;
+            for (OIT3 t3 : this.oiFitsFile.getOiT3()) {
 
-            xRangeT3 = updatePlot(xyPlotT3, t3, t3.getT3Phi(), t3.getT3PhiErr(), spatialFreq);
+                // TODO: compute derived data i.e. spatial frequencies:
+                final double[][] spatialFreq = t3.getSpatial();
+
+                final Range xRange = updatePlot(this.xyPlotT3, t3, t3.getT3Phi(), t3.getT3PhiErr(), spatialFreq);
+
+                // combine range:
+                if (xRangeT3 == null) {
+                    xRangeT3 = xRange;
+                } else if (xRange != null) {
+                    xRangeT3 = new Range(
+                            Math.min(xRangeT3.getLowerBound(), xRange.getLowerBound()),
+                            Math.max(xRangeT3.getUpperBound(), xRange.getUpperBound()));
+                }
+                // combine Y range:
+                final Range yRange = this.xyPlotT3.getRangeAxis().getRange();
+
+                if (yRangePlot == null) {
+                    yRangePlot = yRange;
+                } else if (yRangePlot != null) {
+                    yRangePlot = new Range(
+                            Math.min(yRangePlot.getLowerBound(), yRange.getLowerBound()),
+                            Math.max(yRangePlot.getUpperBound(), yRange.getUpperBound()));
+                }
+            }
+            BoundedNumberAxis axis;
+
+            if (xyPlotT3.getRangeAxis() instanceof BoundedNumberAxis) {
+                axis = (BoundedNumberAxis) xyPlotT3.getRangeAxis();
+                axis.setBounds(yRangePlot);
+                axis.setRange(yRangePlot.getLowerBound(), yRangePlot.getUpperBound());
+            }
+
         } else {
             // reset T3 dataset:
             this.xyPlotT3.setDataset(null);
         }
 
-        final boolean showT3Plot = (xRangeT3 != null);
-        final boolean hasT3Plot = this.combinedXYPlot.getSubplots().contains(this.xyPlotT3);
-
-        if (showT3Plot != hasT3Plot) {
-            if (showT3Plot) {
-                this.combinedXYPlot.add(this.xyPlotT3, 1);
-            } else {
-                this.combinedXYPlot.remove(this.xyPlotT3);
-            }
+        if (xRangeT3 != null) {
+            this.combinedXYPlot.add(this.xyPlotT3, 1);
         }
 
-        if (xRangeVis2 == null && xRangeT3 == null) {
+        if (xRangeV2 == null && xRangeT3 == null) {
             return false;
         }
 
-        final double minX = Math.min(xRangeVis2.getLowerBound(), (xRangeT3 != null) ? xRangeT3.getLowerBound() : Double.POSITIVE_INFINITY);
-        final double maxX = Math.max(xRangeVis2.getUpperBound(), (xRangeT3 != null) ? xRangeT3.getUpperBound() : Double.NEGATIVE_INFINITY);
+        final double minX = Math.min(
+                (xRangeV2 != null) ? xRangeV2.getLowerBound() : Double.POSITIVE_INFINITY,
+                (xRangeT3 != null) ? xRangeT3.getLowerBound() : Double.POSITIVE_INFINITY);
+        final double maxX = Math.max(
+                (xRangeV2 != null) ? xRangeV2.getUpperBound() : Double.NEGATIVE_INFINITY,
+                (xRangeT3 != null) ? xRangeT3.getUpperBound() : Double.NEGATIVE_INFINITY);
 
         BoundedNumberAxis axis;
 
@@ -803,8 +1018,14 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private Range updatePlot(final XYPlot plot, final OIData table,
                              final double[][] data, final double[][] dataErr, final double[][] spatialFreq) {
 
+        final DefaultIntervalXYDataset dataset = (DefaultIntervalXYDataset) plot.getDataset();
+
+        final int nbSeries = dataset.getSeriesCount();
+
         final int nRows = table.getNbRows();
         final int nWaves = table.getNWave();
+
+        // TODO: perform correct palette when using different OIWaveLength tables:
 
         // Prepare palette
         final Color[] colors = new Color[nWaves];
@@ -839,13 +1060,11 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         double minY = (USE_LOG_SCALE) ? 1d : 0d;
         double maxY = 1d;
 
-        final DefaultIntervalXYDataset dataset = new DefaultIntervalXYDataset();
-
         double[] xValue, xLower, xUpper, yValue, yLower, yUpper;
 
         double x, y, err;
 
-        for (int j = 0; j < nWaves; j++) {
+        for (int nSerie, j = 0; j < nWaves; j++) {
 
             // 1 color per spectral channel (i.e. per Serie) :
             xValue = new double[nRows];
@@ -911,16 +1130,18 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 }
             }
 
-            dataset.addSeries("OIDATA W" + j, new double[][]{xValue, xLower, xUpper, yValue, yLower, yUpper});
+            nSerie = nbSeries + j;
 
-            renderer.setSeriesPaint(j, colors[j], false);
+            dataset.addSeries("OIDATA W" + nSerie, new double[][]{xValue, xLower, xUpper, yValue, yLower, yUpper});
+
+            renderer.setSeriesPaint(nSerie, colors[j], false);
         }
-
-        plot.setDataset(dataset);
 
         if (!hasData) {
             return null;
         }
+
+        // TODO: adjust renderer settings per Serie !!
 
         // set shape depending on error (triangle or square):
         final Shape shape = getPointShape(hasErr);
@@ -1012,13 +1233,27 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         // Perform custom operations before/after chart rendering:
         // move JMMC annotations:
-        this.aJMMCVis2.setX(this.xyPlotVis2.getDomainAxis().getUpperBound());
-        this.aJMMCVis2.setY(this.xyPlotVis2.getRangeAxis().getLowerBound());
-
+        if (this.xyPlotV2.getDomainAxis() != null) {
+            this.aJMMCV2.setX(this.xyPlotV2.getDomainAxis().getUpperBound());
+            this.aJMMCV2.setY(this.xyPlotV2.getRangeAxis().getLowerBound());
+        }
         if (this.xyPlotT3.getDomainAxis() != null) {
             this.aJMMCT3.setX(this.xyPlotT3.getDomainAxis().getUpperBound());
             this.aJMMCT3.setY(this.xyPlotT3.getRangeAxis().getLowerBound());
         }
+    }
+
+    private void applyColorTheme() {
+        // update theme at end :
+        ChartUtilities.applyCurrentTheme(this.chart);
+
+        this.xyPlotV2.setBackgroundPaint(Color.WHITE);
+        this.xyPlotV2.setDomainGridlinePaint(Color.LIGHT_GRAY);
+        this.xyPlotV2.setRangeGridlinePaint(Color.LIGHT_GRAY);
+
+        this.xyPlotT3.setBackgroundPaint(Color.WHITE);
+        this.xyPlotT3.setDomainGridlinePaint(Color.LIGHT_GRAY);
+        this.xyPlotT3.setRangeGridlinePaint(Color.LIGHT_GRAY);
     }
 
     /**
@@ -1069,7 +1304,99 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         return path;
     }
 
+    /**
+     * Return true if the plot has data (dataset not empty)
+     * @return true if the plot has data 
+     */
     public boolean isHasData() {
         return hasData;
+    }
+
+    /* --- OIFits helper : TODO move elsewhere --- */
+    /**
+     * Return the unique String values from given operator applied on given OIData tables
+     * @param oiDataList OIData tables
+     * @param set set instance to use
+     * @param operator operator to get String values
+     * @return unique String values
+     */
+    private static Set<String> getDistinct(final OIData[] oiDataList, final Set<String> set, final GetOIDataString operator) {
+        String value;
+        for (OIData oiData : oiDataList) {
+            value = operator.getString(oiData);
+            if (value != null) {
+                logger.info("getDistinct: {}", value);
+
+                int pos = value.indexOf('_');
+
+                if (pos != -1) {
+                    value = value.substring(0, pos);
+                }
+
+                set.add(value);
+            }
+        }
+        return set;
+    }
+
+    /**
+     * Return the unique staNames values from given OIData tables
+     * @param oiDataList OIData tables
+     * @param set set instance to use
+     */
+    private static void getDistinctStaNames(final OIData[] oiDataList, final Set<String> set) {
+        String staNames;
+        for (OIData oiData : oiDataList) {
+            for (short[] staIndexes : oiData.getDistinctStaIndex()) {
+                staNames = oiData.getStaNames(staIndexes);
+
+                logger.info("staNames : {}", staNames);
+
+                set.add(staNames);
+            }
+        }
+    }
+
+    /**
+     * Return the unique wave length ranges from given OIData tables
+     * @param oiDataList OIData tables
+     * @param set set instance to use
+     */
+    private static void getDistinctWaveLengthRange(final OIData[] oiDataList, final Set<String> set) {
+        final StringBuilder sb = new StringBuilder();
+        String wlenRange;
+        float[] effWaveRange;
+        for (OIData oiData : oiDataList) {
+            effWaveRange = oiData.getEffWaveRange();
+
+            if (effWaveRange != null) {
+                sb.append("[").append(df4.format(1e6f * effWaveRange[0])).append(" \u00B5m - ").append(df4.format(1e6f * effWaveRange[1])).append(" \u00B5m]");
+
+                wlenRange = sb.toString();
+                sb.setLength(0);
+                logger.info("wlen range : {}", wlenRange);
+
+                set.add(wlenRange);
+            }
+        }
+    }
+
+    private static void toString(final Set<String> set, final StringBuilder sb, final String internalSeparator, final String separator) {
+        for (String v : set) {
+            sb.append(v.replaceAll("\\s", internalSeparator)).append(separator);
+        }
+    }
+
+    /**
+     * Get String operator applied on any OIData table
+     */
+    private interface GetOIDataString {
+
+        /**
+         * Return a String value (keyword for example) for the given OIData table
+         * @param oiData OIData table
+         * @return String value
+         */
+        public String getString(final OIData oiData);
     }
 }

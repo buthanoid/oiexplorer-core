@@ -42,6 +42,10 @@ public final class OIFitsCollection {
         oiFitsCollection.clear();
     }
 
+    public boolean isEmpty() {
+        return oiFitsCollection.isEmpty();
+    }
+
     public List<OIFitsFile> getOIFitsFiles() {
         return new ArrayList<OIFitsFile>(oiFitsCollection.values());
     }
@@ -111,15 +115,13 @@ public final class OIFitsCollection {
 
             for (Map.Entry<String, List<OIData>> entry : oiFitsFile.getOiDataPerTarget().entrySet()) {
 
-                final String name = entry.getKey();
+                final TargetUID target = new TargetUID(entry.getKey());
 
                 // TODO: Cross Match on target RA/DEC because names ...
 
-                OIFitsFile oiFitsTarget = oiFitsPerTarget.get(name);
+                OIFitsFile oiFitsTarget = oiFitsPerTarget.get(target);
                 if (oiFitsTarget == null) {
                     oiFitsTarget = new OIFitsFile();
-
-                    final TargetUID target = new TargetUID(name);
 
                     oiFitsPerTarget.put(target, oiFitsTarget);
                 }
