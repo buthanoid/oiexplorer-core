@@ -18,28 +18,21 @@ import org.slf4j.LoggerFactory;
 /**
  * Manage data collection and provide utility methods.
  */
-public class OIFitsCollection {
+public final class OIFitsCollection {
 
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(OIFitsCollection.class);
     /* members */
     /** OIFits file collection ordered by insertion order */
     private Map<String, OIFitsFile> oiFitsCollection = new LinkedHashMap<String, OIFitsFile>();
-    /** cached OIFits structure per target */
-    private Map<String, OIFitsFile> oiFitsPerTarget = new HashMap<String, OIFitsFile>();
+    /** cached OIFitsFile structure per TargetUID */
+    private Map<TargetUID, OIFitsFile> oiFitsPerTarget = new HashMap<TargetUID, OIFitsFile>();
 
     /**
      * Protected constructor
      */
     protected OIFitsCollection() {
         super();
-    }
-
-    /** 
-     * Return one OifitsFile container per target found in loaded files.
-     */
-    public Map<String, OIFitsFile> getOiFitsPerTarget() {
-        return oiFitsPerTarget;
     }
 
     /**
@@ -111,7 +104,7 @@ public class OIFitsCollection {
 
     /* --- data analysis --- */
     private void analyzeCollection() {
-
+        // clear OIFits structure per TargetUID:
         oiFitsPerTarget.clear();
 
         for (OIFitsFile oiFitsFile : oiFitsCollection.values()) {
@@ -125,7 +118,10 @@ public class OIFitsCollection {
                 OIFitsFile oiFitsTarget = oiFitsPerTarget.get(name);
                 if (oiFitsTarget == null) {
                     oiFitsTarget = new OIFitsFile();
-                    oiFitsPerTarget.put(name, oiFitsTarget);
+
+                    final TargetUID target = new TargetUID(name);
+
+                    oiFitsPerTarget.put(target, oiFitsTarget);
                 }
 
                 for (OIData data : entry.getValue()) {
@@ -133,10 +129,35 @@ public class OIFitsCollection {
                 }
             }
 
-            logger.warn("analyzeCollection: ");
-            for (Map.Entry<String, OIFitsFile> entry : oiFitsPerTarget.entrySet()) {
-                logger.warn("Target: {} : {}", entry.getKey(), Arrays.toString(entry.getValue().getOiTables()));
+            logger.warn("analyzeCollection:");
+            for (Map.Entry<TargetUID, OIFitsFile> entry : oiFitsPerTarget.entrySet()) {
+                logger.warn("{} : {}", entry.getKey(), Arrays.toString(entry.getValue().getOiTables()));
             }
         }
+    }
+
+    /** 
+     * Return the OIFitsFile structure per target found in loaded files.
+     */
+    public Map<TargetUID, OIFitsFile> getOiFitsPerTarget() {
+        return oiFitsPerTarget;
+    }
+
+    /**
+     * Return the OIFitsFile structure corresponding to the given target (name) or null if missing
+     * @param target target (name) as string
+     * @return list of OIData tables corresponding to the given target (name) or null if missing
+     */
+    public OIFitsFile getOiDataList(final String target) {
+        return getOiFitsPerTarget().get(target);
+    }
+
+    /**
+     * Return the OIFitsFile structure corresponding to the given target (name) or null if missing
+     * @param target targetUID
+     * @return list of OIData tables corresponding to the given target (name) or null if missing
+     */
+    public OIFitsFile getOiDataList(final TargetUID target) {
+        return getOiFitsPerTarget().get(target);
     }
 }

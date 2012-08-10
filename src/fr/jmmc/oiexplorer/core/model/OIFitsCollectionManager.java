@@ -21,14 +21,14 @@ import org.slf4j.LoggerFactory;
  * Handle the oifits files collection.
  * @author mella, bourgesl
  */
-public class OIFitsManager {
+public class OIFitsCollectionManager {
 
     /** Logger */
-    private static final Logger logger = LoggerFactory.getLogger(OIFitsManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(OIFitsCollectionManager.class);
     /** flag to log a stack trace in method fireEvent() to debug events */
     private final static boolean DEBUG_FIRE_EVENT = false;
     /** Singleton pattern */
-    private final static OIFitsManager instance = new OIFitsManager();
+    private final static OIFitsCollectionManager instance = new OIFitsCollectionManager();
     /* members */
     /** OIFits collection */
     private OIFitsCollection oiFitsCollection = null;
@@ -39,7 +39,7 @@ public class OIFitsManager {
      * Return the Manager singleton
      * @return singleton instance
      */
-    public static OIFitsManager getInstance() {
+    public static OIFitsCollectionManager getInstance() {
         return instance;
     }
 
@@ -47,9 +47,8 @@ public class OIFitsManager {
      * Prevent instanciation of singleton.
      * Manager instance should be obtained using getInstance().
      */
-    private OIFitsManager() {
+    private OIFitsCollectionManager() {
         super();
-        reset();
     }
 
     /**
