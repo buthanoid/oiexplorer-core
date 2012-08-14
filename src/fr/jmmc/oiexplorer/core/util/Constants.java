@@ -35,7 +35,7 @@ public interface Constants {
 
     /* plots */
     /** JMMC legal notice on plots */
-    public static final String JMMC_ANNOTATION = "Made by ASPRO 2/JMMC ";
+    public static final String JMMC_ANNOTATION = "Made by OIFitsExplorer/JMMC ";
     /** label to display when multiple configurations are in use (file names, chart titles ...) */
     public static final String MULTI_CONF = "MULTI CONFIGURATION";
     /** regular expression used to match characters different than alpha/numeric/+/- */
