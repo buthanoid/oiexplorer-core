@@ -947,7 +947,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             for (OIT3 t3 : this.oiFitsFile.getOiT3()) {
 
                 // TODO: compute derived data i.e. spatial frequencies:
-                final double[][] spatialFreq = t3.getSpatial();
+                final double[][] spatialFreq = t3.getSpatialFreq();
 
                 final Range xRange = updatePlot(this.xyPlotT3, t3, t3.getT3Phi(), t3.getT3PhiErr(), spatialFreq);
 
