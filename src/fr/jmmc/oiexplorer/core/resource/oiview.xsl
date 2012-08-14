@@ -24,24 +24,22 @@
   <xsl:template match="/">
     <html>
       <body>
-        <xsl:apply-templates select="//oifits"/>
+        <xsl:apply-templates select="//oifits/*"/>
       </body>
     </html>
-  </xsl:template>
+  </xsl:template> 
+  
+  
+  
 
-
-
-
-  <xsl:template match="oifits">
-    <xsl:if test="filename">
-      <h2>
-        File :
-      </h2>
-      <xsl:value-of select="filename"/>
-    </xsl:if>
-
-    <xsl:apply-templates />
-
+  <xsl:template match="filename">
+      
+    <h2>
+      File :
+    </h2>
+    
+    <xsl:value-of select="text()"/>
+    
   </xsl:template>
 
 
