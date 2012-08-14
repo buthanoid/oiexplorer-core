@@ -147,15 +147,6 @@ public final class OIFitsCollection {
 
     /**
      * Return the OIFitsFile structure corresponding to the given target (name) or null if missing
-     * @param target target (name) as string
-     * @return list of OIData tables corresponding to the given target (name) or null if missing
-     */
-    public OIFitsFile getOiDataList(final String target) {
-        return getOiFitsPerTarget().get(target);
-    }
-
-    /**
-     * Return the OIFitsFile structure corresponding to the given target (name) or null if missing
      * @param target targetUID
      * @return list of OIData tables corresponding to the given target (name) or null if missing
      */
