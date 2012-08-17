@@ -32,6 +32,8 @@ public class OIFitsCollectionManager {
     /* members */
     /** OIFits collection */
     private OIFitsCollection oiFitsCollection = null;
+    /** enable / disable notifications */
+    private boolean notify = true;
     /** OIFits collection listeners */
     private final CopyOnWriteArrayList<OIFitsCollectionListener> listeners = new CopyOnWriteArrayList<OIFitsCollectionListener>();
 
@@ -103,6 +105,18 @@ public class OIFitsCollectionManager {
     }
     // --- EVENTS ----------------------------------------------------------------
 
+    public boolean isNotify() {
+        return notify;
+    }
+
+    public void setNotify(final boolean notify) {
+        this.notify = notify;
+        if (notify) {
+            // TODO: record event type to fire ...
+            fireOIFitsCollectionChanged();
+        }
+    }
+
     /**
      * Register the given OIFits collection listener
      * @param listener OIFits collection listener
@@ -124,6 +138,9 @@ public class OIFitsCollectionManager {
      * @param oiFitsFile added OIFits file
      */
     private void fireOIFitsCollectionChanged() {
+        if (!this.notify) {
+            return;
+        }
         if (logger.isDebugEnabled()) {
             logger.debug("fireOIFitsCollectionChanged: {}", this.oiFitsCollection);
         }

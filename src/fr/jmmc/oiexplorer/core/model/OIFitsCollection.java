@@ -3,7 +3,6 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
-import fr.jmmc.oitools.model.Analyzer;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import java.util.ArrayList;
@@ -40,6 +39,8 @@ public final class OIFitsCollection {
      */
     public void clear() {
         oiFitsCollection.clear();
+        // clear OIFits structure per TargetUID:
+        oiFitsPerTarget.clear();
     }
 
     public boolean isEmpty() {
@@ -63,10 +64,10 @@ public final class OIFitsCollection {
 
             oiFitsCollection.put(key, oifitsFile);
 
-            final Analyzer analyzer = new Analyzer();
-            analyzer.visit(oifitsFile);
+            // analyze the given file:
+            oifitsFile.analyze();
 
-            logger.warn("addOIFitsFile: " + oifitsFile);
+            logger.debug("addOIFitsFile: {}", oifitsFile);
 
             // update collection analysis:
             analyzeCollection();
@@ -107,8 +108,11 @@ public final class OIFitsCollection {
     }
 
     /* --- data analysis --- */
+    /**
+     * Analyze the complete OIFits collection to provide OIFits structure per unique target (name)
+     */
     private void analyzeCollection() {
-        // clear OIFits structure per TargetUID:
+        // reset OIFits structure per TargetUID:
         oiFitsPerTarget.clear();
 
         for (OIFitsFile oiFitsFile : oiFitsCollection.values()) {
@@ -130,16 +134,20 @@ public final class OIFitsCollection {
                     oiFitsTarget.addOiTable(data);
                 }
             }
+        }
 
-            logger.warn("analyzeCollection:");
+        if (logger.isDebugEnabled()) {
+            logger.debug("analyzeCollection:");
+
             for (Map.Entry<TargetUID, OIFitsFile> entry : oiFitsPerTarget.entrySet()) {
-                logger.warn("{} : {}", entry.getKey(), Arrays.toString(entry.getValue().getOiTables()));
+                logger.debug("{} : {}", entry.getKey(), Arrays.toString(entry.getValue().getOiTables()));
             }
         }
     }
 
     /** 
      * Return the OIFitsFile structure per target found in loaded files.
+     * @return OIFitsFile structure per target
      */
     public Map<TargetUID, OIFitsFile> getOiFitsPerTarget() {
         return oiFitsPerTarget;
