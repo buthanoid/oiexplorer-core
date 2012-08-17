@@ -16,12 +16,17 @@ import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ImageUtils;
 import fr.jmmc.oiexplorer.core.gui.action.ExportPDFAction;
+import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
+import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
+import fr.jmmc.oiexplorer.core.model.PlotDefinition;
+import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
 import fr.jmmc.oiexplorer.core.model.TargetUID;
 import fr.jmmc.oiexplorer.core.util.Constants;
+import fr.jmmc.oitools.meta.ColumnMeta;
+import fr.jmmc.oitools.meta.Units;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
-import fr.jmmc.oitools.model.OIT3;
-import fr.jmmc.oitools.model.OIVis2;
+import fr.jmmc.oitools.model.OITable;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Shape;
@@ -57,11 +62,9 @@ import org.jfree.chart.plot.PlotRenderingInfo;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.AbstractRenderer;
 import org.jfree.data.Range;
-import org.jfree.data.xy.DefaultIntervalXYDataset;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleInsets;
-import org.jfree.ui.TextAnchor;
 
 /**
  * This panel presents the interferometer plot (station, base lines ...)
@@ -78,14 +81,14 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private final static boolean USE_LOG_SCALE = false;
     /** default color model (aspro - Rainbow) */
     private final static IndexColorModel RAINBOW_COLOR_MODEL = ColorModels.getColorModel("Rainbow");
-    /** scaling factor to Mega Lambda for U,V points */
-    private final static double MEGA_LAMBDA_SCALE = 1e-6;
     /** data margin in percents */
     private final static double MARGIN_PERCENTS = 5d / 100d;
     /** double formatter for wave lengths */
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
 
     /* members */
+    /** current plot definition */
+    private PlotDefinition plotDefinition = null;
     /** current target */
     private TargetUID target = null;
     /** current oifits file */
@@ -101,6 +104,13 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private Map<XYPlot, Integer> plotMapping = new IdentityHashMap<XYPlot, Integer>();
     /** mapping between subplot index and xy plot (reverse) */
     private Map<Integer, XYPlot> plotIndexMapping = new HashMap<Integer, XYPlot>();
+    /** chart panel */
+    private ChartPanel chartPanel;
+    /** crosshair overlay */
+    private CombinedCrosshairOverlay crosshairOverlay = null;
+    /** selection overlay */
+    private SelectionOverlay selectionOverlay = null;
+    /* TODO: List<XYPlot */
     /** xy plot instance for VIS2 */
     private XYPlot xyPlotV2;
     /** xy plot instance for T3 */
@@ -109,14 +119,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private XYTextAnnotation aJMMCV2 = null;
     /** JMMC annotation */
     private XYTextAnnotation aJMMCT3 = null;
-    /** scaling factor on X data */
-    private double plotXScalingFactor = MEGA_LAMBDA_SCALE;
-    /** chart panel */
-    private ChartPanel chartPanel;
-    /** crosshair overlay */
-    private CombinedCrosshairOverlay crosshairOverlay = null;
-    /** selection overlay */
-    private SelectionOverlay selectionOverlay = null;
 
     /**
      * Constructor
@@ -158,7 +160,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      */
     @Override
     public String getPDFDefaultFileName() {
-        if (this.oiFitsFile != null) {
+        if (this.oiFitsFile != null && this.target != null) {
             final boolean hasVis2 = this.oiFitsFile.hasOiVis2();
             final boolean hasT3 = this.oiFitsFile.hasOiT3();
 
@@ -199,6 +201,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 toString(distinct, sb, "_", "_");
             }
 
+            sb.append('_');
+
             // Add unique insNames:
             final GetOIDataString insNameOperator = new GetOIDataString() {
                 public String getString(final OIData oiData) {
@@ -216,6 +220,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 toString(distinct, sb, "_", "_");
             }
 
+            sb.append('_');
+
             // Add unique baselines:
             distinct.clear();
             if (hasVis2) {
@@ -227,6 +233,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "-", "_");
             }
+
+            sb.append('_');
 
             // Add unique dateObs:
             final GetOIDataString dateObsOperator = new GetOIDataString() {
@@ -286,40 +294,16 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final boolean usePlotCrossHairSupport = false;
         final boolean useSelectionSupport = false;
 
-        this.xyPlotV2 = createScientificScatterPlot("UV radius (M\u03BB)", "V²", usePlotCrossHairSupport);
-        this.xyPlotV2.setNoDataMessage("No square visiblity data (OI_VIS2)");
-
-        this.aJMMCV2 = ChartUtils.createXYTextAnnotation(Constants.JMMC_ANNOTATION, 0, 0);
-        this.aJMMCV2.setTextAnchor(TextAnchor.BOTTOM_RIGHT);
-        this.aJMMCV2.setPaint(Color.DARK_GRAY);
-        this.xyPlotV2.getRenderer().addAnnotation(this.aJMMCV2, Layer.BACKGROUND);
-
-        this.xyPlotT3 = createScientificScatterPlot("UV radius (M\u03BB)", "Closure phase (deg)", usePlotCrossHairSupport);
-        this.xyPlotT3.setNoDataMessage("No closure phase data (OI_T3)");
-
-        this.aJMMCT3 = ChartUtils.createXYTextAnnotation(Constants.JMMC_ANNOTATION, 0, 0);
-        this.aJMMCT3.setTextAnchor(TextAnchor.BOTTOM_RIGHT);
-        this.aJMMCT3.setPaint(Color.DARK_GRAY);
-        this.xyPlotT3.getRenderer().addAnnotation(this.aJMMCT3, Layer.BACKGROUND);
-
-        final ValueAxis domainAxis = this.xyPlotV2.getDomainAxis();
+        final boolean showLegend = false;
 
         // create chart and add listener :
-        this.combinedXYPlot = new CombinedDomainXYPlot(domainAxis);
+        this.combinedXYPlot = new CombinedDomainXYPlot(ChartUtils.createAxis("UV radius (M\u03BB)"));
         this.combinedXYPlot.setGap(10.0D);
         this.combinedXYPlot.setOrientation(PlotOrientation.VERTICAL);
-        /*        
-         this.combinedXYPlot.add(this.xyPlotV2, 1);
-         this.combinedXYPlot.add(this.xyPlotT3, 1);
-         */
-        this.plotMapping.put(this.xyPlotV2, Integer.valueOf(1));
-        this.plotIndexMapping.put(Integer.valueOf(1), this.xyPlotV2);
-        this.plotMapping.put(this.xyPlotT3, Integer.valueOf(2));
-        this.plotIndexMapping.put(Integer.valueOf(2), this.xyPlotT3);
 
         configureCrosshair(this.combinedXYPlot, usePlotCrossHairSupport);
 
-        this.chart = ChartUtils.createChart(null, this.combinedXYPlot, false);
+        this.chart = ChartUtils.createChart(null, this.combinedXYPlot, showLegend);
         this.chart.addProgressListener(this);
         this.chartPanel = ChartUtils.createChartPanel(this.chart, false);
 
@@ -337,12 +321,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         if (!usePlotCrossHairSupport) {
             this.crosshairOverlay = new CombinedCrosshairOverlay();
-
-            for (Integer plotIndex : this.plotMapping.values()) {
-                crosshairOverlay.addDomainCrosshair(plotIndex, createCrosshair());
-                crosshairOverlay.addRangeCrosshair(plotIndex, createCrosshair());
-            }
-
             this.chartPanel.addOverlay(crosshairOverlay);
         }
 
@@ -350,9 +328,31 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             this.chartPanel.addChartMouseListener(this);
         }
 
-        applyColorTheme();
-
         this.add(this.chartPanel);
+
+        // Create sub plots (TODO externalize):
+
+        this.xyPlotV2 = createScientificScatterPlot(null, "V²", usePlotCrossHairSupport);
+
+        this.aJMMCV2 = ChartUtils.createJMMCAnnotation(Constants.JMMC_ANNOTATION);
+        this.xyPlotV2.getRenderer().addAnnotation(this.aJMMCV2, Layer.BACKGROUND);
+
+        this.xyPlotT3 = createScientificScatterPlot(null, "Closure phase (deg)", usePlotCrossHairSupport);
+
+        this.aJMMCT3 = ChartUtils.createJMMCAnnotation(Constants.JMMC_ANNOTATION);
+        this.xyPlotT3.getRenderer().addAnnotation(this.aJMMCT3, Layer.BACKGROUND);
+
+        if (!usePlotCrossHairSupport) {
+            Integer plotIndex = Integer.valueOf(1);
+            crosshairOverlay.addDomainCrosshair(plotIndex, createCrosshair());
+            crosshairOverlay.addRangeCrosshair(plotIndex, createCrosshair());
+
+            plotIndex = Integer.valueOf(2);
+            crosshairOverlay.addDomainCrosshair(plotIndex, createCrosshair());
+            crosshairOverlay.addRangeCrosshair(plotIndex, createCrosshair());
+        }
+
+        applyColorTheme();
     }
 
     private static Crosshair createCrosshair() {
@@ -373,7 +373,11 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      */
     private static XYPlot createScientificScatterPlot(final String xAxisLabel, final String yAxisLabel, final boolean usePlotCrossHairSupport) {
 
-        final XYPlot plot = ChartUtils.createScatterPlot(null, xAxisLabel, yAxisLabel, null, PlotOrientation.VERTICAL, false, false, false);
+        final boolean showLines = true;
+
+        final XYPlot plot = ChartUtils.createScatterPlot(null, xAxisLabel, yAxisLabel, null, PlotOrientation.VERTICAL, false, false);
+
+        plot.setNoDataMessage("No data for " + yAxisLabel);
 
         // enlarge right margin to have last displayed value:
         plot.setInsets(new RectangleInsets(2d, 10d, 2d, 20d));
@@ -382,10 +386,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
         plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
-
-        // use custom units :
-        plot.getRangeAxis().setStandardTickUnits(ChartUtils.createScientificTickUnits());
-        plot.getDomainAxis().setStandardTickUnits(ChartUtils.createScientificTickUnits());
 
         final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
 
@@ -400,10 +400,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         renderer.clearSeriesPaints(false);
 
         // define deprecated methods to set renderer options for ALL series (performance):
-        renderer.setDrawOutlines(false);
+        renderer.setLinesVisible(showLines);
+
         renderer.setShapesVisible(true);
         renderer.setShapesFilled(true);
-        renderer.setLinesVisible(false);
+        renderer.setDrawOutlines(false);
+
         renderer.setItemLabelsVisible(false);
 
         // define error bar settings:
@@ -584,7 +586,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 }
             }
 
-            logger.warn("findDataPoint: time = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+            logger.warn("findDataPoint: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
 
             if (matchItem != -1) {
                 final double matchX = dataset.getXValue(matchSerie, matchItem);
@@ -644,7 +646,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 }
             }
 
-            logger.warn("findDataPoints: time = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+            logger.warn("findDataPoints: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
             if (false) {
                 logger.warn("Matching points: {}", points);
             }
@@ -668,13 +670,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         // refresh the plot :
         logger.debug("plot : refresh");
 
-        final long start = System.nanoTime();
-
         this.updatePlot();
-
-        if (logger.isInfoEnabled()) {
-            logger.info("plot : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
-        }
     }
 
     /**
@@ -682,6 +678,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      */
     public void resetPlot() {
         this.hasData = false;
+
         // disable chart & plot notifications:
         this.chart.setNotify(false);
         this.xyPlotV2.setNotify(false);
@@ -707,13 +704,15 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     }
 
     private void removeAllSubPlots() {
-
         // remove all sub plots: 
         // Note: use toArray() to avoid concurrentModification exceptions:
         for (Object plot : this.combinedXYPlot.getSubplots().toArray()) {
+            final XYPlot xyPlot = (XYPlot) plot;
             this.combinedXYPlot.remove((XYPlot) plot);
-        }
 
+            final Integer index = this.plotMapping.remove(xyPlot);
+            this.plotIndexMapping.remove(index);
+        }
     }
 
     /**
@@ -721,11 +720,13 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * This code is executed by the Swing Event Dispatcher thread (EDT)
      */
     private void updatePlot() {
-
-        if (this.oiFitsFile == null) {
+        if (this.oiFitsFile == null || this.target == null) {
             resetPlot();
             return;
         }
+
+        final long start = System.nanoTime();
+
         this.hasData = false;
 
         // disable chart & plot notifications:
@@ -838,9 +839,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
             ChartUtils.addSubtitle(this.chart, sb.toString());
 
-            // change the scaling factor ?
-            setPlotXScalingFactor(MEGA_LAMBDA_SCALE);
-
             // computed data are valid :
             this.hasData = updateChart();
 
@@ -857,6 +855,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             this.xyPlotT3.setNotify(true);
             this.xyPlotV2.setNotify(true);
             this.chart.setNotify(true);
+        }
+
+        if (logger.isInfoEnabled()) {
+            logger.info("plot : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
         }
     }
 
@@ -888,33 +890,41 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      */
     private boolean updateChart() {
 
+        final long start = System.nanoTime();
+
+        final PlotDefinition plotDef = getPlotDefinition();
+
         removeAllSubPlots();
 
         boolean showV2 = false;
         boolean showT3 = false;
+
+        ColumnMeta xMeta = null;
 
         BoundedNumberAxis axis;
 
         double minX = Double.POSITIVE_INFINITY;
         double maxX = Double.NEGATIVE_INFINITY;
 
-        if (this.oiFitsFile.hasOiVis2()) {
-            this.xyPlotV2.setDataset(new DefaultIntervalXYDataset());
+        if (this.oiFitsFile.getNbOiTables() > 0) {
+            // use new dataset so free memory:
+            this.xyPlotV2.setDataset(new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>());
 
             double minY = Double.POSITIVE_INFINITY;
             double maxY = Double.NEGATIVE_INFINITY;
 
+            PlotInfo info;
             Rectangle2D.Double dataArea;
+            ColumnMeta yMeta = null;
 
-            for (OIVis2 vis2 : this.oiFitsFile.getOiVis2()) {
+            int tableIndex = 0;
+            for (OITable oiTable : this.oiFitsFile.getOiTables()) {
 
-                dataArea = updatePlot(this.xyPlotV2, vis2,
-                        vis2.getSpatialFreq(), null,
-                        vis2.getVis2Data(), vis2.getVis2Err(),
-                        vis2.getTargetId(), vis2.getFlag());
+                info = updatePlot(this.xyPlotV2, (OIData) oiTable, tableIndex, plotDef, 0);
 
-                if (dataArea != null) {
+                if (info != null) {
                     showV2 = true;
+                    dataArea = info.dataArea;
 
                     // combine X range:
                     minX = Math.min(minX, dataArea.getX());
@@ -923,17 +933,37 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     // combine Y range:
                     minY = Math.min(minY, dataArea.getY());
                     maxY = Math.max(maxY, dataArea.getMaxY());
+
+                    // update X axis Label:
+                    if (xMeta == null && info.xMeta != null) {
+                        xMeta = info.xMeta;
+                    }
+                    // update Y axis Label:
+                    if (yMeta == null && info.yMeta != null) {
+                        yMeta = info.yMeta;
+                    }
                 }
+                tableIndex++;
             }
 
             if (showV2) {
+                logger.info("xyPlotV2: nbSeries = {}", this.xyPlotV2.getDataset().getSeriesCount());
+
                 // TODO: fix boundaries according to standard data boundaries (VIS between 0-1 ...)
 
                 // Add margin:
                 if (!USE_LOG_SCALE) {
                     final double marginY = (maxY - minY) * MARGIN_PERCENTS;
-                    minY -= marginY;
-                    maxY += marginY;
+                    if (marginY > 0d) {
+                        minY -= marginY;
+                        maxY += marginY;
+                    } else {
+                        minY -= minY * MARGIN_PERCENTS;
+                        maxY += maxY * MARGIN_PERCENTS;
+                    }
+                    if (maxY == minY) {
+                        maxY = minY + 1d;
+                    }
                 }
 
                 // Update Y axis:
@@ -944,12 +974,22 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     axis.setRange(minY, maxY);
                 }
 
+                // update Y axis Label:
+                String label;
+                if (yMeta != null) {
+                    label = yMeta.getName();
+                    if (plotDef.getyAxesUnit() != null) {
+                        label += "(" + plotDef.getyAxesUnit().get(0) + ")";
+                    } else if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
+                        label += "(" + yMeta.getUnits().getStandardRepresentation() + ")";
+                    }
+                    this.xyPlotV2.getRangeAxis().setLabel(label);
+                }
+
                 if (USE_LOG_SCALE) {
                     // test logarithmic axis:
-                    final LogarithmicAxis logAxis = new LogarithmicAxis("log(V²)");
+                    final LogarithmicAxis logAxis = new LogarithmicAxis("log(" + label + ")");
                     logAxis.setExpTickLabelsFlag(true);
-                    //      logAxis.setAllowNegativesFlag(true);
-                    //      logAxis.setStrictValuesFlag(false);
                     logAxis.setAutoRangeNextLogFlag(true);
 
                     logger.debug("logAxis range: [{} - {}]", minY, maxY);
@@ -963,28 +1003,35 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         if (showV2) {
             this.combinedXYPlot.add(this.xyPlotV2, 1);
+
+            final Integer plotIndex = Integer.valueOf(1);
+            this.plotMapping.put(this.xyPlotV2, plotIndex);
+            this.plotIndexMapping.put(plotIndex, this.xyPlotV2);
+
         } else {
             // reset Vis2 dataset:
             this.xyPlotV2.setDataset(null);
         }
 
-        if (this.oiFitsFile.hasOiT3()) {
-            this.xyPlotT3.setDataset(new DefaultIntervalXYDataset());
+        if (this.oiFitsFile.getNbOiTables() > 0) {
+            // use new dataset so free memory:
+            this.xyPlotT3.setDataset(new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>());
 
             double minY = Double.POSITIVE_INFINITY;
             double maxY = Double.NEGATIVE_INFINITY;
 
+            PlotInfo info;
             Rectangle2D.Double dataArea;
+            ColumnMeta yMeta = null;
 
-            for (OIT3 t3 : this.oiFitsFile.getOiT3()) {
+            int tableIndex = 0;
+            for (OITable oiTable : this.oiFitsFile.getOiTables()) {
 
-                dataArea = updatePlot(this.xyPlotT3, t3,
-                        t3.getSpatialFreq(), null,
-                        t3.getT3Phi(), t3.getT3PhiErr(),
-                        t3.getTargetId(), t3.getFlag());
+                info = updatePlot(this.xyPlotT3, (OIData) oiTable, tableIndex, plotDef, 1);
 
-                if (dataArea != null) {
+                if (info != null) {
                     showT3 = true;
+                    dataArea = info.dataArea;
 
                     // combine X range:
                     minX = Math.min(minX, dataArea.getX());
@@ -993,17 +1040,37 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     // combine Y range:
                     minY = Math.min(minY, dataArea.getY());
                     maxY = Math.max(maxY, dataArea.getMaxY());
+
+                    // update X axis Label:
+                    if (xMeta == null && info.xMeta != null) {
+                        xMeta = info.xMeta;
+                    }
+                    // update Y axis Label:
+                    if (yMeta == null && info.yMeta != null) {
+                        yMeta = info.yMeta;
+                    }
                 }
+                tableIndex++;
             }
 
             if (showT3) {
+                logger.info("xyPlotT3: nbSeries = {}", this.xyPlotT3.getDataset().getSeriesCount());
+
                 // TODO: fix boundaries according to standard data boundaries (T3 between -180-180 ...)
 
                 // Add margin:
                 if (!USE_LOG_SCALE) {
                     final double marginY = (maxY - minY) * MARGIN_PERCENTS;
-                    minY -= marginY;
-                    maxY += marginY;
+                    if (marginY > 0d) {
+                        minY -= marginY;
+                        maxY += marginY;
+                    } else {
+                        minY -= minY * MARGIN_PERCENTS;
+                        maxY += maxY * MARGIN_PERCENTS;
+                    }
+                    if (maxY == minY) {
+                        maxY = minY + 1d;
+                    }
                 }
 
                 // Update Y axis:
@@ -1013,36 +1080,81 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     axis.setBounds(new Range(minY, maxY));
                     axis.setRange(minY, maxY);
                 }
+
+                // update Y axis Label:
+                if (yMeta != null) {
+                    String label = yMeta.getName();
+                    if (plotDef.getyAxesUnit() != null) {
+                        label += "(" + plotDef.getyAxesUnit().get(1) + ")";
+                    } else if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
+                        label += "(" + yMeta.getUnits().getStandardRepresentation() + ")";
+                    }
+                    this.xyPlotT3.getRangeAxis().setLabel(label);
+                }
             }
         }
 
         if (showT3) {
             this.combinedXYPlot.add(this.xyPlotT3, 1);
+
+            final Integer plotIndex = (showV2) ? Integer.valueOf(2) : Integer.valueOf(1);
+            this.plotMapping.put(this.xyPlotT3, plotIndex);
+            this.plotIndexMapping.put(plotIndex, this.xyPlotT3);
+
         } else {
             // reset T3 dataset:
             this.xyPlotT3.setDataset(null);
         }
 
         if (!showV2 && !showT3) {
+            if (logger.isInfoEnabled()) {
+                logger.info("updateChart : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
+            }
             return false;
         }
 
         // TODO: fix boundaries according to standard data boundaries (spatial freq >= 0)
 
+        if (plotDef.isIncludeZeroOnXAxis()) {
+            // fix minX to include zero spatial frequency:
+            if (minX > 0d) {
+                minX = 0d;
+            }
+        }
+
         // Add margin:
         final double marginX = (maxX - minX) * MARGIN_PERCENTS;
-        minX -= marginX;
-        maxX += marginX;
-
-        // fix minX to include zero spatial frequency:
-        if (minX > 0d) {
-            minX = 0d;
+        if (marginX > 0d) {
+            minX -= marginX;
+            maxX += marginX;
+        } else {
+            minX -= minX * MARGIN_PERCENTS;
+            maxX += maxX * MARGIN_PERCENTS;
         }
+        if (maxX == minX) {
+            maxX = minX + 1d;
+        }
+
+        logger.debug("domainAxis: {} - {}", minX, maxX);
 
         axis = (BoundedNumberAxis) this.combinedXYPlot.getDomainAxis();
         axis.setBounds(new Range(minX, maxX));
         axis.setRange(minX, maxX);
 
+        // update X axis Label:
+        if (xMeta != null) {
+            String label = xMeta.getName();
+            if (plotDef.getxAxisUnit() != null) {
+                label += "(" + plotDef.getxAxisUnit() + ")";
+            } else if (xMeta != null && xMeta.getUnits() != Units.NO_UNIT) {
+                label += "(" + xMeta.getUnits().getStandardRepresentation() + ")";
+            }
+            this.combinedXYPlot.getDomainAxis().setLabel(label);
+        }
+
+        if (logger.isInfoEnabled()) {
+            logger.info("updateChart : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
+        }
         return true;
     }
 
@@ -1050,52 +1162,127 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * Update the plot (dataset, axis ranges ...) using the given OIData table
      * TODO use column names and virtual columns (spatial ...)
      * @param plot XYPlot to update (dataset, renderer, axes)
-     * @param table OIData table to use as data source
-     * @param xData data to plot on X axis
-     * @param xDataErr data error to plot on X axis (may be null)
-     * @param yData data to plot on Y axis
-     * @param yDataErr data error to plot on Y axis (may be null)
-     * @param targetIds targetId column data to optionally filter targets
-     * @param flags OIData flags (may be null)
+     * @param oiData OIData table to use as data source
+     * @param tableIndex table index to ensure serie uniqueness among collection
+     * @param plotDef plot definition to use
+     * @param yAxisIndex yAxis index to use in plot definition
      * @return rectangle giving data area or null if no data
      */
-    private Rectangle2D.Double updatePlot(final XYPlot plot, final OIData table,
-                                          final double[][] xData, final double[][] xDataErr,
-                                          final double[][] yData, final double[][] yDataErr,
-                                          final short[] targetIds, final boolean[][] flags) {
+    private PlotInfo updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
+                                final PlotDefinition plotDef, final int yAxisIndex) {
 
-        // TODO: externalize flags handling:
-        final boolean skipFlaggedData = true;
+        final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
 
-        final DefaultIntervalXYDataset dataset = (DefaultIntervalXYDataset) plot.getDataset();
+        @SuppressWarnings("unchecked")
+        final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = (FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>) plot.getDataset();
+        int seriesCount = dataset.getSeriesCount();
 
-        final int nbSeries = dataset.getSeriesCount();
+        final int nRows = oiData.getNbRows();
+        final int nWaves = oiData.getNWave();
 
-        final int nRows = table.getNbRows();
-        final int nWaves = table.getNWave();
+        logger.warn("nRows - nWaves : {} - {}", nRows, nWaves);
 
-        final boolean hasErrX = (xDataErr != null);
-        final boolean hasErrY = (yDataErr != null);
+        // standard columns:
+        final short[][] staIndexes = oiData.getStaIndex();
+        final short[] targetIds = oiData.getTargetId();
+        final boolean[][] flags = oiData.getFlag();
+
+        // Get xAxis data:
+        final boolean isXData2D;
+        final double[] xData1D;
+        final double[] xData1DErr;
+        final double[][] xData2D;
+        final double[][] xData2DErr;
+
+        final String xAxis = plotDef.getxAxis();
+        logger.warn("xAxis:{}", xAxis);
+
+        final boolean doScaleX = (plotDef.getxAxisScalingFactor() != null);
+        final double xScale = (doScaleX) ? plotDef.getxAxisScalingFactor().doubleValue() : 0d;
+
+        final ColumnMeta xMeta = oiData.getColumnMeta(xAxis);
+        logger.warn("xMeta:{}", xMeta);
+
+        if (xMeta == null) {
+            logger.info("unsupported xAxis : {} on {}", xMeta, oiData);
+            return null;
+        }
+        isXData2D = xMeta.isArray();
+
+        if (isXData2D) {
+            xData1D = null;
+            xData1DErr = null;
+            xData2D = oiData.getColumnAsDoubles(xAxis);
+            xData2DErr = oiData.getColumnAsDoubles(xMeta.getErrorColumnName());
+        } else {
+            xData1D = oiData.getColumnAsDouble(xAxis);
+            xData1DErr = oiData.getColumnAsDouble(xMeta.getErrorColumnName());
+            xData2D = null;
+            xData2DErr = null;
+        }
+
+        // Get yAxis data:
+        final boolean isYData2D;
+        final double[] yData1D;
+        final double[] yData1DErr;
+        final double[][] yData2D;
+        final double[][] yData2DErr;
+
+        final String yAxis = plotDef.getyAxes().get(yAxisIndex);
+        logger.warn("yAxis:{}", yAxis);
+
+        final ColumnMeta yMeta = oiData.getColumnMeta(yAxis);
+        logger.warn("yMeta:{}", yMeta);
+
+        if (yMeta == null) {
+            logger.info("unsupported yAxis : {} on {}", yMeta, oiData);
+            return null;
+        }
+        isYData2D = yMeta.isArray();
+
+        if (isYData2D) {
+            yData1D = null;
+            yData1DErr = null;
+            yData2D = oiData.getColumnAsDoubles(yAxis);
+            yData2DErr = oiData.getColumnAsDoubles(yMeta.getErrorColumnName());
+        } else {
+            yData1D = oiData.getColumnAsDouble(yAxis);
+            yData1DErr = oiData.getColumnAsDouble(yMeta.getErrorColumnName());
+            yData2D = null;
+            yData2DErr = null;
+        }
+
+        final boolean hasErrX = (xData2DErr != null) || (xData1DErr != null);
+        final boolean hasErrY = (yData2DErr != null) || (yData1DErr != null);
         final boolean hasFlag = (flags != null);
         final boolean hasTargetId = (targetIds != null);
 
-        // flag to check flags on each data:
-        final boolean checkFlaggedData = hasFlag && skipFlaggedData;
+        final short[][] distinctStaIndexes = oiData.getDistinctStaIndexes();
+        final int nStaIndexes = distinctStaIndexes.length;
+        logger.warn("nStaIndexes: {}", nStaIndexes);
+
+        final boolean checkStaIndex = nStaIndexes > 1;
+        logger.warn("checkStaIndex: {}", checkStaIndex);
+
+        final int nFlagged = oiData.getNFlagged();
+        logger.warn("nFlagged: {}", nFlagged);
+
+        // flag to check flags on each 2D data:
+        final boolean checkFlaggedData = skipFlaggedData && hasFlag && (nFlagged > 0) && (isXData2D || isYData2D);
+        logger.warn("checkFlaggedData: {}", checkFlaggedData);
 
         // flag to check targetId on each data row:
-        final boolean checkTargetId = !table.hasSingleTarget() && hasTargetId;
+        final boolean checkTargetId = !oiData.hasSingleTarget() && hasTargetId;
 
-        final Short matchTargetId;
+        final short matchTargetId;
         if (checkTargetId) {
-            matchTargetId = table.getTargetId(this.target.getTarget());
+            // targetID can not be null as the OIData table is supposed to have the target:
+            matchTargetId = oiData.getTargetId(this.target.getTarget());
 
             logger.warn("matchTargetId: {}", matchTargetId);
         } else {
-            matchTargetId = null;
+            matchTargetId = -1;
         }
-
-        logger.warn("checkFlaggedData: {}", checkFlaggedData);
-
 
         // TODO: perform correct palette when using different OIWaveLength tables:
 
@@ -1121,9 +1308,16 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
 
-        // try to fill with squared visibilities:
+        // try to fill dataset:
 
-        // Use DefaultIntervalXYDataset for performance (arrays XY intervals)
+        // avoid loop on wavelength if no 2D data:
+        final int nWaveChannels = (isXData2D || isYData2D) ? nWaves : 1;
+
+        logger.warn("nbSeries to create : {}", nStaIndexes * nWaveChannels);
+
+        dataset.ensureCapacity(seriesCount + nStaIndexes * nWaveChannels);
+
+        // Use FastIntervalXYDataset for performance (arrays XY intervals)
         boolean hasData = false;
         boolean hasDataFlag = false;
         boolean hasDataErrorX = false;
@@ -1134,166 +1328,243 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         double minY = Double.POSITIVE_INFINITY;
         double maxY = Double.NEGATIVE_INFINITY;
 
-        double[] xValue, xLower, xUpper, yValue, yLower, yUpper;
+        double[] xValue, xLower, xUpper, yValue, yLower, yUpper, tmp;
+
+        boolean recycleArray = false;
+        double[][] arrayPool = new double[6][];
 
         double x, xErr, y, yErr;
 
-        int nSkip = 0;
+        OITableSerieKey serieKey;
 
-        for (int nSerie, j = 0; j < nWaves; j++) {
+        short[] currentStaIndex;
 
-            // 1 color per spectral channel (i.e. per Serie) :
-            xValue = new double[nRows];
-            xLower = new double[nRows];
-            xUpper = new double[nRows];
-            yValue = new double[nRows];
-            yLower = new double[nRows];
-            yUpper = new double[nRows];
+        int nSkipTarget = 0;
+        int nSkipFlag = 0;
 
-            for (int i = 0; i < nRows; i++) {
+        long start, total = 0l;
 
-                if (checkTargetId) {
-                    if (!matchTargetId.equals(targetIds[i])) {
-                        // data row does not coorespond to current target so skip it:
-                        nSkip++;
-                        continue;
-                    }
-                }
+        // TODO: support both 1D and 2D columns:
 
-                if (flags[i][j]) {
-                    if (skipFlaggedData) {
-                        // data point is flagged so skip it:
-                        nSkip++;
-                        continue;
-                    } else {
-                        hasDataFlag = true;
-                    }
-                }
+        // TODO: unroll loops (wave / baseline) ... and avoid repeated checks on rows (targetId, baseline ...)
 
-                // Process Y value:
-                y = yData[i][j];
+        // Iterate on wave channels:
+        for (int i, j = 0, k, idx; j < nWaveChannels; j++) {
 
-                if (USE_LOG_SCALE && y < 0d) {
-                    // keep only positive data:
-                    y = Double.NaN;
-                }
+            // Iterate on baselines:
+            for (k = 0; k < nStaIndexes; k++) {
 
-                if (Double.isNaN(y)) {
-                    xValue[i] = Double.NaN;
-                    xLower[i] = Double.NaN;
-                    xUpper[i] = Double.NaN;
-                    yValue[i] = Double.NaN;
-                    yLower[i] = Double.NaN;
-                    yUpper[i] = Double.NaN;
+                // get the sta index array:
+                currentStaIndex = (checkStaIndex) ? distinctStaIndexes[k] : null;
+
+                // 1 serie per baseline and per spectral channel:
+                if (recycleArray) {
+                    recycleArray = false;
+                    xValue = arrayPool[0];
+                    xLower = arrayPool[1];
+                    xUpper = arrayPool[2];
+                    yValue = arrayPool[3];
+                    yLower = arrayPool[4];
+                    yUpper = arrayPool[5];
                 } else {
+                    xValue = new double[nRows];
+                    xLower = new double[nRows];
+                    xUpper = new double[nRows];
+                    yValue = new double[nRows];
+                    yLower = new double[nRows];
+                    yUpper = new double[nRows];
+                }
 
-                    // Process X value:
-                    x = xData[i][j];
+                idx = 0;
 
-                    if (Double.isNaN(x)) {
-                        xValue[i] = Double.NaN;
-                        xLower[i] = Double.NaN;
-                        xUpper[i] = Double.NaN;
-                        yValue[i] = Double.NaN;
-                        yLower[i] = Double.NaN;
-                        yUpper[i] = Double.NaN;
-                    } else {
-                        hasData = true;
+                for (i = 0; i < nRows; i++) {
 
-                        // Scale X value:
-                        x = toPlotXScale(x);
-
-                        // Process X / Y Errors:
-                        yErr = (hasErrY) ? yDataErr[i][j] : Double.NaN;
-                        xErr = (hasErrX) ? xDataErr[i][j] : Double.NaN;
-
-                        // Define Y data:
-                        if (Double.isNaN(yErr)) {
-                            yValue[i] = y;
-                            yLower[i] = Double.NaN;
-                            yUpper[i] = Double.NaN;
-
-                            // update Y boundaries:
-                            if (y < minY) {
-                                minY = y;
-                            }
-                            if (y > maxY) {
-                                maxY = y;
-                            }
-
-                        } else {
-                            hasDataErrorY = true;
-
-                            yValue[i] = y;
-                            // USE_LOG_SCALE: check if y - err < 0:
-                            yLower[i] = (USE_LOG_SCALE && (y - yErr) < 0d) ? 0d : (y - yErr);
-                            yUpper[i] = y + yErr;
-
-                            // update Y boundaries including error:
-                            if (yLower[i] < minY) {
-                                minY = yLower[i];
-                            }
-                            if (yUpper[i] > maxY) {
-                                maxY = yUpper[i];
-                            }
-                        }
-
-                        // Define X data:
-                        if (Double.isNaN(xErr)) {
-                            xValue[i] = x;
-                            xLower[i] = Double.NaN;
-                            xUpper[i] = Double.NaN;
-
-                            // update X boundaries:
-                            if (x < minX) {
-                                minX = x;
-                            }
-                            if (x > maxX) {
-                                maxX = x;
-                            }
-
-                        } else {
-                            hasDataErrorX = true;
-
-                            // Scale X error value:
-                            xErr = toPlotXScale(xErr);
-
-                            xValue[i] = x;
-                            xLower[i] = x - xErr;
-                            xUpper[i] = x + xErr;
-
-                            // update X boundaries including error:
-                            if (xLower[i] < minX) {
-                                minX = xLower[i];
-                            }
-                            if (xUpper[i] > maxX) {
-                                maxX = xUpper[i];
-                            }
+                    // check sta indexes ?
+                    if (checkStaIndex) {
+                        // note: sta indexes are compared using pointer comparison:
+                        if (staIndexes[i] != currentStaIndex) {
+                            // data row does not coorespond to current baseline so skip it:
+                            continue;
                         }
                     }
+
+                    if (checkFlaggedData && flags[i][j]) {
+                        if (skipFlaggedData) {
+                            // data point is flagged so skip it:
+                            nSkipFlag++;
+                            continue;
+                        } else {
+                            hasDataFlag = true;
+                        }
+                    }
+
+                    if (checkTargetId) {
+                        if (targetIds[i] != matchTargetId) {
+                            // data row does not coorespond to current target so skip it:
+                            nSkipTarget++;
+                            continue;
+                        }
+                    }
+
+                    // TODO: filter data (wavelength, baseline ...)
+
+
+                    // Process Y value:
+                    y = (isYData2D) ? yData2D[i][j] : yData1D[i];
+
+                    if (USE_LOG_SCALE && y < 0d) {
+                        // keep only positive data:
+                        y = Double.NaN;
+                    }
+
+                    if (!Double.isNaN(y)) {
+
+                        // Process X value:
+                        x = (isXData2D) ? xData2D[i][j] : xData1D[i];
+
+                        if (!Double.isNaN(x)) {
+                            // Scale X value:
+                            if (doScaleX) {
+                                x *= xScale;
+                            }
+
+                            // Process X / Y Errors:
+                            yErr = (hasErrY) ? ((isYData2D) ? yData2DErr[i][j] : yData1DErr[i]) : Double.NaN;
+                            xErr = (hasErrX) ? ((isXData2D) ? xData2DErr[i][j] : xData1DErr[i]) : Double.NaN;
+
+                            // Define Y data:
+                            if (Double.isNaN(yErr)) {
+                                yValue[idx] = y;
+                                yLower[idx] = Double.NaN;
+                                yUpper[idx] = Double.NaN;
+
+                                // update Y boundaries:
+                                if (y < minY) {
+                                    minY = y;
+                                }
+                                if (y > maxY) {
+                                    maxY = y;
+                                }
+                            } else {
+                                hasDataErrorY = true;
+
+                                // USE_LOG_SCALE: check if y - err < 0:
+                                yValue[idx] = y;
+                                yLower[idx] = (USE_LOG_SCALE && (y - yErr) < 0d) ? 0d : (y - yErr);
+                                yUpper[idx] = y + yErr;
+
+                                // update Y boundaries including error:
+                                if (yLower[idx] < minY) {
+                                    minY = yLower[idx];
+                                }
+                                if (yUpper[idx] > maxY) {
+                                    maxY = yUpper[idx];
+                                }
+                            }
+
+                            // Define X data:
+                            if (Double.isNaN(xErr)) {
+                                xValue[idx] = x;
+                                xLower[idx] = Double.NaN;
+                                xUpper[idx] = Double.NaN;
+
+                                // update X boundaries:
+                                if (x < minX) {
+                                    minX = x;
+                                }
+                                if (x > maxX) {
+                                    maxX = x;
+                                }
+
+                            } else {
+                                hasDataErrorX = true;
+
+                                // Scale X error value:
+                                if (doScaleX) {
+                                    xErr *= xScale;
+                                }
+
+                                xValue[idx] = x;
+                                xLower[idx] = x - xErr;
+                                xUpper[idx] = x + xErr;
+
+                                // update X boundaries including error:
+                                if (xLower[idx] < minX) {
+                                    minX = xLower[idx];
+                                }
+                                if (xUpper[idx] > maxX) {
+                                    maxX = xUpper[idx];
+                                }
+                            }
+
+                            idx++;
+                        } // x defined
+
+                    } // y defined
+
+                } // loop on data rows
+
+                if (idx > 0) {
+                    hasData = true;
+
+                    // crop data arrays:
+                    if (idx < nRows) {
+                        recycleArray = true;
+                        arrayPool[0] = xValue;
+                        arrayPool[1] = xLower;
+                        arrayPool[2] = xUpper;
+                        arrayPool[3] = yValue;
+                        arrayPool[4] = yLower;
+                        arrayPool[5] = yUpper;
+
+                        xValue = extract(xValue, idx);
+                        xLower = extract(xLower, idx);
+                        xUpper = extract(xUpper, idx);
+                        yValue = extract(yValue, idx);
+                        yLower = extract(yLower, idx);
+                        yUpper = extract(yUpper, idx);
+                    }
+
+                    // TODO: add oiTable, i (row), j (nWave) in dataset:
+                    serieKey = new OITableSerieKey(tableIndex, k, j);
+
+                    start = System.nanoTime();
+
+                    // Avoid any key conflict:
+                    dataset.addSeries(serieKey, new double[][]{xValue, xLower, xUpper, yValue, yLower, yUpper});
+
+                    total += System.nanoTime() - start;
+
+                    // TODO: adjust renderer settings per Serie (color, shape ...) !
+                    renderer.setSeriesPaint(seriesCount, colors[j], false);
+
+                    seriesCount++;
                 }
-            }
 
-            nSerie = nbSeries + j;
+            } // iterate on baselines
 
-            // TODO: add oiTable, i (row), j (nWave) in dataset:
-            dataset.addSeries("OIDATA W" + nSerie, new double[][]{xValue, xLower, xUpper, yValue, yLower, yUpper});
+        } // iterate on wave channels
 
-            renderer.setSeriesPaint(nSerie, colors[j], false);
+        if (nSkipFlag > 0) {
+            logger.warn("Nb SkipFlag: {}", nSkipFlag);
+        }
+        if (nSkipTarget > 0) {
+            logger.warn("Nb SkipTarget: {}", nSkipTarget);
         }
 
-        if (nSkip > 0) {
-            logger.warn("nSkip: {}", nSkip);
+        if (logger.isDebugEnabled()) {
+            logger.debug("nSeries {} vs {}", seriesCount, dataset.getSeriesCount());
         }
+        logger.warn("total addSeries duration = {} ms.", 1e-6d * total);
 
         if (!hasData) {
             return null;
         }
 
-        // TODO: adjust renderer settings per Serie !!
+        // TODO: adjust renderer settings per Serie (color, shape ...) !
 
         // set shape depending on error (triangle or square):
-        final Shape shape = getPointShape(hasDataFlag);
+        final Shape shape = getPointShape(!hasDataFlag);
 
         // enable/disable X error rendering (performance):
         renderer.setDrawXError(hasDataErrorX);
@@ -1304,7 +1575,17 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         // use deprecated method but defines shape once for ALL series (performance):
         renderer.setShape(shape);
 
-        return new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
+        final PlotInfo info = new PlotInfo();
+        info.dataArea = new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
+        info.xMeta = xMeta;
+        info.yMeta = yMeta;
+        return info;
+    }
+
+    private double[] extract(final double[] input, final int len) {
+        final double[] output = new double[len];
+        System.arraycopy(input, 0, output, 0, len);
+        return output;
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables
@@ -1323,20 +1604,20 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     this.chartDrawStartTime = System.nanoTime();
                     break;
                 case ChartProgressEvent.DRAWING_FINISHED:
-                    logger.debug("Drawing chart time = {} ms.", 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                    logger.debug("Drawing chart time[{}] = {} ms.", this.target, 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
                     this.chartDrawStartTime = 0l;
                     break;
                 default:
             }
         }
 
-        // DEBUG:
+        // DEBUG (TODO KILL ASAP):
         switch (event.getType()) {
             case ChartProgressEvent.DRAWING_STARTED:
                 this.chartDrawStartTime = System.nanoTime();
                 break;
             case ChartProgressEvent.DRAWING_FINISHED:
-                logger.warn("Drawing chart time = {} ms.", 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                logger.warn("Drawing chart time[{}] = {} ms.", this.target, 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
                 this.chartDrawStartTime = 0l;
                 break;
             default:
@@ -1358,30 +1639,17 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         // update theme at end :
         ChartUtilities.applyCurrentTheme(this.chart);
 
-        this.xyPlotV2.setBackgroundPaint(Color.WHITE);
-        this.xyPlotV2.setDomainGridlinePaint(Color.LIGHT_GRAY);
-        this.xyPlotV2.setRangeGridlinePaint(Color.LIGHT_GRAY);
+        if (this.xyPlotV2 != null) {
+            this.xyPlotV2.setBackgroundPaint(Color.WHITE);
+            this.xyPlotV2.setDomainGridlinePaint(Color.LIGHT_GRAY);
+            this.xyPlotV2.setRangeGridlinePaint(Color.LIGHT_GRAY);
+        }
 
-        this.xyPlotT3.setBackgroundPaint(Color.WHITE);
-        this.xyPlotT3.setDomainGridlinePaint(Color.LIGHT_GRAY);
-        this.xyPlotT3.setRangeGridlinePaint(Color.LIGHT_GRAY);
-    }
-
-    /**
-     * Define the scaling factor on X data
-     * @param plotXScalingFactor new value
-     */
-    private void setPlotXScalingFactor(final double plotXScalingFactor) {
-        this.plotXScalingFactor = plotXScalingFactor;
-    }
-
-    /**
-     * Convert the given x value to the plot scale
-     * @param value x value
-     * @return scaled x value in the plot unit
-     */
-    private double toPlotXScale(final double value) {
-        return this.plotXScalingFactor * value;
+        if (this.xyPlotT3 != null) {
+            this.xyPlotT3.setBackgroundPaint(Color.WHITE);
+            this.xyPlotT3.setDomainGridlinePaint(Color.LIGHT_GRAY);
+            this.xyPlotT3.setRangeGridlinePaint(Color.LIGHT_GRAY);
+        }
     }
 
     /**
@@ -1427,7 +1695,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         for (OIData oiData : oiDataList) {
             value = operator.getString(oiData);
             if (value != null) {
-                logger.info("getDistinct: {}", value);
+                logger.debug("getDistinct: {}", value);
 
                 int pos = value.indexOf('_');
 
@@ -1452,7 +1720,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             for (short[] staIndexes : oiData.getDistinctStaIndex()) {
                 staNames = oiData.getStaNames(staIndexes);
 
-                logger.info("staNames : {}", staNames);
+                logger.debug("staNames : {}", staNames);
 
                 set.add(staNames);
             }
@@ -1466,6 +1734,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      */
     private static void getDistinctWaveLengthRange(final OIData[] oiDataList, final Set<String> set) {
         final StringBuilder sb = new StringBuilder();
+
         String wlenRange;
         float[] effWaveRange;
         for (OIData oiData : oiDataList) {
@@ -1476,7 +1745,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
                 wlenRange = sb.toString();
                 sb.setLength(0);
-                logger.info("wlen range : {}", wlenRange);
+
+                logger.debug("wlen range : {}", wlenRange);
 
                 set.add(wlenRange);
             }
@@ -1487,6 +1757,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         for (String v : set) {
             sb.append(v.replaceAll("\\s", internalSeparator)).append(separator);
         }
+        sb.setLength(sb.length() - separator.length());
     }
 
     /**
@@ -1500,5 +1771,19 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
          * @return String value
          */
         public String getString(final OIData oiData);
+    }
+
+    private PlotDefinition getPlotDefinition() {
+        if (this.plotDefinition != null) {
+            return this.plotDefinition;
+        }
+        return PlotDefinitionFactory.getInstance().getDefault(PlotDefinitionFactory.PLOT_DEFAULT);
+    }
+
+    private static class PlotInfo {
+
+        protected Rectangle2D.Double dataArea = null;
+        protected ColumnMeta xMeta = null;
+        protected ColumnMeta yMeta = null;
     }
 }

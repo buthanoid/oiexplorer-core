@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
+import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oiexplorer.core.util.TimeFormat;
 
 import java.awt.BasicStroke;
@@ -48,6 +49,7 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.text.TextUtilities;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.RectangleInsets;
+import org.jfree.ui.TextAnchor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -222,9 +224,9 @@ public class ChartUtils {
      * @return font
      */
     public static Font autoFitTextWidth(final Graphics2D g2d,
-                                 final String text, final double maxWidth,
-                                 final int minFontSize, final int maxFontSize,
-                                 final boolean allowDontFit) {
+                                        final String text, final double maxWidth,
+                                        final int minFontSize, final int maxFontSize,
+                                        final boolean allowDontFit) {
 
         Font f;
         FontMetrics fm;
@@ -265,9 +267,9 @@ public class ChartUtils {
      * @return font
      */
     public static Font autoFitTextHeight(final Graphics2D g2d,
-                                  final String text, final double maxHeight,
-                                  final int minFontSize, final int maxFontSize,
-                                  final boolean allowDontFit) {
+                                         final String text, final double maxHeight,
+                                         final int minFontSize, final int maxFontSize,
+                                         final boolean allowDontFit) {
 
         Font f;
         FontMetrics fm;
@@ -322,10 +324,6 @@ public class ChartUtils {
         xyPlot.setRangeCrosshairVisible(false);
         xyPlot.setRangeCrosshairLockedOnData(false);
 
-        // use custom units :
-        xyPlot.getRangeAxis().setStandardTickUnits(ChartUtils.createScientificTickUnits());
-        xyPlot.getDomainAxis().setStandardTickUnits(ChartUtils.createScientificTickUnits());
-
         // tick color :
         xyPlot.getRangeAxis().setTickMarkPaint(Color.BLACK);
         xyPlot.getDomainAxis().setTickMarkPaint(Color.BLACK);
@@ -376,10 +374,8 @@ public class ChartUtils {
 
         // Axes are bounded to avoid zooming out where there is no data :
 
-        final BoundedNumberAxis xAxis = new BoundedNumberAxis(xAxisLabel);
-        xAxis.setAutoRangeIncludesZero(false);
-        final BoundedNumberAxis yAxis = new BoundedNumberAxis(yAxisLabel);
-        yAxis.setAutoRangeIncludesZero(false);
+        final BoundedNumberAxis xAxis = createAxis(xAxisLabel);
+        final BoundedNumberAxis yAxis = createAxis(yAxisLabel);
 
         // only lines are rendered :
         final XYItemRenderer renderer = new XYLineAndShapeRenderer(true, false);
@@ -414,7 +410,6 @@ public class ChartUtils {
      * @param dataset  the dataset for the chart (<code>null</code> permitted).
      * @param orientation  the plot orientation (horizontal or vertical)
      *                     (<code>null</code> NOT permitted).
-     * @param legend  a flag specifying whether or not a legend is required.
      * @param tooltips  configure chart to generate tool tips?
      * @param urls  configure chart to generate URLs?
      *
@@ -425,7 +420,6 @@ public class ChartUtils {
                                            final String yAxisLabel,
                                            final XYDataset dataset,
                                            final PlotOrientation orientation,
-                                           final boolean legend,
                                            final boolean tooltips,
                                            final boolean urls) {
 
@@ -435,10 +429,8 @@ public class ChartUtils {
 
         // Axes are bounded to avoid zooming out where there is no data :
 
-        final BoundedNumberAxis xAxis = new AutoBoundedNumberAxis(xAxisLabel);
-        xAxis.setAutoRangeIncludesZero(false);
-        final BoundedNumberAxis yAxis = new AutoBoundedNumberAxis(yAxisLabel);
-        yAxis.setAutoRangeIncludesZero(false);
+        final BoundedNumberAxis xAxis = createAxis(xAxisLabel);
+        final BoundedNumberAxis yAxis = createAxis(yAxisLabel);
 
         // only lines are rendered :
         final FastXYErrorRenderer renderer = new FastXYErrorRenderer();
@@ -455,6 +447,23 @@ public class ChartUtils {
         }
 
         return plot;
+    }
+
+    /**
+     * Create an auto bounded axis given its label
+     * @param label axis label
+     * @return auto bounded axis
+     */
+    public static BoundedNumberAxis createAxis(final String label) {
+        // Axes are bounded to avoid zooming out where there is no data :
+
+        final BoundedNumberAxis axis = new AutoBoundedNumberAxis(label);
+        axis.setAutoRangeIncludesZero(false);
+
+        // use custom units :
+        axis.setStandardTickUnits(ChartUtils.createScientificTickUnits());
+
+        return axis;
     }
 
     /**
@@ -696,5 +705,18 @@ public class ChartUtils {
         final XYTextAnnotation a = new XYTextAnnotation(text, x, y);
         a.setFont(SMALL_TEXT_ANNOTATION_FONT);
         return a;
+    }
+
+    /**
+     * Create a new JMMC annotation
+     * @param text JMMC copyright
+     * @return new JMMC annotation
+     */
+    public static XYTextAnnotation createJMMCAnnotation(final String text) {
+        final XYTextAnnotation jmmcAnnotation = createXYTextAnnotation(text, 0, 0);
+        jmmcAnnotation.setTextAnchor(TextAnchor.BOTTOM_RIGHT);
+        jmmcAnnotation.setPaint(Color.DARK_GRAY);
+
+        return jmmcAnnotation;
     }
 }
