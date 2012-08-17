@@ -35,6 +35,10 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
     /* member */
     /** flag to know if the last document was empty to avoid JEditorPane refresh calls */
     private boolean isEmpty = false;
+    /** current oifits file */
+    private OIFitsFile oiFitsFile = null;
+    /** current OITable file */
+    private OITable oiTable = null;
     /** internal XmlOutputVisitor instance */
     private final XmlOutputVisitor xmlSerializer;
 
@@ -43,7 +47,7 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
         initComponents();
 
         // use formatter and verbose output:
-        this.xmlSerializer = new XmlOutputVisitor(true, true);
+        this.xmlSerializer = new XmlOutputVisitor(true, false);
     }
 
     /**
@@ -52,19 +56,22 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
      */
     public void updateOIFits(final OIFitsFile oiFitsFile) {
         String xmlDesc = null;
-
+        
         if (oiFitsFile != null) {
             final long start = System.nanoTime();
-
-            oiFitsFile.accept(this.xmlSerializer);
-
+            
+            this.oiFitsFile = oiFitsFile;
+            this.oiTable = null;
+            
+            this.oiFitsFile.accept(this.xmlSerializer);
+            
             xmlDesc = xmlSerializer.toString();
-
+            
             if (logger.isDebugEnabled()) {
                 logger.debug("XmlOutputVisitor: {} ms.", 1e-6d * (System.nanoTime() - start));
             }
         }
-
+        
         update(xmlDesc);
     }
 
@@ -74,19 +81,22 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
      */
     public void updateOIFits(final OITable oiTable) {
         String xmlDesc = null;
-
+        
         if (oiTable != null) {
             final long start = System.nanoTime();
-
-            oiTable.accept(this.xmlSerializer);
-
+            
+            this.oiFitsFile = null;
+            this.oiTable = oiTable;
+            
+            this.oiTable.accept(this.xmlSerializer);
+            
             xmlDesc = xmlSerializer.toString();
-
+            
             if (logger.isDebugEnabled()) {
                 logger.debug("XmlOutputVisitor: {} ms.", 1e-6d * (System.nanoTime() - start));
             }
         }
-
+        
         update(xmlDesc);
     }
 
@@ -96,20 +106,20 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
      */
     public void update(final String xmlDesc) {
         String document = "";
-
+        
         if (xmlDesc != null) {
             final long start = System.nanoTime();
 
             // use an XSLT to transform the XML document to an HTML representation :
             document = XmlFactory.transform(xmlDesc, XSLT_FILE);
-
+            
             if (logger.isDebugEnabled()) {
                 logger.debug("transform: {} ms.", 1e-6d * (System.nanoTime() - start));
             }
         }
-
+        
         if (document.length() > 0) {
-
+            
             final long start = System.nanoTime();
             try {
                 this.jOutputPane.read(new StringReader(document), null);
@@ -117,11 +127,11 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
             } catch (IOException ioe) {
                 logger.error("IO exception : ", ioe);
             }
-
+            
             if (logger.isDebugEnabled()) {
                 logger.debug("html: {} ms.", 1e-6d * (System.nanoTime() - start));
             }
-
+            
             this.isEmpty = false;
         } else {
             if (!isEmpty) {
@@ -142,10 +152,24 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPanelOptions = new javax.swing.JPanel();
+        jCheckBoxDumpData = new javax.swing.JCheckBox();
         jScrollPane = new javax.swing.JScrollPane();
         jOutputPane = createEditorPane();
 
         setLayout(new java.awt.BorderLayout());
+
+        jPanelOptions.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 5, 0));
+
+        jCheckBoxDumpData.setText("show data");
+        jCheckBoxDumpData.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBoxDumpDataActionPerformed(evt);
+            }
+        });
+        jPanelOptions.add(jCheckBoxDumpData);
+
+        add(jPanelOptions, java.awt.BorderLayout.NORTH);
 
         jScrollPane.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
         jScrollPane.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
@@ -154,8 +178,19 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
 
         add(jScrollPane, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
+
+    private void jCheckBoxDumpDataActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxDumpDataActionPerformed
+        setVerbose(this.jCheckBoxDumpData.isSelected());
+        if (this.oiFitsFile != null) {
+            updateOIFits(this.oiFitsFile);
+        } else if (this.oiTable != null) {
+            updateOIFits(this.oiTable);
+        }
+    }//GEN-LAST:event_jCheckBoxDumpDataActionPerformed
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JCheckBox jCheckBoxDumpData;
     private javax.swing.JEditorPane jOutputPane;
+    private javax.swing.JPanel jPanelOptions;
     private javax.swing.JScrollPane jScrollPane;
     // End of variables declaration//GEN-END:variables
 
@@ -168,12 +203,12 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
 
         // add a HTMLEditorKit to the editor pane
         pane.setEditorKit(new HTMLEditorKit());
-
+        
         pane.setContentType("text/html");
         pane.setEditable(false);
-
+        
         emptyDocument = pane.getEditorKit().createDefaultDocument();
-
+        
         return pane;
     }
 
