@@ -119,6 +119,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private XYTextAnnotation aJMMCV2 = null;
     /** JMMC annotation */
     private XYTextAnnotation aJMMCT3 = null;
+    /** Optional plot definition editor */
+    private PlotPanelEditor plotDefinitionEditor=null;
 
     /**
      * Constructor
@@ -127,6 +129,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         initComponents();
 
         postInit();
+    }          
+    
+    public void setPlotDefinitionEditor(final PlotPanelEditor plotDefinitionEditor){
+        this.plotDefinitionEditor=plotDefinitionEditor;    
     }
 
     /**
@@ -666,7 +672,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         // memorize plot data:
         this.target = target;
         this.oiFitsFile = oiFitsFile;
-
+        
         // refresh the plot :
         logger.debug("plot : refresh");
 
@@ -1171,6 +1177,11 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private PlotInfo updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
                                 final PlotDefinition plotDef, final int yAxisIndex) {
 
+        if(yAxisIndex>=plotDef.getyAxes().size()){
+            logger.warn("Request to updatePlot at index {}, for only {} yAxe(s)",yAxisIndex,plotDef.getyAxes().size());
+            return null;
+        }
+        
         final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
 
         @SuppressWarnings("unchecked")
@@ -1227,7 +1238,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final double[] yData1DErr;
         final double[][] yData2D;
         final double[][] yData2DErr;
-
+       
         final String yAxis = plotDef.getyAxes().get(yAxisIndex);
         logger.warn("yAxis:{}", yAxis);
 
@@ -1776,6 +1787,9 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private PlotDefinition getPlotDefinition() {
         if (this.plotDefinition != null) {
             return this.plotDefinition;
+        }        
+        if(plotDefinitionEditor!=null){
+            return plotDefinitionEditor.getPlotDefinition();
         }
         return PlotDefinitionFactory.getInstance().getDefault(PlotDefinitionFactory.PLOT_DEFAULT);
     }
