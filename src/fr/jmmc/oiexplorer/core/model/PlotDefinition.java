@@ -107,4 +107,14 @@ public class PlotDefinition {
     public void setyAxesRange(List<double[]> yAxesRange) {
         this.yAxesRange = yAxesRange;
     }
+    
+    @Override
+    public String toString(){
+        StringBuffer sb = new StringBuffer();
+        sb.append("PlotDefinition: xAxis=").append(getxAxis());
+        /* TODO add other useful infomations units...*/
+        sb.append(", yAxes=").append(getyAxes());
+        
+        return  sb.toString();
+    }
 }
