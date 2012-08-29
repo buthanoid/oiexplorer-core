@@ -8,7 +8,7 @@
 <project name="oiexplorer-core" default="about" basedir=".">
 
     <description>
-        Aspro ant build file
+        Ant build file, mainly dedicated to generate code from xsd using jaxb.
     </description>
 
     <!--
@@ -24,10 +24,10 @@
     <!-- JAXB library must be present in the jmcs module nearby -->
     <property name="jaxb.libs" location="${jmcs.path}/lib"/>
 
-    <!-- Aspro src folder -->
+    <!-- src folder -->
     <property name="sources" location="${root}/src"/>
 
-    <!-- Aspro test folder -->
+    <!-- test folder -->
     <property name="test" location="${root}/test"/>
 
 
