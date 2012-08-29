@@ -7,6 +7,8 @@ import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEvent;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionListener;
+import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
+import fr.jmmc.oiexplorer.core.model.oi.OiDataCollection;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
@@ -36,6 +38,8 @@ public class OIFitsCollectionManager {
     private boolean notify = true;
     /** OIFits collection listeners */
     private final CopyOnWriteArrayList<OIFitsCollectionListener> listeners = new CopyOnWriteArrayList<OIFitsCollectionListener>();
+    /** Container of loaded data and user plot definitions */
+    private OiDataCollection userCollection = null;
 
     /**
      * Return the Manager singleton
@@ -73,6 +77,26 @@ public class OIFitsCollectionManager {
         logger.info("file loaded : '{}'", oifitsFile.getAbsoluteFilePath());
     }
 
+    /**
+     * Load OIDataCollection files (TODO: plot def to be handled)
+     * @param collection OiDataCollection to look for
+     * @param checker to report validation information
+     * @throws FitsException
+     * @throws MalformedURLException
+     * @throws IOException 
+     */
+    public void loadOIDataCollection(OiDataCollection collection, OIFitsChecker checker) throws FitsException, MalformedURLException, IOException {
+        for (OIDataFile oidataFile : collection.getFiles()) {
+            String location = oidataFile.getFile();
+            loadOIFitsFile(location, checker);
+        }     
+        userCollection.getFiles().clear();
+        userCollection.getFiles().addAll(collection.getFiles());
+        
+        // TODO what about user plot definitions
+        
+    }
+
     // save ...
     // merge ...
     /* --- OIFits file collection handling ------------------------------------- */
@@ -84,12 +108,25 @@ public class OIFitsCollectionManager {
         fireOIFitsCollectionChanged();
     }
 
+    /** This method can be used to export current file list */
+    public OiDataCollection getUserCollection() {
+        if (userCollection == null) {
+            userCollection = new OiDataCollection();
+        }
+        return userCollection;
+    }
+
     public void addOIFitsFile(final OIFitsFile oifitsFile) {
         if (oifitsFile != null) {
             oiFitsCollection.addOIFitsFile(oifitsFile);
 
             fireOIFitsCollectionChanged();
         }
+
+        // Add new OIDataFile in collection 
+        OIDataFile dataFile = new OIDataFile();
+        dataFile.setFile(oifitsFile.getAbsoluteFilePath());
+        getUserCollection().getFiles().add(dataFile);
     }
 
     public OIFitsFile removeOIFitsFile(final OIFitsFile oifitsFile) {
@@ -97,6 +134,15 @@ public class OIFitsCollectionManager {
         if (previous != null) {
             fireOIFitsCollectionChanged();
         }
+
+        // Remove OiDataFile from user collection
+        String filename = oifitsFile.getAbsoluteFilePath();
+        for (OIDataFile dataFile : getUserCollection().getFiles()) {
+            if (filename.equals(dataFile.getName())) {
+                getUserCollection().getFiles().remove(dataFile);
+            }
+        }
+
         return previous;
     }
 
