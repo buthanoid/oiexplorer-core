@@ -75,6 +75,14 @@
                 </xsd:annotation>
             </xsd:element>                            
         
+            <xsd:element name="drawLine" type="xsd:boolean"> 
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Indicates to draw line between data point of the same serie.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        
             <xsd:element name="xAxis" type="Axis" minOccurs="1" maxOccurs="1"/>
         
             <xsd:element name="yAxes" type="Axis" minOccurs="1" maxOccurs="unbounded"/>
@@ -99,14 +107,6 @@
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>            
-        
-            <xsd:element name="drawLine" type="xsd:boolean"> 
-                <xsd:annotation>
-                    <xsd:documentation>
-                        Indicates to draw line between data point of the same serie.
-                    </xsd:documentation>
-                </xsd:annotation>
-            </xsd:element>
             
             <xsd:element name="logScale" type="xsd:boolean">
                 <xsd:annotation>

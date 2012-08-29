@@ -24,6 +24,7 @@ import javax.xml.bind.annotation.XmlType;
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
  *         &lt;element name="skipFlaggedData" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
+ *         &lt;element name="drawLine" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
  *         &lt;element name="xAxis" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Axis"/>
  *         &lt;element name="yAxes" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Axis" maxOccurs="unbounded"/>
  *       &lt;/sequence>
@@ -37,12 +38,14 @@ import javax.xml.bind.annotation.XmlType;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "PlotDefinition", propOrder = {
     "skipFlaggedData",
+    "drawLine",
     "xAxis",
     "yAxes"
 })
 public class PlotDefinition {
 
     protected boolean skipFlaggedData;
+    protected boolean drawLine;
     @XmlElement(required = true)
     protected Axis xAxis;
     @XmlElement(required = true)
@@ -62,6 +65,22 @@ public class PlotDefinition {
      */
     public void setSkipFlaggedData(boolean value) {
         this.skipFlaggedData = value;
+    }
+
+    /**
+     * Gets the value of the drawLine property.
+     * 
+     */
+    public boolean isDrawLine() {
+        return drawLine;
+    }
+
+    /**
+     * Sets the value of the drawLine property.
+     * 
+     */
+    public void setDrawLine(boolean value) {
+        this.drawLine = value;
     }
 
     /**

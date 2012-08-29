@@ -379,8 +379,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      */
     private static XYPlot createScientificScatterPlot(final String xAxisLabel, final String yAxisLabel, final boolean usePlotCrossHairSupport) {
 
-        final boolean showLines = true;
-
         final XYPlot plot = ChartUtils.createScatterPlot(null, xAxisLabel, yAxisLabel, null, PlotOrientation.VERTICAL, false, false);
 
         plot.setNoDataMessage("No data for " + yAxisLabel);
@@ -406,8 +404,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         renderer.clearSeriesPaints(false);
 
         // define deprecated methods to set renderer options for ALL series (performance):
-        renderer.setLinesVisible(showLines);
-
         renderer.setShapesVisible(true);
         renderer.setShapesFilled(true);
         renderer.setDrawOutlines(false);
@@ -1551,7 +1547,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
                     // TODO: adjust renderer settings per Serie (color, shape ...) !
                     renderer.setSeriesPaint(seriesCount, colors[j], false);
-                    renderer.setSeriesLinesVisible(seriesCount, yAxis.isDrawLine());
 
                     seriesCount++;
                 }
@@ -1589,6 +1584,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         // use deprecated method but defines shape once for ALL series (performance):
         renderer.setShape(shape);
+        renderer.setLinesVisible(plotDef.isDrawLine());
 
         final PlotInfo info = new PlotInfo();
         info.dataArea = new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);

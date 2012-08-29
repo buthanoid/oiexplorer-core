@@ -22,7 +22,6 @@ import javax.xml.bind.annotation.XmlType;
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
  *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="drawLine" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
  *         &lt;element name="logScale" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
  *         &lt;element name="includeZero" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
  *         &lt;element name="plotError" type="{http://www.w3.org/2001/XMLSchema}boolean" minOccurs="0"/>
@@ -38,7 +37,6 @@ import javax.xml.bind.annotation.XmlType;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "Axis", propOrder = {
     "name",
-    "drawLine",
     "logScale",
     "includeZero",
     "plotError",
@@ -48,7 +46,6 @@ public class Axis {
 
     @XmlElement(required = true)
     protected String name;
-    protected boolean drawLine;
     protected boolean logScale;
     protected boolean includeZero;
     protected Boolean plotError;
@@ -76,22 +73,6 @@ public class Axis {
      */
     public void setName(String value) {
         this.name = value;
-    }
-
-    /**
-     * Gets the value of the drawLine property.
-     * 
-     */
-    public boolean isDrawLine() {
-        return drawLine;
-    }
-
-    /**
-     * Sets the value of the drawLine property.
-     * 
-     */
-    public void setDrawLine(boolean value) {
-        this.drawLine = value;
     }
 
     /**

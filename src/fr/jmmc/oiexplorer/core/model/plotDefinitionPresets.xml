@@ -18,11 +18,11 @@
     <!-- plot (Vis2 - T3) vs spatial freq  -->    
     <plotDefinition>
         <skipFlaggedData>false</skipFlaggedData>
+        <drawLine>false</drawLine>
         <xAxis>
             <name>SPATIAL_FREQ</name>
-            <drawLine>false</drawLine>
             <logScale>false</logScale>
-            <includeZero>false</includeZero>
+            <includeZero>true</includeZero>
             <!-- TODO : refaire l'equivalent de    
             plotDef.setxAxisScalingFactor(1e-6d);
             plotDef.setxAxisUnit("M\u03BB");
@@ -30,25 +30,22 @@
         </xAxis>
         <yAxes>
             <name>VIS2DATA</name>
-            <drawLine>false</drawLine>
             <logScale>false</logScale>
             <includeZero>false</includeZero>
         </yAxes>
         <yAxes>
             <name>T3PHI</name>
-            <drawLine>false</drawLine>
             <logScale>false</logScale>
             <includeZero>false</includeZero>
         </yAxes> 
     </plotDefinition>
     
-    <!-- plot(Vis2 - T3) vs wavelenth      -->    
+    <!-- plot(Vis2 - T3) vs wavelength     -->    
     <plotDefinition>
-        
         <skipFlaggedData>false</skipFlaggedData>
+        <drawLine>false</drawLine>
         <xAxis>
             <name>EFF_WAVE</name>
-            <drawLine>false</drawLine>
             <logScale>false</logScale>
             <includeZero>false</includeZero>
             <!-- TODO : refaire l'equivalent de 
@@ -58,13 +55,11 @@
         </xAxis>
         <yAxes>
             <name>VIS2DATA</name>
-            <drawLine>false</drawLine>
             <logScale>false</logScale>
             <includeZero>false</includeZero>
         </yAxes>
         <yAxes>
             <name>T3PHI</name>
-            <drawLine>false</drawLine>
             <logScale>false</logScale>
             <includeZero>false</includeZero>
         </yAxes> 
@@ -73,21 +68,19 @@
     <!-- plot(Vis2 - T3) vs mjd            -->
     <plotDefinition>
         <skipFlaggedData>false</skipFlaggedData>
+        <drawLine>false</drawLine>
         <xAxis>
             <name>MJD</name>
-            <drawLine>false</drawLine>
             <logScale>false</logScale>
             <includeZero>false</includeZero>
         </xAxis>
         <yAxes>
             <name>VIS2DATA</name>
-            <drawLine>false</drawLine>
             <logScale>false</logScale>
             <includeZero>false</includeZero>
         </yAxes>
         <yAxes>
             <name>T3PHI</name>
-            <drawLine>false</drawLine>
             <logScale>false</logScale>
             <includeZero>false</includeZero>
         </yAxes> 
