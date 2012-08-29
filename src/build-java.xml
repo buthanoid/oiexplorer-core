@@ -78,11 +78,11 @@
 
     <target name="genXsdCode" description="generate java classes from XSD schemas">
 
-        <echo>generating java code for PlotDefinition.xsd</echo>
-        <mkdir dir="${sources}/fr/jmmc/oiexplorer/core/model/plot" />
+        <echo>generating java code for OIExplorerModel.xsd</echo>
+        <mkdir dir="${sources}/fr/jmmc/oiexplorer/core/model/oi" />
 
         <xjc destdir="${sources}"
-             schema="${sources}/fr/jmmc/oiexplorer/core/model/PlotDefinition.xsd" />
+             schema="${sources}/fr/jmmc/oiexplorer/core/model/OIExplorerModel.xsd" />
 
     </target>
 
