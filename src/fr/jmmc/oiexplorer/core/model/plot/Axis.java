@@ -26,7 +26,7 @@ import javax.xml.bind.annotation.XmlType;
  *         &lt;element name="logScale" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
  *         &lt;element name="includeZero" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
  *         &lt;element name="plotError" type="{http://www.w3.org/2001/XMLSchema}boolean" minOccurs="0"/>
- *         &lt;element name="range" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Range"/>
+ *         &lt;element name="range" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Range" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -52,7 +52,6 @@ public class Axis {
     protected boolean logScale;
     protected boolean includeZero;
     protected Boolean plotError;
-    @XmlElement(required = true)
     protected Range range;
 
     /**

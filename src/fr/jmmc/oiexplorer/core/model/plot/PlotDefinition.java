@@ -6,7 +6,6 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
 
@@ -41,7 +40,6 @@ import javax.xml.bind.annotation.XmlType;
     "xAxis",
     "yAxes"
 })
-@XmlRootElement(name = "plotDefinition")
 public class PlotDefinition {
 
     protected boolean skipFlaggedData;

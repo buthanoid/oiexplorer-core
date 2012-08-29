@@ -30,14 +30,6 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link PlotDefinitions }
-     * 
-     */
-    public PlotDefinitions createPlotDefinitions() {
-        return new PlotDefinitions();
-    }
-
-    /**
      * Create an instance of {@link PlotDefinition }
      * 
      */
@@ -46,11 +38,11 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link Axis }
+     * Create an instance of {@link PlotDefinitions }
      * 
      */
-    public Axis createAxis() {
-        return new Axis();
+    public PlotDefinitions createPlotDefinitions() {
+        return new PlotDefinitions();
     }
 
     /**
@@ -59,6 +51,14 @@ public class ObjectFactory {
      */
     public Range createRange() {
         return new Range();
+    }
+
+    /**
+     * Create an instance of {@link Axis }
+     * 
+     */
+    public Axis createAxis() {
+        return new Axis();
     }
 
 }
