@@ -3,9 +3,6 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.util;
 
-import java.util.Arrays;
-import java.util.Vector;
-
 /**
  * This class gathers main constant values
  * @author bourgesl
