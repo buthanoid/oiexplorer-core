@@ -66,29 +66,34 @@ public final class PlotDefinitionFactory {
 
         logger.warn("Loading presets from : {}", PRESETS_FILENAME);
 
-        PlotDefinitions presets;
         try {
-            presets = (PlotDefinitions) loadObject(FileUtils.getResource(PRESETS_FILENAME));;
-        } catch (IOException ioe) {
-            throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, ioe);
-        } catch (IllegalStateException ise) {
-            throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, ise);
-        } catch (XmlBindException xbe) {
-            throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, xbe);
-        }
 
-        /* Store defaults computing names (actually, as described in constants ) */
-        for (PlotDefinition plotDefinition : presets.getPlotDefinitions()) {
-            StringBuilder sb = new StringBuilder();
-            for (Axis yAxis : plotDefinition.getYAxes()) {
-                sb.append(yAxis.getName()).append("_");
+            PlotDefinitions presets;
+            try {
+                presets = (PlotDefinitions) loadObject(FileUtils.getResource(PRESETS_FILENAME));;
+            } catch (IOException ioe) {
+                throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, ioe);
+            } catch (IllegalStateException ise) {
+                throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, ise);
+            } catch (XmlBindException xbe) {
+                throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, xbe);
             }
-            sb.replace(sb.length() - 1, sb.length(), "/");
-            sb.append(plotDefinition.getXAxis().getName());
 
-            defaults.put(sb.toString(), plotDefinition);
+            /* Store defaults computing names (actually, as described in constants ) */
+            for (PlotDefinition plotDefinition : presets.getPlotDefinitions()) {
+                StringBuilder sb = new StringBuilder();
+                for (Axis yAxis : plotDefinition.getYAxes()) {
+                    sb.append(yAxis.getName()).append("_");
+                }
+                sb.replace(sb.length() - 1, sb.length(), "/");
+                sb.append(plotDefinition.getXAxis().getName());
+
+                defaults.put(sb.toString(), plotDefinition);
+            }
+        } catch (IllegalStateException ise) {
+            // TODO: fix JAXB integration as it makes Netbeans Swing Editor failing !!
+            logger.error("Unable to load presets !", ise);
         }
-
     }
 
     
