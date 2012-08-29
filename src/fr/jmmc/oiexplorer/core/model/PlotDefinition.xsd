@@ -17,18 +17,21 @@
             This xml schema describes the plot definitions for oiexplorer-core plots.
         </xsd:documentation>
         <xsd:appinfo>
-            
-            <jaxb:globalBindings>
-                <!-- Not yet useful ??
-                <xjc:superClass name="fr.jmmc.aspro.model.OIBase"/>
-                -->
+            <!--
+                Comment the jaxb:globalBindings element in embedded xml schema used with XJC               
+            -->
+            <!--
+            <jaxb:globalBindings>                 
                 <xjc:simple />
             </jaxb:globalBindings>            
+            -->
             <jaxb:schemaBindings>
                 <jaxb:package name="fr.jmmc.oiexplorer.core.model.plot"/>
             </jaxb:schemaBindings>
         </xsd:appinfo>
     </xsd:annotation>
+
+
 
     <!-- Elements -->
     <xsd:element name="plotDefinitions" type="PlotDefinitions">
@@ -39,14 +42,7 @@
         </xsd:annotation>
     </xsd:element>
 
-   
-    <xsd:element name="plotDefinition" type="PlotDefinition">
-        <xsd:annotation>
-            <xsd:documentation>
-                this element contains a plot definition.
-            </xsd:documentation>
-        </xsd:annotation>
-    </xsd:element>
+
 
     <!-- Class Types -->
     <xsd:complexType name="PlotDefinitions">
@@ -59,7 +55,10 @@
             <xsd:element name="plotDefinition" type="PlotDefinition" minOccurs="1" maxOccurs="unbounded"/>            
         </xsd:sequence>
     </xsd:complexType>
+
     
+        
+                
     <xsd:complexType name="PlotDefinition">
         <xsd:annotation>
             <xsd:documentation>
@@ -82,6 +81,8 @@
         
         </xsd:sequence>
     </xsd:complexType>
+  
+  
   
     <xsd:complexType name="Axis">
         <xsd:annotation>
@@ -131,7 +132,7 @@
                 </xsd:annotation>
             </xsd:element>
         
-            <xsd:element name="range" type="Range" minOccurs="1" maxOccurs="1">
+            <xsd:element name="range" type="Range" minOccurs="0" maxOccurs="1">
             </xsd:element>
                 
             <!-- TODO enum fonction -->
