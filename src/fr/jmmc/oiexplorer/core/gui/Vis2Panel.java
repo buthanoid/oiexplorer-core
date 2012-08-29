@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public final class Vis2Panel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-        PDFExportable {
+                                                                   PDFExportable {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -358,7 +358,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             crosshairOverlay.addRangeCrosshair(plotIndex, createCrosshair());
         }
 
-        applyColorTheme();
+        resetPlot();
     }
 
     private static Crosshair createCrosshair() {
@@ -699,7 +699,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             this.xyPlotV2.setDataset(null);
             this.xyPlotT3.setDataset(null);
 
+            // useless:
+//            applyColorTheme();
+
             this.resetOverlays();
+
+            this.chartPanel.setVisible(this.hasData);
 
         } finally {
             // restore chart & plot notifications:
@@ -987,14 +992,14 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     if (yMeta != null) {
                         label = yMeta.getName();
                         if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
-                            label += "(" + yMeta.getUnits().getStandardRepresentation() + ")";
+                            label += " (" + yMeta.getUnits().getStandardRepresentation() + ")";
                         }
                         this.xyPlotV2.getRangeAxis().setLabel(label);
                     }
 
                     if (USE_LOG_SCALE) {
                         // test logarithmic axis:
-                        final LogarithmicAxis logAxis = new LogarithmicAxis("log(" + label + ")");
+                        final LogarithmicAxis logAxis = new LogarithmicAxis("log " + label);
                         logAxis.setExpTickLabelsFlag(true);
                         logAxis.setAutoRangeNextLogFlag(true);
 
@@ -1093,7 +1098,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     if (yMeta != null) {
                         String label = yMeta.getName();
                         if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
-                            label += "(" + yMeta.getUnits().getStandardRepresentation() + ")";
+                            label += " (" + yMeta.getUnits().getStandardRepresentation() + ")";
                         }
                         this.xyPlotT3.getRangeAxis().setLabel(label);
                     }
@@ -1152,7 +1157,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         if (xMeta != null) {
             String label = xMeta.getName();
             if (xMeta != null && xMeta.getUnits() != Units.NO_UNIT) {
-                label += "(" + xMeta.getUnits().getStandardRepresentation() + ")";
+                label += " (" + xMeta.getUnits().getStandardRepresentation() + ")";
             }
             this.combinedXYPlot.getDomainAxis().setLabel(label);
         }
@@ -1174,7 +1179,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * @return rectangle giving data area or null if no data
      */
     private PlotInfo updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
-            final PlotDefinition plotDef, final int yAxisIndex) {
+                                final PlotDefinition plotDef, final int yAxisIndex) {
 
         final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
 
