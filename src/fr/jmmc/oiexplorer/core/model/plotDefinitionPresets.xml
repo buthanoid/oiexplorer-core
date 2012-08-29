@@ -8,10 +8,10 @@
 <!--
   This file describes a set of plotdefinition to be used has plot configuration presets 
 -->
-
-<ns:plotDefinitions xmlns:ns="http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1">
-    
-    
+<p:plotDefinitions
+   xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+   xmlns:p='http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1'
+   xsi:schemaLocation='http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1 PlotDefinition.xsd'>
     
               
     
@@ -92,5 +92,4 @@
             <includeZero>false</includeZero>
         </yAxes> 
     </plotDefinition>
-</ns:plotDefinitions>
-  
+</p:plotDefinitions>
