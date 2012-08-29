@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+*******************************************************************************
+* JMMC project ( http://www.jmmc.fr ) - Copyright (C) CNRS.
+*******************************************************************************
+-->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns="http://www.jmmc.fr/oiexplorer-data-collection/0.1"
+            targetNamespace="http://www.jmmc.fr/oiexplorer-data-collection/0.1"
+            xmlns:p="http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1"
+            xmlns:jaxb="http://java.sun.com/xml/ns/jaxb"
+            xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+            jaxb:version="2.1" jaxb:extensionBindingPrefixes="xjc">
+
+    <xsd:annotation>
+        <xsd:documentation>
+            This xml schema describes a list of oidata files and user plot definitions.
+        </xsd:documentation>
+        <xsd:appinfo>
+            
+            <jaxb:globalBindings>
+                <!-- Not yet useful ??
+                <xjc:superClass name="fr.jmmc.aspro.model.OIBase"/>
+                -->
+                <xjc:simple />
+            </jaxb:globalBindings>            
+            <jaxb:schemaBindings>
+                <jaxb:package name="fr.jmmc.oiexplorer.core.model.oi"/>
+            </jaxb:schemaBindings>
+        </xsd:appinfo>
+    </xsd:annotation>
+
+
+
+    <xsd:import namespace="http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1" schemaLocation="./PlotDefinition.xsd"/>
+
+     
+     
+    <!-- Elements -->
+   
+    <xsd:element name="oiDataCollection" type="OIDataCollection">
+        <xsd:annotation>
+            <xsd:documentation>
+                this element contains a collection of oidata ressources.
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+    
+    
+    
+    
+    <!-- Class Types -->
+    <xsd:complexType name="OIDataCollection">
+        <xsd:annotation>
+            <xsd:documentation>
+                This type describes a collection of oidata ressources.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>                            
+            <xsd:element name="file" type="OIDataFile" maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        File collection.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>  
+            
+             <xsd:element name="plotDefinition" type="p:PlotDefinition" minOccurs="0" maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        User plot definition collection (custom).
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>  
+                        
+                                                   
+        </xsd:sequence>
+    </xsd:complexType>
+    
+    <xsd:complexType name="OIDataFile">
+        <xsd:annotation>
+            <xsd:documentation>
+                This type describes an oidata file.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>                            
+            <xsd:element name="name" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        oidata file Identifier
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+
+            <xsd:element name="description" type="xsd:string" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        User information related to this oidata file
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+
+            <xsd:element name="file" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        File reference of this oidata file
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+
+            <xsd:element name="checksum" type="xsd:long">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        CRC-32 checksum of the file
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+    
+        </xsd:sequence>
+    </xsd:complexType>
+        
+</xsd:schema>
