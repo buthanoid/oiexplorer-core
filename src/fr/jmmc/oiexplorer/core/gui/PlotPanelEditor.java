@@ -4,13 +4,13 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.GenericListModel;
-import fr.jmmc.oiexplorer.core.model.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
 import fr.jmmc.oiexplorer.core.model.TargetUID;
+import fr.jmmc.oiexplorer.core.model.plot.Axis;
+import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OITable;
-import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.LinkedHashSet;
@@ -30,37 +30,48 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     /* members */
     /** Logger */
     final private Logger logger = LoggerFactory.getLogger(PlotPanelEditor.class);
-    /** Associated plot definition */
-    PlotDefinition plotDefinition;
-    private final List<String> xAxisChoices = new LinkedList<String>();
-    private final GenericListModel<String> xAxisListModel = new GenericListModel<String>(xAxisChoices, true);
+    /** Main plot definition */
+    private PlotDefinition plotDefinition;
+    /** Internal custom plot definition*/
+    private PlotDefinition customPlotDefinition;
+    
+    /** Store all choices available to plot on x axis given to current data to plot */
+    private final List<String> xAxisChoices = new LinkedList<String>();    
+    /** Store all choices available to plot on y axes given to current data to plot */
     private final List<String> yAxisChoices = new LinkedList<String>();
-    private final GenericListModel<String> yAxisListModel = new GenericListModel<String>(yAxisChoices, true);
+    
+    /** List of comboboxes associated to y axes */
     private final List<JComboBox<String>> yComboBoxes = new LinkedList<JComboBox<String>>();
-    private final List<String> plotTypeChoices = new LinkedList<String>();
-    private final GenericListModel<String> plotTypeListModel = new GenericListModel<String>(plotTypeChoices, true);
+    
+    
     private TargetUID target = null;
     private OIFitsFile oiFitsFile = null;
     private final String customLabel = "Custom...";
     private Vis2Panel plotPanel;
+    
+    private String lastXComboBoxValue=null;
+    private List<String> lastYComboBoxesValues = new LinkedList<String>();
 
+    
     /** Creates new form PlotPanelEditor */
     // TODO add one new constructor not to always add a plotPanel at the bottom
     public PlotPanelEditor() {
         initComponents();
-        
+
         // Vis2Panel
         plotPanel = new Vis2Panel();
         setPlotPanel(plotPanel);
 
         // Comboboxes
-        xAxisComboBox.setModel(xAxisListModel);
+        xAxisComboBox.setModel(new GenericListModel<String>(xAxisChoices, true));
+        
+        final List<String> plotTypeChoices = new LinkedList<String>();
+    
         plotTypeChoices.addAll(PlotDefinitionFactory.getInstance().getDefaultList());
-        plotTypeChoices.add(customLabel);
-        plotTypeComboBox.setModel(plotTypeListModel);
-        plotTypeComboBox.setSelectedIndex(0);
+        plotTypeChoices.add(customLabel);                
+        plotTypeComboBox.setModel(new GenericListModel<String>(plotTypeChoices, true));        
+        plotTypeComboBox.setSelectedItem(PlotDefinitionFactory.PLOT_DEFAULT);
         plotTypeComboBox.addActionListener(this);
-
 
         // init default state of widgets that also initialize the plotDefinition
         actionPerformed(null);
@@ -74,7 +85,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         plotPanel.setPlotDefinitionEditor(this);
         this.plotPanel = plotPanel;
     }
-    
+
     public Vis2Panel getPlotPanel() {
         return this.plotPanel;
     }
@@ -102,18 +113,31 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     }
 
     /** get the associated PlotDefinition */
-    public PlotDefinition getPlotDefinition() {
+    public PlotDefinition getPlotDefinition() {        
         return plotDefinition;
     }
-    
-    /** Initialize the plotDefinition with user adjusted widgets. */
-    private void defineCustomPlotDefinition() {
-        if(plotDefinition==null){
-            plotDefinition = new PlotDefinition();
+
+    /** Return the customPlotDefinition initialized with user adjusted widgets. */
+    private PlotDefinition defineCustomPlotDefinition() {
+        if (customPlotDefinition==null){
+            customPlotDefinition = new PlotDefinition();
         }
-        plotDefinition.setxAxis(getxAxis());
-        plotDefinition.setyAxes(getyAxes());
-        logger.warn("New Plot Definition is : {}", plotDefinition);
+        
+        // handle xAxis
+        Axis xAxis = new Axis();
+        xAxis.setName(getxAxis());
+        customPlotDefinition.setXAxis(xAxis);
+        // handle yAxes
+        List<Axis> yAxes = customPlotDefinition.getYAxes();
+        yAxes.clear();
+        for (String yname : getyAxes()) {
+            Axis a = new Axis();
+            a.setName(yname);
+            yAxes.add(a);
+        }
+        
+        logger.debug("Setting sutom plot definition x: {}, y : {}", getxAxis(), getyAxes());
+        return customPlotDefinition;
     }
 
     /**
@@ -130,11 +154,18 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
 
         xAxisChoices.addAll(columns);
         yAxisChoices.addAll(columns);
-
-        // TODO restore previously selected
-        xAxisComboBox.setSelectedIndex(0);
+        
+        if (lastXComboBoxValue!=null){
+            xAxisComboBox.setSelectedItem(lastXComboBoxValue);        
+        }else{
+            xAxisComboBox.setSelectedIndex(0);
+        }
         for (int i = 0; i < yComboBoxes.size(); i++) {
-            yComboBoxes.get(i).setSelectedIndex(0);
+            if(lastYComboBoxesValues.size()>i && yAxisChoices.contains(lastYComboBoxesValues.get(i))){
+                yComboBoxes.get(i).setSelectedItem(lastYComboBoxesValues.get(i));
+            }else{
+                yComboBoxes.get(i).setSelectedIndex(0);
+            }
         }
     }
 
@@ -151,22 +182,26 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
 
         yAxisChoices.addAll(columns);
 
-        // TODO restore previously selected
         for (int i = 0; i < yComboBoxes.size(); i++) {
-            yComboBoxes.get(i).setSelectedIndex(0);
+            if(lastYComboBoxesValues.size()>i && yAxisChoices.contains(lastYComboBoxesValues.get(i))){
+                yComboBoxes.get(i).setSelectedItem(lastYComboBoxesValues.get(i));
+            }else{
+                yComboBoxes.get(i).setSelectedIndex(0);
+            }
         }
     }
 
     private String getxAxis() {
-        return (String) xAxisComboBox.getSelectedItem();
+        lastXComboBoxValue = (String) xAxisComboBox.getSelectedItem();
+        return lastXComboBoxValue;
     }
 
     private List<String> getyAxes() {
-        List<String> l = new LinkedList<String>();
+        lastYComboBoxesValues.clear();        
         for (int i = 0; i < yComboBoxes.size(); i++) {
-            l.add((String)yComboBoxes.get(i).getSelectedItem());
-        }
-        return l;
+            lastYComboBoxesValues.add((String) yComboBoxes.get(i).getSelectedItem());
+        }        
+        return lastYComboBoxesValues;
     }
 
     /** Return the set of distinct columns available in the table of given OIFitsFile.
@@ -343,31 +378,41 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     }//GEN-LAST:event_xAxisComboBoxActionPerformed
 
     private void addYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addYAxisButtonActionPerformed
-        final JComboBox<String> ycombo = new JComboBox<String>();
-
-        final GenericListModel<String> yListModel = new GenericListModel<String>(yAxisChoices, true);
-        ycombo.setModel(yListModel);
-
-        yComboBoxes.add(ycombo);
-        yComboBoxesPanel.add(ycombo);
-        ycombo.addActionListener(this);  
-        
-        revalidate();        
+        final JComboBox<String> ycombo = new JComboBox<String>(new GenericListModel<String>(yAxisChoices, true));
+        addYCombo(ycombo);
     }//GEN-LAST:event_addYAxisButtonActionPerformed
 
     
+
     private void delYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delYAxisButtonActionPerformed
         if (yComboBoxes.size() > 1) {
+            JComboBox ycombo = yComboBoxes.get(yComboBoxes.size() - 1);
             // TODO replace by removal of the last yCombobox which one has lost the foxus
-            final JComboBox<String> ycombo = yComboBoxes.remove(yComboBoxes.size() - 1);
-            ycombo.removeActionListener(this);
-            yComboBoxesPanel.remove(ycombo);
-            revalidate();        
+
         }
     }//GEN-LAST:event_delYAxisButtonActionPerformed
 
-    public void actionPerformed(ActionEvent e) {
+    /** Synchronize management for the addition of a given combo and update GUI.
+     * @param ycombo ComboBox to add
+     */private void addYCombo(final JComboBox ycombo) {
+        yComboBoxes.add(ycombo);
+        yComboBoxesPanel.add(ycombo);
+        ycombo.addActionListener(this);
+        revalidate();
+    }
 
+    /** Synchronize management for the addition of a given combo and update GUI. 
+     * @param ycombo ComboBox to remove
+     */
+    private void delYCombo(final JComboBox ycombo) {
+        yComboBoxes.remove(ycombo);
+        ycombo.removeActionListener(this);
+        yComboBoxesPanel.remove(ycombo);
+        revalidate();
+    }
+    
+    public void actionPerformed(ActionEvent e) {
+                
         final String selectedType = (String) plotTypeComboBox.getSelectedItem();
         final boolean useCustom = (selectedType == customLabel);
 
@@ -384,16 +429,17 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         }
 
         if (useCustom) {
-            defineCustomPlotDefinition();
+            plotDefinition = defineCustomPlotDefinition();
+            logger.warn("Using custom plot");
         } else {
             plotDefinition = PlotDefinitionFactory.getInstance().getDefault(selectedType);
+            logger.warn("Using preset plot : {}, {}", selectedType, plotDefinition);
         }
 
         if (plotPanel != null) {
             plotPanel.plot(target, oiFitsFile);
         }
     }
-
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addYAxisButton;
@@ -407,5 +453,4 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     private javax.swing.JPanel yComboBoxesPanel;
     private javax.swing.JLabel yLabel;
     // End of variables declaration//GEN-END:variables
-    
 }
