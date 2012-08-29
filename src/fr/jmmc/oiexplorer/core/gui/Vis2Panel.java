@@ -3,6 +3,9 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui;
 
+import fr.jmmc.jmal.image.ColorModels;
+import fr.jmmc.jmal.image.ImageUtils;
+import fr.jmmc.oiexplorer.core.gui.action.ExportPDFAction;
 import fr.jmmc.oiexplorer.core.gui.chart.BoundedNumberAxis;
 import fr.jmmc.oiexplorer.core.gui.chart.ChartMouseSelectionListener;
 import fr.jmmc.oiexplorer.core.gui.chart.ChartUtils;
@@ -13,14 +16,12 @@ import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.Orientation;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.PageSize;
 import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
-import fr.jmmc.jmal.image.ColorModels;
-import fr.jmmc.jmal.image.ImageUtils;
-import fr.jmmc.oiexplorer.core.gui.action.ExportPDFAction;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
-import fr.jmmc.oiexplorer.core.model.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
 import fr.jmmc.oiexplorer.core.model.TargetUID;
+import fr.jmmc.oiexplorer.core.model.plot.Axis;
+import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.Units;
@@ -44,9 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jfree.chart.ChartMouseEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
@@ -65,13 +63,15 @@ import org.jfree.data.Range;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleInsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This panel presents the interferometer plot (station, base lines ...)
  * @author bourgesl
  */
 public final class Vis2Panel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-                                                                   PDFExportable {
+        PDFExportable {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -120,7 +120,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     /** JMMC annotation */
     private XYTextAnnotation aJMMCT3 = null;
     /** Optional plot definition editor */
-    private PlotPanelEditor plotDefinitionEditor=null;
+    private PlotPanelEditor plotDefinitionEditor = null;
 
     /**
      * Constructor
@@ -129,10 +129,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         initComponents();
 
         postInit();
-    }          
-    
-    public void setPlotDefinitionEditor(final PlotPanelEditor plotDefinitionEditor){
-        this.plotDefinitionEditor=plotDefinitionEditor;    
+    }
+
+    public void setPlotDefinitionEditor(final PlotPanelEditor plotDefinitionEditor) {
+        this.plotDefinitionEditor = plotDefinitionEditor;
     }
 
     /**
@@ -672,7 +672,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         // memorize plot data:
         this.target = target;
         this.oiFitsFile = oiFitsFile;
-        
+
         // refresh the plot :
         logger.debug("plot : refresh");
 
@@ -912,97 +912,98 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         double minX = Double.POSITIVE_INFINITY;
         double maxX = Double.NEGATIVE_INFINITY;
 
-        if (this.oiFitsFile.getNbOiTables() > 0) {
-            // use new dataset so free memory:
-            this.xyPlotV2.setDataset(new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>());
+        if (!plotDef.getYAxes().isEmpty()) {
 
-            double minY = Double.POSITIVE_INFINITY;
-            double maxY = Double.NEGATIVE_INFINITY;
+            if (this.oiFitsFile.getNbOiTables() > 0) {
+                // use new dataset so free memory:
+                this.xyPlotV2.setDataset(new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>());
 
-            PlotInfo info;
-            Rectangle2D.Double dataArea;
-            ColumnMeta yMeta = null;
+                double minY = Double.POSITIVE_INFINITY;
+                double maxY = Double.NEGATIVE_INFINITY;
 
-            int tableIndex = 0;
-            for (OITable oiTable : this.oiFitsFile.getOiTables()) {
+                PlotInfo info;
+                Rectangle2D.Double dataArea;
+                ColumnMeta yMeta = null;
 
-                info = updatePlot(this.xyPlotV2, (OIData) oiTable, tableIndex, plotDef, 0);
+                int tableIndex = 0;
+                for (OITable oiTable : this.oiFitsFile.getOiTables()) {
 
-                if (info != null) {
-                    showV2 = true;
-                    dataArea = info.dataArea;
+                    info = updatePlot(this.xyPlotV2, (OIData) oiTable, tableIndex, plotDef, 0);
 
-                    // combine X range:
-                    minX = Math.min(minX, dataArea.getX());
-                    maxX = Math.max(maxX, dataArea.getMaxX());
+                    if (info != null) {
+                        showV2 = true;
+                        dataArea = info.dataArea;
 
-                    // combine Y range:
-                    minY = Math.min(minY, dataArea.getY());
-                    maxY = Math.max(maxY, dataArea.getMaxY());
+                        // combine X range:
+                        minX = Math.min(minX, dataArea.getX());
+                        maxX = Math.max(maxX, dataArea.getMaxX());
 
-                    // update X axis Label:
-                    if (xMeta == null && info.xMeta != null) {
-                        xMeta = info.xMeta;
+                        // combine Y range:
+                        minY = Math.min(minY, dataArea.getY());
+                        maxY = Math.max(maxY, dataArea.getMaxY());
+
+                        // update X axis Label:
+                        if (xMeta == null && info.xMeta != null) {
+                            xMeta = info.xMeta;
+                        }
+                        // update Y axis Label:
+                        if (yMeta == null && info.yMeta != null) {
+                            yMeta = info.yMeta;
+                        }
                     }
+                    tableIndex++;
+                }
+
+                if (showV2) {
+                    logger.info("xyPlotV2: nbSeries = {}", this.xyPlotV2.getDataset().getSeriesCount());
+
+                    // TODO: fix boundaries according to standard data boundaries (VIS between 0-1 ...)
+
+                    // Add margin:
+                    if (!USE_LOG_SCALE) {
+                        final double marginY = (maxY - minY) * MARGIN_PERCENTS;
+                        if (marginY > 0d) {
+                            minY -= marginY;
+                            maxY += marginY;
+                        } else {
+                            minY -= minY * MARGIN_PERCENTS;
+                            maxY += maxY * MARGIN_PERCENTS;
+                        }
+                        if (maxY == minY) {
+                            maxY = minY + 1d;
+                        }
+                    }
+
+                    // Update Y axis:
+
+                    if (this.xyPlotV2.getRangeAxis() instanceof BoundedNumberAxis) {
+                        axis = (BoundedNumberAxis) this.xyPlotV2.getRangeAxis();
+                        axis.setBounds(new Range(minY, maxY));
+                        axis.setRange(minY, maxY);
+                    }
+
                     // update Y axis Label:
-                    if (yMeta == null && info.yMeta != null) {
-                        yMeta = info.yMeta;
+                    String label;
+                    if (yMeta != null) {
+                        label = yMeta.getName();
+                        if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
+                            label += "(" + yMeta.getUnits().getStandardRepresentation() + ")";
+                        }
+                        this.xyPlotV2.getRangeAxis().setLabel(label);
                     }
-                }
-                tableIndex++;
-            }
 
-            if (showV2) {
-                logger.info("xyPlotV2: nbSeries = {}", this.xyPlotV2.getDataset().getSeriesCount());
+                    if (USE_LOG_SCALE) {
+                        // test logarithmic axis:
+                        final LogarithmicAxis logAxis = new LogarithmicAxis("log(" + label + ")");
+                        logAxis.setExpTickLabelsFlag(true);
+                        logAxis.setAutoRangeNextLogFlag(true);
 
-                // TODO: fix boundaries according to standard data boundaries (VIS between 0-1 ...)
+                        logger.debug("logAxis range: [{} - {}]", minY, maxY);
 
-                // Add margin:
-                if (!USE_LOG_SCALE) {
-                    final double marginY = (maxY - minY) * MARGIN_PERCENTS;
-                    if (marginY > 0d) {
-                        minY -= marginY;
-                        maxY += marginY;
-                    } else {
-                        minY -= minY * MARGIN_PERCENTS;
-                        maxY += maxY * MARGIN_PERCENTS;
+                        logAxis.setRange(minY, maxY);
+
+                        this.xyPlotV2.setRangeAxis(logAxis);
                     }
-                    if (maxY == minY) {
-                        maxY = minY + 1d;
-                    }
-                }
-
-                // Update Y axis:
-
-                if (this.xyPlotV2.getRangeAxis() instanceof BoundedNumberAxis) {
-                    axis = (BoundedNumberAxis) this.xyPlotV2.getRangeAxis();
-                    axis.setBounds(new Range(minY, maxY));
-                    axis.setRange(minY, maxY);
-                }
-
-                // update Y axis Label:
-                String label;
-                if (yMeta != null) {
-                    label = yMeta.getName();
-                    if (plotDef.getyAxesUnit() != null) {
-                        label += "(" + plotDef.getyAxesUnit().get(0) + ")";
-                    } else if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
-                        label += "(" + yMeta.getUnits().getStandardRepresentation() + ")";
-                    }
-                    this.xyPlotV2.getRangeAxis().setLabel(label);
-                }
-
-                if (USE_LOG_SCALE) {
-                    // test logarithmic axis:
-                    final LogarithmicAxis logAxis = new LogarithmicAxis("log(" + label + ")");
-                    logAxis.setExpTickLabelsFlag(true);
-                    logAxis.setAutoRangeNextLogFlag(true);
-
-                    logger.debug("logAxis range: [{} - {}]", minY, maxY);
-
-                    logAxis.setRange(minY, maxY);
-
-                    this.xyPlotV2.setRangeAxis(logAxis);
                 }
             }
         }
@@ -1019,83 +1020,83 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             this.xyPlotV2.setDataset(null);
         }
 
-        if (this.oiFitsFile.getNbOiTables() > 0) {
-            // use new dataset so free memory:
-            this.xyPlotT3.setDataset(new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>());
+        if (plotDef.getYAxes().size() > 1) {
+            if (this.oiFitsFile.getNbOiTables() > 0) {
+                // use new dataset so free memory:
+                this.xyPlotT3.setDataset(new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>());
 
-            double minY = Double.POSITIVE_INFINITY;
-            double maxY = Double.NEGATIVE_INFINITY;
+                double minY = Double.POSITIVE_INFINITY;
+                double maxY = Double.NEGATIVE_INFINITY;
 
-            PlotInfo info;
-            Rectangle2D.Double dataArea;
-            ColumnMeta yMeta = null;
+                PlotInfo info;
+                Rectangle2D.Double dataArea;
+                ColumnMeta yMeta = null;
 
-            int tableIndex = 0;
-            for (OITable oiTable : this.oiFitsFile.getOiTables()) {
+                int tableIndex = 0;
+                for (OITable oiTable : this.oiFitsFile.getOiTables()) {
 
-                info = updatePlot(this.xyPlotT3, (OIData) oiTable, tableIndex, plotDef, 1);
+                    info = updatePlot(this.xyPlotT3, (OIData) oiTable, tableIndex, plotDef, 1);
 
-                if (info != null) {
-                    showT3 = true;
-                    dataArea = info.dataArea;
+                    if (info != null) {
+                        showT3 = true;
+                        dataArea = info.dataArea;
 
-                    // combine X range:
-                    minX = Math.min(minX, dataArea.getX());
-                    maxX = Math.max(maxX, dataArea.getMaxX());
+                        // combine X range:
+                        minX = Math.min(minX, dataArea.getX());
+                        maxX = Math.max(maxX, dataArea.getMaxX());
 
-                    // combine Y range:
-                    minY = Math.min(minY, dataArea.getY());
-                    maxY = Math.max(maxY, dataArea.getMaxY());
+                        // combine Y range:
+                        minY = Math.min(minY, dataArea.getY());
+                        maxY = Math.max(maxY, dataArea.getMaxY());
 
-                    // update X axis Label:
-                    if (xMeta == null && info.xMeta != null) {
-                        xMeta = info.xMeta;
+                        // update X axis Label:
+                        if (xMeta == null && info.xMeta != null) {
+                            xMeta = info.xMeta;
+                        }
+                        // update Y axis Label:
+                        if (yMeta == null && info.yMeta != null) {
+                            yMeta = info.yMeta;
+                        }
                     }
+                    tableIndex++;
+                }
+
+                if (showT3) {
+                    logger.info("xyPlotT3: nbSeries = {}", this.xyPlotT3.getDataset().getSeriesCount());
+
+                    // TODO: fix boundaries according to standard data boundaries (T3 between -180-180 ...)
+
+                    // Add margin:
+                    if (!USE_LOG_SCALE) {
+                        final double marginY = (maxY - minY) * MARGIN_PERCENTS;
+                        if (marginY > 0d) {
+                            minY -= marginY;
+                            maxY += marginY;
+                        } else {
+                            minY -= minY * MARGIN_PERCENTS;
+                            maxY += maxY * MARGIN_PERCENTS;
+                        }
+                        if (maxY == minY) {
+                            maxY = minY + 1d;
+                        }
+                    }
+
+                    // Update Y axis:
+
+                    if (this.xyPlotT3.getRangeAxis() instanceof BoundedNumberAxis) {
+                        axis = (BoundedNumberAxis) this.xyPlotT3.getRangeAxis();
+                        axis.setBounds(new Range(minY, maxY));
+                        axis.setRange(minY, maxY);
+                    }
+
                     // update Y axis Label:
-                    if (yMeta == null && info.yMeta != null) {
-                        yMeta = info.yMeta;
+                    if (yMeta != null) {
+                        String label = yMeta.getName();
+                        if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
+                            label += "(" + yMeta.getUnits().getStandardRepresentation() + ")";
+                        }
+                        this.xyPlotT3.getRangeAxis().setLabel(label);
                     }
-                }
-                tableIndex++;
-            }
-
-            if (showT3) {
-                logger.info("xyPlotT3: nbSeries = {}", this.xyPlotT3.getDataset().getSeriesCount());
-
-                // TODO: fix boundaries according to standard data boundaries (T3 between -180-180 ...)
-
-                // Add margin:
-                if (!USE_LOG_SCALE) {
-                    final double marginY = (maxY - minY) * MARGIN_PERCENTS;
-                    if (marginY > 0d) {
-                        minY -= marginY;
-                        maxY += marginY;
-                    } else {
-                        minY -= minY * MARGIN_PERCENTS;
-                        maxY += maxY * MARGIN_PERCENTS;
-                    }
-                    if (maxY == minY) {
-                        maxY = minY + 1d;
-                    }
-                }
-
-                // Update Y axis:
-
-                if (this.xyPlotT3.getRangeAxis() instanceof BoundedNumberAxis) {
-                    axis = (BoundedNumberAxis) this.xyPlotT3.getRangeAxis();
-                    axis.setBounds(new Range(minY, maxY));
-                    axis.setRange(minY, maxY);
-                }
-
-                // update Y axis Label:
-                if (yMeta != null) {
-                    String label = yMeta.getName();
-                    if (plotDef.getyAxesUnit() != null) {
-                        label += "(" + plotDef.getyAxesUnit().get(1) + ")";
-                    } else if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
-                        label += "(" + yMeta.getUnits().getStandardRepresentation() + ")";
-                    }
-                    this.xyPlotT3.getRangeAxis().setLabel(label);
                 }
             }
         }
@@ -1121,7 +1122,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         // TODO: fix boundaries according to standard data boundaries (spatial freq >= 0)
 
-        if (plotDef.isIncludeZeroOnXAxis()) {
+        if (plotDef.getXAxis().isIncludeZero()) {
             // fix minX to include zero spatial frequency:
             if (minX > 0d) {
                 minX = 0d;
@@ -1150,9 +1151,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         // update X axis Label:
         if (xMeta != null) {
             String label = xMeta.getName();
-            if (plotDef.getxAxisUnit() != null) {
-                label += "(" + plotDef.getxAxisUnit() + ")";
-            } else if (xMeta != null && xMeta.getUnits() != Units.NO_UNIT) {
+            if (xMeta != null && xMeta.getUnits() != Units.NO_UNIT) {
                 label += "(" + xMeta.getUnits().getStandardRepresentation() + ")";
             }
             this.combinedXYPlot.getDomainAxis().setLabel(label);
@@ -1175,13 +1174,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * @return rectangle giving data area or null if no data
      */
     private PlotInfo updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
-                                final PlotDefinition plotDef, final int yAxisIndex) {
+            final PlotDefinition plotDef, final int yAxisIndex) {
 
-        if(yAxisIndex>=plotDef.getyAxes().size()){
-            logger.warn("Request to updatePlot at index {}, for only {} yAxe(s)",yAxisIndex,plotDef.getyAxes().size());
-            return null;
-        }
-        
         final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
 
         @SuppressWarnings("unchecked")
@@ -1205,11 +1199,14 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final double[][] xData2D;
         final double[][] xData2DErr;
 
-        final String xAxis = plotDef.getxAxis();
+        final String xAxis = plotDef.getXAxis().getName();
         logger.warn("xAxis:{}", xAxis);
 
-        final boolean doScaleX = (plotDef.getxAxisScalingFactor() != null);
-        final double xScale = (doScaleX) ? plotDef.getxAxisScalingFactor().doubleValue() : 0d;
+        //TODO support scalling function on axes
+        // final boolean doScaleX = (plotDef.getxAxisScalingFactor() != null);
+        // final double xScale = (doScaleX) ? plotDef.getxAxisScalingFactor().doubleValue() : 0d;
+        final boolean doScaleX = false;
+        final double xScale = 1d;
 
         final ColumnMeta xMeta = oiData.getColumnMeta(xAxis);
         logger.warn("xMeta:{}", xMeta);
@@ -1238,11 +1235,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final double[] yData1DErr;
         final double[][] yData2D;
         final double[][] yData2DErr;
-       
-        final String yAxis = plotDef.getyAxes().get(yAxisIndex);
-        logger.warn("yAxis:{}", yAxis);
 
-        final ColumnMeta yMeta = oiData.getColumnMeta(yAxis);
+        final Axis yAxis = plotDef.getYAxes().get(yAxisIndex);
+        final String yAxisName = yAxis.getName();
+        logger.warn("yAxis:{}", yAxisName);
+
+        final ColumnMeta yMeta = oiData.getColumnMeta(yAxisName);
         logger.warn("yMeta:{}", yMeta);
 
         if (yMeta == null) {
@@ -1254,10 +1252,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         if (isYData2D) {
             yData1D = null;
             yData1DErr = null;
-            yData2D = oiData.getColumnAsDoubles(yAxis);
+            yData2D = oiData.getColumnAsDoubles(yAxisName);
             yData2DErr = oiData.getColumnAsDoubles(yMeta.getErrorColumnName());
         } else {
-            yData1D = oiData.getColumnAsDouble(yAxis);
+            yData1D = oiData.getColumnAsDouble(yAxisName);
             yData1DErr = oiData.getColumnAsDouble(yMeta.getErrorColumnName());
             yData2D = null;
             yData2DErr = null;
@@ -1548,6 +1546,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
                     // TODO: adjust renderer settings per Serie (color, shape ...) !
                     renderer.setSeriesPaint(seriesCount, colors[j], false);
+                    renderer.setSeriesLinesVisible(seriesCount, yAxis.isDrawLine());
 
                     seriesCount++;
                 }
@@ -1785,11 +1784,11 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     }
 
     private PlotDefinition getPlotDefinition() {
+        if (plotDefinitionEditor != null) {
+            return plotDefinitionEditor.getPlotDefinition();
+        }
         if (this.plotDefinition != null) {
             return this.plotDefinition;
-        }        
-        if(plotDefinitionEditor!=null){
-            return plotDefinitionEditor.getPlotDefinition();
         }
         return PlotDefinitionFactory.getInstance().getDefault(PlotDefinitionFactory.PLOT_DEFAULT);
     }
