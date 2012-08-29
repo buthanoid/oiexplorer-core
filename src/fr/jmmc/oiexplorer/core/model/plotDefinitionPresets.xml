@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+*******************************************************************************
+* JMMC project ( http://www.jmmc.fr ) - Copyright (C) CNRS.
+*******************************************************************************
+-->
+
+<!--
+  This file describes a set of plotdefinition to be used has plot configuration presets 
+-->
+
+<ns:plotDefinitions xmlns:ns="http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1">
+    
+    
+    
+              
+    
+    <!-- plot (Vis2 - T3) vs spatial freq  -->    
+    <plotDefinition>
+        <skipFlaggedData>false</skipFlaggedData>
+        <xAxis>
+            <name>SPATIAL_FREQ</name>
+            <drawLine>false</drawLine>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+            <!-- TODO : refaire l'equivalent de    
+            plotDef.setxAxisScalingFactor(1e-6d);
+            plotDef.setxAxisUnit("M\u03BB");
+            -->
+        </xAxis>
+        <yAxes>
+            <name>VIS2DATA</name>
+            <drawLine>false</drawLine>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>T3PHI</name>
+            <drawLine>false</drawLine>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes> 
+    </plotDefinition>
+    
+    <!-- plot(Vis2 - T3) vs wavelenth      -->    
+    <plotDefinition>
+        
+        <skipFlaggedData>false</skipFlaggedData>
+        <xAxis>
+            <name>EFF_WAVE</name>
+            <drawLine>false</drawLine>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+            <!-- TODO : refaire l'equivalent de 
+            plotDef.setxAxisScalingFactor(1e6d);
+            plotDef.setxAxisUnit("micrometer");
+            -->
+        </xAxis>
+        <yAxes>
+            <name>VIS2DATA</name>
+            <drawLine>false</drawLine>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>T3PHI</name>
+            <drawLine>false</drawLine>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes> 
+    </plotDefinition>
+    
+    <!-- plot(Vis2 - T3) vs mjd            -->
+    <plotDefinition>
+        <skipFlaggedData>false</skipFlaggedData>
+        <xAxis>
+            <name>MJD</name>
+            <drawLine>false</drawLine>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </xAxis>
+        <yAxes>
+            <name>VIS2DATA</name>
+            <drawLine>false</drawLine>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>T3PHI</name>
+            <drawLine>false</drawLine>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes> 
+    </plotDefinition>
+</ns:plotDefinitions>
+  

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+*******************************************************************************
+* JMMC project ( http://www.jmmc.fr ) - Copyright (C) CNRS.
+*******************************************************************************
+-->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns="http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1"
+            targetNamespace="http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1"
+            xmlns:jaxb="http://java.sun.com/xml/ns/jaxb"
+            xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+            jaxb:version="2.1" jaxb:extensionBindingPrefixes="xjc">
+
+    <xsd:annotation>
+        <xsd:documentation>
+            This xml schema describes the plot definitions for oiexplorer-core plots.
+        </xsd:documentation>
+        <xsd:appinfo>
+            
+            <jaxb:globalBindings>
+                <!-- Not yet useful ??
+                <xjc:superClass name="fr.jmmc.aspro.model.OIBase"/>
+                -->
+                <xjc:simple />
+            </jaxb:globalBindings>            
+            <jaxb:schemaBindings>
+                <jaxb:package name="fr.jmmc.oiexplorer.core.model.plot"/>
+            </jaxb:schemaBindings>
+        </xsd:appinfo>
+    </xsd:annotation>
+
+    <!-- Elements -->
+    <xsd:element name="plotDefinitions" type="PlotDefinitions">
+        <xsd:annotation>
+            <xsd:documentation>
+                this element contains a list of plot definition.
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+
+   
+    <xsd:element name="plotDefinition" type="PlotDefinition">
+        <xsd:annotation>
+            <xsd:documentation>
+                this element contains a plot definition.
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+
+    <!-- Class Types -->
+    <xsd:complexType name="PlotDefinitions">
+        <xsd:annotation>
+            <xsd:documentation>
+                This type describes a list plot definition.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="plotDefinition" type="PlotDefinition" minOccurs="1" maxOccurs="unbounded"/>            
+        </xsd:sequence>
+    </xsd:complexType>
+    
+    <xsd:complexType name="PlotDefinition">
+        <xsd:annotation>
+            <xsd:documentation>
+                This type describes a plot definition.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+        
+            <xsd:element name="skipFlaggedData" type="xsd:boolean"> 
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Indicates that flagged data are not plotted.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>                            
+        
+            <xsd:element name="xAxis" type="Axis" minOccurs="1" maxOccurs="1"/>
+        
+            <xsd:element name="yAxes" type="Axis" minOccurs="1" maxOccurs="unbounded"/>
+        
+        </xsd:sequence>
+    </xsd:complexType>
+  
+    <xsd:complexType name="Axis">
+        <xsd:annotation>
+            <xsd:documentation>
+                This type describes a plot axis.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+        
+            <xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Label of column to associate on the plot axis.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>            
+        
+            <xsd:element name="drawLine" type="xsd:boolean"> 
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Indicates to draw line between data point of the same serie.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            
+            <xsd:element name="logScale" type="xsd:boolean">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Use logarithm scale on the plot axis.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        
+            <xsd:element name="includeZero" type="xsd:boolean">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Request to display the zero of plot axis (may be overidden by range).
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        
+            <xsd:element name="plotError" type="xsd:boolean" minOccurs="0" maxOccurs="1">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Request to plot errors if they exist.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        
+            <xsd:element name="range" type="Range" minOccurs="1" maxOccurs="1">
+            </xsd:element>
+                
+            <!-- TODO enum fonction -->
+            <!-- TODO unit conversion -->
+                                                  
+        </xsd:sequence>
+    </xsd:complexType>
+ 
+ 
+
+ 
+    <xsd:complexType name="Range">
+        <xsd:annotation>
+            <xsd:documentation>
+                This type describes an axis range.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="min" type="xsd:double" minOccurs="1" maxOccurs="1"/>
+            <xsd:element name="max" type="xsd:double" minOccurs="1" maxOccurs="1"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+  
+</xsd:schema>
