@@ -42,7 +42,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     /** Store all choices available to plot on y axes given to current data to plot */
     private final List<String> yAxisChoices = new LinkedList<String>();
     /** List of comboboxes associated to y axes */
-    private final List<JComboBox<String>> yComboBoxes = new LinkedList<JComboBox<String>>();
+    private final List<JComboBox> yComboBoxes = new LinkedList<JComboBox>();
     private TargetUID target = null;
     private OIFitsFile oiFitsFile = null;
     private Vis2Panel plotPanel;
@@ -399,7 +399,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     }//GEN-LAST:event_xAxisComboBoxActionPerformed
 
     private void addYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addYAxisButtonActionPerformed
-        final JComboBox<String> ycombo = new JComboBox<String>(new GenericListModel<String>(yAxisChoices, true));
+        final JComboBox ycombo = new JComboBox(new GenericListModel<String>(yAxisChoices, true));
         addYCombo(ycombo);
     }//GEN-LAST:event_addYAxisButtonActionPerformed
 
