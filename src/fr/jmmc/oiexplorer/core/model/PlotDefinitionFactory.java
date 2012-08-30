@@ -4,21 +4,18 @@
 package fr.jmmc.oiexplorer.core.model;
 
 import fr.jmmc.jmcs.jaxb.JAXBFactory;
+import fr.jmmc.jmcs.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.jaxb.XmlBindException;
 import fr.jmmc.jmcs.util.FileUtils;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinitions;
-import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.UnmarshalException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,13 +61,19 @@ public final class PlotDefinitionFactory {
      */
     private void initializeDefaults() {
 
-        logger.warn("Loading presets from : {}", PRESETS_FILENAME);
 
         try {
 
             PlotDefinitions presets;
             try {
-                presets = (PlotDefinitions) loadObject(FileUtils.getResource(PRESETS_FILENAME));;
+                JAXBFactory jbf = JAXBFactory.getInstance(PlotDefinition.class.getPackage().getName());
+                
+                URL presetUrl=FileUtils.getResource(PRESETS_FILENAME);     
+                
+                logger.info("Loading presets from : {}", presetUrl);
+                
+                presets = (PlotDefinitions) JAXBUtils.loadObject(presetUrl, jbf);
+                
             } catch (IOException ioe) {
                 throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, ioe);
             } catch (IllegalStateException ise) {
@@ -90,6 +93,7 @@ public final class PlotDefinitionFactory {
 
                 defaults.put(sb.toString(), plotDefinition);
             }
+            
         } catch (IllegalStateException ise) {
             // TODO: fix JAXB integration as it makes Netbeans Swing Editor failing !!
             logger.error("Unable to load presets !", ise);
@@ -110,57 +114,4 @@ public final class PlotDefinitionFactory {
         return defaults.get(key);
     }
     
-    /**
-     * Load on object from url.
-     * @param inputUrl File to load
-     * @return unmarshalled object
-     *
-     * @throws IOException if an I/O exception occured
-     * @throws IllegalStateException if an unexpected exception occured
-     * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
-     */
-    private Object loadObject(URL inputUrl) throws IOException, IllegalStateException, XmlBindException {
-        Object result = null;
-
-        logger.warn("Load object from url : {}", inputUrl);
-
-        try {
-            result = getJAXBFactory().createUnMarshaller().unmarshal(new BufferedInputStream(inputUrl.openStream()));
-        } catch (JAXBException ex) {
-            handleException("Loading object from " + inputUrl, ex);
-        }
-
-        return result;
-    }
-
-    /**
-     * Handle JAXB Exception to extract IO Exception or unexpected exceptions
-     * @param message message
-     * @param je jaxb exception
-     * 
-     * @throws IllegalStateException if an unexpected exception occured
-     * @throws IOException if an I/O exception occured
-     */
-    protected static void handleException(final String message, final JAXBException je) throws IllegalStateException, IOException {
-        final Throwable cause = je.getCause();
-        if (cause != null) {
-            if (cause instanceof IOException) {
-                throw (IOException) cause;
-            }
-        }
-        if (je instanceof UnmarshalException) {
-            throw new IllegalArgumentException("The loaded file does not correspond to a valid file", je);
-        }
-        throw new IllegalStateException(message, je);
-    }
-
-    /** Return the jaxbfactory to manage PlotDefinition.xsd material.
-     @return the JAXBFactory for PlotDefinition related objects
-     */
-    private JAXBFactory getJAXBFactory() {
-        if (jf == null) {
-            jf = JAXBFactory.getInstance(PlotDefinition.class.getPackage().getName());
-        }
-        return jf;
-    }
 }
