@@ -3,19 +3,21 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
-import fr.jmmc.jmcs.gui.util.SwingUtils;
+import fr.jmmc.jmcs.gui.component.StatusBar;
+import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
+import fr.jmmc.oiexplorer.core.model.event.GenericEventListener;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEvent;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
-import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionListener;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
 import fr.jmmc.oiexplorer.core.model.oi.OiDataCollection;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.nom.tam.fits.FitsException;
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Iterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,23 +25,20 @@ import org.slf4j.LoggerFactory;
  * Handle the oifits files collection.
  * @author mella, bourgesl
  */
-public class OIFitsCollectionManager {
+public final class OIFitsCollectionManager {
 
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(OIFitsCollectionManager.class);
-    /** flag to log a stack trace in method fireEvent() to debug events */
-    private final static boolean DEBUG_FIRE_EVENT = false;
     /** Singleton pattern */
     private final static OIFitsCollectionManager instance = new OIFitsCollectionManager();
     /* members */
     /** OIFits collection */
     private OIFitsCollection oiFitsCollection = null;
-    /** enable / disable notifications */
-    private boolean notify = true;
-    /** OIFits collection listeners */
-    private final CopyOnWriteArrayList<OIFitsCollectionListener> listeners = new CopyOnWriteArrayList<OIFitsCollectionListener>();
     /** Container of loaded data and user plot definitions */
     private OiDataCollection userCollection = null;
+    /* event dispatchers */
+    /** OIFitsCollectionEvent notifier */
+    private final EventNotifier<OIFitsCollectionEvent, OIFitsCollectionEventType> oiFitsCollectionEventNotifier;
 
     /**
      * Return the Manager singleton
@@ -55,6 +54,62 @@ public class OIFitsCollectionManager {
      */
     private OIFitsCollectionManager() {
         super();
+        this.oiFitsCollectionEventNotifier = new EventNotifier<OIFitsCollectionEvent, OIFitsCollectionEventType>() {
+            /**
+             * Disable repeating notifications ...
+             */
+            @Override
+            public void setNotify(final boolean notify) {
+                super.setNotify(notify);
+                if (notify) {
+                    // TODO: record event type to fire ...
+                    fireOIFitsCollectionChanged();
+                }
+            }
+        };
+
+        reset(false);
+    }
+
+    /* --- OIFits file collection handling ------------------------------------- */
+    /**
+     * Load the given OI Fits Files with the given checker component
+     * and add it to the OIFits collection
+     * @param files files to load
+     * @param checker checker component
+     * @throws IOException if a fits file can not be loaded
+     */
+    public void loadOIFitsFiles(final File[] files, final OIFitsChecker checker) throws IOException {
+        this.oiFitsCollectionEventNotifier.setNotify(false);
+        try {
+            for (File file : files) {
+                loadOIFitsFile(file.getAbsolutePath(), checker);
+            }
+        } finally {
+            this.oiFitsCollectionEventNotifier.setNotify(true);
+        }
+    }
+
+    /**
+     * Load OIDataCollection files (TODO: plot def to be handled)
+     * @param collection OiDataCollection to look for
+     * @param checker to report validation information
+     * @throws IOException if a fits file can not be loaded
+     */
+    public void loadOIDataCollection(final OiDataCollection collection, final OIFitsChecker checker) throws IOException {
+        this.oiFitsCollectionEventNotifier.setNotify(false);
+        try {
+            reset();
+
+            for (OIDataFile oidataFile : collection.getFiles()) {
+                loadOIFitsFile(oidataFile.getFile(), checker);
+            }
+        } finally {
+            this.oiFitsCollectionEventNotifier.setNotify(true);
+        }
+        userCollection.getFiles().addAll(collection.getFiles());
+
+        // TODO what about user plot definitions
     }
 
     /**
@@ -62,39 +117,28 @@ public class OIFitsCollectionManager {
      * and add it to the OIFits collection
      * @param fileLocation absolute File Path or remote URL
      * @param checker checker component
-     * @throws MalformedURLException invalid url format
-     * @throws FitsException if the fits can not be opened
-     * @throws IOException IO failure
+     * @throws IOException if a fits file can not be loaded
      */
-    public void loadOIFitsFile(final String fileLocation, final OIFitsChecker checker) throws MalformedURLException, IOException, FitsException {
+    private void loadOIFitsFile(final String fileLocation, final OIFitsChecker checker) throws IOException {
         //@todo test if file has already been loaded before going further ??        
 
-        // The file must be one oidata file (next line automatically unzip gz files)
-        final OIFitsFile oifitsFile = OIFitsLoader.loadOIFits(checker, fileLocation);
+        StatusBar.show("loading file: " + fileLocation);
 
-        addOIFitsFile(oifitsFile);
+        try {
+            // The file must be one oidata file (next line automatically unzip gz files)
+            final OIFitsFile oifitsFile = OIFitsLoader.loadOIFits(checker, fileLocation);
 
-        logger.info("file loaded : '{}'", oifitsFile.getAbsoluteFilePath());
-    }
+            addOIFitsFile(oifitsFile);
 
-    /**
-     * Load OIDataCollection files (TODO: plot def to be handled)
-     * @param collection OiDataCollection to look for
-     * @param checker to report validation information
-     * @throws FitsException
-     * @throws MalformedURLException
-     * @throws IOException 
-     */
-    public void loadOIDataCollection(OiDataCollection collection, OIFitsChecker checker) throws FitsException, MalformedURLException, IOException {
-        for (OIDataFile oidataFile : collection.getFiles()) {
-            String location = oidataFile.getFile();
-            loadOIFitsFile(location, checker);
-        }     
-        userCollection.getFiles().clear();
-        userCollection.getFiles().addAll(collection.getFiles());
-        
-        // TODO what about user plot definitions
-        
+            logger.info("file loaded : '{}'", oifitsFile.getAbsoluteFilePath());
+
+        } catch (MalformedURLException mue) {
+            throw new IOException("Could not load the file : " + fileLocation, mue);
+        } catch (IOException ioe) {
+            throw new IOException("Could not load the file : " + fileLocation, ioe);
+        } catch (FitsException fe) {
+            throw new IOException("Could not load the file : " + fileLocation, fe);
+        }
     }
 
     // save ...
@@ -104,15 +148,28 @@ public class OIFitsCollectionManager {
      * Reset the OIFits file collection
      */
     public void reset() {
+        reset(true);
+    }
+
+    /**
+     * Reset the OIFits file collection
+     * @param notify true means event notification enabled; false means event notificationdisabled
+     */
+    private void reset(final boolean notify) {
         oiFitsCollection = new OIFitsCollection();
-        fireOIFitsCollectionChanged();
+        userCollection = new OiDataCollection();
+
+        if (notify) {
+            fireOIFitsCollectionChanged();
+        }
+    }
+
+    public OIFitsCollection getOIFitsCollection() {
+        return oiFitsCollection;
     }
 
     /** This method can be used to export current file list */
     public OiDataCollection getUserCollection() {
-        if (userCollection == null) {
-            userCollection = new OiDataCollection();
-        }
         return userCollection;
     }
 
@@ -120,104 +177,62 @@ public class OIFitsCollectionManager {
         if (oifitsFile != null) {
             oiFitsCollection.addOIFitsFile(oifitsFile);
 
+            // Add new OIDataFile in collection 
+            final OIDataFile dataFile = new OIDataFile();
+            dataFile.setFile(oifitsFile.getAbsoluteFilePath());
+
+            userCollection.getFiles().add(dataFile);
+
             fireOIFitsCollectionChanged();
         }
-
-        // Add new OIDataFile in collection 
-        OIDataFile dataFile = new OIDataFile();
-        dataFile.setFile(oifitsFile.getAbsoluteFilePath());
-        getUserCollection().getFiles().add(dataFile);
     }
 
     public OIFitsFile removeOIFitsFile(final OIFitsFile oifitsFile) {
         final OIFitsFile previous = oiFitsCollection.removeOIFitsFile(oifitsFile);
-        if (previous != null) {
-            fireOIFitsCollectionChanged();
-        }
 
-        // Remove OiDataFile from user collection
-        String filename = oifitsFile.getAbsoluteFilePath();
-        for (OIDataFile dataFile : getUserCollection().getFiles()) {
-            if (filename.equals(dataFile.getName())) {
-                getUserCollection().getFiles().remove(dataFile);
+        if (previous != null) {
+            // Remove OiDataFile from user collection
+            final String filePath = oifitsFile.getAbsoluteFilePath();
+            for (final Iterator<OIDataFile> it = userCollection.getFiles().iterator(); it.hasNext();) {
+                final OIDataFile dataFile = it.next();
+                if (filePath.equals(dataFile.getFile())) {
+                    it.remove();
+                }
             }
+
+            fireOIFitsCollectionChanged();
         }
 
         return previous;
     }
-
-    public OIFitsCollection getOIFitsCollection() {
-        return oiFitsCollection;
-    }
     // --- EVENTS ----------------------------------------------------------------
 
-    public boolean isNotify() {
-        return notify;
-    }
-
-    public void setNotify(final boolean notify) {
-        this.notify = notify;
-        if (notify) {
-            // TODO: record event type to fire ...
-            fireOIFitsCollectionChanged();
-        }
-    }
-
     /**
-     * Register the given OIFits collection listener
-     * @param listener OIFits collection listener
+     * Return the OIFitsCollectionEvent notifier
+     * @return OIFitsCollectionEvent notifier
      */
-    public void register(final OIFitsCollectionListener listener) {
-        this.listeners.addIfAbsent(listener);
-    }
-
-    /**
-     * Unregister the given OIFits collection listener
-     * @param listener OIFits collection listener
-     */
-    public void unregister(final OIFitsCollectionListener listener) {
-        this.listeners.remove(listener);
+    public EventNotifier<OIFitsCollectionEvent, OIFitsCollectionEventType> getOiFitsCollectionEventNotifier() {
+        return oiFitsCollectionEventNotifier;
     }
 
     /**
      * This fires an OIFits collection changed event to all registered listeners.
-     * @param oiFitsFile added OIFits file
      */
     private void fireOIFitsCollectionChanged() {
-        if (!this.notify) {
+        if (!oiFitsCollectionEventNotifier.isNotify()) {
             return;
         }
         if (logger.isDebugEnabled()) {
             logger.debug("fireOIFitsCollectionChanged: {}", this.oiFitsCollection);
         }
 
-        fireEvent(new OIFitsCollectionEvent(OIFitsCollectionEventType.CHANGED, this.oiFitsCollection));
+        this.oiFitsCollectionEventNotifier.fireEvent(new OIFitsCollectionEvent(OIFitsCollectionEventType.CHANGED, this.oiFitsCollection));
     }
 
     /**
-     * Send an event to the registered listeners.
-     * Note : any new listener registered during the processing of this event, will not be called
-     * @param event event
+     * This interface define the methods to be implemented by OIFits collection listener implementations
+     * @author bourgesl
      */
-    private void fireEvent(final OIFitsCollectionEvent event) {
-        // ensure events are fired by Swing EDT :
-        if (!SwingUtils.isEDT()) {
-            logger.warn("invalid thread : use EDT", new Throwable());
-        }
-        if (DEBUG_FIRE_EVENT) {
-            logger.warn("FIRE {}", event, new Throwable());
-        }
-
-        logger.debug("fireEvent: {}", event);
-
-        final long start = System.nanoTime();
-
-        for (final OIFitsCollectionListener listener : this.listeners) {
-            listener.onProcess(event);
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("fireEvent: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
-        }
+    public interface OIFitsCollectionListener extends GenericEventListener<OIFitsCollectionEvent, OIFitsCollectionEventType> {
     }
 }

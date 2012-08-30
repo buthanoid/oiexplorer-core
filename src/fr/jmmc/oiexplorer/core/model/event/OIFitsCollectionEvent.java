@@ -5,33 +5,22 @@ package fr.jmmc.oiexplorer.core.model.event;
 
 import fr.jmmc.oiexplorer.core.model.OIFitsCollection;
 
-
 /**
  * Base class for OIFits collection events consumed by OIFitsCollectionListener
  */
-public class OIFitsCollectionEvent {
+public final class OIFitsCollectionEvent extends GenericEvent<OIFitsCollectionEventType> {
 
-    /** event type */
-    private final OIFitsCollectionEventType type;
     /** OIFits collection related to this event */
     private final OIFitsCollection oiFitsCollection;
 
     /**
-     * Public constructor dealing with an observation
+     * Public constructor dealing with an OIFits collection 
      * @param type event type
      * @param oiFitsCollection OIFits collection related to this event
      */
     public OIFitsCollectionEvent(final OIFitsCollectionEventType type, final OIFitsCollection oiFitsCollection) {
-        this.type = type;
+        super(type);
         this.oiFitsCollection = oiFitsCollection;
-    }
-
-    /**
-     * Return the event type
-     * @return event type
-     */
-    public final OIFitsCollectionEventType getType() {
-        return type;
     }
 
     /**
@@ -40,14 +29,5 @@ public class OIFitsCollectionEvent {
      */
     public final OIFitsCollection getOIFitsCollection() {
         return oiFitsCollection;
-    }
-
-    /**
-     * Return a string representation "OIFitsCollectionEvent{type=...}"
-     * @return "OIFitsCollectionEvent{type=...}"
-     */
-    @Override
-    public String toString() {
-        return "OIFitsCollectionEvent{type=" + getType() + "}";
     }
 }

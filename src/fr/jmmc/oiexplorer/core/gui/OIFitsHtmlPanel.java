@@ -7,13 +7,11 @@ import fr.jmmc.jmcs.util.XmlFactory;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OITable;
 import fr.jmmc.oitools.model.XmlOutputVisitor;
-
 import java.io.IOException;
 import java.io.StringReader;
 import javax.swing.JEditorPane;
 import javax.swing.text.Document;
 import javax.swing.text.html.HTMLEditorKit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
