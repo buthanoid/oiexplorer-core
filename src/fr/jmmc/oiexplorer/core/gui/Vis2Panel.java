@@ -231,10 +231,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             // Add unique baselines:
             distinct.clear();
             if (hasVis2) {
-                getDistinctStaNames(this.oiFitsFile.getOiVis2(), distinct);
+//                getDistinctStaNames(this.oiFitsFile.getOiVis2(), distinct);
+                getDistinctStaConfs(this.oiFitsFile.getOiVis2(), distinct);
             }
             if (hasT3) {
-                getDistinctStaNames(this.oiFitsFile.getOiT3(), distinct);
+//                getDistinctStaNames(this.oiFitsFile.getOiT3(), distinct);
+                getDistinctStaConfs(this.oiFitsFile.getOiT3(), distinct);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "-", "_");
@@ -810,10 +812,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             // Add unique baselines:
             distinct.clear();
             if (hasVis2) {
-                getDistinctStaNames(this.oiFitsFile.getOiVis2(), distinct);
+//                getDistinctStaNames(this.oiFitsFile.getOiVis2(), distinct);
+                getDistinctStaConfs(this.oiFitsFile.getOiVis2(), distinct);
             }
             if (hasT3) {
-                getDistinctStaNames(this.oiFitsFile.getOiT3(), distinct);
+//                getDistinctStaNames(this.oiFitsFile.getOiT3(), distinct);
+                getDistinctStaConfs(this.oiFitsFile.getOiT3(), distinct);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, " ", " / ");
@@ -1732,6 +1736,24 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 staNames = oiData.getStaNames(staIndexes);
 
                 logger.debug("staNames : {}", staNames);
+
+                set.add(staNames);
+            }
+        }
+    }
+
+    /**
+     * Return the unique staNames values from given OIData tables
+     * @param oiDataList OIData tables
+     * @param set set instance to use
+     */
+    private static void getDistinctStaConfs(final OIData[] oiDataList, final Set<String> set) {
+        String staNames;
+        for (OIData oiData : oiDataList) {
+            for (short[] staIndexes : oiData.getDistinctStaConf()) {
+                staNames = oiData.getStaNames(staIndexes);
+
+                logger.debug("staConf : {}", staNames);
 
                 set.add(staNames);
             }
