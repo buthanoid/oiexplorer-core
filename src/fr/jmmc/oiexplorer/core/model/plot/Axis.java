@@ -5,6 +5,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
+import fr.jmmc.oiexplorer.core.model.OIBase;
 
 
 /**
@@ -42,7 +43,9 @@ import javax.xml.bind.annotation.XmlType;
     "plotError",
     "range"
 })
-public class Axis {
+public class Axis
+    extends OIBase
+{
 
     @XmlElement(required = true)
     protected String name;

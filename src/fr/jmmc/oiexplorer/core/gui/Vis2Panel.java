@@ -19,7 +19,7 @@ import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
 import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
-import fr.jmmc.oiexplorer.core.model.TargetUID;
+import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.util.Constants;

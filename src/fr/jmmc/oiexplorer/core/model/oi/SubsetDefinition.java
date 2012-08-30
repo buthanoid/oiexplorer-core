@@ -1,5 +1,5 @@
 
-package fr.jmmc.oiexplorer.core.model.plot;
+package fr.jmmc.oiexplorer.core.model.oi;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,24 +16,23 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
 
 /**
  * 
- *                 This type describes a plot definition.
+ *                 This type describes a subset definition.
  *             
  * 
- * <p>Java class for PlotDefinition complex type.
+ * <p>Java class for SubsetDefinition complex type.
  * 
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="PlotDefinition">
+ * &lt;complexType name="SubsetDefinition">
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
  *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}ID"/>
  *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
- *         &lt;element name="skipFlaggedData" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
- *         &lt;element name="drawLine" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
- *         &lt;element name="xAxis" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Axis"/>
- *         &lt;element name="yAxes" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Axis" maxOccurs="unbounded"/>
+ *         &lt;element name="target" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TargetUID"/>
+ *         &lt;element name="table" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/>
+ *         &lt;element name="filter" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -43,15 +42,14 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
  * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "PlotDefinition", propOrder = {
+@XmlType(name = "SubsetDefinition", propOrder = {
     "name",
     "description",
-    "skipFlaggedData",
-    "drawLine",
-    "xAxis",
-    "yAxes"
+    "target",
+    "tables",
+    "filters"
 })
-public class PlotDefinition
+public class SubsetDefinition
     extends OIBase
 {
 
@@ -61,12 +59,12 @@ public class PlotDefinition
     @XmlSchemaType(name = "ID")
     protected String name;
     protected String description;
-    protected boolean skipFlaggedData;
-    protected boolean drawLine;
     @XmlElement(required = true)
-    protected Axis xAxis;
-    @XmlElement(required = true)
-    protected List<Axis> yAxes;
+    protected TargetUID target;
+    @XmlElement(name = "table")
+    protected List<String> tables;
+    @XmlElement(name = "filter")
+    protected List<String> filters;
 
     /**
      * Gets the value of the name property.
@@ -117,88 +115,85 @@ public class PlotDefinition
     }
 
     /**
-     * Gets the value of the skipFlaggedData property.
-     * 
-     */
-    public boolean isSkipFlaggedData() {
-        return skipFlaggedData;
-    }
-
-    /**
-     * Sets the value of the skipFlaggedData property.
-     * 
-     */
-    public void setSkipFlaggedData(boolean value) {
-        this.skipFlaggedData = value;
-    }
-
-    /**
-     * Gets the value of the drawLine property.
-     * 
-     */
-    public boolean isDrawLine() {
-        return drawLine;
-    }
-
-    /**
-     * Sets the value of the drawLine property.
-     * 
-     */
-    public void setDrawLine(boolean value) {
-        this.drawLine = value;
-    }
-
-    /**
-     * Gets the value of the xAxis property.
+     * Gets the value of the target property.
      * 
      * @return
      *     possible object is
-     *     {@link Axis }
+     *     {@link TargetUID }
      *     
      */
-    public Axis getXAxis() {
-        return xAxis;
+    public TargetUID getTarget() {
+        return target;
     }
 
     /**
-     * Sets the value of the xAxis property.
+     * Sets the value of the target property.
      * 
      * @param value
      *     allowed object is
-     *     {@link Axis }
+     *     {@link TargetUID }
      *     
      */
-    public void setXAxis(Axis value) {
-        this.xAxis = value;
+    public void setTarget(TargetUID value) {
+        this.target = value;
     }
 
     /**
-     * Gets the value of the yAxes property.
+     * Gets the value of the tables property.
      * 
      * <p>
      * This accessor method returns a reference to the live list,
      * not a snapshot. Therefore any modification you make to the
      * returned list will be present inside the JAXB object.
-     * This is why there is not a <CODE>set</CODE> method for the yAxes property.
+     * This is why there is not a <CODE>set</CODE> method for the tables property.
      * 
      * <p>
      * For example, to add a new item, do as follows:
      * <pre>
-     *    getYAxes().add(newItem);
+     *    getTables().add(newItem);
      * </pre>
      * 
      * 
      * <p>
      * Objects of the following type(s) are allowed in the list
-     * {@link Axis }
+     * {@link String }
      * 
      * 
      */
-    public List<Axis> getYAxes() {
-        if (yAxes == null) {
-            yAxes = new ArrayList<Axis>();
+    public List<String> getTables() {
+        if (tables == null) {
+            tables = new ArrayList<String>();
         }
-        return this.yAxes;
+        return this.tables;
+    }
+
+    /**
+     * Gets the value of the filters property.
+     * 
+     * <p>
+     * This accessor method returns a reference to the live list,
+     * not a snapshot. Therefore any modification you make to the
+     * returned list will be present inside the JAXB object.
+     * This is why there is not a <CODE>set</CODE> method for the filters property.
+     * 
+     * <p>
+     * For example, to add a new item, do as follows:
+     * <pre>
+     *    getFilters().add(newItem);
+     * </pre>
+     * 
+     * 
+     * <p>
+     * Objects of the following type(s) are allowed in the list
+     * {@link String }
+     * 
+     * 
+     */
+    public List<String> getFilters() {
+        if (filters == null) {
+            filters = new ArrayList<String>();
+        }
+        return this.filters;
     }
 
 }

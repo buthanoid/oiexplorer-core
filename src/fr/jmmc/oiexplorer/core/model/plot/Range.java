@@ -4,6 +4,7 @@ package fr.jmmc.oiexplorer.core.model.plot;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlType;
+import fr.jmmc.oiexplorer.core.model.OIBase;
 
 
 /**
@@ -35,7 +36,9 @@ import javax.xml.bind.annotation.XmlType;
     "min",
     "max"
 })
-public class Range {
+public class Range
+    extends OIBase
+{
 
     protected double min;
     protected double max;

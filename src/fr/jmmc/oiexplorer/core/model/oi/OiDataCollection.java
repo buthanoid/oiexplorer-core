@@ -8,6 +8,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
+import fr.jmmc.oiexplorer.core.model.OIBase;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 
 
@@ -26,7 +27,9 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
  *         &lt;element name="file" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}OIDataFile" maxOccurs="unbounded"/>
+ *         &lt;element name="subsetDefinition" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}SubsetDefinition" maxOccurs="unbounded" minOccurs="0"/>
  *         &lt;element name="plotDefinition" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}PlotDefinition" maxOccurs="unbounded" minOccurs="0"/>
+ *         &lt;element name="plot" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}Plot" maxOccurs="unbounded" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -38,15 +41,23 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "OIDataCollection", propOrder = {
     "files",
-    "plotDefinitions"
+    "subsetDefinitions",
+    "plotDefinitions",
+    "plots"
 })
 @XmlRootElement(name = "oiDataCollection")
-public class OiDataCollection {
+public class OiDataCollection
+    extends OIBase
+{
 
     @XmlElement(name = "file", required = true)
     protected List<OIDataFile> files;
+    @XmlElement(name = "subsetDefinition")
+    protected List<SubsetDefinition> subsetDefinitions;
     @XmlElement(name = "plotDefinition")
     protected List<PlotDefinition> plotDefinitions;
+    @XmlElement(name = "plot")
+    protected List<Plot> plots;
 
     /**
      * Gets the value of the files property.
@@ -78,6 +89,35 @@ public class OiDataCollection {
     }
 
     /**
+     * Gets the value of the subsetDefinitions property.
+     * 
+     * <p>
+     * This accessor method returns a reference to the live list,
+     * not a snapshot. Therefore any modification you make to the
+     * returned list will be present inside the JAXB object.
+     * This is why there is not a <CODE>set</CODE> method for the subsetDefinitions property.
+     * 
+     * <p>
+     * For example, to add a new item, do as follows:
+     * <pre>
+     *    getSubsetDefinitions().add(newItem);
+     * </pre>
+     * 
+     * 
+     * <p>
+     * Objects of the following type(s) are allowed in the list
+     * {@link SubsetDefinition }
+     * 
+     * 
+     */
+    public List<SubsetDefinition> getSubsetDefinitions() {
+        if (subsetDefinitions == null) {
+            subsetDefinitions = new ArrayList<SubsetDefinition>();
+        }
+        return this.subsetDefinitions;
+    }
+
+    /**
      * Gets the value of the plotDefinitions property.
      * 
      * <p>
@@ -104,6 +144,35 @@ public class OiDataCollection {
             plotDefinitions = new ArrayList<PlotDefinition>();
         }
         return this.plotDefinitions;
+    }
+
+    /**
+     * Gets the value of the plots property.
+     * 
+     * <p>
+     * This accessor method returns a reference to the live list,
+     * not a snapshot. Therefore any modification you make to the
+     * returned list will be present inside the JAXB object.
+     * This is why there is not a <CODE>set</CODE> method for the plots property.
+     * 
+     * <p>
+     * For example, to add a new item, do as follows:
+     * <pre>
+     *    getPlots().add(newItem);
+     * </pre>
+     * 
+     * 
+     * <p>
+     * Objects of the following type(s) are allowed in the list
+     * {@link Plot }
+     * 
+     * 
+     */
+    public List<Plot> getPlots() {
+        if (plots == null) {
+            plots = new ArrayList<Plot>();
+        }
+        return this.plots;
     }
 
 }

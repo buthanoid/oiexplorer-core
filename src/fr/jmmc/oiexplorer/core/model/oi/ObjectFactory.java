@@ -45,4 +45,28 @@ public class ObjectFactory {
         return new OIDataFile();
     }
 
+    /**
+     * Create an instance of {@link SubsetDefinition }
+     * 
+     */
+    public SubsetDefinition createSubsetDefinition() {
+        return new SubsetDefinition();
+    }
+
+    /**
+     * Create an instance of {@link Plot }
+     * 
+     */
+    public Plot createPlot() {
+        return new Plot();
+    }
+
+    /**
+     * Create an instance of {@link TargetUID }
+     * 
+     */
+    public TargetUID createTargetUID() {
+        return new TargetUID();
+    }
+
 }

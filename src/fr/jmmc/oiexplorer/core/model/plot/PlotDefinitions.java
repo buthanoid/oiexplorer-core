@@ -8,6 +8,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
+import fr.jmmc.oiexplorer.core.model.OIBase;
 
 
 /**
@@ -38,7 +39,9 @@ import javax.xml.bind.annotation.XmlType;
     "plotDefinitions"
 })
 @XmlRootElement(name = "plotDefinitions")
-public class PlotDefinitions {
+public class PlotDefinitions
+    extends OIBase
+{
 
     @XmlElement(name = "plotDefinition", required = true)
     protected List<PlotDefinition> plotDefinitions;

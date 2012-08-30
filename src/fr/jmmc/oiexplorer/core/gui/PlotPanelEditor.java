@@ -5,7 +5,7 @@ package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.GenericListModel;
 import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
-import fr.jmmc.oiexplorer.core.model.TargetUID;
+import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oitools.meta.ColumnMeta;
@@ -59,7 +59,10 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         // Vis2Panel
         plotPanel = new Vis2Panel();
         setPlotPanel(plotPanel);
-
+    }
+    
+    public void init() {
+        
         doRefresh = false;
         try {
             // Comboboxes
@@ -69,6 +72,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
 
             plotTypeChoices.addAll(PlotDefinitionFactory.getInstance().getDefaultList());
             plotTypeChoices.add(customLabel);
+            
             plotTypeComboBox.setModel(new GenericListModel<String>(plotTypeChoices, true));
             plotTypeComboBox.setSelectedItem(PlotDefinitionFactory.PLOT_DEFAULT);
             plotTypeComboBox.addActionListener(this);

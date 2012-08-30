@@ -4,28 +4,34 @@ package fr.jmmc.oiexplorer.core.model.oi;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlID;
+import javax.xml.bind.annotation.XmlIDREF;
+import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import fr.jmmc.oiexplorer.core.model.OIBase;
+import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 
 
 /**
  * 
- *                 This type describes an oidata file.
+ *                 This type describes a plot instance.
  *             
  * 
- * <p>Java class for OIDataFile complex type.
+ * <p>Java class for Plot complex type.
  * 
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="OIDataFile">
+ * &lt;complexType name="Plot">
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
- *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
+ *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}ID"/>
  *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
- *         &lt;element name="file" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="checksum" type="{http://www.w3.org/2001/XMLSchema}long"/>
+ *         &lt;element name="plotDefinition" type="{http://www.w3.org/2001/XMLSchema}IDREF"/>
+ *         &lt;element name="subsetDefinition" type="{http://www.w3.org/2001/XMLSchema}IDREF"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -35,22 +41,30 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
  * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "OIDataFile", propOrder = {
+@XmlType(name = "Plot", propOrder = {
     "name",
     "description",
-    "file",
-    "checksum"
+    "plotDefinition",
+    "subsetDefinition"
 })
-public class OIDataFile
+public class Plot
     extends OIBase
 {
 
     @XmlElement(required = true)
+    @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
+    @XmlID
+    @XmlSchemaType(name = "ID")
     protected String name;
     protected String description;
-    @XmlElement(required = true)
-    protected String file;
-    protected long checksum;
+    @XmlElement(required = true, type = Object.class)
+    @XmlIDREF
+    @XmlSchemaType(name = "IDREF")
+    protected PlotDefinition plotDefinition;
+    @XmlElement(required = true, type = Object.class)
+    @XmlIDREF
+    @XmlSchemaType(name = "IDREF")
+    protected SubsetDefinition subsetDefinition;
 
     /**
      * Gets the value of the name property.
@@ -101,43 +115,51 @@ public class OIDataFile
     }
 
     /**
-     * Gets the value of the file property.
+     * Gets the value of the plotDefinition property.
      * 
      * @return
      *     possible object is
-     *     {@link String }
+     *     {@link Object }
      *     
      */
-    public String getFile() {
-        return file;
+    public PlotDefinition getPlotDefinition() {
+        return plotDefinition;
     }
 
     /**
-     * Sets the value of the file property.
+     * Sets the value of the plotDefinition property.
      * 
      * @param value
      *     allowed object is
-     *     {@link String }
+     *     {@link Object }
      *     
      */
-    public void setFile(String value) {
-        this.file = value;
+    public void setPlotDefinition(PlotDefinition value) {
+        this.plotDefinition = value;
     }
 
     /**
-     * Gets the value of the checksum property.
+     * Gets the value of the subsetDefinition property.
      * 
+     * @return
+     *     possible object is
+     *     {@link Object }
+     *     
      */
-    public long getChecksum() {
-        return checksum;
+    public SubsetDefinition getSubsetDefinition() {
+        return subsetDefinition;
     }
 
     /**
-     * Sets the value of the checksum property.
+     * Sets the value of the subsetDefinition property.
      * 
+     * @param value
+     *     allowed object is
+     *     {@link Object }
+     *     
      */
-    public void setChecksum(long value) {
-        this.checksum = value;
+    public void setSubsetDefinition(SubsetDefinition value) {
+        this.subsetDefinition = value;
     }
 
 }

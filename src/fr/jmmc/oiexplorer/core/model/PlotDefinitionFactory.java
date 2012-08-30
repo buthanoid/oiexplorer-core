@@ -27,25 +27,24 @@ public final class PlotDefinitionFactory {
 
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(PlotDefinitionFactory.class.getName());
-    /** Factory instance */
-    private final static PlotDefinitionFactory instance = new PlotDefinitionFactory();
-    /** plot (Vis2 - T3) vs spatial freq */
-    public final static String PLOT_VIS2DATA_T3PHI_SPATIAL_FREQ = "VIS2DATA_T3PHI/SPATIAL_FREQ";
-    /** plot (Vis2 - T3) vs wavelenth */
-    public final static String PLOT_VIS2DATA_T3PHI_EFF_WAVE = "VIS2DATA_T3PHI/EFF_WAVE";
-    /** plot (Vis2 - T3) vs wavelenth */
-    public final static String PLOT_VIS2DATA_T3PHI_MJD = "VIS2DATA_T3PHI/MJD";
     /** default plot */
-    public final static String PLOT_DEFAULT = PLOT_VIS2DATA_T3PHI_SPATIAL_FREQ;
-    /** JAXB Factory */
-    private static JAXBFactory jf;
+    public final static String PLOT_DEFAULT = "VIS2DATA_T3PHI/SPATIAL_FREQ"; // TODO: externalize in presets.xml
     /** Presets Filename */
-    private final static String PRESETS_FILENAME = "fr/jmmc/oiexplorer/core/model/plotDefinitionPresets.xml";
+    private final static String PRESETS_FILENAME = "fr/jmmc/oiexplorer/core/resource/plotDefinitionPresets.xml";
+    /** Factory instance */
+    private static volatile PlotDefinitionFactory instance = null;
+
+    /* members */
     /** default plot definitions */
     private final Map<String, PlotDefinition> defaults = new LinkedHashMap<String, PlotDefinition>();
 
-    /** Return factory singleton instance */
+    /** 
+     * Return the factory singleton instance 
+     */
     public static PlotDefinitionFactory getInstance() {
+        if (instance == null) {
+            instance = new PlotDefinitionFactory();
+        }
         return instance;
     }
 
@@ -58,49 +57,41 @@ public final class PlotDefinitionFactory {
 
     /**
      * Initialize default presets extracted from preset file.
+     * @throws IllegalStateException if the preset file is not found, an I/O exception occured, unmarshalling failed
      */
-    private void initializeDefaults() {
+    private void initializeDefaults() throws IllegalStateException {
 
-
+        PlotDefinitions presets;
         try {
+            JAXBFactory jbf = JAXBFactory.getInstance(PlotDefinition.class.getPackage().getName());
 
-            PlotDefinitions presets;
-            try {
-                JAXBFactory jbf = JAXBFactory.getInstance(PlotDefinition.class.getPackage().getName());
-                
-                URL presetUrl=FileUtils.getResource(PRESETS_FILENAME);     
-                
-                logger.info("Loading presets from : {}", presetUrl);
-                
-                presets = (PlotDefinitions) JAXBUtils.loadObject(presetUrl, jbf);
-                
-            } catch (IOException ioe) {
-                throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, ioe);
-            } catch (IllegalStateException ise) {
-                throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, ise);
-            } catch (XmlBindException xbe) {
-                throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, xbe);
-            }
+            URL presetUrl = FileUtils.getResource(PRESETS_FILENAME);
 
-            /* Store defaults computing names (actually, as described in constants ) */
-            for (PlotDefinition plotDefinition : presets.getPlotDefinitions()) {
-                StringBuilder sb = new StringBuilder();
-                for (Axis yAxis : plotDefinition.getYAxes()) {
-                    sb.append(yAxis.getName()).append("_");
-                }
-                sb.replace(sb.length() - 1, sb.length(), "/");
-                sb.append(plotDefinition.getXAxis().getName());
+            logger.info("Loading presets from : {}", presetUrl);
 
-                defaults.put(sb.toString(), plotDefinition);
-            }
-            
+            presets = (PlotDefinitions) JAXBUtils.loadObject(presetUrl, jbf);
+
+        } catch (IOException ioe) {
+            throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, ioe);
         } catch (IllegalStateException ise) {
-            // TODO: fix JAXB integration as it makes Netbeans Swing Editor failing !!
-            logger.error("Unable to load presets !", ise);
+            throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, ise);
+        } catch (XmlBindException xbe) {
+            throw new IllegalStateException("Can't load default preset file from " + PRESETS_FILENAME, xbe);
+        }
+
+        /* Store defaults computing names (actually, as described in constants ) */
+        for (PlotDefinition plotDefinition : presets.getPlotDefinitions()) {
+            StringBuilder sb = new StringBuilder();
+            for (Axis yAxis : plotDefinition.getYAxes()) {
+                sb.append(yAxis.getName()).append("_");
+            }
+            sb.replace(sb.length() - 1, sb.length(), "/");
+            sb.append(plotDefinition.getXAxis().getName());
+
+            defaults.put(sb.toString(), plotDefinition);
         }
     }
 
-    
     /** Get default presets.
      * @return List of default plotDefinitions
      */
@@ -113,5 +104,4 @@ public final class PlotDefinitionFactory {
     public PlotDefinition getDefault(final String key) {
         return defaults.get(key);
     }
-    
 }
