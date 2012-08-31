@@ -7,7 +7,6 @@ import fr.jmmc.jmcs.jaxb.JAXBFactory;
 import fr.jmmc.jmcs.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.jaxb.XmlBindException;
 import fr.jmmc.jmcs.util.FileUtils;
-import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinitions;
 import java.io.IOException;
@@ -21,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author bourgesl
+ * @author bourgesl, mella
  */
 public final class PlotDefinitionFactory {
 
@@ -80,16 +79,9 @@ public final class PlotDefinitionFactory {
         }
 
         /* Store defaults computing names (actually, as described in constants ) */
-        for (PlotDefinition plotDefinition : presets.getPlotDefinitions()) {
-            StringBuilder sb = new StringBuilder();
-            for (Axis yAxis : plotDefinition.getYAxes()) {
-                sb.append(yAxis.getName()).append("_");
-            }
-            sb.replace(sb.length() - 1, sb.length(), "/");
-            sb.append(plotDefinition.getXAxis().getName());
-
-            defaults.put(sb.toString(), plotDefinition);
-        }
+        for (PlotDefinition plotDefinition : presets.getPlotDefinitions()) {            
+            defaults.put(plotDefinition.getName(), plotDefinition);
+        }        
     }
 
     /** Get default presets.
