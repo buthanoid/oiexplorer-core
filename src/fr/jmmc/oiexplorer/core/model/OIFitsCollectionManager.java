@@ -9,6 +9,7 @@ import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
 import fr.jmmc.oiexplorer.core.model.event.GenericEventListener;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEvent;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
+import fr.jmmc.oiexplorer.core.model.event.PlotDefinitionEvent;
 import fr.jmmc.oiexplorer.core.model.event.SubsetDefinitionEvent;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
 import fr.jmmc.oiexplorer.core.model.oi.OiDataCollection;
@@ -50,6 +51,8 @@ public final class OIFitsCollectionManager {
     private final EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType> oiFitsCollectionEventNotifier;
     /** SubsetDefinitionEvent notifier */
     private final EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType> subsetDefinitionEventNotifier;
+    /** PlotDefinitionEvent notifier */
+    private final EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType> plotDefinitionEventNotifier;
 
     /**
      * Return the Manager singleton
@@ -79,6 +82,7 @@ public final class OIFitsCollectionManager {
             }
         };
         this.subsetDefinitionEventNotifier = new EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType>();
+        this.plotDefinitionEventNotifier = new EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType>();
 
         reset(false);
     }
@@ -379,6 +383,22 @@ public final class OIFitsCollectionManager {
         return null;
     }
 
+    /**
+     * Update the plot definition corresponding to the same name
+     * @param plotDefinition plot definition with updated values
+     */
+    public void updatePlotDefinition(final PlotDefinition plotDefinition) {
+        final PlotDefinition plotDef = getPlotDefinition(plotDefinition.getName());
+
+        if (plotDef == null) {
+            // help to support preset case
+        } else if (plotDef != plotDefinition) {
+            // TODO: do copy
+            throw new IllegalStateException("Not yet implemented !");
+        }
+        firePlotDefinitionChanged(plotDefinition);
+    }
+
     // --- EVENTS ----------------------------------------------------------------
     /**
      * Return the OIFitsCollectionEvent notifier
@@ -423,6 +443,29 @@ public final class OIFitsCollectionManager {
         }
 
         this.subsetDefinitionEventNotifier.fireEvent(new SubsetDefinitionEvent(OIFitsCollectionEventType.SUBSET_CHANGED, subsetDefinition));
+    }
+
+    /**
+     * Return the PlotDefinitionEvent notifier
+     * @return PlotDefinitionEvent notifier
+     */
+    public EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType> getPlotDefinitionEventNotifier() {
+        return plotDefinitionEventNotifier;
+    }
+
+    /**
+     * This fires a PlotDefinitionChanged event to all registered listeners.
+     * @param plotDefinition plot definition to use
+     */
+    private void firePlotDefinitionChanged(final PlotDefinition plotDefinition) {
+        if (!plotDefinitionEventNotifier.isNotify()) {
+            return;
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug("firePlotDefinitionChanged: {}", this.oiFitsCollection);
+        }
+
+        this.plotDefinitionEventNotifier.fireEvent(new PlotDefinitionEvent(OIFitsCollectionEventType.PLOT_DEFINITION_CHANGED, plotDefinition));
     }
 
     /**
