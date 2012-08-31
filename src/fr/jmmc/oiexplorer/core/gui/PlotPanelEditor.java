@@ -4,8 +4,13 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.GenericListModel;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager.OIFitsCollectionEventListener;
 import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
-import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
+import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
+import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
+import fr.jmmc.oiexplorer.core.model.event.SubsetDefinitionEvent;
+import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oitools.meta.ColumnMeta;
@@ -25,7 +30,8 @@ import org.slf4j.LoggerFactory;
  * This Panel allow to select data to plot and (optionnaly in the future) plots them just below.
  * @author mella
  */
-public class PlotPanelEditor extends javax.swing.JPanel implements ActionListener {
+public class PlotPanelEditor extends javax.swing.JPanel implements ActionListener,
+                                                                   OIFitsCollectionEventListener {
 
     /* members */
     /** Logger */
@@ -37,32 +43,35 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     private PlotDefinition plotDefinition;
     /** Internal custom plot definition*/
     private PlotDefinition customPlotDefinition;
+    /** subset definition */
+    private SubsetDefinition subsetDefinition = null;
     /** Store all choices available to plot on x axis given to current data to plot */
     private final List<String> xAxisChoices = new LinkedList<String>();
     /** Store all choices available to plot on y axes given to current data to plot */
     private final List<String> yAxisChoices = new LinkedList<String>();
     /** List of comboboxes associated to y axes */
     private final List<JComboBox> yComboBoxes = new LinkedList<JComboBox>();
-    private TargetUID target = null;
-    private OIFitsFile oiFitsFile = null;
-    private Vis2Panel plotPanel;
     private String lastXComboBoxValue = null;
     private List<String> lastYComboBoxesValues = new LinkedList<String>();
     /** flag to enable plot refreshes */
     private boolean doRefresh = false;
+    /** TODO REMOVE */
+    private Vis2Panel plotPanel;
 
     /** Creates new form PlotPanelEditor */
     // TODO add one new constructor not to always add a plotPanel at the bottom
     public PlotPanelEditor() {
+        OIFitsCollectionManager.getInstance().getSubsetDefinitionEventNotifier().register(this);
+
         initComponents();
 
         // Vis2Panel
         plotPanel = new Vis2Panel();
         setPlotPanel(plotPanel);
     }
-    
+
     public void init() {
-        
+
         doRefresh = false;
         try {
             // Comboboxes
@@ -72,7 +81,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
 
             plotTypeChoices.addAll(PlotDefinitionFactory.getInstance().getDefaultList());
             plotTypeChoices.add(customLabel);
-            
+
             plotTypeComboBox.setModel(new GenericListModel<String>(plotTypeChoices, true));
             plotTypeComboBox.setSelectedItem(PlotDefinitionFactory.PLOT_DEFAULT);
             plotTypeComboBox.addActionListener(this);
@@ -95,21 +104,19 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     }
 
     public Vis2Panel getPlotPanel() {
-        return this.plotPanel;
+        return plotPanel;
     }
 
     /**
-     * Update combo and widget according to the content of given OIFits data.
+     * Update widgets and plot given the OIFits structure
      * and request the plotPanel to be updated if present.
-     * @param target target id 
-     * @param oiFitsFile OIFits structure
+     * @param subsetDefinition subset definition
      */
-    public void updateOIFits(final TargetUID target, final OIFitsFile oiFitsFile) {
-        logger.warn("updateDataToPlot() requested for selection on '{}' target ", target);
+    public void update(final SubsetDefinition subsetDefinition) {
+        logger.warn("update: subset target ", subsetDefinition.getTarget());
 
-        /* store references of data to plot */
-        this.target = target;
-        this.oiFitsFile = oiFitsFile;
+        /* store subset definition */
+        this.subsetDefinition = subsetDefinition;
 
         doRefresh = false;
         try {
@@ -123,7 +130,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         actionPerformed(null);
     }
 
-    /** get the associated PlotDefinition */
+    /** get the associated PlotDefinition : TODO remove */
     public PlotDefinition getPlotDefinition() {
         return plotDefinition;
     }
@@ -161,9 +168,9 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         xAxisChoices.clear();
         yAxisChoices.clear();
 
-        if (oiFitsFile != null) {
+        if (subsetDefinition != null && subsetDefinition.getOIFitsSubset() != null) {
             // Get whole available columns
-            final Set<String> columns = getDistinctColumns(oiFitsFile);
+            final Set<String> columns = getDistinctColumns(subsetDefinition.getOIFitsSubset());
 
             xAxisChoices.addAll(columns);
             yAxisChoices.addAll(columns);
@@ -195,9 +202,9 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         // Clear all content       
         yAxisChoices.clear();
 
-        if (oiFitsFile != null) {
+        if (subsetDefinition != null && subsetDefinition.getOIFitsSubset() != null) {
             // Get whole available columns compatible with selected x
-            final Set<String> columns = getDistinctColumns(oiFitsFile, getxAxis());
+            final Set<String> columns = getDistinctColumns(subsetDefinition.getOIFitsSubset(), getxAxis());
 
             yAxisChoices.addAll(columns);
         }
@@ -465,9 +472,30 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     }
 
     private void refreshPlot() {
-        if (plotPanel != null && doRefresh) {
+        if (doRefresh && plotPanel != null) {
             // update or reset the plot:
-            plotPanel.plot(target, oiFitsFile);
+            // TODO: use events here !!
+            if (this.subsetDefinition != null) {
+                plotPanel.plot(subsetDefinition.getTarget(), subsetDefinition.getOIFitsSubset());
+            } else {
+                plotPanel.plot(null, null);
+            }
+        }
+    }
+
+    /**
+     * Handle the given OIFits collection event
+     * @param event OIFits collection event
+     */
+    @Override
+    public void onProcess(final GenericEvent<OIFitsCollectionEventType> event) {
+        logger.debug("Received event to process {}", event);
+
+        switch (event.getType()) {
+            case SUBSET_CHANGED:
+                update(((SubsetDefinitionEvent) event).getSubsetDefinition());
+                break;
+            default:
         }
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
