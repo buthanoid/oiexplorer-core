@@ -177,14 +177,14 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         }
 
         if (!xAxisChoices.isEmpty()) {
-            if (lastXComboBoxValue != null) {
+            if (lastXComboBoxValue != null && xAxisChoices.contains(lastXComboBoxValue)) {
                 xAxisComboBox.setSelectedItem(lastXComboBoxValue);
             } else {
                 xAxisComboBox.setSelectedIndex(0);
             }
         }
         if (!yAxisChoices.isEmpty()) {
-            for (int i = 0; i < yComboBoxes.size(); i++) {
+            for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
                 if (lastYComboBoxesValues.size() > i && yAxisChoices.contains(lastYComboBoxesValues.get(i))) {
                     yComboBoxes.get(i).setSelectedItem(lastYComboBoxesValues.get(i));
                 } else {
