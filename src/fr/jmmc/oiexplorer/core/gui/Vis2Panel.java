@@ -672,7 +672,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * @param target target unique identifier to use
      * @param oiFitsFile OIFits file to use
      */
-    private void plot(final TargetUID target, final OIFitsFile oiFitsFile) {
+    public void plot(final TargetUID target, final OIFitsFile oiFitsFile) {
         logger.debug("plot : {}", oiFitsFile);
 
         // memorize plot data:
