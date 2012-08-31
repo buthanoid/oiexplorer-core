@@ -19,8 +19,10 @@ public class EventNotifier<K extends GenericEvent<V>, V> {
 
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(EventNotifier.class);
+    /** flag to log a stack trace in method register/unregister to debug registration */
+    private static final boolean DEBUG_LISTENER = false;
     /** flag to log a stack trace in method fireEvent() to debug events */
-    private static boolean DEBUG_FIRE_EVENT = false;
+    private static final boolean DEBUG_FIRE_EVENT = false;
     /* members */
     /** enable / disable notifications */
     private boolean notify = true;
@@ -58,7 +60,7 @@ public class EventNotifier<K extends GenericEvent<V>, V> {
      * @param listener event listener
      */
     public final void register(final GenericEventListener<K, V> listener) {
-        if (DEBUG_FIRE_EVENT) {
+        if (DEBUG_LISTENER) {
             logger.warn("REGISTER {}", listener, new Throwable());
         }
         this.listeners.addIfAbsent(listener);
@@ -69,7 +71,7 @@ public class EventNotifier<K extends GenericEvent<V>, V> {
      * @param listener event listener
      */
     public final void unregister(final GenericEventListener<K, V> listener) {
-        if (DEBUG_FIRE_EVENT) {
+        if (DEBUG_LISTENER) {
             logger.warn("UNREGISTER {}", listener, new Throwable());
         }
         this.listeners.remove(listener);
@@ -94,19 +96,14 @@ public class EventNotifier<K extends GenericEvent<V>, V> {
         final long start = System.nanoTime();
 
         for (final GenericEventListener<K, V> listener : this.listeners) {
+            if (DEBUG_FIRE_EVENT) {
+                logger.warn("FIRE {} TO {}", event, listener);
+            }
             listener.onProcess(event);
         }
 
         if (logger.isDebugEnabled()) {
             logger.debug("fireEvent: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
         }
-    }
-
-    public static boolean isDEBUG_FIRE_EVENT() {
-        return DEBUG_FIRE_EVENT;
-    }
-
-    public static void setDEBUG_FIRE_EVENT(final boolean DEBUG_FIRE_EVENT) {
-        EventNotifier.DEBUG_FIRE_EVENT = DEBUG_FIRE_EVENT;
     }
 }
