@@ -5,14 +5,21 @@ package fr.jmmc.oiexplorer.core.model;
 
 import fr.jmmc.jmcs.gui.component.StatusBar;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
+import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
 import fr.jmmc.oiexplorer.core.model.event.GenericEventListener;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEvent;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
+import fr.jmmc.oiexplorer.core.model.event.SubsetDefinitionEvent;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
 import fr.jmmc.oiexplorer.core.model.oi.OiDataCollection;
+import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
+import fr.jmmc.oiexplorer.core.model.oi.TableUID;
+import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
+import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
+import fr.jmmc.oitools.model.OITable;
 import fr.nom.tam.fits.FitsException;
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +38,8 @@ public final class OIFitsCollectionManager {
     private static final Logger logger = LoggerFactory.getLogger(OIFitsCollectionManager.class);
     /** Singleton pattern */
     private final static OIFitsCollectionManager instance = new OIFitsCollectionManager();
+    /** Current key */
+    private final static String CURRENT = "CURRENT";
     /* members */
     /** OIFits collection */
     private OIFitsCollection oiFitsCollection = null;
@@ -38,7 +47,9 @@ public final class OIFitsCollectionManager {
     private OiDataCollection userCollection = null;
     /* event dispatchers */
     /** OIFitsCollectionEvent notifier */
-    private final EventNotifier<OIFitsCollectionEvent, OIFitsCollectionEventType> oiFitsCollectionEventNotifier;
+    private final EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType> oiFitsCollectionEventNotifier;
+    /** SubsetDefinitionEvent notifier */
+    private final EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType> subsetDefinitionEventNotifier;
 
     /**
      * Return the Manager singleton
@@ -54,7 +65,7 @@ public final class OIFitsCollectionManager {
      */
     private OIFitsCollectionManager() {
         super();
-        this.oiFitsCollectionEventNotifier = new EventNotifier<OIFitsCollectionEvent, OIFitsCollectionEventType>() {
+        this.oiFitsCollectionEventNotifier = new EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType>() {
             /**
              * Disable repeating notifications ...
              */
@@ -67,6 +78,7 @@ public final class OIFitsCollectionManager {
                 }
             }
         };
+        this.subsetDefinitionEventNotifier = new EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType>();
 
         reset(false);
     }
@@ -92,24 +104,31 @@ public final class OIFitsCollectionManager {
 
     /**
      * Load OIDataCollection files (TODO: plot def to be handled)
-     * @param collection OiDataCollection to look for
+     * @param oiDataCollection OiDataCollection to look for
      * @param checker to report validation information
      * @throws IOException if a fits file can not be loaded
      */
-    public void loadOIDataCollection(final OiDataCollection collection, final OIFitsChecker checker) throws IOException {
+    public void loadOIDataCollection(final OiDataCollection oiDataCollection, final OIFitsChecker checker) throws IOException {
         this.oiFitsCollectionEventNotifier.setNotify(false);
         try {
+            // first reset:
             reset();
 
-            for (OIDataFile oidataFile : collection.getFiles()) {
+            for (OIDataFile oidataFile : oiDataCollection.getFiles()) {
                 loadOIFitsFile(oidataFile.getFile(), checker);
             }
+
+            // TODO: check missing files !
+
         } finally {
             this.oiFitsCollectionEventNotifier.setNotify(true);
         }
-        userCollection.getFiles().addAll(collection.getFiles());
 
-        // TODO what about user plot definitions
+        // TODO what about user plot definitions ...
+        // add them but should be check for consistency related to loaded files (errors can occur while loading):
+        this.userCollection.getSubsetDefinitions().addAll(oiDataCollection.getSubsetDefinitions());
+        this.userCollection.getPlotDefinitions().addAll(oiDataCollection.getPlotDefinitions());
+        this.userCollection.getPlots().addAll(oiDataCollection.getPlots());
     }
 
     /**
@@ -141,9 +160,7 @@ public final class OIFitsCollectionManager {
         }
     }
 
-    // save ...
-    // merge ...
-    /* --- OIFits file collection handling ------------------------------------- */
+    // TODO: save / merge ... (elsewhere)
     /**
      * Reset the OIFits file collection
      */
@@ -168,18 +185,23 @@ public final class OIFitsCollectionManager {
         return oiFitsCollection;
     }
 
-    /** This method can be used to export current file list */
-    public OiDataCollection getUserCollection() {
-        return userCollection;
-    }
-
-    public void addOIFitsFile(final OIFitsFile oifitsFile) {
-        if (oifitsFile != null) {
-            oiFitsCollection.addOIFitsFile(oifitsFile);
+    public void addOIFitsFile(final OIFitsFile oiFitsFile) {
+        if (oiFitsFile != null) {
+            oiFitsCollection.addOIFitsFile(oiFitsFile);
 
             // Add new OIDataFile in collection 
             final OIDataFile dataFile = new OIDataFile();
-            dataFile.setFile(oifitsFile.getAbsoluteFilePath());
+
+            final String id = oiFitsFile.getName().replaceAll(Constants.REGEXP_INVALID_TEXT_CHARS, "_");
+
+            // TODO: make it unique !!
+            dataFile.setName(id);
+
+            dataFile.setFile(oiFitsFile.getAbsoluteFilePath());
+            // checksum !
+
+            // store oiFitsFile reference:
+            dataFile.setOIFitsFile(oiFitsFile);
 
             userCollection.getFiles().add(dataFile);
 
@@ -187,12 +209,12 @@ public final class OIFitsCollectionManager {
         }
     }
 
-    public OIFitsFile removeOIFitsFile(final OIFitsFile oifitsFile) {
-        final OIFitsFile previous = oiFitsCollection.removeOIFitsFile(oifitsFile);
+    public OIFitsFile removeOIFitsFile(final OIFitsFile oiFitsFile) {
+        final OIFitsFile previous = oiFitsCollection.removeOIFitsFile(oiFitsFile);
 
         if (previous != null) {
             // Remove OiDataFile from user collection
-            final String filePath = oifitsFile.getAbsoluteFilePath();
+            final String filePath = oiFitsFile.getAbsoluteFilePath();
             for (final Iterator<OIDataFile> it = userCollection.getFiles().iterator(); it.hasNext();) {
                 final OIDataFile dataFile = it.next();
                 if (filePath.equals(dataFile.getFile())) {
@@ -205,18 +227,169 @@ public final class OIFitsCollectionManager {
 
         return previous;
     }
-    // --- EVENTS ----------------------------------------------------------------
 
+    /** This method can be used to export current file list */
+    public OiDataCollection getUserCollection() {
+        return userCollection;
+    }
+
+    /* --- file handling ------------------------------------- */
+    /**
+     * Return an OIDataFile given its name
+     * @param name file name
+     * @return OIDataFile or null if not found
+     */
+    public OIDataFile getOIDataFile(final String name) {
+        for (OIDataFile dataFile : this.userCollection.getFiles()) {
+            if (name.equals(dataFile.getName())) {
+                return dataFile;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Return an OIDataFile given its related OIFitsFile
+     * @param oiFitsFile OIFitsFile to find
+     * @return OIDataFile or null if not found
+     */
+    public OIDataFile getOIDataFile(final OIFitsFile oiFitsFile) {
+        for (OIDataFile dataFile : this.userCollection.getFiles()) {
+            if (oiFitsFile == dataFile.getOIFitsFile()) {
+                return dataFile;
+            }
+        }
+        return null;
+    }
+
+    /* --- subset definition handling ------------------------------------- */
+    /**
+     * Return the current subset definition
+     * @return subset definition
+     */
+    public SubsetDefinition getCurrentSubsetDefinition() {
+        SubsetDefinition subsetDefinition = getSubsetDefinition(CURRENT);
+        if (subsetDefinition == null) {
+            subsetDefinition = new SubsetDefinition();
+            subsetDefinition.setName(CURRENT);
+            this.userCollection.getSubsetDefinitions().add(subsetDefinition);
+        }
+        return subsetDefinition;
+    }
+
+    /**
+     * Return a subset definition by its name
+     * @param name plot definition name
+     * @return subset definition or null if not found
+     */
+    public SubsetDefinition getSubsetDefinition(final String name) {
+        for (SubsetDefinition subsetDefinition : this.userCollection.getSubsetDefinitions()) {
+            if (name.equals(subsetDefinition.getName())) {
+                return subsetDefinition;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Update the subset definition corresponding to the same name
+     * @param subsetDefinition subset definition with updated values
+     */
+    public void updateSubsetDefinition(final SubsetDefinition subsetDefinition) {
+        final SubsetDefinition subset = getSubsetDefinition(subsetDefinition.getName());
+
+        if (subset != subsetDefinition) {
+            // TODO: do copy
+            throw new IllegalStateException("Not implemented !");
+        }
+
+        // Get OIFitsFile structure for this target:
+        final OIFitsFile oiFitsSubset;
+
+        if (this.oiFitsCollection.isEmpty()) {
+            oiFitsSubset = null;
+        } else {
+            final OIFitsFile dataForTarget = this.oiFitsCollection.getOiDataList(subset.getTarget());
+
+            if (dataForTarget == null) {
+                oiFitsSubset = null;
+            } else {
+                // apply table selection:
+                if (subset.getTables().isEmpty()) {
+                    oiFitsSubset = dataForTarget;
+                } else {
+                    oiFitsSubset = new OIFitsFile();
+
+                    for (TableUID table : subset.getTables()) {
+                        final OIDataFile oiDataFile = table.getFile();
+                        final OIFitsFile oiFitsFile = oiDataFile.getOIFitsFile();
+
+                        if (oiFitsFile != null) {
+                            final Integer extNb = table.getExtNb();
+
+                            // add all tables:
+                            for (OITable oiData : dataForTarget.getOiTables()) {
+                                // file path comparison:
+                                if (oiData.getOIFitsFile().equals(oiFitsFile)) {
+
+                                    if (extNb == null || oiData.getExtNb() == extNb.intValue()) {
+                                        oiFitsSubset.addOiTable(oiData);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        logger.warn("oiFitsSubset: " + oiFitsSubset);
+
+        subset.setOIFitsSubset(oiFitsSubset);
+
+        fireSubsetDefinitionChanged(subset);
+    }
+
+    /* --- plot definition handling --------- ---------------------------- */
+    /**
+     * Return the current plot definition
+     * @return plot definition
+     */
+    public PlotDefinition getCurrentPlotDefinition() {
+        PlotDefinition plotDefinition = getPlotDefinition(CURRENT);
+        if (plotDefinition == null) {
+            plotDefinition = new PlotDefinition();
+            plotDefinition.setName(CURRENT);
+            this.userCollection.getPlotDefinitions().add(plotDefinition);
+        }
+        return plotDefinition;
+    }
+
+    /**
+     * Return a plot definition by its name
+     * @param name plot definition name
+     * @return plot definition or null if not found
+     */
+    public PlotDefinition getPlotDefinition(final String name) {
+        for (PlotDefinition plotDefinition : this.userCollection.getPlotDefinitions()) {
+            if (name.equals(plotDefinition.getName())) {
+                return plotDefinition;
+            }
+        }
+        return null;
+    }
+
+    // --- EVENTS ----------------------------------------------------------------
     /**
      * Return the OIFitsCollectionEvent notifier
      * @return OIFitsCollectionEvent notifier
      */
-    public EventNotifier<OIFitsCollectionEvent, OIFitsCollectionEventType> getOiFitsCollectionEventNotifier() {
+    public EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType> getOiFitsCollectionEventNotifier() {
         return oiFitsCollectionEventNotifier;
     }
 
     /**
-     * This fires an OIFits collection changed event to all registered listeners.
+     * This fires an OIFitsCollectionChanged event to all registered listeners.
      */
     private void fireOIFitsCollectionChanged() {
         if (!oiFitsCollectionEventNotifier.isNotify()) {
@@ -230,9 +403,32 @@ public final class OIFitsCollectionManager {
     }
 
     /**
-     * This interface define the methods to be implemented by OIFits collection listener implementations
+     * Return the SubsetDefinitionEvent notifier
+     * @return SubsetDefinitionEvent notifier
+     */
+    public EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType> getSubsetDefinitionEventNotifier() {
+        return subsetDefinitionEventNotifier;
+    }
+
+    /**
+     * This fires a SubsetDefinitionChanged event to all registered listeners.
+     * @param subsetDefinition subset definition to use
+     */
+    private void fireSubsetDefinitionChanged(final SubsetDefinition subsetDefinition) {
+        if (!subsetDefinitionEventNotifier.isNotify()) {
+            return;
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug("fireSubsetDefinitionChanged: {}", this.oiFitsCollection);
+        }
+
+        this.subsetDefinitionEventNotifier.fireEvent(new SubsetDefinitionEvent(OIFitsCollectionEventType.SUBSET_CHANGED, subsetDefinition));
+    }
+
+    /**
+     * This interface define the methods to be implemented by OIFitsCollectionEvent listener implementations
      * @author bourgesl
      */
-    public interface OIFitsCollectionListener extends GenericEventListener<OIFitsCollectionEvent, OIFitsCollectionEventType> {
+    public interface OIFitsCollectionEventListener extends GenericEventListener<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType> {
     }
 }
