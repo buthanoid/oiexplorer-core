@@ -18,7 +18,13 @@ import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.PageSize;
 import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
-import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager.OIFitsCollectionEventListener;
+import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
+import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
+import fr.jmmc.oiexplorer.core.model.event.PlotDefinitionEvent;
+import fr.jmmc.oiexplorer.core.model.event.SubsetDefinitionEvent;
+import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
@@ -71,7 +77,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public final class Vis2Panel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-                                                                   PDFExportable {
+                                                                   PDFExportable, OIFitsCollectionEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -119,21 +125,18 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private XYTextAnnotation aJMMCV2 = null;
     /** JMMC annotation */
     private XYTextAnnotation aJMMCT3 = null;
-    /** Optional plot definition editor */
-    private PlotPanelEditor plotDefinitionEditor = null;
-
+    /** OIFitsCollectionManager singleton */
+    private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    /** subset containing data to be plotted */
+    private SubsetDefinition subsetDefinition;
+        
     /**
      * Constructor
      */
     public Vis2Panel() {
         initComponents();
-
         postInit();
-    }
-
-    public void setPlotDefinitionEditor(final PlotPanelEditor plotDefinitionEditor) {
-        this.plotDefinitionEditor = plotDefinitionEditor;
-    }
+    }    
 
     /**
      * This method is called from within the constructor to
@@ -361,6 +364,11 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         }
 
         resetPlot();
+        
+        // Register for interest on data and configuration for plotting
+        ocm.getSubsetDefinitionEventNotifier().register(this);
+        ocm.getPlotDefinitionEventNotifier().register(this);
+
     }
 
     private static Crosshair createCrosshair() {
@@ -664,7 +672,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * @param target target unique identifier to use
      * @param oiFitsFile OIFits file to use
      */
-    public void plot(final TargetUID target, final OIFitsFile oiFitsFile) {
+    private void plot(final TargetUID target, final OIFitsFile oiFitsFile) {
         logger.debug("plot : {}", oiFitsFile);
 
         // memorize plot data:
@@ -680,7 +688,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     /**
      * Reset plot
      */
-    public void resetPlot() {
+    private void resetPlot() {
         this.hasData = false;
 
         // disable chart & plot notifications:
@@ -1792,7 +1800,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         }
         sb.setLength(sb.length() - separator.length());
     }
-
+    
     /**
      * Get String operator applied on any OIData table
      */
@@ -1806,14 +1814,13 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         public String getString(final OIData oiData);
     }
 
-    private PlotDefinition getPlotDefinition() {
-        if (plotDefinitionEditor != null) {
-            return plotDefinitionEditor.getPlotDefinition();
-        }
-        if (this.plotDefinition != null) {
-            return this.plotDefinition;
-        }
-        return PlotDefinitionFactory.getInstance().getDefault(PlotDefinitionFactory.PLOT_DEFAULT);
+    /**
+     * Return the last Plot definition ( received in onProcess() )
+     * TODO add on setPlotDefinition to indicates on plotDef of interrest to ignore all other one
+     * @return plotDefinition to be used for plot (maybe null before any event)
+     */
+    private PlotDefinition getPlotDefinition() {        
+        return plotDefinition;        
     }
 
     private static class PlotInfo {
@@ -1822,4 +1829,30 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         protected ColumnMeta xMeta = null;
         protected ColumnMeta yMeta = null;
     }
+    
+    
+    /**
+     * Handle the given OIFits collection event
+     * @param event OIFits collection event
+     */
+    @Override
+    public void onProcess(GenericEvent<OIFitsCollectionEventType> event) {
+        logger.warn("onProcess : {}", event);
+        switch (event.getType()) {
+            case SUBSET_CHANGED:
+                /* store subset definition for later use */
+                subsetDefinition = ((SubsetDefinitionEvent) event).getSubsetDefinition();
+                break;
+            case PLOT_DEFINITION_CHANGED:   
+                /* store plotDefinition */
+                if(subsetDefinition!=null){
+                    plotDefinition = ((PlotDefinitionEvent) event).getPlotDefinition();
+                    plot(subsetDefinition.getTarget(),subsetDefinition.getOIFitsSubset());
+                }
+                break;
+            default:
+        }       
+    }
+
+    
 }
