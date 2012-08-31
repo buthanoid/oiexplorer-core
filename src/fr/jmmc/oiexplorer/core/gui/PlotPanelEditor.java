@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * @author mella
  */
 public class PlotPanelEditor extends javax.swing.JPanel implements ActionListener,
-                                                                   OIFitsCollectionEventListener {
+        OIFitsCollectionEventListener {
 
     /* members */
     /** Logger */
@@ -53,26 +53,29 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     private final List<JComboBox> yComboBoxes = new LinkedList<JComboBox>();
     private String lastXComboBoxValue = null;
     private List<String> lastYComboBoxesValues = new LinkedList<String>();
-    /** flag to enable plot refreshes */
-    private boolean doRefresh = false;
-    /** TODO REMOVE */
-    private Vis2Panel plotPanel;
+    /** flag to enable notification of a new plot definition  */
+    private boolean doUpdatePlotDefinition = false;
+    /** OIFitsCollectionManager singleton */
+    private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    /** Common listener for y comboboxes */
+    private ActionListener ycomboActionListener;
 
     /** Creates new form PlotPanelEditor */
-    // TODO add one new constructor not to always add a plotPanel at the bottom
     public PlotPanelEditor() {
         OIFitsCollectionManager.getInstance().getSubsetDefinitionEventNotifier().register(this);
 
         initComponents();
 
-        // Vis2Panel
-        plotPanel = new Vis2Panel();
-        setPlotPanel(plotPanel);
+        // TODO REMOVE next code line 
+        plotAreaPanel.add(new Vis2Panel());
     }
 
+    /** 
+     * Init function that must be called after being instanciated and when notification can be performed. 
+     */
     public void init() {
 
-        doRefresh = false;
+        doUpdatePlotDefinition = false;
         try {
             // Comboboxes
             xAxisComboBox.setModel(new GenericListModel<String>(xAxisChoices, true));
@@ -86,47 +89,53 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
             plotTypeComboBox.setSelectedItem(PlotDefinitionFactory.PLOT_DEFAULT);
             plotTypeComboBox.addActionListener(this);
 
+            // Prepare a common listener to group handling in yAxisComboBoxActionPerformed()
+            ycomboActionListener = new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    yAxisComboBoxActionPerformed(e);
+                }
+            };
+
             // fill first y axis combobox
             addYAxisButtonActionPerformed(null);
         } finally {
-            doRefresh = true;
+            doUpdatePlotDefinition = true;
         }
+
 
         // init default state of widgets that also initialize the plotDefinition
         actionPerformed(null);
     }
 
-    public void setPlotPanel(Vis2Panel plotPanel) {
-        plotAreaPanel.removeAll();
-        plotAreaPanel.add(plotPanel);
-        plotPanel.setPlotDefinitionEditor(this);
-        this.plotPanel = plotPanel;
-    }
-
+    // TODO remove it
+    // still kept for export pdf action
     public Vis2Panel getPlotPanel() {
-        return plotPanel;
+        return (Vis2Panel) plotAreaPanel.getComponent(0);
     }
 
     /**
-     * Update widgets and plot given the OIFits structure
-     * and request the plotPanel to be updated if present.
+     * Update widgets and the OIFits structure
+     * and request the plotDefinition to be notified if present or modified.
      * @param subsetDefinition subset definition
      */
     public void update(final SubsetDefinition subsetDefinition) {
-        logger.warn("update: subset target ", subsetDefinition.getTarget());
+        logger.warn("update: subset target {}", subsetDefinition.getTarget());
 
         /* store subset definition */
         this.subsetDefinition = subsetDefinition;
 
-        doRefresh = false;
+        /* use the manager current plot definition  */
+        this.plotDefinition = (PlotDefinition) ocm.getCurrentPlotDefinition();
+
+        doUpdatePlotDefinition = false;
         try {
             /* fill combobox for available columns */
             fillDataSelectors();
         } finally {
-            doRefresh = true;
+            doUpdatePlotDefinition = true;
         }
 
-        // initialize plotDef and update plotPanel
+        // update GUI  
         actionPerformed(null);
     }
 
@@ -137,16 +146,12 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
 
     /** Return the customPlotDefinition initialized with user adjusted widgets. */
     private PlotDefinition defineCustomPlotDefinition() {
-        if (customPlotDefinition == null) {
-            customPlotDefinition = new PlotDefinition();
-        }
-
         // handle xAxis
         Axis xAxis = new Axis();
         xAxis.setName(getxAxis());
-        customPlotDefinition.setXAxis(xAxis);
+        plotDefinition.setXAxis(xAxis);
         // handle yAxes
-        List<Axis> yAxes = customPlotDefinition.getYAxes();
+        List<Axis> yAxes = plotDefinition.getYAxes();
         yAxes.clear();
         for (String yname : getyAxes()) {
             Axis a = new Axis();
@@ -154,8 +159,8 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
             yAxes.add(a);
         }
 
-        logger.debug("Setting sutom plot definition x: {}, y : {}", getxAxis(), getyAxes());
-        return customPlotDefinition;
+        logger.debug("Setting custom plot definition x: {}, y : {}", getxAxis(), getyAxes());
+        return plotDefinition;
     }
 
     /**
@@ -422,6 +427,10 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         }
     }//GEN-LAST:event_delYAxisButtonActionPerformed
 
+    private void yAxisComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
+        actionPerformed(null);
+    }
+
     /** Synchronize management for the addition of a given combo and update GUI.
      * @param ycombo ComboBox to add
      */
@@ -433,7 +442,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         ycombo.setEnabled(useCustom);
         yComboBoxes.add(ycombo);
         yComboBoxesPanel.add(ycombo);
-        ycombo.addActionListener(this);
+        ycombo.addActionListener(ycomboActionListener);
         revalidate();
     }
 
@@ -442,7 +451,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
      */
     private void delYCombo(final JComboBox ycombo) {
         yComboBoxes.remove(ycombo);
-        ycombo.removeActionListener(this);
+        ycombo.removeActionListener(ycomboActionListener);
         yComboBoxesPanel.remove(ycombo);
         revalidate();
     }
@@ -468,18 +477,8 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
             logger.warn("Using preset plot : {}, {}", selectedType, plotDefinition);
         }
 
-        refreshPlot();
-    }
-
-    private void refreshPlot() {
-        if (doRefresh && plotPanel != null) {
-            // update or reset the plot:
-            // TODO: use events here !!
-            if (this.subsetDefinition != null) {
-                plotPanel.plot(subsetDefinition.getTarget(), subsetDefinition.getOIFitsSubset());
-            } else {
-                plotPanel.plot(null, null);
-            }
+        if(doUpdatePlotDefinition){
+            ocm.updatePlotDefinition(plotDefinition);
         }
     }
 
