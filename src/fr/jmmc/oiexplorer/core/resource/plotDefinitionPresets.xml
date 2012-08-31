@@ -9,14 +9,15 @@
   This file describes a set of plotdefinition to be used has plot configuration presets 
 -->
 <p:plotDefinitions
-   xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
-   xmlns:p='http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1'
-   xsi:schemaLocation='http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1 PlotDefinition.xsd'>
+    xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+    xmlns:p='http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1'
+    xsi:schemaLocation='http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1 ../model/PlotDefinition.xsd'>
     
               
     
     <!-- plot (Vis2 - T3) vs spatial freq  -->    
     <plotDefinition>
+        <name>VIS2DATA_T3PHI/SPATIAL_FREQ</name>
         <skipFlaggedData>false</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
@@ -42,6 +43,7 @@
     
     <!-- plot(Vis2 - T3) vs wavelength     -->    
     <plotDefinition>
+        <name>VIS2DATA_T3PHI/EFF_WAVE</name>
         <skipFlaggedData>false</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
@@ -67,6 +69,7 @@
     
     <!-- plot(Vis2 - T3) vs mjd            -->
     <plotDefinition>
+        <name>VIS2DATA_T3PHI/MJD</name>
         <skipFlaggedData>false</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
