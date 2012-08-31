@@ -10,8 +10,8 @@ public enum OIFitsCollectionEventType {
 
   /** OIFits collection changed */
   CHANGED,
-  /**  selection changed */
-  SELECTION_CHANGED,
+  /** subset changed */
+  SUBSET_CHANGED,
   /** ask listeners to save their swing state into the OIFits collection  */
   DO_UPDATE,
   /** refresh swing state as the OIFits collection changed */
