@@ -31,7 +31,7 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
  *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}ID"/>
  *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
  *         &lt;element name="target" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TargetUID"/>
- *         &lt;element name="table" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/>
+ *         &lt;element name="table" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TableUID" maxOccurs="unbounded" minOccurs="0"/>
  *         &lt;element name="filter" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
@@ -62,7 +62,7 @@ public class SubsetDefinition
     @XmlElement(required = true)
     protected TargetUID target;
     @XmlElement(name = "table")
-    protected List<String> tables;
+    protected List<TableUID> tables;
     @XmlElement(name = "filter")
     protected List<String> filters;
 
@@ -156,13 +156,13 @@ public class SubsetDefinition
      * 
      * <p>
      * Objects of the following type(s) are allowed in the list
-     * {@link String }
+     * {@link TableUID }
      * 
      * 
      */
-    public List<String> getTables() {
+    public List<TableUID> getTables() {
         if (tables == null) {
-            tables = new ArrayList<String>();
+            tables = new ArrayList<TableUID>();
         }
         return this.tables;
     }
@@ -195,5 +195,29 @@ public class SubsetDefinition
         }
         return this.filters;
     }
+    
+//--simple--preserve
+
+  /** subset oiFitsFile structure (read only) */
+  @javax.xml.bind.annotation.XmlTransient
+  private fr.jmmc.oitools.model.OIFitsFile oiFitsSubset = null;
+
+  /**
+   * Return the subset oiFitsFile structure
+   * @return subset oiFitsFile structure
+   */
+  public final fr.jmmc.oitools.model.OIFitsFile getOIFitsSubset() {
+    return this.oiFitsSubset;
+  }
+
+  /**
+   * Return the subset oiFitsFile structure
+   * @param oiFitsSubset subset oiFitsFile structure
+   */
+  public final void setOIFitsSubset(final fr.jmmc.oitools.model.OIFitsFile oiFitsSubset) {
+    this.oiFitsSubset = oiFitsSubset;
+  }
+    
+//--simple--preserve
 
 }

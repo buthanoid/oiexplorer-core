@@ -101,7 +101,7 @@
             </xsd:documentation>
         </xsd:annotation>
         <xsd:sequence>                            
-            <xsd:element name="name" type="xsd:string">
+            <xsd:element name="name" type="xsd:ID">
                 <xsd:annotation>
                     <xsd:documentation>
                         oidata file Identifier
@@ -170,7 +170,7 @@
                 </xsd:annotation>
             </xsd:element>
         
-            <xsd:element name="table" type="xsd:string" minOccurs="0" maxOccurs="unbounded">
+            <xsd:element name="table" type="TableUID" minOccurs="0" maxOccurs="unbounded">
                 <xsd:annotation>
                     <xsd:documentation>
                         selected table identifier or all if undefined
@@ -261,6 +261,47 @@
                 <xsd:annotation>
                     <xsd:documentation>
                         target name
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        
+        </xsd:sequence>
+    </xsd:complexType>    
+
+
+    <xsd:complexType name="TableUID">
+        <xsd:annotation>
+            <xsd:documentation>
+                This type describes an OIData table unique identifier among the OIDataCollection
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+        
+            <xsd:element name="file" type="xsd:IDREF">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        oidata file Identifier
+                    </xsd:documentation>
+                    <xsd:appinfo>
+                        <jaxb:property>
+                            <jaxb:baseType name="OIDataFile" />
+                        </jaxb:property>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:element>
+
+            <xsd:element name="extName" type="xsd:string" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        oidata table name or all if undefined
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        
+            <xsd:element name="extNb" type="xsd:int" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        oidata table number or all if undefined
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>

@@ -62,6 +62,14 @@ public class ObjectFactory {
     }
 
     /**
+     * Create an instance of {@link TableUID }
+     * 
+     */
+    public TableUID createTableUID() {
+        return new TableUID();
+    }
+
+    /**
      * Create an instance of {@link TargetUID }
      * 
      */

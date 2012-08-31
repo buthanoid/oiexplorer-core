@@ -4,7 +4,11 @@ package fr.jmmc.oiexplorer.core.model.oi;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlID;
+import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import fr.jmmc.oiexplorer.core.model.OIBase;
 
 
@@ -22,7 +26,7 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
- *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
+ *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}ID"/>
  *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
  *         &lt;element name="file" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="checksum" type="{http://www.w3.org/2001/XMLSchema}long"/>
@@ -46,6 +50,9 @@ public class OIDataFile
 {
 
     @XmlElement(required = true)
+    @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
+    @XmlID
+    @XmlSchemaType(name = "ID")
     protected String name;
     protected String description;
     @XmlElement(required = true)
@@ -139,5 +146,29 @@ public class OIDataFile
     public void setChecksum(long value) {
         this.checksum = value;
     }
+    
+//--simple--preserve
+
+  /** loaded oiFitsFile structure (read only) */
+  @javax.xml.bind.annotation.XmlTransient
+  private fr.jmmc.oitools.model.OIFitsFile oiFitsFile = null;
+
+  /**
+   * Return the loaded oiFitsFile structure
+   * @return loaded oiFitsFile structure
+   */
+  public final fr.jmmc.oitools.model.OIFitsFile getOIFitsFile() {
+    return this.oiFitsFile;
+  }
+
+  /**
+   * Return the loaded oiFitsFile structure
+   * @param loaded oiFitsFile structure
+   */
+  public final void setOIFitsFile(final fr.jmmc.oitools.model.OIFitsFile oiFitsFile) {
+    this.oiFitsFile = oiFitsFile;
+  }
+    
+//--simple--preserve
 
 }
