@@ -15,11 +15,12 @@ public final class OIFitsCollectionEvent extends GenericEvent<OIFitsCollectionEv
 
     /**
      * Public constructor dealing with an OIFits collection 
+     * @param source event source
      * @param type event type
      * @param oiFitsCollection OIFits collection related to this event
      */
-    public OIFitsCollectionEvent(final OIFitsCollectionEventType type, final OIFitsCollection oiFitsCollection) {
-        super(type);
+    public OIFitsCollectionEvent(final Object source, final OIFitsCollectionEventType type, final OIFitsCollection oiFitsCollection) {
+        super(source, type);
         this.oiFitsCollection = oiFitsCollection;
     }
 
@@ -27,7 +28,7 @@ public final class OIFitsCollectionEvent extends GenericEvent<OIFitsCollectionEv
      * Return the OIFits collection related to this event
      * @return  OIFits collection related to this event or null if undefined
      */
-    public final OIFitsCollection getOIFitsCollection() {
+    public OIFitsCollection getOIFitsCollection() {
         return oiFitsCollection;
     }
 }

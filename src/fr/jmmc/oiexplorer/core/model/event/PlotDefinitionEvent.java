@@ -15,11 +15,12 @@ public final class PlotDefinitionEvent extends GenericEvent<OIFitsCollectionEven
 
     /**
      * Public constructor dealing with a plot definition
+     * @param source event source
      * @param type event type
      * @param plotDefinition plot definition related to this event
      */
-    public PlotDefinitionEvent(final OIFitsCollectionEventType type, final PlotDefinition plotDefinition) {
-        super(type);
+    public PlotDefinitionEvent(final Object source, final OIFitsCollectionEventType type, final PlotDefinition plotDefinition) {
+        super(source, type, (plotDefinition != null) ? plotDefinition.getName() : null);
         this.plotDefinition = plotDefinition;
     }
 
@@ -27,7 +28,7 @@ public final class PlotDefinitionEvent extends GenericEvent<OIFitsCollectionEven
      * Return the plot definition related to this event
      * @return plot definition related to this event or null if undefined
      */
-    public final PlotDefinition getPlotDefinition() {
+    public PlotDefinition getPlotDefinition() {
         return plotDefinition;
     }
 }

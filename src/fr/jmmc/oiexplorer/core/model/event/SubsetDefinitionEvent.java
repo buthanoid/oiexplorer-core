@@ -15,11 +15,12 @@ public final class SubsetDefinitionEvent extends GenericEvent<OIFitsCollectionEv
 
     /**
      * Public constructor dealing with a subset definition
+     * @param source event source
      * @param type event type
      * @param subsetDefinition subset definition related to this event
      */
-    public SubsetDefinitionEvent(final OIFitsCollectionEventType type, final SubsetDefinition subsetDefinition) {
-        super(type);
+    public SubsetDefinitionEvent(final Object source, final OIFitsCollectionEventType type, final SubsetDefinition subsetDefinition) {
+        super(source, type, (subsetDefinition != null) ? subsetDefinition.getName() : null);
         this.subsetDefinition = subsetDefinition;
     }
 
@@ -27,7 +28,7 @@ public final class SubsetDefinitionEvent extends GenericEvent<OIFitsCollectionEv
      * Return the subset definition related to this event
      * @return subset definition related to this event or null if undefined
      */
-    public final SubsetDefinition getSubsetDefinition() {
+    public SubsetDefinition getSubsetDefinition() {
         return subsetDefinition;
     }
 }
