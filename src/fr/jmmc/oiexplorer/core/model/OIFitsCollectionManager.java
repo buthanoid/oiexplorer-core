@@ -68,19 +68,8 @@ public final class OIFitsCollectionManager {
      */
     private OIFitsCollectionManager() {
         super();
-        this.oiFitsCollectionEventNotifier = new EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType>() {
-            /**
-             * Disable repeating notifications ...
-             */
-            @Override
-            public void setNotify(final boolean notify) {
-                super.setNotify(notify);
-                if (notify) {
-                    // TODO: record event type to fire ...
-                    fireOIFitsCollectionChanged();
-                }
-            }
-        };
+
+        this.oiFitsCollectionEventNotifier = new EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType>();
         this.subsetDefinitionEventNotifier = new EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType>();
         this.plotDefinitionEventNotifier = new EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType>();
 
@@ -96,13 +85,9 @@ public final class OIFitsCollectionManager {
      * @throws IOException if a fits file can not be loaded
      */
     public void loadOIFitsFiles(final File[] files, final OIFitsChecker checker) throws IOException {
-        this.oiFitsCollectionEventNotifier.setNotify(false);
-        try {
-            for (File file : files) {
-                loadOIFitsFile(file.getAbsolutePath(), checker);
-            }
-        } finally {
-            this.oiFitsCollectionEventNotifier.setNotify(true);
+
+        for (File file : files) {
+            loadOIFitsFile(file.getAbsolutePath(), checker);
         }
     }
 
@@ -113,20 +98,15 @@ public final class OIFitsCollectionManager {
      * @throws IOException if a fits file can not be loaded
      */
     public void loadOIDataCollection(final OiDataCollection oiDataCollection, final OIFitsChecker checker) throws IOException {
-        this.oiFitsCollectionEventNotifier.setNotify(false);
-        try {
-            // first reset:
-            reset();
 
-            for (OIDataFile oidataFile : oiDataCollection.getFiles()) {
-                loadOIFitsFile(oidataFile.getFile(), checker);
-            }
+        // first reset:
+        reset();
 
-            // TODO: check missing files !
-
-        } finally {
-            this.oiFitsCollectionEventNotifier.setNotify(true);
+        for (OIDataFile oidataFile : oiDataCollection.getFiles()) {
+            loadOIFitsFile(oidataFile.getFile(), checker);
         }
+
+        // TODO: check missing files !
 
         // TODO what about user plot definitions ...
         // add them but should be check for consistency related to loaded files (errors can occur while loading):
@@ -297,9 +277,10 @@ public final class OIFitsCollectionManager {
 
     /**
      * Update the subset definition corresponding to the same name
+     * @param source event source
      * @param subsetDefinition subset definition with updated values
      */
-    public void updateSubsetDefinition(final SubsetDefinition subsetDefinition) {
+    public void updateSubsetDefinition(final Object source, final SubsetDefinition subsetDefinition) {
         final SubsetDefinition subset = getSubsetDefinition(subsetDefinition.getName());
 
         if (subset != subsetDefinition) {
@@ -347,11 +328,11 @@ public final class OIFitsCollectionManager {
             }
         }
 
-        logger.warn("oiFitsSubset: " + oiFitsSubset);
+        logger.warn("updateSubsetDefinition: oiFitsSubset: " + oiFitsSubset);
 
         subset.setOIFitsSubset(oiFitsSubset);
 
-        fireSubsetDefinitionChanged(subset);
+        fireSubsetDefinitionChanged(source, subset);
     }
 
     /* --- plot definition handling --------- ---------------------------- */
@@ -365,6 +346,8 @@ public final class OIFitsCollectionManager {
             plotDefinition = new PlotDefinition();
             plotDefinition.setName(CURRENT);
             this.userCollection.getPlotDefinitions().add(plotDefinition);
+
+            //TODO: copy info from default plot definition (preset) ??
         }
         return plotDefinition;
     }
@@ -385,9 +368,10 @@ public final class OIFitsCollectionManager {
 
     /**
      * Update the plot definition corresponding to the same name
+     * @param source event source
      * @param plotDefinition plot definition with updated values
      */
-    public void updatePlotDefinition(final PlotDefinition plotDefinition) {
+    public void updatePlotDefinition(final Object source, final PlotDefinition plotDefinition) {
         final PlotDefinition plotDef = getPlotDefinition(plotDefinition.getName());
 
         if (plotDef == null) {
@@ -396,7 +380,7 @@ public final class OIFitsCollectionManager {
             // TODO: do copy
             throw new IllegalStateException("Not yet implemented !");
         }
-        firePlotDefinitionChanged(plotDefinition);
+        firePlotDefinitionChanged(source, plotDefinition);
     }
 
     // --- EVENTS ----------------------------------------------------------------
@@ -409,17 +393,16 @@ public final class OIFitsCollectionManager {
     }
 
     /**
-     * This fires an OIFitsCollectionChanged event to all registered listeners.
+     * This fires an OIFitsCollectionChanged event to all registered listeners ASYNCHRONOUSLY !
      */
     private void fireOIFitsCollectionChanged() {
-        if (!oiFitsCollectionEventNotifier.isNotify()) {
-            return;
-        }
-        if (logger.isDebugEnabled()) {
-            logger.debug("fireOIFitsCollectionChanged: {}", this.oiFitsCollection);
-        }
+        if (this.oiFitsCollectionEventNotifier.hasListeners()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("fireOIFitsCollectionChanged: {}", this.oiFitsCollection);
+            }
 
-        this.oiFitsCollectionEventNotifier.fireEvent(new OIFitsCollectionEvent(OIFitsCollectionEventType.CHANGED, this.oiFitsCollection));
+            this.oiFitsCollectionEventNotifier.fireEvent(new OIFitsCollectionEvent(this, OIFitsCollectionEventType.CHANGED, this.oiFitsCollection));
+        }
     }
 
     /**
@@ -431,18 +414,18 @@ public final class OIFitsCollectionManager {
     }
 
     /**
-     * This fires a SubsetDefinitionChanged event to all registered listeners.
+     * This fires a SubsetDefinitionChanged event to all registered listeners ASYNCHRONOUSLY !
+     * @param source event source
      * @param subsetDefinition subset definition to use
      */
-    private void fireSubsetDefinitionChanged(final SubsetDefinition subsetDefinition) {
-        if (!subsetDefinitionEventNotifier.isNotify()) {
-            return;
-        }
-        if (logger.isDebugEnabled()) {
-            logger.debug("fireSubsetDefinitionChanged: {}", this.oiFitsCollection);
-        }
+    private void fireSubsetDefinitionChanged(final Object source, final SubsetDefinition subsetDefinition) {
+        if (this.subsetDefinitionEventNotifier.hasListeners()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("fireSubsetDefinitionChanged: {}", this.oiFitsCollection);
+            }
 
-        this.subsetDefinitionEventNotifier.fireEvent(new SubsetDefinitionEvent(OIFitsCollectionEventType.SUBSET_CHANGED, subsetDefinition));
+            this.subsetDefinitionEventNotifier.fireEvent(new SubsetDefinitionEvent(source, OIFitsCollectionEventType.SUBSET_CHANGED, subsetDefinition));
+        }
     }
 
     /**
@@ -454,18 +437,18 @@ public final class OIFitsCollectionManager {
     }
 
     /**
-     * This fires a PlotDefinitionChanged event to all registered listeners.
+     * This fires a PlotDefinitionChanged event to all registered listeners ASYNCHRONOUSLY !
+     * @param source event source
      * @param plotDefinition plot definition to use
      */
-    private void firePlotDefinitionChanged(final PlotDefinition plotDefinition) {
-        if (!plotDefinitionEventNotifier.isNotify()) {
-            return;
-        }
-        if (logger.isDebugEnabled()) {
-            logger.debug("firePlotDefinitionChanged: {}", this.oiFitsCollection);
-        }
+    private void firePlotDefinitionChanged(final Object source, final PlotDefinition plotDefinition) {
+        if (this.plotDefinitionEventNotifier.hasListeners()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("firePlotDefinitionChanged: {}", this.oiFitsCollection);
+            }
 
-        this.plotDefinitionEventNotifier.fireEvent(new PlotDefinitionEvent(OIFitsCollectionEventType.PLOT_DEFINITION_CHANGED, plotDefinition));
+            this.plotDefinitionEventNotifier.fireEvent(new PlotDefinitionEvent(source, OIFitsCollectionEventType.PLOT_DEFINITION_CHANGED, plotDefinition));
+        }
     }
 
     /**
