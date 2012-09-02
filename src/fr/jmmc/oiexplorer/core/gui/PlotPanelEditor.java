@@ -31,20 +31,22 @@ import org.slf4j.LoggerFactory;
  * @author mella
  */
 public class PlotPanelEditor extends javax.swing.JPanel implements ActionListener,
-        OIFitsCollectionEventListener {
+                                                                   OIFitsCollectionEventListener {
 
-    /* members */
+    /** default serial UID for Serializable interface */
+    private static final long serialVersionUID = 1;
     /** Logger */
     final private Logger logger = LoggerFactory.getLogger(PlotPanelEditor.class);
     private final static String customLabel = "Custom...";
 
     /* members */
-    /** Main plot definition */
-    private PlotDefinition plotDefinition;
-    /** Internal custom plot definition*/
-    private PlotDefinition customPlotDefinition;
+    /** OIFitsCollectionManager singleton */
+    private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** subset definition */
     private SubsetDefinition subsetDefinition = null;
+    /** Main plot definition */
+    private PlotDefinition plotDefinition;
+    /* Swing components */
     /** Store all choices available to plot on x axis given to current data to plot */
     private final List<String> xAxisChoices = new LinkedList<String>();
     /** Store all choices available to plot on y axes given to current data to plot */
@@ -53,10 +55,6 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     private final List<JComboBox> yComboBoxes = new LinkedList<JComboBox>();
     private String lastXComboBoxValue = null;
     private List<String> lastYComboBoxesValues = new LinkedList<String>();
-    /** flag to enable notification of a new plot definition  */
-    private boolean doUpdatePlotDefinition = false;
-    /** OIFitsCollectionManager singleton */
-    private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** Common listener for y comboboxes */
     private ActionListener ycomboActionListener;
 
@@ -75,42 +73,30 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
      */
     public void init() {
 
-        doUpdatePlotDefinition = false;
-        try {
-            // Comboboxes
-            xAxisComboBox.setModel(new GenericListModel<String>(xAxisChoices, true));
+        // Comboboxes
+        xAxisComboBox.setModel(new GenericListModel<String>(xAxisChoices, true));
 
-            final List<String> plotTypeChoices = new LinkedList<String>();
+        final List<String> plotTypeChoices = new LinkedList<String>();
 
-            plotTypeChoices.addAll(PlotDefinitionFactory.getInstance().getDefaultList());
-            plotTypeChoices.add(customLabel);
+        plotTypeChoices.addAll(PlotDefinitionFactory.getInstance().getDefaultList());
+        plotTypeChoices.add(customLabel);
 
-            plotTypeComboBox.setModel(new GenericListModel<String>(plotTypeChoices, true));
-            plotTypeComboBox.setSelectedItem(PlotDefinitionFactory.PLOT_DEFAULT);
-            plotTypeComboBox.addActionListener(this);
+        plotTypeComboBox.setModel(new GenericListModel<String>(plotTypeChoices, true));
+        plotTypeComboBox.setSelectedItem(PlotDefinitionFactory.PLOT_DEFAULT);
+        plotTypeComboBox.addActionListener(this);
 
-            // Prepare a common listener to group handling in yAxisComboBoxActionPerformed()
-            ycomboActionListener = new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    yAxisComboBoxActionPerformed(e);
-                }
-            };
+        // Prepare a common listener to group handling in yAxisComboBoxActionPerformed()
+        ycomboActionListener = new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                yAxisComboBoxActionPerformed(e);
+            }
+        };
 
-            // fill first y axis combobox
-            addYAxisButtonActionPerformed(null);
-        } finally {
-            doUpdatePlotDefinition = true;
-        }
-
+        // fill first y axis combobox
+        addYAxisButtonActionPerformed(null);
 
         // init default state of widgets that also initialize the plotDefinition
         actionPerformed(null);
-    }
-
-    // TODO remove it
-    // still kept for export pdf action
-    public Vis2Panel getPlotPanel() {
-        return (Vis2Panel) plotAreaPanel.getComponent(0);
     }
 
     /**
@@ -125,31 +111,24 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         this.subsetDefinition = subsetDefinition;
 
         /* use the manager current plot definition  */
-        this.plotDefinition = (PlotDefinition) ocm.getCurrentPlotDefinition();
+        this.plotDefinition = ocm.getCurrentPlotDefinition();
 
-        doUpdatePlotDefinition = false;
-        try {
-            /* fill combobox for available columns */
-            fillDataSelectors();
-        } finally {
-            doUpdatePlotDefinition = true;
-        }
+        /* fill combobox for available columns */
+        fillDataSelectors();
 
         // update GUI  
         actionPerformed(null);
     }
 
-    /** get the associated PlotDefinition : TODO remove */
-    public PlotDefinition getPlotDefinition() {
-        return plotDefinition;
-    }
-
-    /** Return the customPlotDefinition initialized with user adjusted widgets. */
+    /** 
+     * Return the plotDefinition initialized with user adjusted widgets. 
+     */
     private PlotDefinition defineCustomPlotDefinition() {
         // handle xAxis
         Axis xAxis = new Axis();
         xAxis.setName(getxAxis());
         plotDefinition.setXAxis(xAxis);
+
         // handle yAxes
         List<Axis> yAxes = plotDefinition.getYAxes();
         yAxes.clear();
@@ -471,15 +450,13 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
 
         if (useCustom) {
             plotDefinition = defineCustomPlotDefinition();
-            logger.warn("Using custom plot");
+            logger.warn("Using custom plot {}", plotDefinition);
         } else {
             plotDefinition = PlotDefinitionFactory.getInstance().getDefault(selectedType);
             logger.warn("Using preset plot : {}, {}", selectedType, plotDefinition);
         }
 
-        if(doUpdatePlotDefinition){
-            ocm.updatePlotDefinition(plotDefinition);
-        }
+        ocm.updatePlotDefinition(this, plotDefinition);
     }
 
     /**
@@ -509,4 +486,10 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     private javax.swing.JPanel yComboBoxesPanel;
     private javax.swing.JLabel yLabel;
     // End of variables declaration//GEN-END:variables
+
+    // TODO remove it
+    // still kept for export pdf action
+    public Vis2Panel getPlotPanel() {
+        return (Vis2Panel) plotAreaPanel.getComponent(0);
+    }
 }
