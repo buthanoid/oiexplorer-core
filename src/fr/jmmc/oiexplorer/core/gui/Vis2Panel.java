@@ -25,7 +25,6 @@ import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
 import fr.jmmc.oiexplorer.core.model.event.PlotDefinitionEvent;
 import fr.jmmc.oiexplorer.core.model.event.SubsetDefinitionEvent;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
-import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.util.Constants;
@@ -74,6 +73,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This panel presents the interferometer plot (station, base lines ...)
+ * 
  * @author bourgesl
  */
 public final class Vis2Panel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
@@ -93,12 +93,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
 
     /* members */
+    /** OIFitsCollectionManager singleton */
+    private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    /** subset containing data to be plotted */
+    private SubsetDefinition subsetDefinition = null;
     /** current plot definition */
     private PlotDefinition plotDefinition = null;
-    /** current target */
-    private TargetUID target = null;
-    /** current oifits file */
-    private OIFitsFile oiFitsFile = null;
     /** flag to indicate if this plot has data */
     private boolean hasData = false;
     /* plot data */
@@ -125,18 +125,18 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private XYTextAnnotation aJMMCV2 = null;
     /** JMMC annotation */
     private XYTextAnnotation aJMMCT3 = null;
-    /** OIFitsCollectionManager singleton */
-    private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
-    /** subset containing data to be plotted */
-    private SubsetDefinition subsetDefinition;
-        
+
     /**
      * Constructor
      */
     public Vis2Panel() {
+        // Register for interest on data and configuration for plotting
+        ocm.getSubsetDefinitionEventNotifier().register(this);
+        ocm.getPlotDefinitionEventNotifier().register(this);
+
         initComponents();
         postInit();
-    }    
+    }
 
     /**
      * This method is called from within the constructor to
@@ -157,7 +157,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     @Override
     public void performPDFAction() {
         // if no OIFits data, discard action:
-        if (this.oiFitsFile != null) {
+        if (getOiFitsSubset() != null) {
             ExportPDFAction.exportPDF(this);
         }
     }
@@ -169,28 +169,31 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      */
     @Override
     public String getPDFDefaultFileName() {
-        if (this.oiFitsFile != null && this.target != null) {
-            final boolean hasVis2 = this.oiFitsFile.hasOiVis2();
-            final boolean hasT3 = this.oiFitsFile.hasOiT3();
+
+        // TODO: fix this code as the plot will become generic !
+
+        // TODO: keep values from dataset: insName, baselines, dateObs ... IF HAS DATA (filtered)
+
+        if (getOiFitsSubset() != null && this.plotDefinition != null) {
+
+            final OIFitsFile oiFitsSubset = getOiFitsSubset();
+
+            final boolean hasVis2 = oiFitsSubset.hasOiVis2();
+            final boolean hasT3 = oiFitsSubset.hasOiT3();
 
             final Set<String> distinct = new LinkedHashSet<String>();
-
-            // TODO: fix this code as the plot will become generic !
-
-            // TODO: keep values from dataset: insName, baselines, dateObs ... IF HAS DATA (filtered)
 
             final StringBuilder sb = new StringBuilder(32);
 
             if (hasVis2) {
                 sb.append("Vis2_");
             }
-            if (this.oiFitsFile.hasOiT3()) {
+            if (oiFitsSubset.hasOiT3()) {
                 sb.append("T3_");
             }
 
             // Add target name:
-            final String targetName = this.target.getTarget();
-            final String altName = targetName.replaceAll(Constants.REGEXP_INVALID_TEXT_CHARS, "_");
+            final String altName = getTargetName().replaceAll(Constants.REGEXP_INVALID_TEXT_CHARS, "_");
 
             sb.append(altName).append('_');
 
@@ -201,10 +204,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 }
             };
             if (hasVis2) {
-                getDistinct(this.oiFitsFile.getOiVis2(), distinct, arrNameOperator);
+                getDistinct(oiFitsSubset.getOiVis2(), distinct, arrNameOperator);
             }
             if (hasT3) {
-                getDistinct(this.oiFitsFile.getOiT3(), distinct, arrNameOperator);
+                getDistinct(oiFitsSubset.getOiT3(), distinct, arrNameOperator);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "_", "_");
@@ -220,10 +223,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             };
             distinct.clear();
             if (hasVis2) {
-                getDistinct(this.oiFitsFile.getOiVis2(), distinct, insNameOperator);
+                getDistinct(oiFitsSubset.getOiVis2(), distinct, insNameOperator);
             }
             if (hasT3) {
-                getDistinct(this.oiFitsFile.getOiT3(), distinct, insNameOperator);
+                getDistinct(oiFitsSubset.getOiT3(), distinct, insNameOperator);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "_", "_");
@@ -234,12 +237,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             // Add unique baselines:
             distinct.clear();
             if (hasVis2) {
-//                getDistinctStaNames(this.oiFitsFile.getOiVis2(), distinct);
-                getDistinctStaConfs(this.oiFitsFile.getOiVis2(), distinct);
+//                getDistinctStaNames(oiFitsSubset.getOiVis2(), distinct);
+                getDistinctStaConfs(oiFitsSubset.getOiVis2(), distinct);
             }
             if (hasT3) {
-//                getDistinctStaNames(this.oiFitsFile.getOiT3(), distinct);
-                getDistinctStaConfs(this.oiFitsFile.getOiT3(), distinct);
+//                getDistinctStaNames(oiFitsSubset.getOiT3(), distinct);
+                getDistinctStaConfs(oiFitsSubset.getOiT3(), distinct);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "-", "_");
@@ -255,10 +258,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             };
             distinct.clear();
             if (hasVis2) {
-                getDistinct(this.oiFitsFile.getOiVis2(), distinct, dateObsOperator);
+                getDistinct(oiFitsSubset.getOiVis2(), distinct, dateObsOperator);
             }
             if (hasT3) {
-                getDistinct(this.oiFitsFile.getOiT3(), distinct, dateObsOperator);
+                getDistinct(oiFitsSubset.getOiT3(), distinct, dateObsOperator);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "_", "_");
@@ -364,11 +367,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         }
 
         resetPlot();
-        
-        // Register for interest on data and configuration for plotting
-        ocm.getSubsetDefinitionEventNotifier().register(this);
-        ocm.getPlotDefinitionEventNotifier().register(this);
-
     }
 
     private static Crosshair createCrosshair() {
@@ -669,19 +667,9 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     /**
      * Plot the generated file synchronously.
      * This code must be executed by the Swing Event Dispatcher thread (EDT)
-     * @param target target unique identifier to use
-     * @param oiFitsFile OIFits file to use
      */
-    public void plot(final TargetUID target, final OIFitsFile oiFitsFile) {
-        logger.debug("plot : {}", oiFitsFile);
-
-        // memorize plot data:
-        this.target = target;
-        this.oiFitsFile = oiFitsFile;
-
-        // refresh the plot :
-        logger.debug("plot : refresh");
-
+    public void plot() {
+        logger.debug("plot");
         this.updatePlot();
     }
 
@@ -737,7 +725,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * This code is executed by the Swing Event Dispatcher thread (EDT)
      */
     private void updatePlot() {
-        if (this.oiFitsFile == null || this.target == null) {
+        // check subset:
+        if (getOiFitsSubset() == null || this.plotDefinition == null) {
             resetPlot();
             return;
         }
@@ -755,8 +744,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             // title :
             ChartUtils.clearTextSubTitle(this.chart);
 
-            final boolean hasVis2 = this.oiFitsFile.hasOiVis2();
-            final boolean hasT3 = this.oiFitsFile.hasOiT3();
+            final OIFitsFile oiFitsSubset = getOiFitsSubset();
+
+            final boolean hasVis2 = oiFitsSubset.hasOiVis2();
+            final boolean hasT3 = oiFitsSubset.hasOiT3();
 
             final Set<String> distinct = new LinkedHashSet<String>();
 
@@ -773,10 +764,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 }
             };
             if (hasVis2) {
-                getDistinct(this.oiFitsFile.getOiVis2(), distinct, arrNameOperator);
+                getDistinct(oiFitsSubset.getOiVis2(), distinct, arrNameOperator);
             }
             if (hasT3) {
-                getDistinct(this.oiFitsFile.getOiT3(), distinct, arrNameOperator);
+                getDistinct(oiFitsSubset.getOiT3(), distinct, arrNameOperator);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, " ", " / ");
@@ -792,10 +783,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             };
             distinct.clear();
             if (hasVis2) {
-                getDistinct(this.oiFitsFile.getOiVis2(), distinct, insNameOperator);
+                getDistinct(oiFitsSubset.getOiVis2(), distinct, insNameOperator);
             }
             if (hasT3) {
-                getDistinct(this.oiFitsFile.getOiT3(), distinct, insNameOperator);
+                getDistinct(oiFitsSubset.getOiT3(), distinct, insNameOperator);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, " ", " / ");
@@ -806,10 +797,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             // Add wavelength ranges:
             distinct.clear();
             if (hasVis2) {
-                getDistinctWaveLengthRange(this.oiFitsFile.getOiVis2(), distinct);
+                getDistinctWaveLengthRange(oiFitsSubset.getOiVis2(), distinct);
             }
             if (hasT3) {
-                getDistinctWaveLengthRange(this.oiFitsFile.getOiT3(), distinct);
+                getDistinctWaveLengthRange(oiFitsSubset.getOiT3(), distinct);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, " ", " / ");
@@ -820,12 +811,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             // Add unique baselines:
             distinct.clear();
             if (hasVis2) {
-//                getDistinctStaNames(this.oiFitsFile.getOiVis2(), distinct);
-                getDistinctStaConfs(this.oiFitsFile.getOiVis2(), distinct);
+//                getDistinctStaNames(oiFitsSubset.getOiVis2(), distinct);
+                getDistinctStaConfs(oiFitsSubset.getOiVis2(), distinct);
             }
             if (hasT3) {
-//                getDistinctStaNames(this.oiFitsFile.getOiT3(), distinct);
-                getDistinctStaConfs(this.oiFitsFile.getOiT3(), distinct);
+//                getDistinctStaNames(oiFitsSubset.getOiT3(), distinct);
+                getDistinctStaConfs(oiFitsSubset.getOiT3(), distinct);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, " ", " / ");
@@ -845,16 +836,16 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             };
             distinct.clear();
             if (hasVis2) {
-                getDistinct(this.oiFitsFile.getOiVis2(), distinct, dateObsOperator);
+                getDistinct(oiFitsSubset.getOiVis2(), distinct, dateObsOperator);
             }
             if (hasT3) {
-                getDistinct(this.oiFitsFile.getOiT3(), distinct, dateObsOperator);
+                getDistinct(oiFitsSubset.getOiT3(), distinct, dateObsOperator);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, " ", " / ");
             }
 
-            sb.append(" - Source: ").append(this.target.getTarget());
+            sb.append(" - Source: ").append(getTargetName());
 
             ChartUtils.addSubtitle(this.chart, sb.toString());
 
@@ -911,7 +902,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         final long start = System.nanoTime();
 
-        final PlotDefinition plotDef = getPlotDefinition();
+        final OIFitsFile oiFitsSubset = getOiFitsSubset();
+        final PlotDefinition plotDef = this.plotDefinition;
 
         removeAllSubPlots();
 
@@ -927,7 +919,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         if (!plotDef.getYAxes().isEmpty()) {
 
-            if (this.oiFitsFile.getNbOiTables() > 0) {
+            if (oiFitsSubset.getNbOiTables() > 0) {
                 // use new dataset so free memory:
                 this.xyPlotV2.setDataset(new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>());
 
@@ -939,7 +931,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 ColumnMeta yMeta = null;
 
                 int tableIndex = 0;
-                for (OITable oiTable : this.oiFitsFile.getOiTables()) {
+                for (OITable oiTable : oiFitsSubset.getOiTables()) {
 
                     info = updatePlot(this.xyPlotV2, (OIData) oiTable, tableIndex, plotDef, 0);
 
@@ -1034,7 +1026,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         }
 
         if (plotDef.getYAxes().size() > 1) {
-            if (this.oiFitsFile.getNbOiTables() > 0) {
+            if (oiFitsSubset.getNbOiTables() > 0) {
                 // use new dataset so free memory:
                 this.xyPlotT3.setDataset(new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>());
 
@@ -1046,7 +1038,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 ColumnMeta yMeta = null;
 
                 int tableIndex = 0;
-                for (OITable oiTable : this.oiFitsFile.getOiTables()) {
+                for (OITable oiTable : oiFitsSubset.getOiTables()) {
 
                     info = updatePlot(this.xyPlotT3, (OIData) oiTable, tableIndex, plotDef, 1);
 
@@ -1189,21 +1181,37 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private PlotInfo updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
                                 final PlotDefinition plotDef, final int yAxisIndex) {
 
-        final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
+        // Get yAxis data:
+        final boolean isYData2D;
+        final double[] yData1D;
+        final double[] yData1DErr;
+        final double[][] yData2D;
+        final double[][] yData2DErr;
 
-        @SuppressWarnings("unchecked")
-        final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = (FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>) plot.getDataset();
-        int seriesCount = dataset.getSeriesCount();
+        final Axis yAxis = plotDef.getYAxes().get(yAxisIndex);
+        final String yAxisName = yAxis.getName();
+        logger.info("yAxis:{}", yAxisName);
 
-        final int nRows = oiData.getNbRows();
-        final int nWaves = oiData.getNWave();
+        final ColumnMeta yMeta = oiData.getColumnMeta(yAxisName);
+        logger.info("yMeta:{}", yMeta);
 
-        logger.warn("nRows - nWaves : {} - {}", nRows, nWaves);
+        if (yMeta == null) {
+            logger.info("unsupported yAxis : {} on {}", yMeta, oiData);
+            return null;
+        }
+        isYData2D = yMeta.isArray();
 
-        // standard columns:
-        final short[][] staIndexes = oiData.getStaIndex();
-        final short[] targetIds = oiData.getTargetId();
-        final boolean[][] flags = oiData.getFlag();
+        if (isYData2D) {
+            yData1D = null;
+            yData1DErr = null;
+            yData2D = oiData.getColumnAsDoubles(yAxisName);
+            yData2DErr = oiData.getColumnAsDoubles(yMeta.getErrorColumnName());
+        } else {
+            yData1D = oiData.getColumnAsDouble(yAxisName);
+            yData1DErr = oiData.getColumnAsDouble(yMeta.getErrorColumnName());
+            yData2D = null;
+            yData2DErr = null;
+        }
 
         // Get xAxis data:
         final boolean isXData2D;
@@ -1213,7 +1221,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final double[][] xData2DErr;
 
         final String xAxis = plotDef.getXAxis().getName();
-        logger.warn("xAxis:{}", xAxis);
+        logger.info("xAxis:{}", xAxis);
 
         //TODO support scalling function on axes
         // final boolean doScaleX = (plotDef.getxAxisScalingFactor() != null);
@@ -1222,7 +1230,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final double xScale = 1d;
 
         final ColumnMeta xMeta = oiData.getColumnMeta(xAxis);
-        logger.warn("xMeta:{}", xMeta);
+        logger.info("xMeta:{}", xMeta);
 
         if (xMeta == null) {
             logger.info("unsupported xAxis : {} on {}", xMeta, oiData);
@@ -1242,37 +1250,25 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             xData2DErr = null;
         }
 
-        // Get yAxis data:
-        final boolean isYData2D;
-        final double[] yData1D;
-        final double[] yData1DErr;
-        final double[][] yData2D;
-        final double[][] yData2DErr;
 
-        final Axis yAxis = plotDef.getYAxes().get(yAxisIndex);
-        final String yAxisName = yAxis.getName();
-        logger.warn("yAxis:{}", yAxisName);
+        final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
 
-        final ColumnMeta yMeta = oiData.getColumnMeta(yAxisName);
-        logger.warn("yMeta:{}", yMeta);
+        @SuppressWarnings("unchecked")
+        final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = (FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>) plot.getDataset();
+        int seriesCount = dataset.getSeriesCount();
 
-        if (yMeta == null) {
-            logger.info("unsupported yAxis : {} on {}", yMeta, oiData);
-            return null;
-        }
-        isYData2D = yMeta.isArray();
+        final int nRows = oiData.getNbRows();
+        final int nWaves = oiData.getNWave();
 
-        if (isYData2D) {
-            yData1D = null;
-            yData1DErr = null;
-            yData2D = oiData.getColumnAsDoubles(yAxisName);
-            yData2DErr = oiData.getColumnAsDoubles(yMeta.getErrorColumnName());
-        } else {
-            yData1D = oiData.getColumnAsDouble(yAxisName);
-            yData1DErr = oiData.getColumnAsDouble(yMeta.getErrorColumnName());
-            yData2D = null;
-            yData2DErr = null;
-        }
+        logger.warn("nRows - nWaves : {} - {}", nRows, nWaves);
+
+        // standard columns:
+        final short[][] staIndexes = oiData.getStaIndex();
+        final short[] targetIds = oiData.getTargetId();
+        final boolean[][] flags = oiData.getFlag();
+
+
+
 
         final boolean hasErrX = (xData2DErr != null) || (xData1DErr != null);
         final boolean hasErrY = (yData2DErr != null) || (yData1DErr != null);
@@ -1299,7 +1295,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final short matchTargetId;
         if (checkTargetId) {
             // targetID can not be null as the OIData table is supposed to have the target:
-            matchTargetId = oiData.getTargetId(this.target.getTarget());
+            matchTargetId = oiData.getTargetId(getTargetName());
 
             logger.warn("matchTargetId: {}", matchTargetId);
         } else {
@@ -1627,7 +1623,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     this.chartDrawStartTime = System.nanoTime();
                     break;
                 case ChartProgressEvent.DRAWING_FINISHED:
-                    logger.debug("Drawing chart time[{}] = {} ms.", this.target, 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                    logger.debug("Drawing chart time[{}] = {} ms.", getTargetName(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
                     this.chartDrawStartTime = 0l;
                     break;
                 default:
@@ -1640,7 +1636,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 this.chartDrawStartTime = System.nanoTime();
                 break;
             case ChartProgressEvent.DRAWING_FINISHED:
-                logger.warn("Drawing chart time[{}] = {} ms.", this.target, 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                logger.warn("Drawing chart time[{}] = {} ms.", getTargetName(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
                 this.chartDrawStartTime = 0l;
                 break;
             default:
@@ -1800,7 +1796,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         }
         sb.setLength(sb.length() - separator.length());
     }
-    
+
     /**
      * Get String operator applied on any OIData table
      */
@@ -1815,44 +1811,72 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     }
 
     /**
-     * Return the last Plot definition ( received in onProcess() )
-     * TODO add on setPlotDefinition to indicates on plotDef of interrest to ignore all other one
-     * @return plotDefinition to be used for plot (maybe null before any event)
-     */
-    private PlotDefinition getPlotDefinition() {        
-        return plotDefinition;        
-    }
-
-    private static class PlotInfo {
-
-        protected Rectangle2D.Double dataArea = null;
-        protected ColumnMeta xMeta = null;
-        protected ColumnMeta yMeta = null;
-    }
-    
-    
-    /**
      * Handle the given OIFits collection event
      * @param event OIFits collection event
      */
     @Override
     public void onProcess(GenericEvent<OIFitsCollectionEventType> event) {
         logger.warn("onProcess : {}", event);
+
+ /* 
+  * TODO: use Plot instances and PlotChanged events instead of SUBSET_CHANGED and PLOT_DEFINITION_CHANGED
+  * to avoid multiple notifications ...
+  */
+        
         switch (event.getType()) {
             case SUBSET_CHANGED:
                 /* store subset definition for later use */
                 subsetDefinition = ((SubsetDefinitionEvent) event).getSubsetDefinition();
+
+                updatePlot();
                 break;
-            case PLOT_DEFINITION_CHANGED:   
+            case PLOT_DEFINITION_CHANGED:
                 /* store plotDefinition */
-                if(subsetDefinition!=null){
-                    plotDefinition = ((PlotDefinitionEvent) event).getPlotDefinition();
-                    plot(subsetDefinition.getTarget(),subsetDefinition.getOIFitsSubset());
-                }
+                plotDefinition = ((PlotDefinitionEvent) event).getPlotDefinition();
+
+                updatePlot();
                 break;
             default:
-        }       
+        }
     }
 
-    
+    /**
+     * Define the plot definition
+     * @param plotDefinition plot definition
+     */
+    public void setPlotDefinition(final PlotDefinition plotDefinition) {
+        this.plotDefinition = plotDefinition;
+    }
+
+    /**
+     * Define the subset definition
+     * @param subsetDefinition subset definition
+     */
+    public void setSubsetDefinition(final SubsetDefinition subsetDefinition) {
+        this.subsetDefinition = subsetDefinition;
+    }
+
+    private OIFitsFile getOiFitsSubset() {
+        if (this.subsetDefinition == null) {
+            return null;
+        }
+        return this.subsetDefinition.getOIFitsSubset();
+    }
+
+    private String getTargetName() {
+        if (this.subsetDefinition == null) {
+            return null;
+        }
+        return this.subsetDefinition.getTarget().getTarget();
+    }
+
+    /**
+     * TODO: refine following class
+     */
+    private static class PlotInfo {
+
+        protected Rectangle2D.Double dataArea = null;
+        protected ColumnMeta xMeta = null;
+        protected ColumnMeta yMeta = null;
+    }
 }
