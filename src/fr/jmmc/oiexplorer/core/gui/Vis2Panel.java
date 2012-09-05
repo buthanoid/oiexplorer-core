@@ -18,12 +18,12 @@ import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.PageSize;
 import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
-import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager.OIFitsCollectionEventListener;
 import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
-import fr.jmmc.oiexplorer.core.model.event.PlotDefinitionEvent;
-import fr.jmmc.oiexplorer.core.model.event.SubsetDefinitionEvent;
+import fr.jmmc.oiexplorer.core.model.event.PlotEvent;
+import fr.jmmc.oiexplorer.core.model.oi.Plot;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
@@ -94,11 +94,9 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
     /* members */
     /** OIFitsCollectionManager singleton */
-    private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
-    /** subset containing data to be plotted */
-    private SubsetDefinition subsetDefinition = null;
-    /** current plot definition */
-    private PlotDefinition plotDefinition = null;
+    private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    /** plot object to be plotted */
+    private Plot plot = null;
     /** flag to indicate if this plot has data */
     private boolean hasData = false;
     /* plot data */
@@ -130,9 +128,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * Constructor
      */
     public Vis2Panel() {
-        // Register for interest on data and configuration for plotting
-        ocm.getSubsetDefinitionEventNotifier().register(this);
-        ocm.getPlotDefinitionEventNotifier().register(this);
+        ocm.getPlotEventNotifier().register(this);
 
         initComponents();
         postInit();
@@ -174,7 +170,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         // TODO: keep values from dataset: insName, baselines, dateObs ... IF HAS DATA (filtered)
 
-        if (getOiFitsSubset() != null && this.plotDefinition != null) {
+        if (getOiFitsSubset() != null && getPlotDefinition() != null) {
 
             final OIFitsFile oiFitsSubset = getOiFitsSubset();
 
@@ -726,7 +722,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      */
     private void updatePlot() {
         // check subset:
-        if (getOiFitsSubset() == null || this.plotDefinition == null) {
+        if (getOiFitsSubset() == null || getPlotDefinition() == null) {
             resetPlot();
             return;
         }
@@ -903,7 +899,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final long start = System.nanoTime();
 
         final OIFitsFile oiFitsSubset = getOiFitsSubset();
-        final PlotDefinition plotDef = this.plotDefinition;
+        final PlotDefinition plotDef = getPlotDefinition();
 
         removeAllSubPlots();
 
@@ -1818,21 +1814,21 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     public void onProcess(GenericEvent<OIFitsCollectionEventType> event) {
         logger.warn("onProcess : {}", event);
 
- /* 
-  * TODO: use Plot instances and PlotChanged events instead of SUBSET_CHANGED and PLOT_DEFINITION_CHANGED
-  * to avoid multiple notifications ...
-  */
-        
         switch (event.getType()) {
-            case SUBSET_CHANGED:
-                /* store subset definition for later use */
-                subsetDefinition = ((SubsetDefinitionEvent) event).getSubsetDefinition();
+            case PLOT_CHANGED:
+                /* store plot instance */
+                this.plot = ((PlotEvent) event).getPlot();
 
-                updatePlot();
-                break;
-            case PLOT_DEFINITION_CHANGED:
-                /* store plotDefinition */
-                plotDefinition = ((PlotDefinitionEvent) event).getPlotDefinition();
+                logger.warn("plot.subset: {}", this.plot.getSubsetDefinition());
+                if (getPlot().getSubsetDefinition() != null) {
+                    logger.warn("plot.subset target: {}", getTargetName());
+                    logger.warn("plot.subset oifits: {}", getOiFitsSubset());
+                }
+                logger.warn("plot.definition: {}", getPlotDefinition());
+                if (getPlot().getPlotDefinition() != null) {
+                    logger.warn("plot.def xAxis: {}", getPlotDefinition().getXAxis());
+                    logger.warn("plot.def yAxes: {}", getPlotDefinition().getYAxes());
+                }
 
                 updatePlot();
                 break;
@@ -1845,7 +1841,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * @param plotDefinition plot definition
      */
     public void setPlotDefinition(final PlotDefinition plotDefinition) {
-        this.plotDefinition = plotDefinition;
+        getPlot().setPlotDefinition(plotDefinition);
+        // do fire changed
     }
 
     /**
@@ -1853,21 +1850,37 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * @param subsetDefinition subset definition
      */
     public void setSubsetDefinition(final SubsetDefinition subsetDefinition) {
-        this.subsetDefinition = subsetDefinition;
+        getPlot().setSubsetDefinition(subsetDefinition);
+        // do fire changed
+    }
+
+    private Plot getPlot() {
+        if (this.plot != null) {
+            return this.plot;
+        }
+        // TODO: handle plot chooser:
+        return ocm.getCurrentPlot();
+    }
+
+    private PlotDefinition getPlotDefinition() {
+        if (getPlot() == null) {
+            return null;
+        }
+        return getPlot().getPlotDefinition();
     }
 
     private OIFitsFile getOiFitsSubset() {
-        if (this.subsetDefinition == null) {
+        if (getPlot() == null || getPlot().getSubsetDefinition() == null) {
             return null;
         }
-        return this.subsetDefinition.getOIFitsSubset();
+        return getPlot().getSubsetDefinition().getOIFitsSubset();
     }
 
     private String getTargetName() {
-        if (this.subsetDefinition == null) {
+        if (getPlot() == null || getPlot().getSubsetDefinition() == null) {
             return null;
         }
-        return this.subsetDefinition.getTarget().getTarget();
+        return getPlot().getSubsetDefinition().getTarget().getTarget();
     }
 
     /**

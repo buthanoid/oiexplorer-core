@@ -24,9 +24,9 @@ public final class OIFitsCollection {
     private static final Logger logger = LoggerFactory.getLogger(OIFitsCollection.class);
     /* members */
     /** OIFits file collection ordered by insertion order */
-    private Map<String, OIFitsFile> oiFitsCollection = new LinkedHashMap<String, OIFitsFile>();
+    private final Map<String, OIFitsFile> oiFitsCollection = new LinkedHashMap<String, OIFitsFile>();
     /** cached OIFitsFile structure per TargetUID */
-    private Map<TargetUID, OIFitsFile> oiFitsPerTarget = new HashMap<TargetUID, OIFitsFile>();
+    private final Map<TargetUID, OIFitsFile> oiFitsPerTarget = new HashMap<TargetUID, OIFitsFile>();
 
     /**
      * Protected constructor
@@ -52,9 +52,14 @@ public final class OIFitsCollection {
         return new ArrayList<OIFitsFile>(oiFitsCollection.values());
     }
 
-    protected void addOIFitsFile(final OIFitsFile oifitsFile) {
+    /**
+     * Add the given OIFits file to this collection
+     * @param oifitsFile OIFits file
+     * @return previous OIFits file or null if not present
+     */
+    protected OIFitsFile addOIFitsFile(final OIFitsFile oifitsFile) {
         if (oifitsFile != null) {
-            final String key = getKey(oifitsFile);
+            final String key = getFilePath(oifitsFile);
 
             final OIFitsFile previous = getOIFitsFile(key);
 
@@ -70,9 +75,9 @@ public final class OIFitsCollection {
 
             logger.debug("addOIFitsFile: {}", oifitsFile);
 
-            // update collection analysis:
-            analyzeCollection();
+            return previous;
         }
+        return null;
     }
 
     public OIFitsFile getOIFitsFile(final String absoluteFilePath) {
@@ -84,18 +89,15 @@ public final class OIFitsCollection {
 
     protected OIFitsFile removeOIFitsFile(final OIFitsFile oifitsFile) {
         if (oifitsFile != null) {
-            final String key = getKey(oifitsFile);
+            final String key = getFilePath(oifitsFile);
             final OIFitsFile previous = oiFitsCollection.remove(key);
 
-            if (previous != null) {
-                // update collection analysis:
-                analyzeCollection();
-            }
+            return previous;
         }
         return null;
     }
 
-    private String getKey(final OIFitsFile oifitsFile) {
+    private String getFilePath(final OIFitsFile oifitsFile) {
         if (oifitsFile.getAbsoluteFilePath() == null) {
             // TODO: remove asap
             throw new IllegalStateException("Undefined OIFitsFile.absoluteFilePath !");
@@ -112,7 +114,9 @@ public final class OIFitsCollection {
     /**
      * Analyze the complete OIFits collection to provide OIFits structure per unique target (name)
      */
-    private void analyzeCollection() {
+    public void analyzeCollection() {
+        logger.warn("analyzeCollection");
+
         // reset OIFits structure per TargetUID:
         oiFitsPerTarget.clear();
 
@@ -144,6 +148,11 @@ public final class OIFitsCollection {
                 logger.debug("{} : {}", entry.getKey(), Arrays.toString(entry.getValue().getOiTables()));
             }
         }
+        logger.warn("analyzeCollection:");
+
+        for (Map.Entry<TargetUID, OIFitsFile> entry : oiFitsPerTarget.entrySet()) {
+            logger.warn("{} : {}", entry.getKey(), Arrays.toString(entry.getValue().getOiTables()));
+        }
     }
 
     /** 
@@ -159,7 +168,7 @@ public final class OIFitsCollection {
      * @param target targetUID
      * @return list of OIData tables corresponding to the given target (name) or null if missing
      */
-    public OIFitsFile getOiDataList(final TargetUID target) {
+    public OIFitsFile getOiFits(final TargetUID target) {
         return getOiFitsPerTarget().get(target);
     }
 }
