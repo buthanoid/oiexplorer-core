@@ -8,6 +8,7 @@
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xmlns="http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1"
             targetNamespace="http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1"
+            xmlns:b="http://www.jmmc.fr/oiexplorer-base/0.1"
             xmlns:jaxb="http://java.sun.com/xml/ns/jaxb"
             xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
             jaxb:version="2.1" jaxb:extensionBindingPrefixes="xjc">
@@ -31,6 +32,8 @@
         </xsd:appinfo>
     </xsd:annotation>
 
+
+    <xsd:import namespace="http://www.jmmc.fr/oiexplorer-base/0.1" schemaLocation="./OIBase.xsd"/>
 
 
     <!-- Elements -->
@@ -65,45 +68,33 @@
                 This type describes a plot definition.
             </xsd:documentation>
         </xsd:annotation>
-        <xsd:sequence>
-        
-            <xsd:element name="name" type="xsd:ID">
-                <xsd:annotation>
-                    <xsd:documentation>
-                        plot definition Identifier
-                    </xsd:documentation>
-                </xsd:annotation>
-            </xsd:element>
+        <xsd:complexContent>
+            <xsd:extension base="b:Identifiable">
+                <xsd:sequence>
 
-            <xsd:element name="description" type="xsd:string" minOccurs="0">
-                <xsd:annotation>
-                    <xsd:documentation>
-                        plot definition description
-                    </xsd:documentation>
-                </xsd:annotation>
-            </xsd:element>
-            
-            <xsd:element name="skipFlaggedData" type="xsd:boolean"> 
-                <xsd:annotation>
-                    <xsd:documentation>
-                        Indicates that flagged data are not plotted.
-                    </xsd:documentation>
-                </xsd:annotation>
-            </xsd:element>                            
-        
-            <xsd:element name="drawLine" type="xsd:boolean"> 
-                <xsd:annotation>
-                    <xsd:documentation>
-                        Indicates to draw line between data point of the same serie.
-                    </xsd:documentation>
-                </xsd:annotation>
-            </xsd:element>
-        
-            <xsd:element name="xAxis" type="Axis" minOccurs="1" maxOccurs="1"/>
-        
-            <xsd:element name="yAxes" type="Axis" minOccurs="1" maxOccurs="unbounded"/>
-        
-        </xsd:sequence>
+                    <xsd:element name="skipFlaggedData" type="xsd:boolean"> 
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Indicates that flagged data are not plotted.
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:element>                            
+
+                    <xsd:element name="drawLine" type="xsd:boolean"> 
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Indicates to draw line between data point of the same serie.
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:element>
+
+                    <xsd:element name="xAxis" type="Axis" minOccurs="1" maxOccurs="1"/>
+
+                    <xsd:element name="yAxes" type="Axis" minOccurs="1" maxOccurs="unbounded"/>
+
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
     </xsd:complexType>
   
   
