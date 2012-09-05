@@ -38,7 +38,8 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
     private final int priority;
     /** flag to disable listener notification if it is the source of the event */
     private final boolean skipSourceListener;
-    /** event listeners */
+    /** event listeners : TODO: Use WeakReferences to avoid memory leaks */
+    /* may detect widgets waiting for events on LOST subject objects ?? */
     private final CopyOnWriteArrayList<GenericEventListener<K, V>> listeners = new CopyOnWriteArrayList<GenericEventListener<K, V>>();
     /** queued events delivered asap by EDT (ordered by insertion order) */
     private final Map<K, K> eventQueue = new LinkedHashMap<K, K>(8);
@@ -85,7 +86,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
      */
     public int compareTo(final EventNotifier<?, ?> other) {
         final int otherPriority = other.getPriority();
-        return (priority < otherPriority) ? -1 : ((priority == otherPriority) ? 0 : 1);        
+        return (priority < otherPriority) ? -1 : ((priority == otherPriority) ? 0 : 1);
     }
 
     /**
@@ -296,7 +297,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
         }
 
         /**
-         * Fire queued notifiers if possible
+         * Fire queued notifiers if possible using EDT (may use interlacing with standard Swing EDT)
          */
         private void fireQueuedNotifiers() {
 
