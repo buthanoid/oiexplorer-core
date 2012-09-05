@@ -84,7 +84,8 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
      *          is less than, equal to, or greater than the specified object.
      */
     public int compareTo(final EventNotifier<?, ?> other) {
-        return Integer.compare(priority, other.getPriority());
+        final int otherPriority = other.getPriority();
+        return (priority < otherPriority) ? -1 : ((priority == otherPriority) ? 0 : 1);        
     }
 
     /**
