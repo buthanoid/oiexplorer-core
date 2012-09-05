@@ -148,6 +148,49 @@ public class TableUID
         this.extNb = extNb;
     }
 
+    /**
+     * Perform a deep-copy of the given other instance into this instance
+     * 
+     * Note: to be overriden in child class to perform deep-copy of class fields
+     * @see OIBase#clone() 
+     * 
+     * @param other other instance
+     */
+    @Override
+    public void copy(final fr.jmmc.oiexplorer.core.model.OIBase other) {
+        final TableUID tableUID = (TableUID) other;
+
+        // copy file, extName, extNb:
+        this.file = tableUID.getFile(); // reference only
+        this.extName = tableUID.getExtName();
+        this.extNb = tableUID.getExtNb();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        // identity check:
+        if (this == obj) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final TableUID other = (TableUID) obj;
+        if (this.file != other.file && (this.file == null || !this.file.equals(other.file))) {
+            return false;
+        }
+        if ((this.extName == null) ? (other.extName != null) : !this.extName.equals(other.extName)) {
+            return false;
+        }
+        if (this.extNb != other.extNb && (this.extNb == null || !this.extNb.equals(other.extNb))) {
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public String toString() {
         return "TableUID[" + file + ((extName != null) ? ' ' + extName + '#' + extNb : "") + ']';

@@ -1,4 +1,3 @@
-
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -6,7 +5,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 import fr.jmmc.oiexplorer.core.model.OIBase;
-
 
 /**
  * 
@@ -36,8 +34,7 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
     "target"
 })
 public class TargetUID
-    extends OIBase
-{
+        extends OIBase {
 
     @XmlElement(required = true)
     protected String target;
@@ -65,7 +62,7 @@ public class TargetUID
     public void setTarget(String value) {
         this.target = value;
     }
-    
+
 //--simple--preserve
     /**
      * Constructor for JAXB
@@ -81,9 +78,20 @@ public class TargetUID
         this.target = target;
     }
 
+    /**
+     * Perform a deep-copy of the given other instance into this instance
+     * 
+     * Note: to be overriden in child class to perform deep-copy of class fields
+     * @see OIBase#clone() 
+     * 
+     * @param other other instance
+     */
     @Override
-    public String toString() {
-        return "TargetUID[" + target + ']';
+    public void copy(final fr.jmmc.oiexplorer.core.model.OIBase other) {
+        final TargetUID targetUID = (TargetUID) other;
+
+        // copy target:
+        this.target = targetUID.getTarget();
     }
 
     /**
@@ -107,6 +115,10 @@ public class TargetUID
         if (obj == null) {
             return false;
         }
+        // identity check:
+        if (this == obj) {
+            return true;
+        }
         if (TargetUID.class == obj.getClass()) {
             final TargetUID other = (TargetUID) obj;
             if ((this.target == null) ? (other.target != null) : !this.target.equals(other.getTarget())) {
@@ -121,6 +133,10 @@ public class TargetUID
         }
         return true;
     }
-//--simple--preserve
 
+    @Override
+    public String toString() {
+        return "TargetUID[" + target + ']';
+    }
+//--simple--preserve
 }

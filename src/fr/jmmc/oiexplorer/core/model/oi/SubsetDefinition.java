@@ -1,4 +1,3 @@
-
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import java.util.ArrayList;
@@ -6,13 +5,7 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlID;
-import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
-import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import fr.jmmc.oiexplorer.core.model.OIBase;
-
 
 /**
  * 
@@ -26,15 +19,13 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
  * <pre>
  * &lt;complexType name="SubsetDefinition">
  *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
+ *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-base/0.1}Identifiable">
  *       &lt;sequence>
- *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}ID"/>
- *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
  *         &lt;element name="target" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TargetUID"/>
  *         &lt;element name="table" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TableUID" maxOccurs="unbounded" minOccurs="0"/>
  *         &lt;element name="filter" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/>
  *       &lt;/sequence>
- *     &lt;/restriction>
+ *     &lt;/extension>
  *   &lt;/complexContent>
  * &lt;/complexType>
  * </pre>
@@ -43,76 +34,19 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "SubsetDefinition", propOrder = {
-    "name",
-    "description",
     "target",
     "tables",
     "filters"
 })
 public class SubsetDefinition
-    extends OIBase
-{
+        extends Identifiable {
 
-    @XmlElement(required = true)
-    @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
-    @XmlID
-    @XmlSchemaType(name = "ID")
-    protected String name;
-    protected String description;
     @XmlElement(required = true)
     protected TargetUID target;
     @XmlElement(name = "table")
     protected List<TableUID> tables;
     @XmlElement(name = "filter")
     protected List<String> filters;
-
-    /**
-     * Gets the value of the name property.
-     * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the value of the name property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
-     */
-    public void setName(String value) {
-        this.name = value;
-    }
-
-    /**
-     * Gets the value of the description property.
-     * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the value of the description property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
-     */
-    public void setDescription(String value) {
-        this.description = value;
-    }
 
     /**
      * Gets the value of the target property.
@@ -195,29 +129,71 @@ public class SubsetDefinition
         }
         return this.filters;
     }
-    
+
 //--simple--preserve
+    /**
+     * Perform a deep-copy of the given other instance into this instance
+     * 
+     * Note: to be overriden in child class to perform deep-copy of class fields
+     * @see OIBase#clone() 
+     * 
+     * @param other other instance
+     */
+    @Override
+    public void copy(final fr.jmmc.oiexplorer.core.model.OIBase other) {
+        super.copy(other); // Identifiable
+        final SubsetDefinition subset = (SubsetDefinition) other;
 
-  /** subset oiFitsFile structure (read only) */
-  @javax.xml.bind.annotation.XmlTransient
-  private fr.jmmc.oitools.model.OIFitsFile oiFitsSubset = null;
+        // deep copy target, tables:
+        this.target = (subset.getTarget() != null) ? (TargetUID) subset.getTarget().clone() : null;
+        this.tables = deepCopyList(subset.getTables());
 
-  /**
-   * Return the subset oiFitsFile structure
-   * @return subset oiFitsFile structure
-   */
-  public final fr.jmmc.oitools.model.OIFitsFile getOIFitsSubset() {
-    return this.oiFitsSubset;
-  }
+        // copy filters until filter are defined (TODO):
+        this.filters = copyList(subset.getFilters());
+    }
 
-  /**
-   * Return the subset oiFitsFile structure
-   * @param oiFitsSubset subset oiFitsFile structure
-   */
-  public final void setOIFitsSubset(final fr.jmmc.oitools.model.OIFitsFile oiFitsSubset) {
-    this.oiFitsSubset = oiFitsSubset;
-  }
-    
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        // identity check:
+        if (this == obj) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final SubsetDefinition other = (SubsetDefinition) obj;
+        if (this.target != other.target && (this.target == null || !this.target.equals(other.target))) {
+            return false;
+        }
+        if (this.tables != other.tables && (this.tables == null || !this.tables.equals(other.tables))) {
+            return false;
+        }
+        if (this.filters != other.filters && (this.filters == null || !this.filters.equals(other.filters))) {
+            return false;
+        }
+        return true;
+    }
+    /** subset oiFitsFile structure (read only) */
+    @javax.xml.bind.annotation.XmlTransient
+    private fr.jmmc.oitools.model.OIFitsFile oiFitsSubset = null;
+
+    /**
+     * Return the subset oiFitsFile structure
+     * @return subset oiFitsFile structure
+     */
+    public final fr.jmmc.oitools.model.OIFitsFile getOIFitsSubset() {
+        return this.oiFitsSubset;
+    }
+
+    /**
+     * Return the subset oiFitsFile structure
+     * @param oiFitsSubset subset oiFitsFile structure
+     */
+    public final void setOIFitsSubset(final fr.jmmc.oitools.model.OIFitsFile oiFitsSubset) {
+        this.oiFitsSubset = oiFitsSubset;
+    }
 //--simple--preserve
-
 }

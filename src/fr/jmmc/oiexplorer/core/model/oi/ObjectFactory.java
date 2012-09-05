@@ -77,4 +77,12 @@ public class ObjectFactory {
         return new TargetUID();
     }
 
+    /**
+     * Create an instance of {@link Identifiable }
+     * 
+     */
+    public Identifiable createIdentifiable() {
+        return new Identifiable();
+    }
+
 }
