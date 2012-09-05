@@ -124,14 +124,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
         // TODO what about user plot definitions ...
         // add them but should be check for consistency related to loaded files (errors can occur while loading):
 
-        // update collection analysis (required by updateSubsetDefinitionRef):
-        this.oiFitsCollection.analyzeCollection();
-
-        // first add Plot as its references will be updated:
-        for (Plot plot : oiDataCollection.getPlots()) {
-            this.addPlot(plot);
-        }
-
         // then add SubsetDefinition:
         for (SubsetDefinition subsetDefinition : oiDataCollection.getSubsetDefinitions()) {
             // fix OIDataFile reference:
@@ -140,11 +132,19 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
                 // if missing, remove ?
             }
             addSubsetDefinition(subsetDefinition);
-
-            // force fire update
-            updateSubsetDefinitionRef(this, subsetDefinition);
         }
-        this.userCollection.getPlotDefinitions().addAll(oiDataCollection.getPlotDefinitions());
+
+        // then add PlotDefinition:
+        for (PlotDefinition plotDefinition : oiDataCollection.getPlotDefinitions()) {
+            addPlotDefinition(plotDefinition);
+        }
+
+        // TODO: check subset and plot definition references in Plot ?
+
+        // then add Plot:
+        for (Plot plot : oiDataCollection.getPlots()) {
+            this.addPlot(plot);
+        }
 
         logger.warn("subsetDefinitions {}", this.userCollection.getSubsetDefinitions());
     }
@@ -198,9 +198,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             // check if already present in collection:
             if (oiFitsCollection.addOIFitsFile(oiFitsFile) == null) {
 
-                // update collection analysis: (TODO move)
-                oiFitsCollection.analyzeCollection();
-
                 // Add new OIDataFile in collection 
                 final OIDataFile dataFile = new OIDataFile();
 
@@ -235,9 +232,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
                     it.remove();
                 }
             }
-
-            // update collection analysis: (TODO move)
-            oiFitsCollection.analyzeCollection();
 
             fireOIFitsCollectionChanged();
         }
@@ -435,8 +429,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
 
         boolean changed = false;
 
-        // TODO: compare instances ...
-
         if (subset != subsetDefinition) {
             changed = !OIBase.areEquals(subset, subsetDefinition);
         } else {
@@ -517,7 +509,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
         }
     }
 
-
     /* --- plot definition handling --------- ---------------------------- */
     /**
      * Return the current plot definition
@@ -557,6 +548,42 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             // TODO: do copy
             throw new IllegalStateException("Not yet implemented !");
         }
+        // update plot definition reference and fire events (PlotDefinitionChanged, PlotChanged):
+        updatePlotDefinitionRef(source, plotDefinition);
+        /*
+         final PlotDefinition plotDef = getPlotDefinitionRef(plotDefinition.getName());
+
+         if (plotDef == null) {
+         throw new IllegalStateException("plot definition not found : " + plotDefinition);
+         }
+
+         boolean changed = false;
+
+         if (plotDef != plotDefinition) {
+         changed = !OIBase.areEquals(plotDef, plotDefinition);
+         } else {
+         throw new IllegalStateException("equal plot definition references : " + plotDef);
+         }
+
+         logger.warn("updatePlotDefinition: changed: " + changed);
+
+         if (changed) {
+         // copy data:
+         // subset.copy(subsetDefinition);
+
+         // update plot definition reference and fire events (PlotDefinitionChanged, PlotChanged):
+         updatePlotDefinitionRef(source, plotDefinition);
+         }
+         */
+    }
+
+    /**
+     * Update the given plot definition (reference) and fire events
+     * @param source event source
+     * @param plotDefinition plot definition (reference)
+     */
+    private void updatePlotDefinitionRef(final Object source, final PlotDefinition plotDefinition) {
+
         firePlotDefinitionChanged(source, plotDefinition);
 
         // find dependencies:
@@ -597,6 +624,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             plot = new Plot();
             plot.setName(CURRENT);
 
+            // HACK to define current pointers:
             plot.setSubsetDefinition(getCurrentSubsetDefinitionRef());
             plot.setPlotDefinition(getCurrentPlotDefinition());
 
@@ -737,16 +765,33 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      */
     @Override
     public void onProcess(final GenericEvent<OIFitsCollectionEventType> event) {
-        logger.debug("Received event to process {}", event);
+        logger.warn("onProcess {}", event);
 
         switch (event.getType()) {
             case CHANGED:
                 // update collection analysis:
                 oiFitsCollection.analyzeCollection();
 
-                // TEST: remove ASAP
+                // TODO: see if the "GUI" manager decide to create objects itself ?
+                // TODO: remove ASAP:
+                // initialize current objects: subsetDefinition, plotDefinition, plot if NOT PRESENT:
                 getCurrentPlot();
 
+                // CASCADE EVENTS:
+
+                // SubsetDefinition:
+                for (SubsetDefinition subsetDefinition : this.userCollection.getSubsetDefinitions()) {
+                    // force fireSubsetChanged, update plot reference and firePlotChanged:
+                    updateSubsetDefinitionRef(this, subsetDefinition);
+                }
+
+                // PlotDefinition:
+                for (PlotDefinition plotDefinition : this.userCollection.getPlotDefinitions()) {
+                    // force PlotDefinitionChanged, update plot reference and firePlotChanged:
+                    updatePlotDefinitionRef(this, plotDefinition);
+                }
+
+                // Note: no explicit firePlotChanged event fired as done in updateSubsetDefinitionRef and updatePlotDefinitionRef
                 break;
             default:
         }
