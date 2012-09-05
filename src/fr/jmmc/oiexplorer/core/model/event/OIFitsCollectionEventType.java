@@ -14,8 +14,10 @@ public enum OIFitsCollectionEventType {
   SUBSET_CHANGED,
   /** plot definition changed */
   PLOT_DEFINITION_CHANGED,  
-  /** ask listeners to save their swing state into the OIFits collection  */
+  /** plot changed */
+  PLOT_CHANGED,  
+  /** (unused) ask listeners to save their swing state into the OIFits collection  */
   DO_UPDATE,
-  /** refresh swing state as the OIFits collection changed */
+  /** (unused) refresh swing state as the OIFits collection changed */
   REFRESH
 }
