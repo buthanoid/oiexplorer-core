@@ -29,8 +29,10 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
     private static final Logger logger = LoggerFactory.getLogger(EventNotifier.class);
     /** flag to log a stack trace in method register/unregister to debug registration */
     private static final boolean DEBUG_LISTENER = false;
-    /** flag to log a stack trace in method fireEvent() to debug events */
+    /** flag to log information useful to debug events */
     private static final boolean DEBUG_FIRE_EVENT = true;
+    /** flag to log also a stack trace to debug events */
+    private static final boolean DEBUG_STACK = false;
     /** EventNotifierController singleton */
     private static final EventNotifierController globalController = new EventNotifierController();
     /* members */
@@ -95,7 +97,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
      */
     public void register(final GenericEventListener<K, V> listener) {
         if (DEBUG_LISTENER) {
-            logger.warn("REGISTER {}", getObjectInfo(listener), new Throwable());
+            logger.warn("REGISTER {}", getObjectInfo(listener), (DEBUG_STACK) ? new Throwable() : null);
         }
         this.listeners.addIfAbsent(listener);
     }
@@ -106,7 +108,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
      */
     public void unregister(final GenericEventListener<K, V> listener) {
         if (DEBUG_LISTENER) {
-            logger.warn("UNREGISTER {}", getObjectInfo(listener), new Throwable());
+            logger.warn("UNREGISTER {}", getObjectInfo(listener), (DEBUG_STACK) ? new Throwable() : null);
         }
         this.listeners.remove(listener);
     }
@@ -139,7 +141,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
     private void fireEvent(final K event, final boolean useQueue) throws IllegalStateException {
         // ensure events are fired by Swing EDT:
         if (!SwingUtils.isEDT()) {
-            throw new IllegalStateException("invalid thread : use EDT", new Throwable());
+            throw new IllegalStateException("invalid thread : use EDT", (DEBUG_STACK) ? new Throwable() : null);
         }
 
         if (this.listeners.isEmpty()) {
@@ -149,7 +151,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
         // queue this event to avoid concurrency issues and repeated event notifications (thanks to SET):
         if (useQueue) {
             if (DEBUG_FIRE_EVENT) {
-                logger.warn("QUEUE EVENT {}", event, new Throwable());
+                logger.warn("QUEUE EVENT {}", event, (DEBUG_STACK) ? new Throwable() : null);
             }
             // queue this event:
 
@@ -165,7 +167,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
 
         // Fire events:
         if (DEBUG_FIRE_EVENT) {
-            logger.warn("START FIRE {}", event, new Throwable());
+            logger.warn("START FIRE {}", event, (DEBUG_STACK) ? new Throwable() : null);
         }
 
         logger.debug("fireEvent: {}", event);
@@ -243,8 +245,6 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
      */
     private final static class EventNotifierController implements Runnable {
 
-        /** maximum number of fire queued notifiers */
-        private final static int MAX_LOOP = 100;
         /* members */
         /** flag indicating that this task is registered in EDT */
         private boolean registeredEDT = false;
@@ -252,6 +252,8 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
         private final Set<EventNotifier<?, ?>> queuedNotifiers = new LinkedHashSet<EventNotifier<?, ?>>();
         /** callback list */
         private final List<Runnable> callbacks = new ArrayList<Runnable>();
+        /** temporary storage for queuedNotifiers */
+        private final List<EventNotifier<?, ?>> queuedNotifiersCopy = new ArrayList<EventNotifier<?, ?>>();
 
         /**
          * Private constructor
@@ -262,7 +264,10 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
 
         void queueEventNotifier(final EventNotifier<?, ?> eventNotifier) {
             queuedNotifiers.add(eventNotifier);
+            registerEDT();
+        }
 
+        private void registerEDT() {
             if (!registeredEDT) {
                 registeredEDT = true;
 
@@ -284,74 +289,72 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             if (DEBUG_FIRE_EVENT) {
                 logger.warn("CONTROLLER EXECUTED BY EDT (invokeLater)");
             }
+            boolean done = true;
             try {
                 // fire queued events:
-                fireQueuedNotifiers();
-
-                runCallbacks();
+                done = fireQueuedNotifiers();
 
             } finally {
                 // at the end: to avoid too much use of invokeLater !
                 registeredEDT = false;
             }
+            if (!done) {
+                // register EDT
+                registerEDT();
+            } else {
+                // run callbacks once all queued notifiers / events are fired:
+                runCallbacks();
+            }
         }
 
         /**
          * Fire queued notifiers if possible using EDT (may use interlacing with standard Swing EDT)
+         * @return true if queuedNotifiers is empty i.e. done
          */
-        private void fireQueuedNotifiers() {
+        private boolean fireQueuedNotifiers() {
 
             if (queuedNotifiers.isEmpty()) {
-                return;
+                return true;
             }
             if (DEBUG_FIRE_EVENT) {
-                logger.warn("START FIRE QUEUED NOTIFIERS");
+                logger.warn("START FIRE {} QUEUED NOTIFIERS", queuedNotifiers.size());
             }
 
-            final List<EventNotifier<?, ?>> queuedNotifiersCopy = new ArrayList<EventNotifier<?, ?>>();
+            // process only 1 notifier at a time (loop) to maximize event merges of next events:
+            queuedNotifiersCopy.clear();
+            queuedNotifiersCopy.addAll(queuedNotifiers);
 
-            int loop = 0;
-            do {
-
-                // process only 1 notifier at a time (loop) to maximize event merges of next events:
-                queuedNotifiersCopy.addAll(queuedNotifiers);
-
-                if (queuedNotifiersCopy.size() > 1) {
-                    Collections.sort(queuedNotifiersCopy);
-                }
-
-                if (DEBUG_FIRE_EVENT) {
-                    logger.warn("LOOP {} - SORTED QUEUED NOTIFIERS {}", loop, queuedNotifiersCopy);
-                }
-
-                // Get first (highest priority):
-                final EventNotifier<?, ?> eventNotifier = queuedNotifiersCopy.get(0);
-                queuedNotifiersCopy.clear();
-
-                // Remove this event notifier in queued notifiers:
-                queuedNotifiers.remove(eventNotifier);
-
-                if (DEBUG_FIRE_EVENT) {
-                    logger.warn("LOOP {} - FIRE QUEUED NOTIFIER {}", loop, eventNotifier);
-                }
-
-                eventNotifier.fireQueuedEvents();
-
-                if (DEBUG_FIRE_EVENT) {
-                    logger.warn("LOOP {} - END FIRE QUEUED NOTIFIER", loop);
-                }
-
-                loop++;
-
-                if (loop > MAX_LOOP) {
-                    throw new IllegalStateException("maximum number of fireQueuedEvents() execution reached !");
-                }
-
-            } while (!queuedNotifiers.isEmpty());
+            if (queuedNotifiersCopy.size() > 1) {
+                Collections.sort(queuedNotifiersCopy);
+            }
 
             if (DEBUG_FIRE_EVENT) {
-                logger.warn("END FIRE QUEUED NOTIFIERS");
+                logger.warn("SORTED QUEUED NOTIFIERS {}", queuedNotifiersCopy);
             }
+
+            // Get first (highest priority):
+            final EventNotifier<?, ?> eventNotifier = queuedNotifiersCopy.get(0);
+            queuedNotifiersCopy.clear();
+
+            // Remove this event notifier in queued notifiers:
+            queuedNotifiers.remove(eventNotifier);
+
+            if (DEBUG_FIRE_EVENT) {
+                logger.warn("FIRE QUEUED NOTIFIER {}", eventNotifier);
+            }
+
+            eventNotifier.fireQueuedEvents();
+
+            if (DEBUG_FIRE_EVENT) {
+                logger.warn("END FIRE QUEUED NOTIFIER", eventNotifier);
+            }
+
+            final boolean done = queuedNotifiers.isEmpty();
+            if (DEBUG_FIRE_EVENT) {
+                logger.warn("END FIRE QUEUED NOTIFIERS : {}", done);
+            }
+
+            return done;
         }
 
         void runCallbacks() {
