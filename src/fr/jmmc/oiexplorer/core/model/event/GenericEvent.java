@@ -67,11 +67,12 @@ public class GenericEvent<V> {
         return objectId;
     }
 
-    /* GenericEvent implements hashCode and equals because events can be postponed ie merged: only last event of the "same" kind is fired */
+    /* GenericEvent implements hashCode and equals because events can be postponed ie merged: 
+     * only last event of the "same" kind is fired */
     @Override
     public final int hashCode() {
         int hash = 7;
-        hash = 97 * hash + this.source.hashCode();
+        /*        hash = 97 * hash + this.source.hashCode(); */
         hash = 97 * hash + this.type.hashCode();
         hash = 97 * hash + ((this.objectId != null) ? this.type.hashCode() : 0);
         return hash;
@@ -86,9 +87,11 @@ public class GenericEvent<V> {
             return false;
         }
         final GenericEvent<?> other = (GenericEvent<?>) obj;
-        if (this.source != other.getSource() && !this.source.equals(other.getSource())) {
-            return false;
-        }
+        /*        
+         if (this.source != other.getSource() && !this.source.equals(other.getSource())) {
+         return false;
+         }
+         */
         if (this.type != other.getType() && !this.type.equals(other.getType())) {
             return false;
         }
