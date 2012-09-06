@@ -41,7 +41,7 @@ public abstract class ExportPDFAction extends WaitingTaskAction {
      * Return the singleton ExportPDFAction instance
      * @return ExportPDFAction instance
      */
-    private static ExportPDFAction getInstance() {
+    public static ExportPDFAction getInstance() {
         return (ExportPDFAction) ActionRegistrar.getInstance().get(className, actionName);
     }
 
