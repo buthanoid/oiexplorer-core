@@ -12,6 +12,7 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinitions;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,16 +80,25 @@ public final class PlotDefinitionFactory {
         }
 
         /* Store defaults computing names (actually, as described in constants ) */
-        for (PlotDefinition plotDefinition : presets.getPlotDefinitions()) {            
+        for (PlotDefinition plotDefinition : presets.getPlotDefinitions()) {
             defaults.put(plotDefinition.getName(), plotDefinition);
-        }        
+        }
     }
 
-    /** Get default presets.
+    /** 
+     * Get default presets.
      * @return List of default plotDefinitions
      */
     public List<String> getDefaultList() {
         return new ArrayList<String>(defaults.keySet());
+    }
+
+    /** 
+     * Get default presets.
+     * @return List of default plotDefinitions
+     */
+    public Collection<PlotDefinition> getDefaults() {
+        return defaults.values();
     }
 
     /** Get the default preset given to its name. 
