@@ -97,7 +97,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** plot identifier */
     private String plotId = OIFitsCollectionManager.CURRENT;
-    /** plot object to be plotted */
+    /** plot object reference */
     private Plot plot = null;
     /** flag to indicate if this plot has data */
     private boolean hasData = false;
@@ -1850,7 +1850,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
     private Plot getPlot() {
         if (this.plot == null) {
-            this.plot = ocm.getPlot(plotId);
+            this.plot = ocm.getPlotRef(plotId);
         }
         return this.plot;
     }
