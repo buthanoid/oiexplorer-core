@@ -157,5 +157,61 @@ public class Axis
     public void setRange(Range value) {
         this.range = value;
     }
+    
+//--simple--preserve
+
+    /**
+     * Perform a deep-copy of the given other instance into this instance
+     * 
+     * Note: to be overriden in child class to perform deep-copy of class fields
+     * @see OIBase#clone() 
+     * 
+     * @param other other instance
+     */
+    @Override
+    public void copy(final fr.jmmc.oiexplorer.core.model.OIBase other) {
+        final Axis axis = (Axis) other;
+
+        // copy name, logScale, includeZero, plotError:
+        this.name = axis.getName();
+        this.logScale = axis.isLogScale();
+        this.includeZero = axis.isIncludeZero();
+        this.plotError = axis.isPlotError();
+
+        // deep copy range:
+        this.range = (axis.getRange() != null) ? (Range) axis.getRange().clone() : null;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        // identity check:
+        if (this == obj) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Axis other = (Axis) obj;
+        if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
+            return false;
+        }
+        if (this.logScale != other.logScale) {
+            return false;
+        }
+        if (this.includeZero != other.includeZero) {
+            return false;
+        }
+        if (this.plotError != other.plotError && (this.plotError == null || !this.plotError.equals(other.plotError))) {
+            return false;
+        }
+        if (this.range != other.range && (this.range == null || !this.range.equals(other.range))) {
+            return false;
+        }
+        return true;
+    }
+//--simple--preserve
 
 }

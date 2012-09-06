@@ -74,5 +74,47 @@ public class Range
     public void setMax(double value) {
         this.max = value;
     }
+    
+//--simple--preserve
+
+    /**
+     * Perform a deep-copy of the given other instance into this instance
+     * 
+     * Note: to be overriden in child class to perform deep-copy of class fields
+     * @see OIBase#clone() 
+     * 
+     * @param other other instance
+     */
+    @Override
+    public void copy(final fr.jmmc.oiexplorer.core.model.OIBase other) {
+        final Range range = (Range) other;
+
+        // copy min, max:
+        this.min = range.getMin();
+        this.max = range.getMax();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        // identity check:
+        if (this == obj) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Range other = (Range) obj;
+        if (Double.doubleToLongBits(this.min) != Double.doubleToLongBits(other.min)) {
+            return false;
+        }
+        if (Double.doubleToLongBits(this.max) != Double.doubleToLongBits(other.max)) {
+            return false;
+        }
+        return true;
+    }
+//--simple--preserve
 
 }

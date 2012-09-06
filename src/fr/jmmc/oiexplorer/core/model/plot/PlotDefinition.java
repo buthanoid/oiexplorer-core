@@ -138,5 +138,64 @@ public class PlotDefinition
         }
         return this.yAxes;
     }
+    
+//--simple--preserve
+
+    /**
+     * Perform a deep-copy of the given other instance into this instance
+     * 
+     * Note: to be overriden in child class to perform deep-copy of class fields
+     * @see OIBase#clone() 
+     * 
+     * @param other other instance
+     */
+    @Override
+    public void copy(final fr.jmmc.oiexplorer.core.model.OIBase other) {
+        super.copy(other); // Identifiable
+        final PlotDefinition plotDef = (PlotDefinition) other;
+
+        // copy skipFlaggedData, drawLine:
+        this.skipFlaggedData = plotDef.isSkipFlaggedData();
+        this.drawLine = plotDef.isDrawLine();
+
+        // deep copy xAxis, yAxes:
+        this.xAxis = (plotDef.getXAxis() != null) ? (Axis) plotDef.getXAxis().clone() : null;
+        this.yAxes = deepCopyList(plotDef.getYAxes());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        // identity check:
+        if (this == obj) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final PlotDefinition other = (PlotDefinition) obj;
+        if (this.skipFlaggedData != other.skipFlaggedData) {
+            return false;
+        }
+        if (this.drawLine != other.drawLine) {
+            return false;
+        }
+        if (this.xAxis != other.xAxis && (this.xAxis == null || !this.xAxis.equals(other.xAxis))) {
+            return false;
+        }
+        if (this.yAxes != other.yAxes && (this.yAxes == null || !this.yAxes.equals(other.yAxes))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + '#' + Integer.toHexString(System.identityHashCode(this))
+                + "{name= " + name + ", xAxis= " + xAxis + ", yAxes=" + yAxes + '}';
+    }
+//--simple--preserve
 
 }

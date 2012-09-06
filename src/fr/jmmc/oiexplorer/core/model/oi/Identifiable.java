@@ -1,3 +1,4 @@
+
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -11,6 +12,7 @@ import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import fr.jmmc.oiexplorer.core.model.OIBase;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
+
 
 /**
  * 
@@ -45,10 +47,11 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
     OIDataFile.class,
     SubsetDefinition.class,
     PlotDefinition.class,
-    Plot.class
+    View.class
 })
 public class Identifiable
-        extends OIBase {
+    extends OIBase
+{
 
     @XmlElement(required = true)
     @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
@@ -104,7 +107,7 @@ public class Identifiable
     public void setDescription(String value) {
         this.description = value;
     }
-
+    
 //--simple--preserve
     /**
      * Perform a deep-copy of the given other instance into this instance
@@ -118,8 +121,10 @@ public class Identifiable
     public void copy(final OIBase other) {
         final Identifiable identifiable = (Identifiable) other;
 
-        // copy name, description
-        this.name = identifiable.getName();
+        // skip name to avoid override identifier !
+        /* this.name = identifiable.getName(); */
+
+        // copy description only:
         this.description = identifiable.getDescription();
     }
 
@@ -145,4 +150,5 @@ public class Identifiable
         return true;
     }
 //--simple--preserve
+
 }

@@ -1,3 +1,4 @@
+
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -7,6 +8,7 @@ import javax.xml.bind.annotation.XmlIDREF;
 import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import fr.jmmc.oiexplorer.core.model.OIBase;
+
 
 /**
  * 
@@ -40,7 +42,8 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
     "extNb"
 })
 public class TableUID
-        extends OIBase {
+    extends OIBase
+{
 
     @XmlElement(required = true, type = Object.class)
     @XmlIDREF
@@ -120,7 +123,7 @@ public class TableUID
     public void setExtNb(Integer value) {
         this.extNb = value;
     }
-
+    
 //--simple--preserve
     /**
      * Constructor for JAXB
@@ -196,4 +199,5 @@ public class TableUID
         return "TableUID[" + file + ((extName != null) ? ' ' + extName + '#' + extNb : "") + ']';
     }
 //--simple--preserve
+
 }

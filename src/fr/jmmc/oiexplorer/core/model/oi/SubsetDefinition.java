@@ -1,3 +1,4 @@
+
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import java.util.ArrayList;
@@ -6,6 +7,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
+
 
 /**
  * 
@@ -39,7 +41,8 @@ import javax.xml.bind.annotation.XmlType;
     "filters"
 })
 public class SubsetDefinition
-        extends Identifiable {
+    extends Identifiable
+{
 
     @XmlElement(required = true)
     protected TargetUID target;
@@ -129,7 +132,7 @@ public class SubsetDefinition
         }
         return this.filters;
     }
-
+    
 //--simple--preserve
     /**
      * Perform a deep-copy of the given other instance into this instance
@@ -196,4 +199,5 @@ public class SubsetDefinition
         this.oiFitsSubset = oiFitsSubset;
     }
 //--simple--preserve
+
 }

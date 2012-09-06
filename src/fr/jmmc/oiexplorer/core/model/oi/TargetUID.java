@@ -1,3 +1,4 @@
+
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -5,6 +6,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 import fr.jmmc.oiexplorer.core.model.OIBase;
+
 
 /**
  * 
@@ -34,7 +36,8 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
     "target"
 })
 public class TargetUID
-        extends OIBase {
+    extends OIBase
+{
 
     @XmlElement(required = true)
     protected String target;
@@ -62,7 +65,7 @@ public class TargetUID
     public void setTarget(String value) {
         this.target = value;
     }
-
+    
 //--simple--preserve
     /**
      * Constructor for JAXB
@@ -139,4 +142,5 @@ public class TargetUID
         return "TargetUID[" + target + ']';
     }
 //--simple--preserve
+
 }
