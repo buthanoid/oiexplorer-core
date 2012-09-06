@@ -31,14 +31,12 @@ import org.slf4j.LoggerFactory;
  * @author mella
  */
 public class PlotPanelEditor extends javax.swing.JPanel implements ActionListener,
-                                                                   OIFitsCollectionEventListener {
+        OIFitsCollectionEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
     /** Logger */
-    final private Logger logger = LoggerFactory.getLogger(PlotPanelEditor.class);
-    /** Custom plot type */
-    private final static String customLabel = "Custom...";
+    final private Logger logger = LoggerFactory.getLogger(PlotPanelEditor.class);   
 
     /* members */
     /** OIFitsCollectionManager singleton */
@@ -79,19 +77,9 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
      * Init function that must be called after being instanciated and when notification can be performed. 
      */
     public void init() {
-
         // Comboboxes
-        xAxisComboBox.setModel(new GenericListModel<String>(xAxisChoices, true));
-
-        final List<String> plotTypeChoices = new LinkedList<String>();
-
-        plotTypeChoices.addAll(PlotDefinitionFactory.getInstance().getDefaultList());
-        plotTypeChoices.add(customLabel);
-
-        plotTypeComboBox.setModel(new GenericListModel<String>(plotTypeChoices, true));
-        plotTypeComboBox.setSelectedItem(PlotDefinitionFactory.PLOT_DEFAULT);
-        plotTypeComboBox.addActionListener(this);
-
+        xAxisComboBox.setModel(new GenericListModel<String>(xAxisChoices, true));       
+        
         // Prepare a common listener to group handling in yAxisComboBoxActionPerformed()
         ycomboActionListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -163,18 +151,31 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         }
 
         if (!xAxisChoices.isEmpty()) {
-            if (lastXComboBoxValue != null && xAxisChoices.contains(lastXComboBoxValue)) {
+            // Use label of associated plotdefinition if any, else try old value and finally use first by default
+            if (getPlotDefinition().getXAxis() != null && getPlotDefinition().getXAxis().getName() != null) {
+                xAxisComboBox.setSelectedItem(getPlotDefinition().getXAxis().getName());
+            } else if (lastXComboBoxValue != null && xAxisChoices.contains(lastXComboBoxValue)) {
                 xAxisComboBox.setSelectedItem(lastXComboBoxValue);
             } else {
                 xAxisComboBox.setSelectedIndex(0);
             }
         }
         if (!yAxisChoices.isEmpty()) {
-            for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
-                if (lastYComboBoxesValues.size() > i && yAxisChoices.contains(lastYComboBoxesValues.get(i))) {
-                    yComboBoxes.get(i).setSelectedItem(lastYComboBoxesValues.get(i));
-                } else {
-                    yComboBoxes.get(i).setSelectedIndex(0);
+            if (getPlotDefinition().getYAxes().isEmpty()) {
+                for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
+                    if (lastYComboBoxesValues.size() > i && yAxisChoices.contains(lastYComboBoxesValues.get(i))) {
+                        yComboBoxes.get(i).setSelectedItem(lastYComboBoxesValues.get(i));
+                    } else {
+                        yComboBoxes.get(i).setSelectedIndex(0);
+                    }
+                }
+            } else {
+                // clean current ycombolist and fill with associated plotdefinition            
+                for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
+                    delYCombo(yComboBoxes.get(i));
+                }
+                for (Axis yAxis : getPlotDefinition().getYAxes()) {
+                    addYCombo(yAxis.getName());
                 }
             }
         }
@@ -289,8 +290,6 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        plotTypeLabel = new javax.swing.JLabel();
-        plotTypeComboBox = new javax.swing.JComboBox();
         yLabel = new javax.swing.JLabel();
         xLabel = new javax.swing.JLabel();
         xAxisComboBox = new javax.swing.JComboBox();
@@ -299,27 +298,9 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         plotAreaPanel = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         yComboBoxesPanel = new javax.swing.JPanel();
+        plotDefinitionName = new javax.swing.JLabel();
 
         setLayout(new java.awt.GridBagLayout());
-
-        plotTypeLabel.setText("Plot type");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
-        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
-        add(plotTypeLabel, gridBagConstraints);
-
-        plotTypeComboBox.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                plotTypeComboBoxActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        add(plotTypeComboBox, gridBagConstraints);
 
         yLabel.setText("yAxis");
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -374,14 +355,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         add(delYAxisButton, gridBagConstraints);
 
         plotAreaPanel.setLayout(new java.awt.BorderLayout());
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 3;
-        gridBagConstraints.gridwidth = 4;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
-        add(plotAreaPanel, gridBagConstraints);
+        add(plotAreaPanel, new java.awt.GridBagConstraints());
 
         yComboBoxesPanel.setLayout(new javax.swing.BoxLayout(yComboBoxesPanel, javax.swing.BoxLayout.Y_AXIS));
         jScrollPane1.setViewportView(yComboBoxesPanel);
@@ -391,6 +365,11 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         gridBagConstraints.gridy = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         add(jScrollPane1, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 2;
+        add(plotDefinitionName, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void xAxisComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_xAxisComboBoxActionPerformed
@@ -400,8 +379,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     }//GEN-LAST:event_xAxisComboBoxActionPerformed
 
     private void addYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addYAxisButtonActionPerformed
-        final JComboBox ycombo = new JComboBox(new GenericListModel<String>(yAxisChoices, true));
-        addYCombo(ycombo);
+        addYCombo(null);
     }//GEN-LAST:event_addYAxisButtonActionPerformed
 
     private void delYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delYAxisButtonActionPerformed
@@ -412,26 +390,23 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         }
     }//GEN-LAST:event_delYAxisButtonActionPerformed
 
-    private void plotTypeComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_plotTypeComboBoxActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_plotTypeComboBoxActionPerformed
-
     private void yAxisComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
         actionPerformed(null);
     }
 
-    /** Synchronize management for the addition of a given combo and update GUI.
-     * @param ycombo ComboBox to add
+    /** Create a new combobox and update GUI.
+     * @param selectedValue string to be selected (null clears selection)
      */
-    private void addYCombo(final JComboBox ycombo) {
-        final String selectedType = (String) plotTypeComboBox.getSelectedItem();
-        final boolean useCustom = (selectedType == customLabel);
+    private void addYCombo(final String selectedValue) {
+        final JComboBox ycombo = new JComboBox(new GenericListModel<String>(yAxisChoices, true));
 
-        /* TODO move following lines */
-        ycombo.setEnabled(useCustom);
         yComboBoxes.add(ycombo);
         yComboBoxesPanel.add(ycombo);
         ycombo.addActionListener(ycomboActionListener);
+
+        // select entry if any
+        ycombo.setSelectedItem(selectedValue);
+
         revalidate();
     }
 
@@ -446,29 +421,8 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     }
 
     public void actionPerformed(ActionEvent e) {
-
-        final String selectedType = (String) plotTypeComboBox.getSelectedItem();
-        final boolean useCustom = (selectedType == customLabel);
-
-        /* TODO move following lines */
-        xAxisComboBox.setEnabled(useCustom);
-        for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
-            yComboBoxes.get(i).setEnabled(useCustom);
-        }
-        xLabel.setEnabled(useCustom);
-        yLabel.setEnabled(useCustom);
-
-        if (useCustom) {
-            updateCustomPlotDefinition();
-
-            logger.warn("Using custom plot {}", getPlotDefinition());
-        } else {
-            // copy preset (except name): 
-            getPlotDefinition().copy(PlotDefinitionFactory.getInstance().getDefault(selectedType));
-
-            logger.warn("Using preset plot : {}, {}", selectedType, getPlotDefinition());
-        }
-
+        updateCustomPlotDefinition();
+        logger.warn("Using custom plot {}", getPlotDefinition());
         ocm.updatePlotDefinition(this, getPlotDefinition());
     }
 
@@ -499,8 +453,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     private javax.swing.JButton delYAxisButton;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JPanel plotAreaPanel;
-    private javax.swing.JComboBox plotTypeComboBox;
-    private javax.swing.JLabel plotTypeLabel;
+    private javax.swing.JLabel plotDefinitionName;
     private javax.swing.JComboBox xAxisComboBox;
     private javax.swing.JLabel xLabel;
     private javax.swing.JPanel yComboBoxesPanel;
