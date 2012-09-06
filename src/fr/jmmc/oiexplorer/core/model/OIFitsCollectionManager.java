@@ -80,11 +80,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
         this.plotDefinitionEventNotifier = new EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType>(20);
         this.plotEventNotifier = new EventNotifier<GenericEvent<OIFitsCollectionEventType>, OIFitsCollectionEventType>(30);
 
-        // reset first to avoid firing event:
-        reset();
-
         // listen for OIFitsCollectionEvent to analyze collection:
         this.oiFitsCollectionEventNotifier.register(this);
+
+        // reset without firing events:
+        reset(false);
     }
 
     /* --- OIFits file collection handling ------------------------------------- */
@@ -183,10 +183,20 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * Reset the OIFits file collection
      */
     public void reset() {
+        reset(true);
+    }
+
+    /**
+     * Reset the OIFits file collection
+     * @param notify true to fireOIFitsCollectionChanged()
+     */
+    private void reset(final boolean notify) {
         oiFitsCollection = new OIFitsCollection();
         userCollection = new OiDataCollection();
 
-        fireOIFitsCollectionChanged();
+        if (notify) {
+            fireOIFitsCollectionChanged();
+        }
     }
 
     public OIFitsCollection getOIFitsCollection() {
@@ -380,7 +390,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * Add the given SubsetDefinition
      * @param subsetDefinition SubsetDefinition to add
      */
-    private void addSubsetDefinition(final SubsetDefinition subsetDefinition) {
+    public void addSubsetDefinition(final SubsetDefinition subsetDefinition) {
         logger.warn("addSubsetDefinition: {}", subsetDefinition);
 
         addIdentifiable(subsetDefinition, this.userCollection.getSubsetDefinitions());
@@ -505,7 +515,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             if (plot.getSubsetDefinition() != null && plot.getSubsetDefinition().getName().equals(subsetDefinition.getName())) {
                 // match
                 plot.setSubsetDefinition(subsetDefinition);
-                updatePlot(plot);
+                // fire PlotChanged event:
+                firePlotChanged(plot);
             }
         }
     }
@@ -532,6 +543,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             plotDefinition = new PlotDefinition();
             plotDefinition.setName(CURRENT);
 
+            // HACK:
+            plotDefinition.copy(PlotDefinitionFactory.getInstance().getDefault(PlotDefinitionFactory.PLOT_DEFAULT));
+
             addPlotDefinition(plotDefinition);
         }
         return plotDefinition;
@@ -541,7 +555,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * Add the given PlotDefinition
      * @param plotDefinition PlotDefinition to add
      */
-    private void addPlotDefinition(final PlotDefinition plotDefinition) {
+    public void addPlotDefinition(final PlotDefinition plotDefinition) {
         addIdentifiable(plotDefinition, this.userCollection.getPlotDefinitions());
     }
 
@@ -579,7 +593,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * @param name plot definition name
      * @return plot definition (reference) or null if not found
      */
-    private PlotDefinition getPlotDefinitionRef(final String name) {
+    public PlotDefinition getPlotDefinitionRef(final String name) {
         return getIdentifiable(name, this.userCollection.getPlotDefinitions());
     }
 
@@ -629,18 +643,30 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             if (plot.getPlotDefinition() != null && plot.getPlotDefinition().getName().equals(plotDefinition.getName())) {
                 // match
                 plot.setPlotDefinition(plotDefinition);
-                updatePlot(plot);
+                // fire PlotChanged event:
+                firePlotChanged(plot);
             }
         }
     }
 
     /* --- plot handling --------- ---------------------------- */
     /**
-     * Return the current plot
-     * @return plot 
+     * Return the current plot (copy)
+     * @return plot (copy)
      */
     public Plot getCurrentPlot() {
-        Plot plot = getPlot(CURRENT);
+        final Plot plot = clone(getCurrentPlotRef());
+
+        logger.warn("getCurrentPlot {}", plot);
+        return plot;
+    }
+
+    /**
+     * Return the current plot (reference)
+     * @return plot (reference)
+     */
+    public Plot getCurrentPlotRef() {
+        Plot plot = getPlotRef(CURRENT);
         if (plot == null) {
             plot = new Plot();
             plot.setName(CURRENT);
@@ -655,33 +681,10 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     }
 
     /**
-     * Return a plot by its name
-     * @param name plot name
-     * @return plot or null if not found
-     */
-    public Plot getPlot(final String name) {
-        return getIdentifiable(name, this.userCollection.getPlots());
-    }
-
-    /**
-     * Update the plot corresponding to the same name
-     * @param plot plot with updated values
-     */
-    public void updatePlot(final Plot plot) {
-        final Plot p = getPlot(plot.getName());
-
-        if (p != plot) {
-            // TODO: do copy
-            throw new IllegalStateException("Not yet implemented !");
-        }
-        firePlotChanged(plot);
-    }
-
-    /**
      * Add the given Plot
      * @param plot Plot to add
      */
-    private void addPlot(final Plot plot) {
+    public void addPlot(final Plot plot) {
         addIdentifiable(plot, this.userCollection.getPlots());
     }
 
@@ -691,6 +694,57 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      */
     private void removePlot(final String name) {
         removeIdentifiable(name, this.userCollection.getPlots());
+    }
+
+    /**
+     * Return a plot (copy) by its name
+     * @param name plot name
+     * @return plot (copy) or null if not found
+     */
+    public Plot getPlot(final String name) {
+        final Plot plot = clone(getPlotRef(name));
+
+        logger.warn("getPlot {}", plot);
+        return plot;
+    }
+
+    /**
+     * Return a plot (reference) by its name
+     * @param name plot name
+     * @return plot (reference) or null if not found
+     */
+    public Plot getPlotRef(final String name) {
+        return getIdentifiable(name, this.userCollection.getPlots());
+    }
+
+    /**
+     * Update the plot corresponding to the same name
+     * @param plot plot with updated values
+     */
+    public void updatePlot(final Plot plot) {
+        final Plot plotRef = getPlotRef(plot.getName());
+
+        if (plotRef == null) {
+            throw new IllegalStateException("plot not found : " + plot);
+        }
+
+        boolean changed = false;
+
+        if (plotRef != plot) {
+            changed = !OIBase.areEquals(plotRef, plot);
+        } else {
+            throw new IllegalStateException("equal plot references : " + plotRef);
+        }
+
+        logger.warn("updatePlot: changed: " + changed);
+
+        if (changed) {
+            // copy data:
+            plotRef.copy(plot);
+
+            // fire PlotChanged event:
+            firePlotChanged(plot);
+        }
     }
 
     // --- EVENTS ----------------------------------------------------------------
@@ -709,9 +763,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
         if (logger.isDebugEnabled()) {
             logger.debug("fireOIFitsCollectionChanged: {}", this.oiFitsCollection);
         }
-        if (this.oiFitsCollectionEventNotifier.hasListeners()) {
-            this.oiFitsCollectionEventNotifier.fireEvent(new OIFitsCollectionEvent(this, OIFitsCollectionEventType.CHANGED, this.oiFitsCollection));
-        }
+//        if (this.oiFitsCollectionEventNotifier.hasListeners()) {
+        this.oiFitsCollectionEventNotifier.fireEvent(new OIFitsCollectionEvent(this, OIFitsCollectionEventType.CHANGED, this.oiFitsCollection));
+//        }
     }
 
     /**
@@ -731,9 +785,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
         if (logger.isDebugEnabled()) {
             logger.debug("fireSubsetDefinitionChanged: {}", subsetDefinition);
         }
-        if (this.subsetDefinitionEventNotifier.hasListeners()) {
-            this.subsetDefinitionEventNotifier.fireEvent(new SubsetDefinitionEvent(source, OIFitsCollectionEventType.SUBSET_CHANGED, subsetDefinition));
-        }
+//        if (this.subsetDefinitionEventNotifier.hasListeners()) {
+        this.subsetDefinitionEventNotifier.fireEvent(new SubsetDefinitionEvent(source, OIFitsCollectionEventType.SUBSET_CHANGED, subsetDefinition));
+//        }
     }
 
     /**
@@ -753,9 +807,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
         if (logger.isDebugEnabled()) {
             logger.debug("firePlotDefinitionChanged: {}", plotDefinition);
         }
-        if (this.plotDefinitionEventNotifier.hasListeners()) {
-            this.plotDefinitionEventNotifier.fireEvent(new PlotDefinitionEvent(source, OIFitsCollectionEventType.PLOT_DEFINITION_CHANGED, plotDefinition));
-        }
+//        if (this.plotDefinitionEventNotifier.hasListeners()) {
+        this.plotDefinitionEventNotifier.fireEvent(new PlotDefinitionEvent(source, OIFitsCollectionEventType.PLOT_DEFINITION_CHANGED, plotDefinition));
+//        }
     }
 
     /**
@@ -775,10 +829,10 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             logger.debug("firePlotChanged: {}", plot);
         }
         logger.warn("firePlotChanged: {} - {}", plot, plot.getPlotDefinition());
-        if (this.plotEventNotifier.hasListeners()) {
-            // set source to this in order to merge events:
-            this.plotEventNotifier.fireEvent(new PlotEvent(this, OIFitsCollectionEventType.PLOT_CHANGED, plot));
-        }
+//        if (this.plotEventNotifier.hasListeners()) {
+        // set source to this in order to merge events:
+        this.plotEventNotifier.fireEvent(new PlotEvent(this, OIFitsCollectionEventType.PLOT_CHANGED, plot));
+//        }
     }
 
     /**
@@ -797,7 +851,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
                 // TODO: see if the "GUI" manager decide to create objects itself ?
                 // TODO: remove ASAP:
                 // initialize current objects: subsetDefinition, plotDefinition, plot if NOT PRESENT:
-                getCurrentPlot();
+                getCurrentPlotRef();
 
                 // CASCADE EVENTS:
 
