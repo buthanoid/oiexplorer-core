@@ -663,7 +663,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     }
 
     /**
-     * Plot the generated file synchronously.
+     * Plot the generated file synchronously (useless).
      * This code must be executed by the Swing Event Dispatcher thread (EDT)
      */
     public void plot() {
@@ -848,6 +848,9 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             ChartUtils.addSubtitle(this.chart, sb.toString());
 
             // computed data are valid :
+            // TODO: externalize dataset creation using SwingWorker to be able to 
+            // - cancel long data processing task
+            // - do not block EDT !
             this.hasData = updateChart();
 
             if (this.hasData) {
@@ -1854,7 +1857,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
     /**
      * Define the plot identifier and reset plot
-     * @param plotId subset identifier
+     * @param plotId plot identifier
      */
     public void setPlotId(final String plotId) {
         this.plotId = plotId;
