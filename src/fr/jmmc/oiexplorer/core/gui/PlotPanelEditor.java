@@ -43,10 +43,14 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     /* members */
     /** OIFitsCollectionManager singleton */
     private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    /** subset identifier */
+    private String subsetId = OIFitsCollectionManager.CURRENT;
     /** subset definition */
     private SubsetDefinition subsetDefinition = null;
+    /** plot definition identifier */
+    private String plotDefId = OIFitsCollectionManager.CURRENT;
     /** Main plot definition */
-    private PlotDefinition plotDefinition;
+    private PlotDefinition plotDefinition = null;
     /* Swing components */
     /** Store all choices available to plot on x axis given to current data to plot */
     private final List<String> xAxisChoices = new LinkedList<String>();
@@ -110,9 +114,6 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         /* store subset definition */
         this.subsetDefinition = subsetDefinition;
 
-        /* use the manager current plot definition  */
-        this.plotDefinition = ocm.getCurrentPlotDefinition();
-
         /* fill combobox for available columns */
         fillDataSelectors();
 
@@ -123,23 +124,24 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     /** 
      * Return the plotDefinition initialized with user adjusted widgets. 
      */
-    private PlotDefinition defineCustomPlotDefinition() {
+    private void updateCustomPlotDefinition() {
         // handle xAxis
-        Axis xAxis = new Axis();
+        final Axis xAxis = new Axis();
         xAxis.setName(getxAxis());
-        plotDefinition.setXAxis(xAxis);
+        getPlotDefinition().setXAxis(xAxis);
 
         // handle yAxes
-        List<Axis> yAxes = plotDefinition.getYAxes();
+        final List<Axis> yAxes = getPlotDefinition().getYAxes();
         yAxes.clear();
         for (String yname : getyAxes()) {
-            Axis a = new Axis();
-            a.setName(yname);
-            yAxes.add(a);
+            final Axis yAxis = new Axis();
+            yAxis.setName(yname);
+            yAxes.add(yAxis);
         }
 
-        logger.debug("Setting custom plot definition x: {}, y : {}", getxAxis(), getyAxes());
-        return plotDefinition;
+        if (logger.isDebugEnabled()) {
+            logger.debug("Setting custom plot definition x: {}, y : {}", getxAxis(), getyAxes());
+        }
     }
 
     /**
@@ -152,9 +154,9 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         xAxisChoices.clear();
         yAxisChoices.clear();
 
-        if (subsetDefinition != null && subsetDefinition.getOIFitsSubset() != null) {
+        if (getOiFitsSubset() != null) {
             // Get whole available columns
-            final Set<String> columns = getDistinctColumns(subsetDefinition.getOIFitsSubset());
+            final Set<String> columns = getDistinctColumns(getOiFitsSubset());
 
             xAxisChoices.addAll(columns);
             yAxisChoices.addAll(columns);
@@ -186,9 +188,9 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         // Clear all content       
         yAxisChoices.clear();
 
-        if (subsetDefinition != null && subsetDefinition.getOIFitsSubset() != null) {
+        if (getOiFitsSubset() != null) {
             // Get whole available columns compatible with selected x
-            final Set<String> columns = getDistinctColumns(subsetDefinition.getOIFitsSubset(), getxAxis());
+            final Set<String> columns = getDistinctColumns(getOiFitsSubset(), getxAxis());
 
             yAxisChoices.addAll(columns);
         }
@@ -457,14 +459,17 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         yLabel.setEnabled(useCustom);
 
         if (useCustom) {
-            plotDefinition = defineCustomPlotDefinition();
-            logger.warn("Using custom plot {}", plotDefinition);
+            updateCustomPlotDefinition();
+
+            logger.warn("Using custom plot {}", getPlotDefinition());
         } else {
-            plotDefinition = PlotDefinitionFactory.getInstance().getDefault(selectedType);
-            logger.warn("Using preset plot : {}, {}", selectedType, plotDefinition);
+            // copy preset (except name): 
+            getPlotDefinition().copy(PlotDefinitionFactory.getInstance().getDefault(selectedType));
+
+            logger.warn("Using preset plot : {}, {}", selectedType, getPlotDefinition());
         }
 
-        ocm.updatePlotDefinition(this, plotDefinition);
+        ocm.updatePlotDefinition(this, getPlotDefinition());
     }
 
     /**
@@ -477,7 +482,14 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
 
         switch (event.getType()) {
             case SUBSET_CHANGED:
-                update(((SubsetDefinitionEvent) event).getSubsetDefinition());
+                final SubsetDefinition eventSubset = ((SubsetDefinitionEvent) event).getSubsetDefinition();
+
+                // TODO: see EventNotifier: subject ?
+
+                // check plot identifier:
+                if (eventSubset.getName().equals(this.subsetId)) {
+                    update(eventSubset);
+                }
                 break;
             default:
         }
@@ -499,5 +511,51 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     // still kept for export pdf action
     public Vis2Panel getPlotPanel() {
         return (Vis2Panel) plotAreaPanel.getComponent(0);
+    }
+
+    private OIFitsFile getOiFitsSubset() {
+        if (getSubsetDefinition() == null) {
+            return null;
+        }
+        return getSubsetDefinition().getOIFitsSubset();
+    }
+
+    /**
+     * Return the subset definition given its subset name
+     * @return subsetDefinition subset definition
+     */
+    private SubsetDefinition getSubsetDefinition() {
+        if (this.subsetDefinition == null) {
+            // get copy:
+            this.subsetDefinition = ocm.getSubsetDefinition(this.subsetId);
+        }
+        return this.subsetDefinition;
+    }
+
+    /**
+     * Define the subset identifier and reset subset
+     * @param subsetId subset identifier
+     */
+    public void setSubsetId(final String subsetId) {
+        this.subsetId = subsetId;
+        // force reset:
+        this.subsetDefinition = null;
+    }
+
+    private PlotDefinition getPlotDefinition() {
+        if (this.plotDefinition == null) {
+            this.plotDefinition = ocm.getPlotDefinition(plotDefId);
+        }
+        return this.plotDefinition;
+    }
+
+    /**
+     * Define the plot definition identifier and reset plot definition
+     * @param plotDefId plot definition identifier
+     */
+    public void setPlotDefId(final String plotDefId) {
+        this.plotDefId = plotDefId;
+        // force reset:
+        this.plotDefinition = null;
     }
 }

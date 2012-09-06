@@ -360,8 +360,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     }
 
     /**
-     * Return the current subset definition (copy)
-     * @return subset definition (copy)
+     * Return the current subset definition (reference)
+     * @return subset definition (reference)
      */
     private SubsetDefinition getCurrentSubsetDefinitionRef() {
         SubsetDefinition subsetDefinition = getSubsetDefinitionRef(CURRENT);
@@ -381,7 +381,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * @param subsetDefinition SubsetDefinition to add
      */
     private void addSubsetDefinition(final SubsetDefinition subsetDefinition) {
-        logger.warn("addSubsetDefinition: {}", subsetDefinition, new Throwable());
+        logger.warn("addSubsetDefinition: {}", subsetDefinition);
 
         addIdentifiable(subsetDefinition, this.userCollection.getSubsetDefinitions());
     }
@@ -396,7 +396,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
 
     /**
      * Return a subset definition (copy) by its name
-     * @param name plot definition name
+     * @param name subset definition name
      * @return subset definition (copy) or null if not found
      */
     public SubsetDefinition getSubsetDefinition(final String name) {
@@ -452,6 +452,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * @param subsetDefinition subset definition (reference)
      */
     private void updateSubsetDefinitionRef(final Object source, final SubsetDefinition subsetDefinition) {
+        logger.warn("updateSubsetDefinitionRef: subsetDefinition: " + subsetDefinition);
 
         // Get OIFitsFile structure for this target:
         final OIFitsFile oiFitsSubset;
@@ -511,11 +512,22 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
 
     /* --- plot definition handling --------- ---------------------------- */
     /**
-     * Return the current plot definition
-     * @return plot definition
+     * Return the current plot definition (copy)
+     * @return plot definition (copy)
      */
     public PlotDefinition getCurrentPlotDefinition() {
-        PlotDefinition plotDefinition = getPlotDefinition(CURRENT);
+        final PlotDefinition plotDefinition = clone(getCurrentPlotDefinitionRef());
+
+        logger.warn("getCurrentPlotDefinition {}", plotDefinition);
+        return plotDefinition;
+    }
+
+    /**
+     * Return the current plot definition (reference)
+     * @return plot definition (reference)
+     */
+    private PlotDefinition getCurrentPlotDefinitionRef() {
+        PlotDefinition plotDefinition = getPlotDefinitionRef(CURRENT);
         if (plotDefinition == null) {
             plotDefinition = new PlotDefinition();
             plotDefinition.setName(CURRENT);
@@ -523,78 +535,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             addPlotDefinition(plotDefinition);
         }
         return plotDefinition;
-    }
-
-    /**
-     * Return a plot definition by its name
-     * @param name plot definition name
-     * @return plot definition or null if not found
-     */
-    public PlotDefinition getPlotDefinition(final String name) {
-        return getIdentifiable(name, this.userCollection.getPlotDefinitions());
-    }
-
-    /**
-     * Update the plot definition corresponding to the same name
-     * @param source event source
-     * @param plotDefinition plot definition with updated values
-     */
-    public void updatePlotDefinition(final Object source, final PlotDefinition plotDefinition) {
-        final PlotDefinition plotDef = getPlotDefinition(plotDefinition.getName());
-
-        if (plotDef == null) {
-            // help to support preset case
-        } else if (plotDef != plotDefinition) {
-            // TODO: do copy
-            throw new IllegalStateException("Not yet implemented !");
-        }
-        // update plot definition reference and fire events (PlotDefinitionChanged, PlotChanged):
-        updatePlotDefinitionRef(source, plotDefinition);
-        /*
-         final PlotDefinition plotDef = getPlotDefinitionRef(plotDefinition.getName());
-
-         if (plotDef == null) {
-         throw new IllegalStateException("plot definition not found : " + plotDefinition);
-         }
-
-         boolean changed = false;
-
-         if (plotDef != plotDefinition) {
-         changed = !OIBase.areEquals(plotDef, plotDefinition);
-         } else {
-         throw new IllegalStateException("equal plot definition references : " + plotDef);
-         }
-
-         logger.warn("updatePlotDefinition: changed: " + changed);
-
-         if (changed) {
-         // copy data:
-         // subset.copy(subsetDefinition);
-
-         // update plot definition reference and fire events (PlotDefinitionChanged, PlotChanged):
-         updatePlotDefinitionRef(source, plotDefinition);
-         }
-         */
-    }
-
-    /**
-     * Update the given plot definition (reference) and fire events
-     * @param source event source
-     * @param plotDefinition plot definition (reference)
-     */
-    private void updatePlotDefinitionRef(final Object source, final PlotDefinition plotDefinition) {
-
-        firePlotDefinitionChanged(source, plotDefinition);
-
-        // find dependencies:
-        for (Plot plot : this.userCollection.getPlots()) {
-// DOES NOT WORK with custom ...            
-//            if (plot.getPlotDefinition() != null && plot.getPlotDefinition().getName().equals(plotDefinition.getName())) {
-            // match
-            plot.setPlotDefinition(plotDefinition);
-            updatePlot(plot);
-//            }
-        }
     }
 
     /**
@@ -613,6 +553,87 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
         removeIdentifiable(name, this.userCollection.getPlotDefinitions());
     }
 
+    /**
+     * Return a plot definition (copy) by its name
+     * @param name plot definition name
+     * @return plot definition (copy) or null if not found
+     */
+    public PlotDefinition getPlotDefinition(final String name) {
+        final PlotDefinition plotDefinition = clone(getPlotDefinitionRef(name));
+
+        logger.warn("getPlotDefinition {}", plotDefinition);
+        return plotDefinition;
+    }
+
+    /**
+     * Return true if this plot definition exists in this data collection given its name
+     * @param name plot definition name
+     * @return true if this plot definition exists in this data collection given its name
+     */
+    public boolean hasPlotDefinition(final String name) {
+        return getPlotDefinitionRef(name) != null;
+    }
+
+    /**
+     * Return a plot definition (reference) by its name
+     * @param name plot definition name
+     * @return plot definition (reference) or null if not found
+     */
+    private PlotDefinition getPlotDefinitionRef(final String name) {
+        return getIdentifiable(name, this.userCollection.getPlotDefinitions());
+    }
+
+    /**
+     * Update the plot definition corresponding to the same name
+     * @param source event source
+     * @param plotDefinition plot definition with updated values
+     */
+    public void updatePlotDefinition(final Object source, final PlotDefinition plotDefinition) {
+        final PlotDefinition plotDef = getPlotDefinitionRef(plotDefinition.getName());
+
+        if (plotDef == null) {
+            throw new IllegalStateException("plot definition not found : " + plotDefinition);
+        }
+
+        boolean changed = false;
+
+        if (plotDef != plotDefinition) {
+            changed = !OIBase.areEquals(plotDef, plotDefinition);
+        } else {
+            throw new IllegalStateException("equal plot definition references : " + plotDef);
+        }
+
+        logger.warn("updatePlotDefinition: changed: " + changed);
+
+        if (changed) {
+            // copy data:
+            plotDef.copy(plotDefinition);
+
+            // update plot definition reference and fire events (PlotDefinitionChanged, PlotChanged):
+            updatePlotDefinitionRef(source, plotDefinition);
+        }
+    }
+
+    /**
+     * Update the given plot definition (reference) and fire events
+     * @param source event source
+     * @param plotDefinition plot definition (reference)
+     */
+    private void updatePlotDefinitionRef(final Object source, final PlotDefinition plotDefinition) {
+        logger.warn("updatePlotDefinitionRef: plotDefinition: " + plotDefinition);
+
+        firePlotDefinitionChanged(source, plotDefinition);
+
+        // find dependencies:
+        for (Plot plot : this.userCollection.getPlots()) {
+            if (plot.getPlotDefinition() != null && plot.getPlotDefinition().getName().equals(plotDefinition.getName())) {
+                // match
+                plot.setPlotDefinition(plotDefinition);
+                updatePlot(plot);
+            }
+        }
+    }
+
     /* --- plot handling --------- ---------------------------- */
     /**
      * Return the current plot
@@ -626,7 +647,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
 
             // HACK to define current pointers:
             plot.setSubsetDefinition(getCurrentSubsetDefinitionRef());
-            plot.setPlotDefinition(getCurrentPlotDefinition());
+            plot.setPlotDefinition(getCurrentPlotDefinitionRef());
 
             addPlot(plot);
         }
@@ -753,6 +774,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
         if (logger.isDebugEnabled()) {
             logger.debug("firePlotChanged: {}", plot);
         }
+        logger.warn("firePlotChanged: {} - {}", plot, plot.getPlotDefinition());
         if (this.plotEventNotifier.hasListeners()) {
             // set source to this in order to merge events:
             this.plotEventNotifier.fireEvent(new PlotEvent(this, OIFitsCollectionEventType.PLOT_CHANGED, plot));
@@ -795,5 +817,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
                 break;
             default:
         }
+        logger.warn("onProcess {} - done", event);
     }
 }
