@@ -157,14 +157,7 @@ public class SubsetDefinition
 
     @Override
     public boolean equals(final Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        // identity check:
-        if (this == obj) {
-            return true;
-        }
-        if (getClass() != obj.getClass()) {
+        if (!super.equals(obj)) { // Identifiable
             return false;
         }
         final SubsetDefinition other = (SubsetDefinition) obj;

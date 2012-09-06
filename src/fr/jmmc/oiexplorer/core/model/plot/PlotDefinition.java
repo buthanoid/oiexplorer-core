@@ -165,14 +165,7 @@ public class PlotDefinition
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        // identity check:
-        if (this == obj) {
-            return true;
-        }
-        if (getClass() != obj.getClass()) {
+        if (!super.equals(obj)) { // Identifiable
             return false;
         }
         final PlotDefinition other = (PlotDefinition) obj;

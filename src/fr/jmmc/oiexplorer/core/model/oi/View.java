@@ -1,4 +1,3 @@
-
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -8,7 +7,6 @@ import javax.xml.bind.annotation.XmlIDREF;
 import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlType;
-
 
 /**
  * 
@@ -43,8 +41,7 @@ import javax.xml.bind.annotation.XmlType;
     Plot.class
 })
 public class View
-    extends Identifiable
-{
+        extends Identifiable {
 
     @XmlElement(required = true)
     protected String type;
@@ -101,4 +98,44 @@ public class View
         this.subsetDefinition = value;
     }
 
+//--simple--preserve
+    /**
+     * Perform a deep-copy of the given other instance into this instance
+     * 
+     * Note: to be overriden in child class to perform deep-copy of class fields
+     * @see OIBase#clone() 
+     * 
+     * @param other other instance
+     */
+    @Override
+    public void copy(final fr.jmmc.oiexplorer.core.model.OIBase other) {
+        super.copy(other); // Identifiable
+        final View view = (View) other;
+
+        // copy type, subsetDefinition (reference):
+        this.type = view.getType();
+        this.subsetDefinition = view.getSubsetDefinition();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!super.equals(obj)) { // Identifiable
+            return false;
+        }
+        final View other = (View) obj;
+        if ((this.type == null) ? (other.type != null) : !this.type.equals(other.type)) {
+            return false;
+        }
+        if (this.subsetDefinition != other.subsetDefinition && (this.subsetDefinition == null || !this.subsetDefinition.equals(other.subsetDefinition))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + '#' + Integer.toHexString(System.identityHashCode(this))
+                + "{name= " + name + ", type=" + type + ", subsetDefinition= " + subsetDefinition + '}';
+    }
+//--simple--preserve
 }
