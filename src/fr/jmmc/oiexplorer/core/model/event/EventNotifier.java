@@ -143,11 +143,11 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
         if (!SwingUtils.isEDT()) {
             throw new IllegalStateException("invalid thread : use EDT", (DEBUG_STACK) ? new Throwable() : null);
         }
-
+/*
         if (this.listeners.isEmpty()) {
             return;
         }
-
+*/
         // queue this event to avoid concurrency issues and repeated event notifications (thanks to SET):
         if (useQueue) {
             if (DEBUG_FIRE_EVENT) {
@@ -162,6 +162,11 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             // register this notifier in EDT:
             globalController.queueEventNotifier(this);
 
+            return;
+        }
+
+        if (this.listeners.isEmpty()) {
+            logger.warn("FIRE {} - NO LISTENER", event, (DEBUG_STACK) ? new Throwable() : null);
             return;
         }
 
