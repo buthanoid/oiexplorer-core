@@ -13,7 +13,10 @@
     xmlns:p='http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1'
     xsi:schemaLocation='http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1 ../model/PlotDefinition.xsd'>
     
-              
+   
+    <!-- Changes to this file should get ATTENTION                                        -->           
+    <!-- first OIfitsExplorer versions may store plotDefinition with the historical names -->
+    <!-- Ids should be added to replace name (and accept whole characters...)             -->
     
     <!-- plot (Vis2 - T3) vs spatial freq  -->    
     <plotDefinition>
