@@ -42,8 +42,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     private static final Logger logger = LoggerFactory.getLogger(OIFitsCollectionManager.class);
     /** Singleton pattern */
     private final static OIFitsCollectionManager instance = new OIFitsCollectionManager();
-    /** Current key */
-    public final static String CURRENT = "CURRENT";
+    /** Current key for SubsetDefinition */
+    public final static String CURRENT_SUBSET_DEFINITION = "CURRENT_SUBSET";
+    /** Current key for PlotDefinition */
+    public final static String CURRENT_PLOT_DEFINITION = "CURRENT_PLOT_DEF";
+    /** Current key for View */
+    public final static String CURRENT_VIEW = "CURRENT_VIEW";
     /* members */
     /** OIFits collection */
     private OIFitsCollection oiFitsCollection = null;
@@ -131,19 +135,19 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
                 tableUID.setFile(getOIDataFile(tableUID.getFile().getName()));
                 // if missing, remove ?
             }
-            addSubsetDefinition(subsetDefinition);
+            addSubsetDefinitionRef(subsetDefinition);
         }
 
         // then add PlotDefinition:
         for (PlotDefinition plotDefinition : oiDataCollection.getPlotDefinitions()) {
-            addPlotDefinition(plotDefinition);
+            addPlotDefinitionRef(plotDefinition);
         }
 
         // TODO: check subset and plot definition references in Plot ?
 
         // then add Plot:
         for (Plot plot : oiDataCollection.getPlots()) {
-            this.addPlot(plot);
+            this.addPlotRef(plot);
         }
 
         logger.warn("subsetDefinitions {}", this.userCollection.getSubsetDefinitions());
@@ -222,7 +226,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
                 // store oiFitsFile reference:
                 dataFile.setOIFitsFile(oiFitsFile);
 
-                addOIDataFile(dataFile);
+                addOIDataFileRef(dataFile);
             }
 
             fireOIFitsCollectionChanged();
@@ -290,11 +294,13 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
         dest.copy(source);
     }
 
-    private static <K extends Identifiable> void addIdentifiable(final K object, final List<K> list) {
+    private static <K extends Identifiable> boolean addIdentifiable(final K object, final List<K> list) {
         if (object != null && object.getName() != null && getIdentifiable(object.getName(), list) == null) {
             // replace previous ??
             list.add(object);
+            return true;
         }
+        return false;
     }
 
     private static <K extends Identifiable> K removeIdentifiable(final K object, final List<K> list) {
@@ -344,9 +350,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     /**
      * Add the given OIDataFile
      * @param dataFile OIDataFile to add
+     * @return true if the given OIDataFile was added
      */
-    private void addOIDataFile(final OIDataFile dataFile) {
-        addIdentifiable(dataFile, this.userCollection.getFiles());
+    private boolean addOIDataFileRef(final OIDataFile dataFile) {
+        logger.warn("addOIDataFileRef: {}", dataFile);
+        return addIdentifiable(dataFile, this.userCollection.getFiles());
     }
 
     /**
@@ -374,12 +382,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * @return subset definition (reference)
      */
     public SubsetDefinition getCurrentSubsetDefinitionRef() {
-        SubsetDefinition subsetDefinition = getSubsetDefinitionRef(CURRENT);
+        SubsetDefinition subsetDefinition = getSubsetDefinitionRef(CURRENT_SUBSET_DEFINITION);
         if (subsetDefinition == null) {
             subsetDefinition = new SubsetDefinition();
-            subsetDefinition.setName(CURRENT);
+            subsetDefinition.setName(CURRENT_SUBSET_DEFINITION);
 
-            addSubsetDefinition(subsetDefinition);
+            addSubsetDefinitionRef(subsetDefinition);
         }
 
         logger.warn("getCurrentSubsetDefinitionRef {}", subsetDefinition);
@@ -389,11 +397,27 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     /**
      * Add the given SubsetDefinition
      * @param subsetDefinition SubsetDefinition to add
+     * @return true if the given SubsetDefinition was added
      */
-    public void addSubsetDefinition(final SubsetDefinition subsetDefinition) {
+    public boolean addSubsetDefinition(final SubsetDefinition subsetDefinition) {
         logger.warn("addSubsetDefinition: {}", subsetDefinition);
 
-        addIdentifiable(subsetDefinition, this.userCollection.getSubsetDefinitions());
+        if (addSubsetDefinitionRef(subsetDefinition)) {
+            // update subset reference and fire events (SubsetDefinitionChanged, PlotChanged):
+            updateSubsetDefinitionRef(this, subsetDefinition);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Add the given SubsetDefinition
+     * @param subsetDefinition SubsetDefinition to add
+     * @return true if the given SubsetDefinition was added
+     */
+    private boolean addSubsetDefinitionRef(final SubsetDefinition subsetDefinition) {
+        logger.warn("addSubsetDefinitionRef: {}", subsetDefinition);
+        return addIdentifiable(subsetDefinition, this.userCollection.getSubsetDefinitions());
     }
 
     /**
@@ -426,6 +450,15 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     }
 
     /**
+     * Return true if this subset definition exists in this data collection given its name
+     * @param name subset definition name
+     * @return true if this subset definition exists in this data collection given its name
+     */
+    public boolean hasSubsetDefinition(final String name) {
+        return getSubsetDefinitionRef(name) != null;
+    }
+
+    /**
      * Update the subset definition corresponding to the same name
      * @param source event source
      * @param subsetDefinition subset definition with updated values
@@ -445,7 +478,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             throw new IllegalStateException("equal subset references : " + subset);
         }
 
-        logger.warn("updateSubsetDefinition: changed: " + changed);
+        logger.warn("updateSubsetDefinition: {}", subsetDefinition);
+        logger.warn("updateSubsetDefinition: changed: {}", changed);
 
         if (changed) {
             // copy data:
@@ -462,7 +496,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * @param subsetDefinition subset definition (reference)
      */
     private void updateSubsetDefinitionRef(final Object source, final SubsetDefinition subsetDefinition) {
-        logger.warn("updateSubsetDefinitionRef: subsetDefinition: " + subsetDefinition);
+        logger.warn("updateSubsetDefinitionRef: subsetDefinition: {}", subsetDefinition);
 
         // Get OIFitsFile structure for this target:
         final OIFitsFile oiFitsSubset;
@@ -504,7 +538,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             }
         }
 
-        logger.warn("updateSubsetDefinitionRef: oiFitsSubset: " + oiFitsSubset);
+        logger.warn("updateSubsetDefinitionRef: oiFitsSubset: {}", oiFitsSubset);
 
         subsetDefinition.setOIFitsSubset(oiFitsSubset);
 
@@ -538,15 +572,15 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * @return plot definition (reference)
      */
     public PlotDefinition getCurrentPlotDefinitionRef() {
-        PlotDefinition plotDefinition = getPlotDefinitionRef(CURRENT);
+        PlotDefinition plotDefinition = getPlotDefinitionRef(CURRENT_PLOT_DEFINITION);
         if (plotDefinition == null) {
             plotDefinition = new PlotDefinition();
-            plotDefinition.setName(CURRENT);
+            plotDefinition.setName(CURRENT_PLOT_DEFINITION);
 
             // HACK:
             plotDefinition.copy(PlotDefinitionFactory.getInstance().getDefault(PlotDefinitionFactory.PLOT_DEFAULT));
 
-            addPlotDefinition(plotDefinition);
+            addPlotDefinitionRef(plotDefinition);
         }
         return plotDefinition;
     }
@@ -554,9 +588,27 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     /**
      * Add the given PlotDefinition
      * @param plotDefinition PlotDefinition to add
+     * @return true if the given PlotDefinition was added
      */
-    public void addPlotDefinition(final PlotDefinition plotDefinition) {
-        addIdentifiable(plotDefinition, this.userCollection.getPlotDefinitions());
+    public boolean addPlotDefinition(final PlotDefinition plotDefinition) {
+        logger.warn("addPlotDefinition: {}", plotDefinition);
+
+        if (addPlotDefinitionRef(plotDefinition)) {
+            // update plot definition reference and fire events (PlotDefinitionChanged, PlotChanged):
+            updatePlotDefinitionRef(this, plotDefinition);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Add the given PlotDefinition
+     * @param plotDefinition PlotDefinition to add
+     * @return true if the given PlotDefinition was added
+     */
+    private boolean addPlotDefinitionRef(final PlotDefinition plotDefinition) {
+        logger.warn("addPlotDefinitionRef: {}", plotDefinition);
+        return addIdentifiable(plotDefinition, this.userCollection.getPlotDefinitions());
     }
 
     /**
@@ -617,7 +669,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             throw new IllegalStateException("equal plot definition references : " + plotDef);
         }
 
-        logger.warn("updatePlotDefinition: changed: " + changed);
+        logger.warn("updatePlotDefinition: {}", plotDefinition);
+        logger.warn("updatePlotDefinition: changed: {}", changed);
 
         if (changed) {
             // copy data:
@@ -634,7 +687,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * @param plotDefinition plot definition (reference)
      */
     private void updatePlotDefinitionRef(final Object source, final PlotDefinition plotDefinition) {
-        logger.warn("updatePlotDefinitionRef: plotDefinition: " + plotDefinition);
+        logger.warn("updatePlotDefinitionRef: plotDefinition: {}", plotDefinition);
 
         firePlotDefinitionChanged(source, plotDefinition);
 
@@ -666,16 +719,16 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * @return plot (reference)
      */
     public Plot getCurrentPlotRef() {
-        Plot plot = getPlotRef(CURRENT);
+        Plot plot = getPlotRef(CURRENT_VIEW);
         if (plot == null) {
             plot = new Plot();
-            plot.setName(CURRENT);
+            plot.setName(CURRENT_VIEW);
 
             // HACK to define current pointers:
             plot.setSubsetDefinition(getCurrentSubsetDefinitionRef());
             plot.setPlotDefinition(getCurrentPlotDefinitionRef());
 
-            addPlot(plot);
+            addPlotRef(plot);
         }
         return plot;
     }
@@ -683,9 +736,27 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     /**
      * Add the given Plot
      * @param plot Plot to add
+     * @return true if the given Plot was added
      */
-    public void addPlot(final Plot plot) {
-        addIdentifiable(plot, this.userCollection.getPlots());
+    public boolean addPlot(final Plot plot) {
+        logger.warn("addPlot: {}", plot);
+
+        if (addPlotRef(plot)) {
+            // fire PlotChanged event:
+            firePlotChanged(plot);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Add the given Plot
+     * @param plot Plot to add
+     * @return true if the given Plot was added
+     */
+    private boolean addPlotRef(final Plot plot) {
+        logger.warn("addPlotRef: {}", plot);
+        return addIdentifiable(plot, this.userCollection.getPlots());
     }
 
     /**
@@ -718,6 +789,15 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     }
 
     /**
+     * Return true if this plot exists in this data collection given its name
+     * @param name plot name
+     * @return true if this plot exists in this data collection given its name
+     */
+    public boolean hasPlot(final String name) {
+        return getPlotRef(name) != null;
+    }
+
+    /**
      * Update the plot corresponding to the same name
      * @param plot plot with updated values
      */
@@ -736,7 +816,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             throw new IllegalStateException("equal plot references : " + plotRef);
         }
 
-        logger.warn("updatePlot: changed: " + changed);
+        logger.warn("updatePlot: {}", plot);
+        logger.warn("updatePlot: changed: {}", changed);
 
         if (changed) {
             // copy data:
@@ -768,7 +849,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             logger.debug("fireOIFitsCollectionChanged: {} TO {}", this.oiFitsCollection, destination);
         }
 
-        logger.warn("fireOIFitsCollectionChanged: {} TO {}", new Object[]{this.oiFitsCollection, destination, new Throwable()});
+        logger.warn("fireOIFitsCollectionChanged: {} TO {}", new Object[]{this.oiFitsCollection, destination});
 
         this.oiFitsCollectionEventNotifier.fireEvent(new OIFitsCollectionEvent(this, OIFitsCollectionEventType.CHANGED, destination, this.oiFitsCollection));
     }
@@ -859,8 +940,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
 
         // resolve issue:
         if (plot != null) {
-            logger.warn("firePlotChanged: {} TO {}", new Object[]{this.oiFitsCollection, destination, new Throwable()});
-
+            logger.warn("firePlotChanged: {} TO {}", new Object[]{this.oiFitsCollection, destination});
 
             if (logger.isDebugEnabled()) {
                 logger.debug("firePlotChanged: {} TO {}", plotId, destination);
