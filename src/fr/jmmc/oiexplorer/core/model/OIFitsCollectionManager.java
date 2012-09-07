@@ -373,7 +373,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * Return the current subset definition (reference)
      * @return subset definition (reference)
      */
-    private SubsetDefinition getCurrentSubsetDefinitionRef() {
+    public SubsetDefinition getCurrentSubsetDefinitionRef() {
         SubsetDefinition subsetDefinition = getSubsetDefinitionRef(CURRENT);
         if (subsetDefinition == null) {
             subsetDefinition = new SubsetDefinition();
@@ -421,7 +421,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * @param name plot definition name
      * @return subset definition (reference) or null if not found
      */
-    private SubsetDefinition getSubsetDefinitionRef(final String name) {
+    public SubsetDefinition getSubsetDefinitionRef(final String name) {
         return getIdentifiable(name, this.userCollection.getSubsetDefinitions());
     }
 
@@ -537,7 +537,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * Return the current plot definition (reference)
      * @return plot definition (reference)
      */
-    private PlotDefinition getCurrentPlotDefinitionRef() {
+    public PlotDefinition getCurrentPlotDefinitionRef() {
         PlotDefinition plotDefinition = getPlotDefinitionRef(CURRENT);
         if (plotDefinition == null) {
             plotDefinition = new PlotDefinition();
@@ -580,21 +580,21 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     }
 
     /**
-     * Return true if this plot definition exists in this data collection given its name
-     * @param name plot definition name
-     * @return true if this plot definition exists in this data collection given its name
-     */
-    public boolean hasPlotDefinition(final String name) {
-        return getPlotDefinitionRef(name) != null;
-    }
-
-    /**
      * Return a plot definition (reference) by its name
      * @param name plot definition name
      * @return plot definition (reference) or null if not found
      */
     public PlotDefinition getPlotDefinitionRef(final String name) {
         return getIdentifiable(name, this.userCollection.getPlotDefinitions());
+    }
+
+    /**
+     * Return true if this plot definition exists in this data collection given its name
+     * @param name plot definition name
+     * @return true if this plot definition exists in this data collection given its name
+     */
+    public boolean hasPlotDefinition(final String name) {
+        return getPlotDefinitionRef(name) != null;
     }
 
     /**
@@ -757,15 +757,30 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     }
 
     /**
-     * This fires an OIFitsCollectionChanged event to all registered listeners ASYNCHRONOUSLY !
+     * This fires an OIFitsCollectionChanged event to given registered listener ASYNCHRONOUSLY !
+     * 
+     * Note: this is ONLY useful to initialize new registered listeners properly !
+     * 
+     * @param destination destination listener
+     */
+    public void fireOIFitsCollectionChanged(final OIFitsCollectionEventListener destination) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("fireOIFitsCollectionChanged: {} TO {}", this.oiFitsCollection, destination);
+        }
+
+        logger.warn("fireOIFitsCollectionChanged: {} TO {}", new Object[]{this.oiFitsCollection, destination, new Throwable()});
+
+        this.oiFitsCollectionEventNotifier.fireEvent(new OIFitsCollectionEvent(this, OIFitsCollectionEventType.CHANGED, destination, this.oiFitsCollection));
+    }
+
+    /**
+     * This fires an OIFitsCollectionChanged event to given registered listeners ASYNCHRONOUSLY !
      */
     private void fireOIFitsCollectionChanged() {
         if (logger.isDebugEnabled()) {
             logger.debug("fireOIFitsCollectionChanged: {}", this.oiFitsCollection);
         }
-//        if (this.oiFitsCollectionEventNotifier.hasListeners()) {
         this.oiFitsCollectionEventNotifier.fireEvent(new OIFitsCollectionEvent(this, OIFitsCollectionEventType.CHANGED, this.oiFitsCollection));
-//        }
     }
 
     /**
@@ -781,13 +796,23 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
      * @param source event source
      * @param subsetDefinition subset definition to use
      */
+    public void fireSubsetDefinitionChanged(final Object source, final String subsetDefinition) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("fireOIFitsCollectionChanged: {}", this.oiFitsCollection);
+        }
+        this.oiFitsCollectionEventNotifier.fireEvent(new OIFitsCollectionEvent(this, OIFitsCollectionEventType.CHANGED, this.oiFitsCollection));
+    }
+
+    /**
+     * This fires a SubsetDefinitionChanged event to all registered listeners ASYNCHRONOUSLY !
+     * @param source event source
+     * @param subsetDefinition subset definition to use
+     */
     private void fireSubsetDefinitionChanged(final Object source, final SubsetDefinition subsetDefinition) {
         if (logger.isDebugEnabled()) {
             logger.debug("fireSubsetDefinitionChanged: {}", subsetDefinition);
         }
-//        if (this.subsetDefinitionEventNotifier.hasListeners()) {
         this.subsetDefinitionEventNotifier.fireEvent(new SubsetDefinitionEvent(source, OIFitsCollectionEventType.SUBSET_CHANGED, subsetDefinition));
-//        }
     }
 
     /**
@@ -807,9 +832,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
         if (logger.isDebugEnabled()) {
             logger.debug("firePlotDefinitionChanged: {}", plotDefinition);
         }
-//        if (this.plotDefinitionEventNotifier.hasListeners()) {
         this.plotDefinitionEventNotifier.fireEvent(new PlotDefinitionEvent(source, OIFitsCollectionEventType.PLOT_DEFINITION_CHANGED, plotDefinition));
-//        }
     }
 
     /**
@@ -821,6 +844,34 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
     }
 
     /**
+     * This fires a PlotChanged event to given registered listener ASYNCHRONOUSLY !
+     * 
+     * Note: this is ONLY useful to initialize new registered listeners properly !
+     * 
+     * @param plotId plot identifier
+     * @param destination destination listener
+     */
+    public void firePlotChanged(final String plotId, final OIFitsCollectionEventListener destination) {
+
+        // resolve object now:
+        // TODO: resolve object just before firing events !!
+        final Plot plot = getPlotRef(plotId);
+
+        // resolve issue:
+        if (plot != null) {
+            logger.warn("firePlotChanged: {} TO {}", new Object[]{this.oiFitsCollection, destination, new Throwable()});
+
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("firePlotChanged: {} TO {}", plotId, destination);
+            }
+
+            // set source to this in order to merge events:
+            this.plotEventNotifier.fireEvent(new PlotEvent(this, OIFitsCollectionEventType.PLOT_CHANGED, destination, plot));
+        }
+    }
+
+    /**
      * This fires a PlotChanged event to all registered listeners ASYNCHRONOUSLY !
      * @param plot plot to use
      */
@@ -829,10 +880,20 @@ public final class OIFitsCollectionManager implements OIFitsCollectionEventListe
             logger.debug("firePlotChanged: {}", plot);
         }
         logger.warn("firePlotChanged: {} - {}", plot, plot.getPlotDefinition());
-//        if (this.plotEventNotifier.hasListeners()) {
         // set source to this in order to merge events:
         this.plotEventNotifier.fireEvent(new PlotEvent(this, OIFitsCollectionEventType.PLOT_CHANGED, plot));
-//        }
+    }
+
+    /* --- OIFitsCollectionEventListener implementation --- */
+    /**
+     * Return the optional subject id i.e. related object id that this listener accepts
+     * @see GenericEvent#subjectId
+     * @param type event type
+     * @return subject id i.e. related object id (null allowed)
+     */
+    public String getSubjectId(final OIFitsCollectionEventType type) {
+        // useless
+        return null;
     }
 
     /**
