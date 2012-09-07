@@ -29,13 +29,13 @@ import org.slf4j.LoggerFactory;
  * This Panel allow to select data to plot and (optionnaly in the future) plots them just below.
  * @author mella
  */
-public class PlotPanelEditor extends javax.swing.JPanel implements ActionListener,
+public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionListener,
         OIFitsCollectionEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
     /** Logger */
-    private final static Logger logger = LoggerFactory.getLogger(PlotPanelEditor.class);   
+    private final static Logger logger = LoggerFactory.getLogger(PlotDefinitionEditor.class);   
 
     /* members */
     /** OIFitsCollectionManager singleton */
@@ -62,8 +62,8 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     /** Common listener for y comboboxes */
     private ActionListener ycomboActionListener;
 
-    /** Creates new form PlotPanelEditor */
-    public PlotPanelEditor() {
+    /** Creates new form PlotDefinitionEditor */
+    public PlotDefinitionEditor() {
         ocm.getSubsetDefinitionEventNotifier().register(this);
 
         initComponents();
