@@ -4,6 +4,7 @@
 package fr.jmmc.oiexplorer.core.model.event;
 
 import fr.jmmc.oiexplorer.core.model.OIFitsCollection;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionEventListener;
 
 /**
  * Base class for OIFits collection events consumed by OIFitsCollectionListener
@@ -20,7 +21,19 @@ public final class OIFitsCollectionEvent extends GenericEvent<OIFitsCollectionEv
      * @param oiFitsCollection OIFits collection related to this event
      */
     public OIFitsCollectionEvent(final Object source, final OIFitsCollectionEventType type, final OIFitsCollection oiFitsCollection) {
-        super(source, type);
+        this(source, type, null, oiFitsCollection);
+    }
+
+    /**
+     * Public constructor dealing with an OIFits collection 
+     * @param source event source
+     * @param type event type
+     * @param destination optional destination listener (null means all)
+     * @param oiFitsCollection OIFits collection related to this event
+     */
+    public OIFitsCollectionEvent(final Object source, final OIFitsCollectionEventType type,
+                                 final OIFitsCollectionEventListener destination, final OIFitsCollection oiFitsCollection) {
+        super(source, type, destination, null);
         this.oiFitsCollection = oiFitsCollection;
     }
 

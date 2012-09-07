@@ -4,8 +4,10 @@
 package fr.jmmc.oiexplorer.core.model.event;
 
 import fr.jmmc.jmcs.gui.util.SwingUtils;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -28,11 +30,13 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(EventNotifier.class);
     /** flag to log a stack trace in method register/unregister to debug registration */
-    private static final boolean DEBUG_LISTENER = false;
+    private static final boolean DEBUG_LISTENER = true;
     /** flag to log information useful to debug events */
     private static final boolean DEBUG_FIRE_EVENT = true;
     /** flag to log also a stack trace to debug events */
     private static final boolean DEBUG_STACK = false;
+    /** flag to detect new registered listener(s) while fireEvent runs to fire events to them also */
+    private static final boolean FIRE_NEW_REGISTERED_LISTENER = false;
     /** EventNotifierController singleton */
     private static final EventNotifierController globalController = new EventNotifierController();
     /* members */
@@ -40,9 +44,9 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
     private final int priority;
     /** flag to disable listener notification if it is the source of the event */
     private final boolean skipSourceListener;
-    /** event listeners : TODO: Use WeakReferences to avoid memory leaks */
+    /** event listeners using WeakReferences to avoid memory leaks */
     /* may detect widgets waiting for events on LOST subject objects ?? */
-    private final CopyOnWriteArrayList<GenericEventListener<K, V>> listeners = new CopyOnWriteArrayList<GenericEventListener<K, V>>();
+    private final CopyOnWriteArrayList<WeakReference<GenericEventListener<K, V>>> listeners = new CopyOnWriteArrayList<WeakReference<GenericEventListener<K, V>>>();
     /** queued events delivered asap by EDT (ordered by insertion order) */
     private final Map<K, K> eventQueue = new LinkedHashMap<K, K>(8);
 
@@ -99,7 +103,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
         if (DEBUG_LISTENER) {
             logger.warn("REGISTER {}", getObjectInfo(listener), (DEBUG_STACK) ? new Throwable() : null);
         }
-        this.listeners.addIfAbsent(listener);
+        this.listeners.addIfAbsent(new WeakReference<GenericEventListener<K, V>>(listener));
     }
 
     /**
@@ -110,15 +114,20 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
         if (DEBUG_LISTENER) {
             logger.warn("UNREGISTER {}", getObjectInfo(listener), (DEBUG_STACK) ? new Throwable() : null);
         }
-        this.listeners.remove(listener);
-    }
 
-    /**
-     * Return true if there is at least one registered event listener
-     * @return true if there is at least one registered event listener 
-     */
-    public boolean hasListeners() {
-        return !this.listeners.isEmpty();
+        WeakReference<GenericEventListener<K, V>> ref;
+        GenericEventListener<K, V> l;
+
+        for (int i = 0, size = this.listeners.size(); i < size; i++) {
+            ref = this.listeners.get(i);
+            l = ref.get();
+
+            if (l == null || l == listener) {
+                // remove empty reference (GC):
+                this.listeners.remove(i);
+                size--;
+            }
+        }
     }
 
     /**
@@ -143,11 +152,6 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
         if (!SwingUtils.isEDT()) {
             throw new IllegalStateException("invalid thread : use EDT", (DEBUG_STACK) ? new Throwable() : null);
         }
-/*
-        if (this.listeners.isEmpty()) {
-            return;
-        }
-*/
         // queue this event to avoid concurrency issues and repeated event notifications (thanks to SET):
         if (useQueue) {
             if (DEBUG_FIRE_EVENT) {
@@ -155,9 +159,14 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             }
             // queue this event:
 
-            // TRICKY: use event as key (hashcode / equals on type / source) 
+            // TRICKY: use event as key (hashcode / equals on type / subjectId) 
             // but use value to have up to date arguments:
-            this.eventQueue.put(event, event);
+            final K prevEvent = this.eventQueue.put(event, event);
+
+            // fix destination on last event (all vs destination listener):
+            if (event.getDestination() != null && prevEvent != null && prevEvent.getDestination() == null) {
+                event.setDestination(null);
+            }
 
             // register this notifier in EDT:
             globalController.queueEventNotifier(this);
@@ -165,6 +174,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             return;
         }
 
+        // check listeners just before firing events:
         if (this.listeners.isEmpty()) {
             logger.warn("FIRE {} - NO LISTENER", event, (DEBUG_STACK) ? new Throwable() : null);
             return;
@@ -177,26 +187,96 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
 
         logger.debug("fireEvent: {}", event);
 
+        // optional event source:
+        final Object source = event.getSource();
+        final GenericEventListener<GenericEvent<V>, V> destination = event.getDestination();
+        final String subjectId = event.getSubjectId();
+        String listenerSubjectId;
+
         final long start = System.nanoTime();
 
-        for (final GenericEventListener<K, V> listener : this.listeners) {
-            // do not fire event to the listener if it is also the source of this event:
-            if (!skipSourceListener || event.getSource() != listener) {
-                if (DEBUG_FIRE_EVENT) {
-                    logger.warn("  FIRE {} TO {}", event, getObjectInfo(listener));
-                }
-                listener.onProcess(event);
-            }
-        }
+        // used listeners:
+        final Set<GenericEventListener<K, V>> firedListeners = new HashSet<GenericEventListener<K, V>>();
+        boolean done;
 
-        // TODO: detect listener changes ??
+        WeakReference<GenericEventListener<K, V>> ref;
+        GenericEventListener<K, V> listener;
+
+        do {
+            // multiple pass until all listener fired:
+            for (int i = 0, size = this.listeners.size(); i < size; i++) {
+                ref = this.listeners.get(i);
+                listener = ref.get();
+
+                if (listener == null) {
+                    // remove empty reference (GC):
+                    this.listeners.remove(i);
+                    size--;
+                } else if (!firedListeners.contains(listener)) {
+
+                    // check destination:
+                    if (destination == null || destination == listener) {
+                        firedListeners.add(listener);
+
+                        // do not fire event to the listener if it is also the source of this event:
+                        if ((!skipSourceListener) || (listener != source)) {
+                            if (DEBUG_FIRE_EVENT) {
+                                logger.warn("  FIRE {} TO {}", event, getObjectInfo(listener));
+                            }
+
+                            if (subjectId == null) {
+                                listener.onProcess(event);
+                            } else {
+                                listenerSubjectId = listener.getSubjectId(event.getType());
+
+                                // check if the listener is accepting this subject id or any (null):
+                                if ((listenerSubjectId == null) || (subjectId.equals(listenerSubjectId))) {
+                                    listener.onProcess(event);
+
+                                } else if (DEBUG_FIRE_EVENT) {
+                                    logger.warn("Skip Listener {} because subjectId does not match: {} != {}",
+                                            new Object[]{getObjectInfo(listener), event.getSubjectId(), listenerSubjectId});
+                                }
+                            }
+                        } else if (DEBUG_FIRE_EVENT) {
+                            logger.warn("Skip Listener {} because it is the source of this event: {}", getObjectInfo(listener), event);
+                        }
+                    } else if (DEBUG_FIRE_EVENT) {
+                        logger.warn("Skip Listener {} because it is not the destination of this event: {}", getObjectInfo(listener), event);
+                    }
+                }
+            }
+
+            // check if new listener(s) registered meanwhile:
+            done = true;
+
+            if (FIRE_NEW_REGISTERED_LISTENER) {
+                if (destination != null) {
+                    for (int i = 0, size = this.listeners.size(); i < size; i++) {
+                        ref = this.listeners.get(i);
+                        listener = ref.get();
+                        if (listener == null) {
+                            // remove empty reference (GC):
+                            this.listeners.remove(i);
+                            size--;
+                        } else if (!firedListeners.contains(listener)) {
+                            // there is still one listener not fired:
+                            done = false;
+                            break;
+                        }
+                    }
+                } else if (DEBUG_FIRE_EVENT) {
+                    logger.warn("Skip Fire new listener as the event has a destination: {}", event);
+                }
+            }
+        } while (!done);
 
         if (logger.isDebugEnabled()) {
             logger.debug("fireEvent: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
         }
 
         if (DEBUG_FIRE_EVENT) {
-            logger.warn("END FIRE {}", event);
+            logger.warn("END FIRE {} : duration = {} ms.", event, 1e-6d * (System.nanoTime() - start));
         }
     }
 
@@ -234,7 +314,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
     }
 
     /**
-     * Return the string representation "<class name>#<hashCode>"
+     * Return the string representation "<simple class name>#<hashCode>"
      * @param o any object
      * @return "<class name>#<hashCode>"
      */
@@ -242,7 +322,19 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
         if (o == null) {
             return "null";
         }
-        return o.getClass().getName() + '#' + Integer.toHexString(System.identityHashCode(o));
+        return o.getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(o));
+    }
+
+    /**
+     * Return the string representation "<full class name>#<hashCode>"
+     * @param o any object
+     * @return "<class name>#<hashCode>"
+     */
+    public static String getFullObjectInfo(final Object o) {
+        if (o == null) {
+            return "null";
+        }
+        return o.getClass().getName() + '@' + Integer.toHexString(System.identityHashCode(o));
     }
 
     /**
@@ -376,7 +468,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
                 it.remove();
 
                 if (DEBUG_FIRE_EVENT) {
-                    logger.warn("RUN CALLBACK {}", getObjectInfo(callback));
+                    logger.warn("RUN CALLBACK {}", getFullObjectInfo(callback));
                 }
 
                 callback.run();

@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model.event;
 
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionEventListener;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 
 /**
@@ -20,7 +21,19 @@ public final class PlotDefinitionEvent extends GenericEvent<OIFitsCollectionEven
      * @param plotDefinition plot definition related to this event
      */
     public PlotDefinitionEvent(final Object source, final OIFitsCollectionEventType type, final PlotDefinition plotDefinition) {
-        super(source, type, (plotDefinition != null) ? plotDefinition.getName() : null);
+        this(source, type, null, plotDefinition);
+    }
+
+    /**
+     * Public constructor dealing with a plot definition
+     * @param source event source
+     * @param type event type
+     * @param destination optional destination listener (null means all)
+     * @param plotDefinition plot definition related to this event
+     */
+    public PlotDefinitionEvent(final Object source, final OIFitsCollectionEventType type,
+                               final OIFitsCollectionEventListener destination, final PlotDefinition plotDefinition) {
+        super(source, type, destination, (plotDefinition != null) ? plotDefinition.getName() : null);
         this.plotDefinition = plotDefinition;
     }
 
