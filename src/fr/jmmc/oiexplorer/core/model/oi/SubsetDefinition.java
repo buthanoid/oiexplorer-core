@@ -195,7 +195,7 @@ public class SubsetDefinition
     @Override
     public String toString() {
         return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
-                + "{target= " + target + ", tables= " + tables + ", filters=" + filters + '}';
+                + "{name= " + name + ", target= " + target + ", tables= " + tables + ", filters=" + filters + '}';
     }
 //--simple--preserve
 

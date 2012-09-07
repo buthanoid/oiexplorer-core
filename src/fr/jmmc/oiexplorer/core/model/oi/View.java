@@ -126,10 +126,10 @@ public class View
             return false;
         }
         final View other = (View) obj;
-        if ((this.type == null) ? (other.type != null) : !this.type.equals(other.type)) {
+        if ((this.type == null) ? (other.getType() != null) : !this.type.equals(other.getType())) {
             return false;
         }
-        if (this.subsetDefinition != other.subsetDefinition && (this.subsetDefinition == null || !this.subsetDefinition.equals(other.subsetDefinition))) {
+        if (this.subsetDefinition != other.getSubsetDefinition() && (this.subsetDefinition == null || !this.subsetDefinition.equals(other.getSubsetDefinition()))) {
             return false;
         }
         return true;

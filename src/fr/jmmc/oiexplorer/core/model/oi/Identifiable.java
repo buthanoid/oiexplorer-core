@@ -141,10 +141,10 @@ public class Identifiable
             return false;
         }
         final Identifiable other = (Identifiable) obj;
-        if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
+        if ((this.name == null) ? (other.getName() != null) : !this.name.equals(other.getName())) {
             return false;
         }
-        if ((this.description == null) ? (other.description != null) : !this.description.equals(other.description)) {
+        if ((this.description == null) ? (other.getDescription() != null) : !this.description.equals(other.getDescription())) {
             return false;
         }
         return true;

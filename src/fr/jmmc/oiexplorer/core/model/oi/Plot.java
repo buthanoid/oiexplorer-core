@@ -94,7 +94,7 @@ public class Plot
             return false;
         }
         final Plot other = (Plot) obj;
-        if (this.plotDefinition != other.plotDefinition && (this.plotDefinition == null || !this.plotDefinition.equals(other.plotDefinition))) {
+        if (this.plotDefinition != other.getPlotDefinition() && (this.plotDefinition == null || !this.plotDefinition.equals(other.getPlotDefinition()))) {
             return false;
         }
         return true;
