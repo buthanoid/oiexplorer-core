@@ -196,7 +196,8 @@ public class TableUID
 
     @Override
     public String toString() {
-        return "TableUID[" + file + ((extName != null) ? ' ' + extName + '#' + extNb : "") + ']';
+        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
+                + '[' + file + ((extName != null) ? ' ' + extName + '#' + extNb : "") + ']';
     }
 //--simple--preserve
 

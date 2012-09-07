@@ -191,6 +191,12 @@ public class SubsetDefinition
     public final void setOIFitsSubset(final fr.jmmc.oitools.model.OIFitsFile oiFitsSubset) {
         this.oiFitsSubset = oiFitsSubset;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
+                + "{target= " + target + ", tables= " + tables + ", filters=" + filters + '}';
+    }
 //--simple--preserve
 
 }

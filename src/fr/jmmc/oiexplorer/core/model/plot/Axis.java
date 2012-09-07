@@ -159,7 +159,6 @@ public class Axis
     }
     
 //--simple--preserve
-
     /**
      * Perform a deep-copy of the given other instance into this instance
      * 
@@ -211,6 +210,12 @@ public class Axis
             return false;
         }
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
+                + "{name= " + name + '}';
     }
 //--simple--preserve
 

@@ -1,3 +1,4 @@
+
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -7,6 +8,7 @@ import javax.xml.bind.annotation.XmlIDREF;
 import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
+
 
 /**
  * 
@@ -36,7 +38,8 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
     "plotDefinition"
 })
 public class Plot
-        extends View {
+    extends View
+{
 
     @XmlElement(required = true, type = Object.class)
     @XmlIDREF
@@ -66,7 +69,7 @@ public class Plot
     public void setPlotDefinition(PlotDefinition value) {
         this.plotDefinition = value;
     }
-
+    
 //--simple--preserve
     /**
      * Perform a deep-copy of the given other instance into this instance
@@ -99,8 +102,9 @@ public class Plot
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + '#' + Integer.toHexString(System.identityHashCode(this))
+        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
                 + "{name= " + name + ", subsetDefinition=" + subsetDefinition + ", plotDefinition= " + plotDefinition + '}';
     }
 //--simple--preserve
+
 }

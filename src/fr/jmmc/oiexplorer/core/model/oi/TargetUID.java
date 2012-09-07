@@ -139,7 +139,8 @@ public class TargetUID
 
     @Override
     public String toString() {
-        return "TargetUID[" + target + ']';
+        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
+                + '[' + target + ']';
     }
 //--simple--preserve
 

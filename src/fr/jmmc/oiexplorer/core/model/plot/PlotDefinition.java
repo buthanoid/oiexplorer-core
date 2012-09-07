@@ -186,7 +186,7 @@ public class PlotDefinition
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + '#' + Integer.toHexString(System.identityHashCode(this))
+        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
                 + "{name= " + name + ", xAxis= " + xAxis + ", yAxes=" + yAxes + '}';
     }
 //--simple--preserve
