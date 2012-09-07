@@ -115,8 +115,6 @@ public final class OIFitsCollection {
      * Analyze the complete OIFits collection to provide OIFits structure per unique target (name)
      */
     public void analyzeCollection() {
-        logger.warn("analyzeCollection");
-
         // reset OIFits structure per TargetUID:
         oiFitsPerTarget.clear();
 
@@ -147,11 +145,6 @@ public final class OIFitsCollection {
             for (Map.Entry<TargetUID, OIFitsFile> entry : oiFitsPerTarget.entrySet()) {
                 logger.debug("{} : {}", entry.getKey(), Arrays.toString(entry.getValue().getOiTables()));
             }
-        }
-        logger.warn("analyzeCollection:");
-
-        for (Map.Entry<TargetUID, OIFitsFile> entry : oiFitsPerTarget.entrySet()) {
-            logger.warn("{} : {}", entry.getKey(), Arrays.toString(entry.getValue().getOiTables()));
         }
     }
 

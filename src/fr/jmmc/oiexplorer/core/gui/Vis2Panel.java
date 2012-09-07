@@ -477,7 +477,9 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             final ValueAxis rangeAxis = plot.getRangeAxis();
             final double rangeValue = rangeAxis.java2DToValue(point2D.getY(), dataArea, plot.getRangeAxisEdge());
 
-            logger.warn("Mouse coordinates are (" + i + ", " + j + "), in data space = (" + domainValue + ", " + rangeValue + ")");
+            if (logger.isDebugEnabled()) {
+                logger.debug("Mouse coordinates are (" + i + ", " + j + "), in data space = (" + domainValue + ", " + rangeValue + ")");
+            }
 
             // aspect ratio:
             final double xRatio = dataArea.getWidth() / Math.abs(domainAxis.getUpperBound() - domainAxis.getLowerBound());
@@ -532,7 +534,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      */
     @Override
     public void mouseSelected(final Rectangle2D selection) {
-        logger.warn("mouseSelected: rectangle {}", selection);
+        logger.debug("mouseSelected: rectangle {}", selection);
 
         // find data points:
         final List<Point2D> points = findDataPoints(selection);
@@ -592,19 +594,23 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 }
             }
 
-            logger.warn("findDataPoint: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+            if (logger.isDebugEnabled()) {
+                logger.debug("findDataPoint: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+            }
 
             if (matchItem != -1) {
                 final double matchX = dataset.getXValue(matchSerie, matchItem);
                 final double matchY = dataset.getYValue(matchSerie, matchItem);
 
-                logger.warn("Matching item [serie = " + matchSerie + ", item = " + matchItem + "] : (" + matchX + ", " + matchY + ")");
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Matching item [serie = " + matchSerie + ", item = " + matchItem + "] : (" + matchX + ", " + matchY + ")");
+                }
 
                 return new Point2D.Double(matchX, matchY);
             }
         }
 
-        logger.warn("No Matching item.");
+        logger.debug("No Matching item.");
 
         return new Point2D.Double(Double.NaN, Double.NaN);
     }
@@ -652,9 +658,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 }
             }
 
-            logger.warn("findDataPoints: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
-            if (false) {
-                logger.warn("Matching points: {}", points);
+            if (logger.isDebugEnabled()) {
+                logger.debug("findDataPoints: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
             }
         }
         return points;
@@ -1214,10 +1219,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final ColumnMeta yMeta = oiData.getColumnMeta(yAxisName);
 
         if (yMeta == null) {
-            logger.info("unsupported yAxis : {} on {}", yAxis.getName(), oiData);
+            if (logger.isDebugEnabled()) {
+                logger.debug("unsupported yAxis : {} on {}", yAxis.getName(), oiData);
+            }
             return null;
         }
-        logger.info("yMeta:{}", yMeta);
+        logger.debug("yMeta:{}", yMeta);
 
         isYData2D = yMeta.isArray();
 
@@ -1247,10 +1254,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final ColumnMeta xMeta = oiData.getColumnMeta(xAxisName);
 
         if (xMeta == null) {
-            logger.info("unsupported xAxis : {} on {}", xAxis.getName(), oiData);
+            if (logger.isDebugEnabled()) {
+                logger.debug("unsupported xAxis : {} on {}", xAxis.getName(), oiData);
+            }
             return null;
         }
-        logger.info("xMeta:{}", yMeta);
+        logger.debug("xMeta:{}", yMeta);
 
         // TODO support scalling function on axes
         // final boolean doScaleX = (plotDef.getxAxisScalingFactor() != null);
@@ -1282,7 +1291,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final int nRows = oiData.getNbRows();
         final int nWaves = oiData.getNWave();
 
-        logger.warn("nRows - nWaves : {} - {}", nRows, nWaves);
+        logger.debug("nRows - nWaves : {} - {}", nRows, nWaves);
 
         // standard columns:
         final short[][] staIndexes = oiData.getStaIndex();
@@ -1296,17 +1305,17 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         final short[][] distinctStaIndexes = oiData.getDistinctStaIndexes();
         final int nStaIndexes = distinctStaIndexes.length;
-        logger.warn("nStaIndexes: {}", nStaIndexes);
+        logger.debug("nStaIndexes: {}", nStaIndexes);
 
         final boolean checkStaIndex = nStaIndexes > 1;
-        logger.warn("checkStaIndex: {}", checkStaIndex);
+        logger.debug("checkStaIndex: {}", checkStaIndex);
 
         final int nFlagged = oiData.getNFlagged();
-        logger.warn("nFlagged: {}", nFlagged);
+        logger.debug("nFlagged: {}", nFlagged);
 
         // flag to check flags on each 2D data:
         final boolean checkFlaggedData = skipFlaggedData && hasFlag && (nFlagged > 0) && (isXData2D || isYData2D);
-        logger.warn("checkFlaggedData: {}", checkFlaggedData);
+        logger.debug("checkFlaggedData: {}", checkFlaggedData);
 
         // flag to check targetId on each data row:
         final boolean checkTargetId = !oiData.hasSingleTarget() && hasTargetId;
@@ -1316,7 +1325,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             // targetID can not be null as the OIData table is supposed to have the target:
             matchTargetId = oiData.getTargetId(getTargetName());
 
-            logger.warn("matchTargetId: {}", matchTargetId);
+            logger.debug("matchTargetId: {}", matchTargetId);
         } else {
             matchTargetId = -1;
         }
@@ -1350,7 +1359,9 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         // avoid loop on wavelength if no 2D data:
         final int nWaveChannels = (isXData2D || isYData2D) ? nWaves : 1;
 
-        logger.warn("nbSeries to create : {}", nStaIndexes * nWaveChannels);
+        if (logger.isDebugEnabled()) {
+            logger.debug("nbSeries to create : {}", nStaIndexes * nWaveChannels);
+        }
 
         dataset.ensureCapacity(seriesCount + nStaIndexes * nWaveChannels);
 
@@ -1587,14 +1598,14 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         } // iterate on wave channels
 
-        if (nSkipFlag > 0) {
-            logger.warn("Nb SkipFlag: {}", nSkipFlag);
-        }
-        if (nSkipTarget > 0) {
-            logger.warn("Nb SkipTarget: {}", nSkipTarget);
-        }
-
         if (logger.isDebugEnabled()) {
+            if (nSkipFlag > 0) {
+                logger.debug("Nb SkipFlag: {}", nSkipFlag);
+            }
+            if (nSkipTarget > 0) {
+                logger.debug("Nb SkipTarget: {}", nSkipTarget);
+            }
+
             logger.debug("nSeries {} vs {}", seriesCount, dataset.getSeriesCount());
         }
         logger.warn("total addSeries duration = {} ms.", 1e-6d * total);
@@ -1864,17 +1875,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             case PLOT_CHANGED:
                 /* store plot instance (reference) */
                 this.plot = ((PlotEvent) event).getPlot();
-
-                logger.warn("plot.subset: {}", this.plot.getSubsetDefinition());
-                if (getPlot().getSubsetDefinition() != null) {
-                    logger.warn("plot.subset target: {}", getTargetName());
-                    logger.warn("plot.subset oifits: {}", getOiFitsSubset());
-                }
-                logger.warn("plot.definition: {}", getPlotDefinition());
-                if (getPlot().getPlotDefinition() != null) {
-                    logger.warn("plot.def xAxis: {}", getPlotDefinition().getXAxis());
-                    logger.warn("plot.def yAxes: {}", getPlotDefinition().getYAxes());
-                }
 
                 updatePlot();
                 break;
