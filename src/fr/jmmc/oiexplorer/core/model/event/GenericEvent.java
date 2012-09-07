@@ -3,18 +3,27 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model.event;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Base class for OIFits collection events consumed by OIFitsCollectionListener
  * @param <V> event type class
  */
 public class GenericEvent<V> {
 
+    /** Logger */
+    private static final Logger logger = LoggerFactory.getLogger(GenericEvent.class);
+
+    /* members */
     /** event type */
     private final V type;
     /** event source (sender) */
     private final Object source;
-    /** optional destination listener (null means all) */
-    private GenericEventListener<GenericEvent<V>, V> destination;
+    /** optional destination listeners (null means all) */
+    private Set<GenericEventListener<GenericEvent<V>, V>> destinations = null;
     /** subject id i.e. related object id (null allowed) */
     private final String subjectId;
 
@@ -35,8 +44,9 @@ public class GenericEvent<V> {
         }
         this.type = type;
         this.source = source;
-        this.destination = destination;
         this.subjectId = objectId;
+
+        addDestination(destination);
     }
 
     /**
@@ -56,19 +66,59 @@ public class GenericEvent<V> {
     }
 
     /**
-     * Return the optional destination listener (null means all)
-     * @return optional destination listener (null means all)
+     * PROTECTED: Return the optional destination listeners (null means all)
+     * @return optional destination listeners (null means all)
      */
-    public final GenericEventListener<GenericEvent<V>, V> getDestination() {
-        return destination;
+    final Set<GenericEventListener<GenericEvent<V>, V>> getDestinations() {
+        return destinations;
     }
 
     /**
-     * PROTECTED: Define the optional destination listener (null means all)
-     * @param destination optional destination listener (null means all)
+     * PROTECTED: Define the optional destination listeners (null means all)
+     * @param destinations  optional destination listeners (null means all)
      */
-    final void setDestination(final GenericEventListener<GenericEvent<V>, V> destination) {
-        this.destination = destination;
+    final void setDestinations(final Set<GenericEventListener<GenericEvent<V>, V>> destinations) {
+        this.destinations = destinations;
+    }
+
+    /**
+     * PROTECTED: Add the destination listener (null means all)
+     * @param destination optional destination listeners (null means all)
+     */
+    final void addDestination(final GenericEventListener<GenericEvent<V>, V> destination) {
+        if (destination == null) {
+            // Note: if there was specific destination(s), eraze them i.e. send to all:
+            this.destinations = null;
+        } else {
+            if (this.destinations == null) {
+                this.destinations = new LinkedHashSet<GenericEventListener<GenericEvent<V>, V>>(4); // small
+            }
+            // ensure listener unicity:
+            this.destinations.add(destination);
+        }
+    }
+
+    /**
+     * PROTECTED: Merge the given destination listeners with its destination listeners (null means all)
+     * @param otherDestinations optional destination listeners (null means all)
+     */
+    final void mergeDestinations(final Set<GenericEventListener<GenericEvent<V>, V>> otherDestinations) {
+        if (this.destinations != null || otherDestinations != null) {
+            logger.warn("mergeDestinations: current vs other: {} vs {}", EventNotifier.getObjectInfo(destinations), EventNotifier.getObjectInfo(otherDestinations));
+        }
+        // means all:
+        if (this.destinations != null) {
+            logger.warn("mergeDestinations: current destinations: {}", EventNotifier.getObjectInfo(destinations));
+            if (otherDestinations == null) {
+                // means all:
+                addDestination(null);
+            } else {
+                for (GenericEventListener<GenericEvent<V>, V> destination : otherDestinations) {
+                    addDestination(destination);
+                }
+            }
+            logger.warn("mergeDestinations: final destinations: {}", EventNotifier.getObjectInfo(destinations));
+        }
     }
 
     /**
@@ -115,7 +165,7 @@ public class GenericEvent<V> {
     public String toString() {
         return getClass().getSimpleName() + "{source= " + EventNotifier.getObjectInfo(source)
                 + " - type= " + this.type
-                + ((this.destination != null) ? " - destination= " + EventNotifier.getObjectInfo(this.destination) : "")
+                + ((this.destinations != null) ? " - destination= " + EventNotifier.getObjectInfo(this.destinations) : "")
                 + ((this.subjectId != null) ? " - subjectId= " + this.subjectId : "") + '}';
     }
 }

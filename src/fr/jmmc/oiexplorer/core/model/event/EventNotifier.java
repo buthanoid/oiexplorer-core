@@ -6,6 +6,7 @@ package fr.jmmc.oiexplorer.core.model.event;
 import fr.jmmc.jmcs.gui.util.SwingUtils;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -27,18 +28,18 @@ import org.slf4j.LoggerFactory;
  */
 public final class EventNotifier<K extends GenericEvent<V>, V> implements Comparable<EventNotifier<?, ?>> {
 
-    /** Logger */
-    private static final Logger logger = LoggerFactory.getLogger(EventNotifier.class);
     /** flag to log a stack trace in method register/unregister to debug registration */
-    private static final boolean DEBUG_LISTENER = true;
+    private static final boolean DEBUG_LISTENER = false;
     /** flag to log information useful to debug events */
-    private static final boolean DEBUG_FIRE_EVENT = true;
+    private static final boolean DEBUG_FIRE_EVENT = false;
     /** flag to log also a stack trace to debug events */
     private static final boolean DEBUG_STACK = false;
-    /** flag to detect new registered listener(s) while fireEvent runs to fire events to them also */
-    private static final boolean FIRE_NEW_REGISTERED_LISTENER = false;
+    /** Logger */
+    private static final Logger logger = LoggerFactory.getLogger(EventNotifier.class);
     /** EventNotifierController singleton */
     private static final EventNotifierController globalController = new EventNotifierController();
+    /** flag to detect new registered listener(s) while fireEvent runs to fire events to them also */
+    private static final boolean FIRE_NEW_REGISTERED_LISTENER = true;
     /* members */
     /** event notifier's priority (compare to other event notifiers): lower values means higher priority */
     private final int priority;
@@ -48,7 +49,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
     /* may detect widgets waiting for events on LOST subject objects ?? */
     private final CopyOnWriteArrayList<WeakReference<GenericEventListener<K, V>>> listeners = new CopyOnWriteArrayList<WeakReference<GenericEventListener<K, V>>>();
     /** queued events delivered asap by EDT (ordered by insertion order) */
-    private final Map<K, K> eventQueue = new LinkedHashMap<K, K>(8);
+    private final Map<K, K> eventQueue = new LinkedHashMap<K, K>();
 
     /** 
      * Public Constructor
@@ -151,7 +152,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
     private void fireEvent(final K event, final boolean useQueue) throws IllegalStateException {
         // ensure events are fired by Swing EDT:
         if (!SwingUtils.isEDT()) {
-            throw new IllegalStateException("invalid thread : use EDT", (DEBUG_STACK) ? new Throwable() : null);
+            throw new IllegalStateException("invalid thread : use EDT", new Throwable());
         }
         // queue this event to avoid concurrency issues and repeated event notifications (thanks to SET):
         if (useQueue) {
@@ -160,13 +161,16 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             }
             // queue this event:
 
-            // TRICKY: use event as key (hashcode / equals on type / subjectId) 
-            // but use value to have up to date arguments:
+            // TRICKY: use event as key (hashcode / equals on type / subjectId) and value in map
+            // to use value to have up-to-date arguments:
             final K prevEvent = this.eventQueue.put(event, event);
 
-            // fix destination on last event (all vs destination listener):
-            if (event.getDestination() != null && prevEvent != null && prevEvent.getDestination() == null) {
-                event.setDestination(null);
+            if (prevEvent != null) {
+                // merge event destinations:
+                prevEvent.mergeDestinations(event.getDestinations());
+
+                // update destinations on the current event:
+                event.setDestinations(prevEvent.getDestinations());
             }
 
             // register this notifier in EDT:
@@ -190,14 +194,14 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
 
         // optional event source:
         final Object source = event.getSource();
-        final GenericEventListener<GenericEvent<V>, V> destination = event.getDestination();
+        final Set<GenericEventListener<GenericEvent<V>, V>> destinations = event.getDestinations();
         final String subjectId = event.getSubjectId();
         String listenerSubjectId;
 
         final long start = System.nanoTime();
 
         // used listeners:
-        final Set<GenericEventListener<K, V>> firedListeners = new HashSet<GenericEventListener<K, V>>();
+        final Set<GenericEventListener<K, V>> firedListeners = new HashSet<GenericEventListener<K, V>>(this.listeners.size());
         boolean done;
 
         WeakReference<GenericEventListener<K, V>> ref;
@@ -216,8 +220,8 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
                     i--;
                 } else if (!firedListeners.contains(listener)) {
 
-                    // check destination:
-                    if (destination == null || destination == listener) {
+                    // check destinations (null means all):
+                    if (destinations == null || destinations.contains(listener)) {
                         firedListeners.add(listener);
 
                         // do not fire event to the listener if it is also the source of this event:
@@ -241,10 +245,10 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
                                 }
                             }
                         } else if (DEBUG_FIRE_EVENT) {
-                            logger.warn("Skip Listener {} because it is the source of this event: {}", getObjectInfo(listener), event);
+                            logger.warn("Skip Listener {} because is the source: {}", getObjectInfo(listener), event);
                         }
                     } else if (DEBUG_FIRE_EVENT) {
-                        logger.warn("Skip Listener {} because it is not the destination of this event: {}", getObjectInfo(listener), event);
+                        logger.warn("Skip Listener {} because is not in destinations: {}", getObjectInfo(listener), event);
                     }
                 }
             }
@@ -253,31 +257,32 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             done = true;
 
             if (FIRE_NEW_REGISTERED_LISTENER) {
-                if (destination != null) {
-                    for (int i = 0, size = this.listeners.size(); i < size; i++) {
-                        ref = this.listeners.get(i);
-                        listener = ref.get();
-                        if (listener == null) {
-                            // remove empty reference (GC):
-                            this.listeners.remove(i);
-                            size--;
-                            i--;
-                        } else if (!firedListeners.contains(listener)) {
-                            // there is still one listener not fired:
-                            done = false;
-                            break;
+                for (int i = 0, size = this.listeners.size(); i < size; i++) {
+                    ref = this.listeners.get(i);
+                    listener = ref.get();
+                    if (listener == null) {
+                        // remove empty reference (GC):
+                        this.listeners.remove(i);
+                        size--;
+                        i--;
+                    } else {
+                        // check destinations (null means all):
+                        if (destinations == null || destinations.contains(listener)) {
+                            if (!firedListeners.contains(listener)) {
+                                // there is still one listener not fired:
+                                done = false;
+                                break;
+                            }
                         }
                     }
-                } else if (DEBUG_FIRE_EVENT) {
-                    logger.warn("Skip Fire new listener as the event has a destination: {}", event);
                 }
             }
+
         } while (!done);
 
         if (logger.isDebugEnabled()) {
             logger.debug("fireEvent: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
         }
-
         if (DEBUG_FIRE_EVENT) {
             logger.warn("END FIRE {} : duration = {} ms.", event, 1e-6d * (System.nanoTime() - start));
         }
@@ -290,7 +295,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
 
         // Copy the queued event set and clear it (available):
         if (DEBUG_FIRE_EVENT) {
-            logger.warn("START FIRE QUEUED EVENTS {}", eventQueue);
+            logger.warn("START FIRE QUEUED EVENTS {}", eventQueue.values());
         }
 
         // use only values (up to date event arguments):
@@ -329,6 +334,28 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
     }
 
     /**
+     * Return the string representation "{<simple class name>#<hashCode>, ...}"
+     * @param col any collection
+     * @return "<class name>#<hashCode>"
+     */
+    public static String getObjectInfo(final Collection<?> col) {
+        if (col == null) {
+            return "null";
+        }
+        if (col.isEmpty()) {
+            return "{}";
+        }
+        final StringBuilder sb = new StringBuilder(256);
+        sb.append('{');
+        for (Object o : col) {
+            sb.append(getObjectInfo(o)).append(", ");
+        }
+        sb.setLength(sb.length() - 2);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    /**
      * Return the string representation "<full class name>#<hashCode>"
      * @param o any object
      * @return "<class name>#<hashCode>"
@@ -338,6 +365,8 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             return "null";
         }
         return o.getClass().getName() + '@' + Integer.toHexString(System.identityHashCode(o));
+
+
     }
 
     /**
@@ -351,7 +380,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
         /** queued event notifiers (ordered by insertion order) */
         private final Set<EventNotifier<?, ?>> queuedNotifiers = new LinkedHashSet<EventNotifier<?, ?>>();
         /** callback list */
-        private final List<Runnable> callbacks = new ArrayList<Runnable>();
+        private final List<Runnable> callbacks = new ArrayList<Runnable>(4);
         /** temporary storage for queuedNotifiers */
         private final List<EventNotifier<?, ?>> queuedNotifiersCopy = new ArrayList<EventNotifier<?, ?>>();
 
@@ -362,11 +391,18 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             super();
         }
 
+        /**
+         * Queue the given event notifier
+         * @param eventNotifier event notifier to queue
+         */
         void queueEventNotifier(final EventNotifier<?, ?> eventNotifier) {
             queuedNotifiers.add(eventNotifier);
             registerEDT();
         }
 
+        /**
+         * Register this runnable in EDT (invokeLater)
+         */
         private void registerEDT() {
             if (!registeredEDT) {
                 registeredEDT = true;
@@ -380,6 +416,10 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             }
         }
 
+        /**
+         * Add callback executed once all queued events are fired
+         * @param callback runnable task
+         */
         public void addCallback(final Runnable callback) {
             callbacks.add(callback);
         }
@@ -429,7 +469,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             }
 
             if (DEBUG_FIRE_EVENT) {
-                logger.warn("SORTED QUEUED NOTIFIERS {}", queuedNotifiersCopy);
+                logger.warn("SORTED QUEUED NOTIFIERS {}", getObjectInfo(queuedNotifiersCopy));
             }
 
             // Get first (highest priority):
@@ -440,13 +480,13 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             queuedNotifiers.remove(eventNotifier);
 
             if (DEBUG_FIRE_EVENT) {
-                logger.warn("FIRE QUEUED NOTIFIER {}", eventNotifier);
+                logger.warn("FIRE QUEUED NOTIFIER {}", getObjectInfo(eventNotifier));
             }
 
             eventNotifier.fireQueuedEvents();
 
             if (DEBUG_FIRE_EVENT) {
-                logger.warn("END FIRE QUEUED NOTIFIER", eventNotifier);
+                logger.warn("END FIRE QUEUED NOTIFIER", getObjectInfo(eventNotifier));
             }
 
             final boolean done = queuedNotifiers.isEmpty();
@@ -457,6 +497,9 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
             return done;
         }
 
+        /**
+         * Run callbacks once all queued notifiers / events are fired
+         */
         void runCallbacks() {
             if (callbacks.isEmpty()) {
                 return;
@@ -483,6 +526,10 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
         }
     }
 
+    /**
+     * Add callback executed once all queued events are fired
+     * @param callback runnable task
+     */
     public static void addCallback(final Runnable callback) {
         globalController.addCallback(callback);
     }
