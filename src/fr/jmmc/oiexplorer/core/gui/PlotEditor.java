@@ -17,9 +17,12 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import java.awt.Component;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
+import javax.swing.ListModel;
+import javax.swing.ListSelectionModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,11 +48,9 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
     /** Creates new form PlotEditor */
     public PlotEditor() {
         ocm.getOiFitsCollectionEventNotifier().register(this);
+        ocm.getPlotEventNotifier().register(this);
 
         initComponents();
-
-        this.subsetComboBox.setRenderer(new IdentifiableListRenderer());
-        this.plotDefinitionComboBox.setRenderer(new IdentifiableListRenderer());
     }
 
     /** This method is called from within the constructor to
@@ -103,22 +104,27 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
     }// </editor-fold>//GEN-END:initComponents
 
     private void subsetComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_subsetComboBoxActionPerformed
+        final String subsetId = (String) subsetComboBox.getSelectedItem();
+
+        if (subsetId == null) {
+            logger.warn("[{}] subsetComboBoxActionPerformed() event ignored : no current selection", plotId);
+            return;
+        }
+
         final Plot plotCopy = getPlot();
         if (plotCopy != null) {
-            plotCopy.setSubsetDefinition((SubsetDefinition) subsetComboBox.getSelectedItem());
+            plotCopy.setSubsetDefinition(ocm.getSubsetDefinitionRef(subsetId));
             ocm.updatePlot(plotCopy);
         }
     }//GEN-LAST:event_subsetComboBoxActionPerformed
 
     private void plotDefinitionComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_plotDefinitionComboBoxActionPerformed
-        final PlotDefinition selectedPlotDef = ((PlotDefinition) plotDefinitionComboBox.getSelectedItem());
+        final String plotDefId = (String) plotDefinitionComboBox.getSelectedItem();
 
-        if (selectedPlotDef == null) {
-            logger.warn("[{}] plotDefinitionComboBoxActionPerformed() event ignored : no current selection", plotId, new Throwable());
+        if (plotDefId == null) {
+            logger.warn("[{}] plotDefinitionComboBoxActionPerformed() event ignored : no current selection", plotId);
             return;
         }
-
-        final String plotDefId = selectedPlotDef.getName();
 
         // get copy:
         final Plot plotCopy = getPlot();
@@ -159,8 +165,8 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
 
         if (!OIBase.areEquals(prevPlotId, plotId)) {
             logger.warn("setPlotId {}", plotId);
-            // fire OIFitsCollectionChanged event to initialize correctly the widget:
-            ocm.fireOIFitsCollectionChanged(this);
+            // fire PlotChanged event to initialize correctly the widget:
+            ocm.firePlotChanged(plotId, this);
         }
     }
 
@@ -172,28 +178,39 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
     }
 
     private void refreshForm() {
+        logger.warn("refreshForm: {}", plotId);
+
         // Put all subset references:
-        subsetComboBox.setModel(new GenericListModel<SubsetDefinition>(ocm.getUserCollection().getSubsetDefinitions(), true));
+        final List<String> subsetNames = new ArrayList<String>();
+        for (SubsetDefinition subset : ocm.getUserCollection().getSubsetDefinitions()) {
+            subsetNames.add(subset.getName());
+        }
 
-        // TODO: use name (ids) instead of plotDef:
-        final Set<PlotDefinition> plotDefs = new LinkedHashSet<PlotDefinition>();
-        plotDefs.addAll(ocm.getUserCollection().getPlotDefinitions());
-        plotDefs.addAll(PlotDefinitionFactory.getInstance().getDefaults());
+        subsetComboBox.setModel(new GenericListModel<String>(subsetNames, true));
 
-        final GenericListModel<PlotDefinition> plotDefModel = new GenericListModel<PlotDefinition>(new ArrayList<PlotDefinition>(plotDefs), true);
+        // use identifiers to keep unique values:
+        final Set<String> plotDefNames = new LinkedHashSet<String>();
+        for (PlotDefinition plotDef : ocm.getUserCollection().getPlotDefinitions()) {
+            plotDefNames.add(plotDef.getName());
+        }
+        for (PlotDefinition plotDef : PlotDefinitionFactory.getInstance().getDefaults()) {
+            plotDefNames.add(plotDef.getName());
+        }
+
+        final GenericListModel<String> plotDefModel = new GenericListModel<String>(new ArrayList<String>(plotDefNames), true);
         plotDefinitionComboBox.setModel(plotDefModel);
 
         // hide subset combo if only 1
         final boolean showSubsets = (subsetComboBox.getModel().getSize() > 1);
         subsetLabel.setVisible(showSubsets);
         subsetComboBox.setVisible(showSubsets);
-        
+
         // restore current state:
         final Plot plotCopy = getPlot();
-        
+
         if (plotCopy != null) {
-            subsetComboBox.setSelectedItem(plotCopy.getSubsetDefinition());
-            plotDefinitionComboBox.setSelectedItem(plotCopy.getPlotDefinition());
+            subsetComboBox.setSelectedItem((plotCopy.getSubsetDefinition() != null) ? plotCopy.getSubsetDefinition().getName() : null);
+            plotDefinitionComboBox.setSelectedItem((plotCopy.getPlotDefinition() != null) ? plotCopy.getPlotDefinition().getName() : null);
         }
     }
 
@@ -205,7 +222,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
      * @return subject id i.e. related object id (null allowed)
      */
     public String getSubjectId(final OIFitsCollectionEventType type) {
-        // useless
+        // always return null as refreshForm must be performed for any plot changed event:
         return null;
     }
 
@@ -219,16 +236,18 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
 
         switch (event.getType()) {
             case CHANGED:
+            case PLOT_CHANGED:
                 // force clean up ...
                 setPlotId(plotId);
 
                 refreshForm();
+                break;
             default:
         }
     }
 
     /**
-     * This custom renderer uses the identifier only
+     * This custom renderer uses the identifier only (NOT USED)
      * @author bourgesl
      */
     private static final class IdentifiableListRenderer extends DefaultListCellRenderer {
