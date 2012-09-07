@@ -36,14 +36,14 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
     /** Logger */
-    final private Logger logger = LoggerFactory.getLogger(PlotPanelEditor.class);   
+    private final static Logger logger = LoggerFactory.getLogger(PlotPanelEditor.class);   
 
     /* members */
     /** OIFitsCollectionManager singleton */
     private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** subset identifier */
     private String subsetId = OIFitsCollectionManager.CURRENT;
-    /** subset definition */
+    /** subset definition (read-only reference) */
     private SubsetDefinition subsetDefinition = null;
     /** plot definition identifier */
     private String plotDefId = OIFitsCollectionManager.CURRENT;
@@ -65,7 +65,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
 
     /** Creates new form PlotPanelEditor */
     public PlotPanelEditor() {
-        OIFitsCollectionManager.getInstance().getSubsetDefinitionEventNotifier().register(this);
+        ocm.getSubsetDefinitionEventNotifier().register(this);
 
         initComponents();
 
@@ -96,10 +96,10 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
      * and request the plotDefinition to be notified if present or modified.
      * @param subsetDefinition subset definition
      */
-    public void update(final SubsetDefinition subsetDefinition) {
+    private void update(final SubsetDefinition subsetDefinition) {
         logger.warn("update: subset target {}", subsetDefinition.getTarget());
 
-        /* store subset definition */
+        /* store subset definition (reference) */
         this.subsetDefinition = subsetDefinition;
 
         /* fill combobox for available columns */
@@ -426,6 +426,22 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
         ocm.updatePlotDefinition(this, getPlotDefinition());
     }
 
+    /* --- OIFitsCollectionEventListener implementation --- */
+    /**
+     * Return the optional subject id i.e. related object id that this listener accepts
+     * @see GenericEvent#subjectId
+     * @param type event type
+     * @return subject id i.e. related object id (null allowed)
+     */
+    public String getSubjectId(final OIFitsCollectionEventType type) {
+        switch (type) {
+            case SUBSET_CHANGED:
+                return this.subsetId;
+            default:
+        }
+        return null;
+    }
+
     /**
      * Handle the given OIFits collection event
      * @param event OIFits collection event
@@ -436,14 +452,7 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
 
         switch (event.getType()) {
             case SUBSET_CHANGED:
-                final SubsetDefinition eventSubset = ((SubsetDefinitionEvent) event).getSubsetDefinition();
-
-                // TODO: see EventNotifier: subject ?
-
-                // check plot identifier:
-                if (eventSubset.getName().equals(this.subsetId)) {
-                    update(eventSubset);
-                }
+                update(((SubsetDefinitionEvent) event).getSubsetDefinition());
                 break;
             default:
         }
@@ -479,8 +488,8 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
      */
     private SubsetDefinition getSubsetDefinition() {
         if (this.subsetDefinition == null) {
-            // get copy:
-            this.subsetDefinition = ocm.getSubsetDefinition(this.subsetId);
+            // get reference:
+            this.subsetDefinition = ocm.getSubsetDefinitionRef(this.subsetId);
         }
         return this.subsetDefinition;
     }

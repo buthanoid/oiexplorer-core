@@ -4,6 +4,7 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.GenericListModel;
+import fr.jmmc.oiexplorer.core.model.OIBase;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
 import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
@@ -13,16 +14,12 @@ import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 import fr.jmmc.oiexplorer.core.model.oi.Plot;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
-import fr.jmmc.oitools.model.OIFitsFile;
 import java.awt.Component;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
-import javax.swing.ListModel;
-import javax.swing.ListSelectionModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +27,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author mella
  */
-public class PlotEditor extends javax.swing.JPanel implements OIFitsCollectionEventListener {
+public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollectionEventListener {
 
+    /** default serial UID for Serializable interface */
+    private static final long serialVersionUID = 1;
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(PlotEditor.class.getName());
 
@@ -111,21 +110,21 @@ public class PlotEditor extends javax.swing.JPanel implements OIFitsCollectionEv
 
     private void plotDefinitionComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_plotDefinitionComboBoxActionPerformed
         final Plot plotCopy = getPlot();
-        
+
         final String plotDefId = ((PlotDefinition) plotDefinitionComboBox.getSelectedItem()).getName();
-        
+
         if (ocm.hasPlotDefinition(plotDefId)) {
             // collection has it: use it
             plotCopy.setPlotDefinition(ocm.getPlotDefinitionRef(plotDefId));
         } else {
             // clone preset (same id):
-            final PlotDefinition plotDefCopy = (PlotDefinition)PlotDefinitionFactory.getInstance().getDefault(plotDefId).clone();
+            final PlotDefinition plotDefCopy = (PlotDefinition) PlotDefinitionFactory.getInstance().getDefault(plotDefId).clone();
 
             ocm.addPlotDefinition(plotDefCopy);
-            
+
             plotCopy.setPlotDefinition(plotDefCopy);
         }
-        
+
         ocm.updatePlot(plotCopy);
     }//GEN-LAST:event_plotDefinitionComboBoxActionPerformed
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -136,13 +135,20 @@ public class PlotEditor extends javax.swing.JPanel implements OIFitsCollectionEv
     // End of variables declaration//GEN-END:variables
 
     /**
-     * Define the plot identifier and reset plot
+     * Define the plot identifier, reset plot and fireOIFitsCollectionChanged on this instance if the plotId changed
      * @param plotId plot identifier
      */
     public void setPlotId(final String plotId) {
+        final String prevPlotId = this.plotId;
         this.plotId = plotId;
         // force reset:
         this.plot = null;
+
+        if (!OIBase.areEquals(prevPlotId, plotId)) {
+            logger.warn("setPlotId {}", plotId);
+            // fire OIFitsCollectionChanged event to initialize correctly the widget:
+            ocm.fireOIFitsCollectionChanged(this);
+        }
     }
 
     private Plot getPlot() {
@@ -162,6 +168,24 @@ public class PlotEditor extends javax.swing.JPanel implements OIFitsCollectionEv
 
         final GenericListModel<PlotDefinition> plotDefModel = new GenericListModel<PlotDefinition>(new ArrayList<PlotDefinition>(plotDefs), true);
         plotDefinitionComboBox.setModel(plotDefModel);
+
+        // restore current state:
+        final Plot plotRef = getPlot();
+
+        subsetComboBox.setSelectedItem(plotRef.getSubsetDefinition());
+        plotDefinitionComboBox.setSelectedItem(plotRef.getPlotDefinition());
+    }
+
+    /* --- OIFitsCollectionEventListener implementation --- */
+    /**
+     * Return the optional subject id i.e. related object id that this listener accepts
+     * @see GenericEvent#subjectId
+     * @param type event type
+     * @return subject id i.e. related object id (null allowed)
+     */
+    public String getSubjectId(final OIFitsCollectionEventType type) {
+        // useless
+        return null;
     }
 
     /**

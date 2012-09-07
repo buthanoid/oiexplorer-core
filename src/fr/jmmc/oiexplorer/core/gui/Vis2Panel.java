@@ -18,13 +18,13 @@ import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.PageSize;
 import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
+import fr.jmmc.oiexplorer.core.model.OIBase;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
 import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
 import fr.jmmc.oiexplorer.core.model.event.PlotEvent;
 import fr.jmmc.oiexplorer.core.model.oi.Plot;
-import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.util.Constants;
@@ -83,8 +83,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private static final long serialVersionUID = 1;
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(Vis2Panel.class.getName());
-    /** flag to enable log axis to display log(Vis2) */
-    private final static boolean USE_LOG_SCALE = false;
     /** default color model (aspro - Rainbow) */
     private final static IndexColorModel RAINBOW_COLOR_MODEL = ColorModels.getColorModel("Rainbow");
     /** data margin in percents */
@@ -96,7 +94,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     /** OIFitsCollectionManager singleton */
     private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** plot identifier */
-    private String plotId = OIFitsCollectionManager.CURRENT;
+    private String plotId = null;
     /** plot object reference */
     private Plot plot = null;
     /** flag to indicate if this plot has data */
@@ -926,9 +924,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
                 double minY = Double.POSITIVE_INFINITY;
                 double maxY = Double.NEGATIVE_INFINITY;
+                boolean yUseLog = false;
 
                 PlotInfo info;
-                Rectangle2D.Double dataArea;
+                Range axisRange;
                 ColumnMeta yMeta = null;
 
                 int tableIndex = 0;
@@ -938,15 +937,17 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
                     if (info != null) {
                         showV2 = true;
-                        dataArea = info.dataArea;
+                        yUseLog = info.yUseLog;
 
                         // combine X range:
-                        minX = Math.min(minX, dataArea.getX());
-                        maxX = Math.max(maxX, dataArea.getMaxX());
+                        axisRange = info.xRange;
+                        minX = Math.min(minX, axisRange.getLowerBound());
+                        maxX = Math.max(maxX, axisRange.getUpperBound());
 
                         // combine Y range:
-                        minY = Math.min(minY, dataArea.getY());
-                        maxY = Math.max(maxY, dataArea.getMaxY());
+                        axisRange = info.yRange;
+                        minY = Math.min(minY, axisRange.getLowerBound());
+                        maxY = Math.max(maxY, axisRange.getUpperBound());
 
                         // update X axis Label:
                         if (xMeta == null && info.xMeta != null) {
@@ -966,7 +967,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     // TODO: fix boundaries according to standard data boundaries (VIS between 0-1 ...)
 
                     // Add margin:
-                    if (!USE_LOG_SCALE) {
+                    if (!yUseLog) {
                         final double marginY = (maxY - minY) * MARGIN_PERCENTS;
                         if (marginY > 0d) {
                             minY -= marginY;
@@ -989,7 +990,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     }
 
                     // update Y axis Label:
-                    String label;
+                    String label = "";
                     if (yMeta != null) {
                         label = yMeta.getName();
                         if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
@@ -998,7 +999,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                         this.xyPlotV2.getRangeAxis().setLabel(label);
                     }
 
-                    if (USE_LOG_SCALE) {
+                    if (yUseLog) {
                         // test logarithmic axis:
                         final LogarithmicAxis logAxis = new LogarithmicAxis("log " + label);
                         logAxis.setExpTickLabelsFlag(true);
@@ -1033,9 +1034,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
                 double minY = Double.POSITIVE_INFINITY;
                 double maxY = Double.NEGATIVE_INFINITY;
+                boolean yUseLog = false;
 
                 PlotInfo info;
-                Rectangle2D.Double dataArea;
+                Range axisRange;
                 ColumnMeta yMeta = null;
 
                 int tableIndex = 0;
@@ -1045,15 +1047,17 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
                     if (info != null) {
                         showT3 = true;
-                        dataArea = info.dataArea;
+                        yUseLog = info.yUseLog;
 
                         // combine X range:
-                        minX = Math.min(minX, dataArea.getX());
-                        maxX = Math.max(maxX, dataArea.getMaxX());
+                        axisRange = info.xRange;
+                        minX = Math.min(minX, axisRange.getLowerBound());
+                        maxX = Math.max(maxX, axisRange.getUpperBound());
 
                         // combine Y range:
-                        minY = Math.min(minY, dataArea.getY());
-                        maxY = Math.max(maxY, dataArea.getMaxY());
+                        axisRange = info.yRange;
+                        minY = Math.min(minY, axisRange.getLowerBound());
+                        maxY = Math.max(maxY, axisRange.getUpperBound());
 
                         // update X axis Label:
                         if (xMeta == null && info.xMeta != null) {
@@ -1073,7 +1077,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     // TODO: fix boundaries according to standard data boundaries (T3 between -180-180 ...)
 
                     // Add margin:
-                    if (!USE_LOG_SCALE) {
+                    if (!yUseLog) {
                         final double marginY = (maxY - minY) * MARGIN_PERCENTS;
                         if (marginY > 0d) {
                             minY -= marginY;
@@ -1096,12 +1100,26 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     }
 
                     // update Y axis Label:
+                    String label = "";
                     if (yMeta != null) {
-                        String label = yMeta.getName();
+                        label = yMeta.getName();
                         if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
                             label += " (" + yMeta.getUnits().getStandardRepresentation() + ")";
                         }
                         this.xyPlotT3.getRangeAxis().setLabel(label);
+                    }
+
+                    if (yUseLog) {
+                        // test logarithmic axis:
+                        final LogarithmicAxis logAxis = new LogarithmicAxis("log " + label);
+                        logAxis.setExpTickLabelsFlag(true);
+                        logAxis.setAutoRangeNextLogFlag(true);
+
+                        logger.debug("logAxis range: [{} - {}]", minY, maxY);
+
+                        logAxis.setRange(minY, maxY);
+
+                        this.xyPlotT3.setRangeAxis(logAxis);
                     }
                 }
             }
@@ -1191,15 +1209,16 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         final Axis yAxis = plotDef.getYAxes().get(yAxisIndex);
         final String yAxisName = yAxis.getName();
-        logger.info("yAxis:{}", yAxisName);
+        final boolean yUseLog = yAxis.isLogScale();
 
         final ColumnMeta yMeta = oiData.getColumnMeta(yAxisName);
-        logger.info("yMeta:{}", yMeta);
 
         if (yMeta == null) {
-            logger.info("unsupported yAxis : {} on {}", yMeta, oiData);
+            logger.info("unsupported yAxis : {} on {}", yAxis.getName(), oiData);
             return null;
         }
+        logger.info("yMeta:{}", yMeta);
+
         isYData2D = yMeta.isArray();
 
         if (isYData2D) {
@@ -1221,31 +1240,33 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final double[][] xData2D;
         final double[][] xData2DErr;
 
-        final String xAxis = plotDef.getXAxis().getName();
-        logger.info("xAxis:{}", xAxis);
+        final Axis xAxis = plotDef.getXAxis();
+        final String xAxisName = xAxis.getName();
+        final boolean xUseLog = xAxis.isLogScale();
 
-        //TODO support scalling function on axes
+        final ColumnMeta xMeta = oiData.getColumnMeta(xAxisName);
+
+        if (xMeta == null) {
+            logger.info("unsupported xAxis : {} on {}", xAxis.getName(), oiData);
+            return null;
+        }
+        logger.info("xMeta:{}", yMeta);
+
+        // TODO support scalling function on axes
         // final boolean doScaleX = (plotDef.getxAxisScalingFactor() != null);
         // final double xScale = (doScaleX) ? plotDef.getxAxisScalingFactor().doubleValue() : 0d;
         final boolean doScaleX = false;
         final double xScale = 1d;
 
-        final ColumnMeta xMeta = oiData.getColumnMeta(xAxis);
-        logger.info("xMeta:{}", xMeta);
-
-        if (xMeta == null) {
-            logger.info("unsupported xAxis : {} on {}", xMeta, oiData);
-            return null;
-        }
         isXData2D = xMeta.isArray();
 
         if (isXData2D) {
             xData1D = null;
             xData1DErr = null;
-            xData2D = oiData.getColumnAsDoubles(xAxis);
+            xData2D = oiData.getColumnAsDoubles(xAxisName);
             xData2DErr = oiData.getColumnAsDoubles(xMeta.getErrorColumnName());
         } else {
-            xData1D = oiData.getColumnAsDouble(xAxis);
+            xData1D = oiData.getColumnAsDouble(xAxisName);
             xData1DErr = oiData.getColumnAsDouble(xMeta.getErrorColumnName());
             xData2D = null;
             xData2DErr = null;
@@ -1267,9 +1288,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         final short[][] staIndexes = oiData.getStaIndex();
         final short[] targetIds = oiData.getTargetId();
         final boolean[][] flags = oiData.getFlag();
-
-
-
 
         final boolean hasErrX = (xData2DErr != null) || (xData1DErr != null);
         final boolean hasErrY = (yData2DErr != null) || (yData1DErr != null);
@@ -1431,7 +1449,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     // Process Y value:
                     y = (isYData2D) ? yData2D[i][j] : yData1D[i];
 
-                    if (USE_LOG_SCALE && y < 0d) {
+                    if (yUseLog && y < 0d) {
                         // keep only positive data:
                         y = Double.NaN;
                     }
@@ -1440,6 +1458,11 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
                         // Process X value:
                         x = (isXData2D) ? xData2D[i][j] : xData1D[i];
+
+                        if (xUseLog && x < 0d) {
+                            // keep only positive data:
+                            x = Double.NaN;
+                        }
 
                         if (!Double.isNaN(x)) {
                             // Scale X value:
@@ -1467,9 +1490,9 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                             } else {
                                 hasDataErrorY = true;
 
-                                // USE_LOG_SCALE: check if y - err < 0:
+                                // useLog: check if y - err < 0:
                                 yValue[idx] = y;
-                                yLower[idx] = (USE_LOG_SCALE && (y - yErr) < 0d) ? 0d : (y - yErr);
+                                yLower[idx] = (yUseLog && (y - yErr) < 0d) ? 0d : (y - yErr);
                                 yUpper[idx] = y + yErr;
 
                                 // update Y boundaries including error:
@@ -1504,7 +1527,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                                 }
 
                                 xValue[idx] = x;
-                                xLower[idx] = x - xErr;
+                                xLower[idx] = (xUseLog && (x - xErr) < 0d) ? 0d : (x - xErr);
                                 xUpper[idx] = x + xErr;
 
                                 // update X boundaries including error:
@@ -1596,8 +1619,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         renderer.setLinesVisible(plotDef.isDrawLine());
 
         final PlotInfo info = new PlotInfo();
-        info.dataArea = new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
+        info.xRange = new Range(minX, maxX);
         info.xMeta = xMeta;
+
+        info.yRange = new Range(minY, maxY);
         info.yMeta = yMeta;
         return info;
     }
@@ -1811,6 +1836,22 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         public String getString(final OIData oiData);
     }
 
+    /* --- OIFitsCollectionEventListener implementation --- */
+    /**
+     * Return the optional subject id i.e. related object id that this listener accepts
+     * @see GenericEvent#subjectId
+     * @param type event type
+     * @return subject id i.e. related object id (null allowed)
+     */
+    public String getSubjectId(final OIFitsCollectionEventType type) {
+        switch (type) {
+            case PLOT_CHANGED:
+                return this.plotId;
+            default:
+        }
+        return null;
+    }
+
     /**
      * Handle the given OIFits collection event
      * @param event OIFits collection event
@@ -1821,28 +1862,21 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         switch (event.getType()) {
             case PLOT_CHANGED:
-                final Plot eventPlot = ((PlotEvent) event).getPlot();
+                /* store plot instance (reference) */
+                this.plot = ((PlotEvent) event).getPlot();
 
-                // TODO: see EventNotifier: subject ?
-
-                // check plot identifier:
-                if (eventPlot.getName().equals(this.plotId)) {
-                    /* store plot instance */
-                    this.plot = eventPlot;
-
-                    logger.warn("plot.subset: {}", this.plot.getSubsetDefinition());
-                    if (getPlot().getSubsetDefinition() != null) {
-                        logger.warn("plot.subset target: {}", getTargetName());
-                        logger.warn("plot.subset oifits: {}", getOiFitsSubset());
-                    }
-                    logger.warn("plot.definition: {}", getPlotDefinition());
-                    if (getPlot().getPlotDefinition() != null) {
-                        logger.warn("plot.def xAxis: {}", getPlotDefinition().getXAxis());
-                        logger.warn("plot.def yAxes: {}", getPlotDefinition().getYAxes());
-                    }
-
-                    updatePlot();
+                logger.warn("plot.subset: {}", this.plot.getSubsetDefinition());
+                if (getPlot().getSubsetDefinition() != null) {
+                    logger.warn("plot.subset target: {}", getTargetName());
+                    logger.warn("plot.subset oifits: {}", getOiFitsSubset());
                 }
+                logger.warn("plot.definition: {}", getPlotDefinition());
+                if (getPlot().getPlotDefinition() != null) {
+                    logger.warn("plot.def xAxis: {}", getPlotDefinition().getXAxis());
+                    logger.warn("plot.def yAxes: {}", getPlotDefinition().getYAxes());
+                }
+
+                updatePlot();
                 break;
             default:
         }
@@ -1856,13 +1890,20 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     }
 
     /**
-     * Define the plot identifier and reset plot
+     * Define the plot identifier, reset plot and fireOIFitsCollectionChanged on this instance if the plotId changed
      * @param plotId plot identifier
      */
     public void setPlotId(final String plotId) {
+        final String prevPlotId = this.plotId;
         this.plotId = plotId;
         // force reset:
         this.plot = null;
+
+        if (!OIBase.areEquals(prevPlotId, plotId)) {
+            logger.warn("setPlotId {}", plotId);
+            // fire PlotChanged event to initialize correctly the widget:
+            ocm.firePlotChanged(plotId, this);
+        }
     }
 
     private PlotDefinition getPlotDefinition() {
@@ -1887,12 +1928,21 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     }
 
     /**
-     * TODO: refine following class
+     * Plot information used during data processing
      */
     private static class PlotInfo {
 
-        protected Rectangle2D.Double dataArea = null;
-        protected ColumnMeta xMeta = null;
-        protected ColumnMeta yMeta = null;
+        /** x data range */
+        Range xRange = null;
+        /** x colum meta data */
+        ColumnMeta xMeta = null;
+        /** x log axis */
+        boolean xUseLog;
+        /** y data range */
+        Range yRange = null;
+        /** y colum meta data */
+        ColumnMeta yMeta = null;
+        /** y log axis */
+        boolean yUseLog;
     }
 }
