@@ -6,7 +6,6 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmcs.gui.component.GenericListModel;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
-import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
 import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
 import fr.jmmc.oiexplorer.core.model.event.SubsetDefinitionEvent;
@@ -42,11 +41,11 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     /** OIFitsCollectionManager singleton */
     private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** subset identifier */
-    private String subsetId = OIFitsCollectionManager.CURRENT;
+    private String subsetId = OIFitsCollectionManager.CURRENT_SUBSET_DEFINITION;
     /** subset definition (read-only reference) */
     private SubsetDefinition subsetDefinition = null;
     /** plot definition identifier */
-    private String plotDefId = OIFitsCollectionManager.CURRENT;
+    private String plotDefId = OIFitsCollectionManager.CURRENT_PLOT_DEFINITION;
     /** Main plot definition */
     private PlotDefinition plotDefinition = null;
     /* Swing components */
@@ -468,12 +467,6 @@ public class PlotPanelEditor extends javax.swing.JPanel implements ActionListene
     private javax.swing.JPanel yComboBoxesPanel;
     private javax.swing.JLabel yLabel;
     // End of variables declaration//GEN-END:variables
-
-    // TODO remove it
-    // still kept for export pdf action
-    public Vis2Panel getPlotPanel() {
-        return (Vis2Panel) plotAreaPanel.getComponent(0);
-    }
 
     private OIFitsFile getOiFitsSubset() {
         if (getSubsetDefinition() == null) {
