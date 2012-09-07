@@ -126,6 +126,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
                 // remove empty reference (GC):
                 this.listeners.remove(i);
                 size--;
+                i--;
             }
         }
     }
@@ -212,6 +213,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
                     // remove empty reference (GC):
                     this.listeners.remove(i);
                     size--;
+                    i--;
                 } else if (!firedListeners.contains(listener)) {
 
                     // check destination:
@@ -259,6 +261,7 @@ public final class EventNotifier<K extends GenericEvent<V>, V> implements Compar
                             // remove empty reference (GC):
                             this.listeners.remove(i);
                             size--;
+                            i--;
                         } else if (!firedListeners.contains(listener)) {
                             // there is still one listener not fired:
                             done = false;
