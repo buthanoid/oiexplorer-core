@@ -8,7 +8,10 @@ import fr.jmmc.oiexplorer.core.model.OIFitsCollectionEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
 import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
 import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
+import fr.jmmc.oiexplorer.core.model.event.PlotDefinitionEvent;
+import fr.jmmc.oiexplorer.core.model.event.PlotEvent;
 import fr.jmmc.oiexplorer.core.model.event.SubsetDefinitionEvent;
+import fr.jmmc.oiexplorer.core.model.oi.Plot;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
@@ -27,6 +30,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This Panel allow to select data to plot and (optionnaly in the future) plots them just below.
+ * After being created and inserted in a GUI, it becomes editor after being linked to a plotDefinition through setPlotDefId().
+ * It can also be editor for the plotDefinition of a particular Plot using setPlotId(). In the Plot case, 
+ * the subset is also watched to find available columns to plot.
+ * 
  * @author mella
  */
 public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionListener,
@@ -35,17 +42,21 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
     /** Logger */
-    private final static Logger logger = LoggerFactory.getLogger(PlotDefinitionEditor.class);   
+    private final static Logger logger = LoggerFactory.getLogger(PlotDefinitionEditor.class);
 
     /* members */
     /** OIFitsCollectionManager singleton */
     private OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
-    /** subset identifier */
-    private String subsetId = OIFitsCollectionManager.CURRENT_SUBSET_DEFINITION;
+    /** plot identifier (may leave null if we do not edit the plot def of a plot)*/
+    private String plotId = null;
+    /** plot (read-only reference) */
+    private Plot plot = null;
+    /** subset identifier (may leave null if we do not edit the plot def of a plot)*/
+    private String subsetId = null;
     /** subset definition (read-only reference) */
     private SubsetDefinition subsetDefinition = null;
     /** plot definition identifier */
-    private String plotDefId = OIFitsCollectionManager.CURRENT_PLOT_DEFINITION;
+    private String plotDefId = null;
     /** Main plot definition */
     private PlotDefinition plotDefinition = null;
     /* Swing components */
@@ -61,55 +72,37 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
     private List<String> lastYComboBoxesValues = new LinkedList<String>();
     /** Common listener for y comboboxes */
     private ActionListener ycomboActionListener;
+    /** Flag to declare that component is in initing */
+    private boolean initStep;
 
     /** Creates new form PlotDefinitionEditor */
     public PlotDefinitionEditor() {
+        // TODO maybe move it in setPlotId, setPlotId to register to te proper eventnotifiers instead of all
+        ocm.getPlotDefinitionEventNotifier().register(this);
         ocm.getSubsetDefinitionEventNotifier().register(this);
+        ocm.getPlotEventNotifier().register(this);
 
         initComponents();
-
-        // TODO REMOVE next code line 
-        plotAreaPanel.add(new Vis2Panel());
+        postInit();
     }
 
-    /** 
-     * Init function that must be called after being instanciated and when notification can be performed. 
+    /**
+     * This method is useful to set the models and specific features of initialized swing components :
      */
-    public void init() {
+    private void postInit() {
         // Comboboxes
-        xAxisComboBox.setModel(new GenericListModel<String>(xAxisChoices, true));       
-        
+        xAxisComboBox.setModel(new GenericListModel<String>(xAxisChoices, true));
+
         // Prepare a common listener to group handling in yAxisComboBoxActionPerformed()
         ycomboActionListener = new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 yAxisComboBoxActionPerformed(e);
             }
         };
-
-        // fill first y axis combobox
-        addYAxisButtonActionPerformed(null);
-    }
-
-    /**
-     * Update widgets and the OIFits structure
-     * and request the plotDefinition to be notified if present or modified.
-     * @param subsetDefinition subset definition
-     */
-    private void update(final SubsetDefinition subsetDefinition) {
-        logger.warn("update: subset target {}", subsetDefinition.getTarget());
-
-        /* store subset definition (reference) */
-        this.subsetDefinition = subsetDefinition;
-
-        /* fill combobox for available columns */
-        fillDataSelectors();
-
-        // update GUI  
-        actionPerformed(null);
     }
 
     /** 
-     * Return the plotDefinition initialized with user adjusted widgets. 
+     * Init the plotDefinition with user adjusted widgets. 
      */
     private void updateCustomPlotDefinition() {
         // handle xAxis
@@ -135,48 +128,84 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
      * Fill axes comboboxes with all distinct columns present in the available
      * tables.
      */
-    private void fillDataSelectors() {
+    private void refreshForm() {
+        logger.warn("refreshForm : plotDefId={}, subsetId={}", plotDefId, subsetId);
+        logger.warn("refreshForm : plotDef={}", getPlotDefinition());
 
-        // Clear all content
-        xAxisChoices.clear();
-        yAxisChoices.clear();
+        try {
+            // Leave programatic changes on widgets ignored to prevent model changes 
+            initStep = false;
 
-        if (getOiFitsSubset() != null) {
-            // Get whole available columns
-            final Set<String> columns = getDistinctColumns(getOiFitsSubset());
+            // Clear all content
+            xAxisChoices.clear();
+            yAxisChoices.clear();
 
-            xAxisChoices.addAll(columns);
-            yAxisChoices.addAll(columns);
-        }
-
-        if (!xAxisChoices.isEmpty()) {
-            // Use label of associated plotdefinition if any, else try old value and finally use first by default
-            if (getPlotDefinition().getXAxis() != null && getPlotDefinition().getXAxis().getName() != null) {
-                xAxisComboBox.setSelectedItem(getPlotDefinition().getXAxis().getName());
-            } else if (lastXComboBoxValue != null && xAxisChoices.contains(lastXComboBoxValue)) {
-                xAxisComboBox.setSelectedItem(lastXComboBoxValue);
-            } else {
-                xAxisComboBox.setSelectedIndex(0);
+            // remove list yAxis
+            JComboBox[] yCombos = yComboBoxes.toArray(new JComboBox[]{});
+            for (JComboBox yCombo : yCombos) {
+                delYCombo(yCombo);
             }
-        }
-        if (!yAxisChoices.isEmpty()) {
-            if (getPlotDefinition().getYAxes().isEmpty()) {
-                for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
-                    if (lastYComboBoxesValues.size() > i && yAxisChoices.contains(lastYComboBoxesValues.get(i))) {
-                        yComboBoxes.get(i).setSelectedItem(lastYComboBoxesValues.get(i));
-                    } else {
-                        yComboBoxes.get(i).setSelectedIndex(0);
+
+            // At present time on plotDef is required to work : if it is null then return and leave in reset state
+            if (getPlotDefinition() == null) {
+                return;
+            }
+
+            // Add column present in associated subset if any
+            // TODO generate one synthetic OiFitsSubset to give all available choices
+            if (subsetId != null && getOiFitsSubset() != null) {
+                // Get whole available columns
+                final Set<String> columns = getDistinctColumns(getOiFitsSubset());
+
+                xAxisChoices.addAll(columns);
+                yAxisChoices.addAll(columns);
+            }
+            // Add choices present in the associated plotDef
+            final String currentX = getPlotDefinition().getXAxis().getName();
+            if (!xAxisChoices.contains(currentX)) {
+                xAxisChoices.add(currentX);
+            }
+
+            for (Axis y : getPlotDefinition().getYAxes()) {
+                final String currentY = y.getName();
+                if (!yAxisChoices.contains(currentY)) {
+                    yAxisChoices.add(currentY);
+                }
+            }
+
+            logger.warn("refreshForm : xAxisChoices {}, yAxisChoices {}", xAxisChoices, yAxisChoices);
+
+            if (!xAxisChoices.isEmpty()) {
+                // Use label of associated plotdefinition if any, else try old value and finally use first by default
+                if (getPlotDefinition().getXAxis() != null && getPlotDefinition().getXAxis().getName() != null) {
+                    xAxisComboBox.setSelectedItem(getPlotDefinition().getXAxis().getName());
+                } else if (lastXComboBoxValue != null && xAxisChoices.contains(lastXComboBoxValue)) {
+                    xAxisComboBox.setSelectedItem(lastXComboBoxValue);
+                } else {
+                    xAxisComboBox.setSelectedIndex(0);
+                }
+            }
+
+            if (!yAxisChoices.isEmpty()) {
+                if (getPlotDefinition().getYAxes().isEmpty()) {
+                    logger.warn("refreshForm : no yaxes to copy");
+                    for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
+                        if (lastYComboBoxesValues.size() > i && yAxisChoices.contains(lastYComboBoxesValues.get(i))) {
+                            yComboBoxes.get(i).setSelectedItem(lastYComboBoxesValues.get(i));
+                        } else {
+                            yComboBoxes.get(i).setSelectedIndex(0);
+                        }
+                    }
+                } else {
+                    // fill with associated plotdefinition            
+                    logger.warn("refreshForm : yaxes to add : {}", getPlotDefinition().getYAxes());
+                    for (Axis yAxis : getPlotDefinition().getYAxes()) {
+                        addYCombo(yAxis.getName());
                     }
                 }
-            } else {
-                // clean current ycombolist and fill with associated plotdefinition            
-                for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
-                    delYCombo(yComboBoxes.get(i));
-                }
-                for (Axis yAxis : getPlotDefinition().getYAxes()) {
-                    addYCombo(yAxis.getName());
-                }
             }
+        } finally {
+            initStep = true;
         }
     }
 
@@ -294,7 +323,6 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
         xAxisComboBox = new javax.swing.JComboBox();
         addYAxisButton = new javax.swing.JButton();
         delYAxisButton = new javax.swing.JButton();
-        plotAreaPanel = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         yComboBoxesPanel = new javax.swing.JPanel();
         plotDefinitionName = new javax.swing.JLabel();
@@ -353,9 +381,6 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
         gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
         add(delYAxisButton, gridBagConstraints);
 
-        plotAreaPanel.setLayout(new java.awt.BorderLayout());
-        add(plotAreaPanel, new java.awt.GridBagConstraints());
-
         yComboBoxesPanel.setLayout(new javax.swing.BoxLayout(yComboBoxesPanel, javax.swing.BoxLayout.Y_AXIS));
         jScrollPane1.setViewportView(yComboBoxesPanel);
 
@@ -372,8 +397,8 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
     }// </editor-fold>//GEN-END:initComponents
 
     private void xAxisComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_xAxisComboBoxActionPerformed
-        // Reduce (Update) y combo list with compatible selection
-        fillyDataSelectors();
+        // TODO Reduce (Update) y combo list with compatible selection
+        // fillyDataSelectors();
         actionPerformed(null);
     }//GEN-LAST:event_xAxisComboBoxActionPerformed
 
@@ -417,12 +442,16 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
         ycombo.removeActionListener(ycomboActionListener);
         yComboBoxesPanel.remove(ycombo);
         revalidate();
+        actionPerformed(null);
     }
 
+    //TODO rename
     public void actionPerformed(ActionEvent e) {
-        updateCustomPlotDefinition();
-        logger.warn("Using custom plot {}", getPlotDefinition());
-        ocm.updatePlotDefinition(this, getPlotDefinition());
+        if (getPlotDefinition() != null && initStep) {
+            updateCustomPlotDefinition();
+            logger.warn("Using custom plot {}", getPlotDefinition());
+            ocm.updatePlotDefinition(this, getPlotDefinition());
+        }
     }
 
     /* --- OIFitsCollectionEventListener implementation --- */
@@ -434,8 +463,10 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
      */
     public String getSubjectId(final OIFitsCollectionEventType type) {
         switch (type) {
+            case PLOT_CHANGED:
+                return (this.plotId != null) ? this.plotId : "TO_IGNORE";
             case SUBSET_CHANGED:
-                return this.subsetId;
+                return (this.subsetId != null) ? this.subsetId : "TO_IGNORE";
             default:
         }
         return null;
@@ -447,11 +478,17 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
      */
     @Override
     public void onProcess(final GenericEvent<OIFitsCollectionEventType> event) {
-        logger.debug("Received event to process {}", event);
+        logger.warn("Received event to process {}", event);
 
         switch (event.getType()) {
+            case PLOT_DEFINITION_CHANGED:
+                setPlotDefId(((PlotDefinitionEvent) event).getPlotDefinition().getName());
+                break;
             case SUBSET_CHANGED:
-                update(((SubsetDefinitionEvent) event).getSubsetDefinition());
+                setSubsetId(((SubsetDefinitionEvent) event).getSubsetDefinition().getName());
+                break;
+            case PLOT_CHANGED:
+                setPlotId(((PlotEvent) event).getPlot().getName());
                 break;
             default:
         }
@@ -460,7 +497,6 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
     private javax.swing.JButton addYAxisButton;
     private javax.swing.JButton delYAxisButton;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JPanel plotAreaPanel;
     private javax.swing.JLabel plotDefinitionName;
     private javax.swing.JComboBox xAxisComboBox;
     private javax.swing.JLabel xLabel;
@@ -473,6 +509,40 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
             return null;
         }
         return getSubsetDefinition().getOIFitsSubset();
+    }
+
+    /**
+     * Return the plot definition given its plot name
+     * @return Plot object
+     */
+    private Plot getPlot() {
+        if (this.plot == null) {
+            // get reference:
+            this.plot = ocm.getPlotRef(this.plotId);
+        }
+        return this.plot;
+    }
+
+    /**
+     * Define the plot identifier and reset plot
+     * @param plotId plot identifier or null to reset state
+     */
+    public void setPlotId(final String plotId) {
+        logger.warn("Requested to look for plot {}", plotId);
+
+        this.plotId = plotId;
+        // force reset:
+        this.plot = null;
+        
+        if(plotId != null){
+        // define id for data to find columns into
+        setSubsetId(getPlot().getSubsetDefinition().getName());
+        // define id of associated plotDefinition (that calls refreshForm)
+        setPlotDefId(getPlot().getPlotDefinition().getName());
+        }else{
+            setSubsetId(null);
+            setPlotDefId(null);
+        }
     }
 
     /**
@@ -491,14 +561,17 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
      * Define the subset identifier and reset subset
      * @param subsetId subset identifier
      */
-    public void setSubsetId(final String subsetId) {
+    private void setSubsetId(final String subsetId) {
+        logger.warn("Requested to look for subset {}", subsetId);
+
         this.subsetId = subsetId;
         // force reset:
         this.subsetDefinition = null;
+
     }
 
     private PlotDefinition getPlotDefinition() {
-        if (this.plotDefinition == null) {
+        if (this.plotDefinition == null && plotDefId != null) {
             this.plotDefinition = ocm.getPlotDefinition(plotDefId);
         }
         return this.plotDefinition;
@@ -509,8 +582,11 @@ public class PlotDefinitionEditor extends javax.swing.JPanel implements ActionLi
      * @param plotDefId plot definition identifier
      */
     public void setPlotDefId(final String plotDefId) {
+        logger.warn("Requested to look for plot definition {}", plotDefId);
         this.plotDefId = plotDefId;
         // force reset:
         this.plotDefinition = null;
+
+        refreshForm();
     }
 }
