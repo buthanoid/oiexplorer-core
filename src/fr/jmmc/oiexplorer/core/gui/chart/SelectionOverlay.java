@@ -418,7 +418,7 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
     final Rectangle2D dataSelection = new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1);
 
     logger.warn("Selected data rectangle ({}, {}) to ({}, {})",
-            new Object[]{dataSelection.getX(), dataSelection.getY(), dataSelection.getMaxX(), dataSelection.getMaxY()});
+            dataSelection.getX(), dataSelection.getY(), dataSelection.getMaxX(), dataSelection.getMaxY());
 
     this.mouseRectangularSelectionEventListener.mouseSelected(dataSelection);
 
