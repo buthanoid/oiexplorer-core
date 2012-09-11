@@ -3,50 +3,36 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model.event;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import fr.jmmc.jmcs.util.ObjectUtils;
+import fr.jmmc.jmcs.util.ToStringable;
 
 /**
  * Base class for OIFits collection events consumed by OIFitsCollectionListener
  * @param <V> event type class
+ * @param <O> object's value class
+ * @author bourgesl
  */
-public class GenericEvent<V> {
-
-    /** Logger */
-    private static final Logger logger = LoggerFactory.getLogger(GenericEvent.class);
+public abstract class GenericEvent<V, O> implements ToStringable {
 
     /* members */
     /** event type */
     private final V type;
-    /** event source (sender) */
-    private final Object source;
-    /** optional destination listeners (null means all) */
-    private Set<GenericEventListener<GenericEvent<V>, V>> destinations = null;
     /** subject id i.e. related object id (null allowed) */
     private final String subjectId;
+    /** subject value (resolved before firing event) */
+    private O subjectValue = null;
 
     /**
      * Public constructor
-     * @param source event source
      * @param type event type
-     * @param destination optional destination listener (null means all)
-     * @param objectId optional related object id
+     * @param subjectId optional related object id
      */
-    public GenericEvent(final Object source, final V type,
-                        final GenericEventListener<GenericEvent<V>, V> destination, final String objectId) {
-        if (source == null) {
-            throw new IllegalArgumentException("undefined source argument for " + getClass().getSimpleName());
-        }
+    public GenericEvent(final V type, final String subjectId) {
         if (type == null) {
             throw new IllegalArgumentException("undefined type argument for " + getClass().getSimpleName());
         }
         this.type = type;
-        this.source = source;
-        this.subjectId = objectId;
-
-        addDestination(destination);
+        this.subjectId = subjectId;
     }
 
     /**
@@ -58,75 +44,36 @@ public class GenericEvent<V> {
     }
 
     /**
-     * Return the event source
-     * @return event source
-     */
-    public final Object getSource() {
-        return source;
-    }
-
-    /**
-     * PROTECTED: Return the optional destination listeners (null means all)
-     * @return optional destination listeners (null means all)
-     */
-    final Set<GenericEventListener<GenericEvent<V>, V>> getDestinations() {
-        return destinations;
-    }
-
-    /**
-     * PROTECTED: Define the optional destination listeners (null means all)
-     * @param destinations  optional destination listeners (null means all)
-     */
-    final void setDestinations(final Set<GenericEventListener<GenericEvent<V>, V>> destinations) {
-        this.destinations = destinations;
-    }
-
-    /**
-     * PROTECTED: Add the destination listener (null means all)
-     * @param destination optional destination listeners (null means all)
-     */
-    final void addDestination(final GenericEventListener<GenericEvent<V>, V> destination) {
-        if (destination == null) {
-            // Note: if there was specific destination(s), eraze them i.e. send to all:
-            this.destinations = null;
-        } else {
-            if (this.destinations == null) {
-                this.destinations = new LinkedHashSet<GenericEventListener<GenericEvent<V>, V>>(4); // small
-            }
-            // ensure listener unicity:
-            this.destinations.add(destination);
-        }
-    }
-
-    /**
-     * PROTECTED: Merge the given destination listeners with its destination listeners (null means all)
-     * @param otherDestinations optional destination listeners (null means all)
-     */
-    final void mergeDestinations(final Set<GenericEventListener<GenericEvent<V>, V>> otherDestinations) {
-        if (this.destinations != null || otherDestinations != null) {
-            logger.warn("mergeDestinations: current vs other: {} vs {}", EventNotifier.getObjectInfo(destinations), EventNotifier.getObjectInfo(otherDestinations));
-        }
-        // means all:
-        if (this.destinations != null) {
-            logger.warn("mergeDestinations: current destinations: {}", EventNotifier.getObjectInfo(destinations));
-            if (otherDestinations == null) {
-                // means all:
-                addDestination(null);
-            } else {
-                for (GenericEventListener<GenericEvent<V>, V> destination : otherDestinations) {
-                    addDestination(destination);
-                }
-            }
-            logger.warn("mergeDestinations: final destinations: {}", EventNotifier.getObjectInfo(destinations));
-        }
-    }
-
-    /**
      * Return the subject id i.e. related object id
      * @return subject id i.e. related object id
      */
     public final String getSubjectId() {
         return subjectId;
+    }
+
+    /**
+     * PROTECTED: Resolve subject value using its subject id and event type
+     * @see #getSubjectValue() 
+     */
+    protected abstract void resolveSubjectValue();
+
+    /**
+     * PROTECTED: Define the subject value (resolved before firing event)
+     * @see #resolveSubjectValue(java.lang.Object, java.lang.String) 
+     * @param value subject value
+     */
+    protected void setSubjectValue(final O value) {
+        this.subjectValue = value;
+    }
+
+    /**
+     * Return the subject value (resolved before firing event)
+     * @see #resolveSubjectValue(java.lang.Object, java.lang.String) 
+     * 
+     * @return subject value (resolved before firing event)
+     */
+    public O getSubjectValue() {
+        return subjectValue;
     }
 
     /* GenericEvent implements hashCode and equals because events can be postponed ie merged: 
@@ -147,7 +94,7 @@ public class GenericEvent<V> {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final GenericEvent<?> other = (GenericEvent<?>) obj;
+        final GenericEvent<?, ?> other = (GenericEvent<?, ?>) obj;
         if (this.type != other.getType() && !this.type.equals(other.getType())) {
             return false;
         }
@@ -158,14 +105,37 @@ public class GenericEvent<V> {
     }
 
     /**
-     * Return a string representation "<class name>{type=...}"
-     * @return "<class name>{type=...}"
+     * toString() implementation wrapper to get complete information
+     * Note: prefer using @see #toString(java.lang.StringBuilder) instead
+     * @return string representation
      */
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{source= " + EventNotifier.getObjectInfo(source)
-                + " - type= " + this.type
-                + ((this.destinations != null) ? " - destination= " + EventNotifier.getObjectInfo(this.destinations) : "")
-                + ((this.subjectId != null) ? " - subjectId= " + this.subjectId : "") + '}';
+    public final String toString() {
+        final StringBuilder sb = new StringBuilder(256);
+        toString(sb, EventNotifier.TO_STRING_VERBOSITY);
+        return sb.toString();
+    }
+
+    /**
+     * toString() implementation using string builder
+     * 
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
+    public final void toString(final StringBuilder sb, final boolean full) {
+        ObjectUtils.getObjectInfo(sb, this);
+
+        sb.append("{type=").append(this.type);
+        if (this.subjectId != null) {
+            sb.append(", subjectId=").append(this.subjectId);
+        }
+
+        if (full) {
+            if (this.subjectValue != null) {
+                sb.append(", subjectValue=");
+                ObjectUtils.toString(sb, full, this.subjectValue);
+            }
+        }
+        sb.append('}');
     }
 }
