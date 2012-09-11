@@ -3,6 +3,8 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
+import fr.jmmc.jmcs.util.ObjectUtils;
+import fr.jmmc.jmcs.util.ToStringable;
 import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
@@ -18,7 +20,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Manage data collection and provide utility methods.
  */
-public final class OIFitsCollection {
+public final class OIFitsCollection implements ToStringable {
 
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(OIFitsCollection.class);
@@ -105,9 +107,36 @@ public final class OIFitsCollection {
         return oifitsFile.getAbsoluteFilePath();
     }
 
+    /**
+     * toString() implementation wrapper to get complete information
+     * Note: prefer using @see #toString(java.lang.StringBuilder) instead
+     * @return string representation
+     */
     @Override
-    public String toString() {
-        return "OIFitsCollection[" + Integer.toHexString(System.identityHashCode(this)) + "]" + this.oiFitsCollection.keySet();
+    public final String toString() {
+        final StringBuilder sb = new StringBuilder(256);
+        toString(sb, OIBase.TO_STRING_VERBOSITY);
+        return sb.toString();
+    }
+
+    /**
+     * toString() implementation using string builder
+     * 
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
+    public void toString(final StringBuilder sb, final boolean full) {
+        ObjectUtils.getObjectInfo(sb, this);
+
+        sb.append("{files=").append(this.oiFitsCollection.keySet());
+
+        if (full) {
+            if (this.oiFitsPerTarget != null) {
+                sb.append(", oiFitsPerTarget=");
+                ObjectUtils.toString(sb, full, this.oiFitsPerTarget);
+            }
+        }
+        sb.append('}');
     }
 
     /* --- data analysis --- */
