@@ -42,7 +42,7 @@ public class OIBase implements PublicCloneable, ToStringable {
     /**
      * PROTECTED: Increment the version
      */
-    final void incVersion() {
+    protected final void incVersion() {
         this.version++;
     }
 
@@ -55,7 +55,8 @@ public class OIBase implements PublicCloneable, ToStringable {
      * @param other other instance
      */
     public void copy(final OIBase other) {
-        // do nothing by default
+        // copy version only:
+        this.version = other.getVersion();
     }
 
     /**

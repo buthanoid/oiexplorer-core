@@ -38,7 +38,7 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
     /** flag to log also a stack trace to debug events */
     private static final boolean DEBUG_STACK = false;
     /** flag to use full verbosity in toString() implementation of EventContext / GenericEvent i.e. show subjectValue */
-    public static final boolean TO_STRING_VERBOSITY = false;
+    public static final boolean TO_STRING_VERBOSITY = true;
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(EventNotifier.class);
     /** EventNotifierController singleton */

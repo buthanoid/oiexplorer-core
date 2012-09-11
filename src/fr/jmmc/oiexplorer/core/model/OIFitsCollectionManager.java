@@ -152,7 +152,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         if (logger.isDebugEnabled()) {
-            logger.debug("subsetDefinitions {}", this.userCollection.getSubsetDefinitions());
+            logger.debug("subsetDefinitions {}", getSubsetDefinitionList());
         }
     }
 
@@ -230,18 +230,19 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 addOIDataFileRef(dataFile);
             }
 
+            this.userCollection.incVersion();
             fireOIFitsCollectionChanged();
         }
     }
 
     public OIFitsFile removeOIFitsFile(final OIFitsFile oiFitsFile) {
-        final OIFitsFile previous = oiFitsCollection.removeOIFitsFile(oiFitsFile);
+        final OIFitsFile previous = this.oiFitsCollection.removeOIFitsFile(oiFitsFile);
 
         if (previous != null) {
             // Remove OiDataFile from user collection
             final String filePath = oiFitsFile.getAbsoluteFilePath();
 
-            for (final Iterator<OIDataFile> it = userCollection.getFiles().iterator(); it.hasNext();) {
+            for (final Iterator<OIDataFile> it = getOIDataFileList().iterator(); it.hasNext();) {
                 final OIDataFile dataFile = it.next();
                 if (filePath.equals(dataFile.getFile())) {
                     it.remove();
@@ -266,12 +267,20 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /* --- file handling ------------------------------------- */
     /**
+     * Return the OIDataFile list (reference)
+     * @return OIDataFile list (reference)
+     */
+    List<OIDataFile> getOIDataFileList() {
+        return this.userCollection.getFiles();
+    }
+
+    /**
      * Return an OIDataFile given its name
      * @param name file name
      * @return OIDataFile or null if not found
      */
     public OIDataFile getOIDataFile(final String name) {
-        return Identifiable.getIdentifiable(name, this.userCollection.getFiles());
+        return Identifiable.getIdentifiable(name, getOIDataFileList());
     }
 
     /**
@@ -280,7 +289,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @return OIDataFile or null if not found
      */
     public OIDataFile getOIDataFile(final OIFitsFile oiFitsFile) {
-        for (OIDataFile dataFile : this.userCollection.getFiles()) {
+        for (OIDataFile dataFile : getOIDataFileList()) {
             if (oiFitsFile == dataFile.getOIFitsFile()) {
                 return dataFile;
             }
@@ -297,7 +306,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         if (logger.isDebugEnabled()) {
             logger.debug("addOIDataFileRef: {}", dataFile);
         }
-        return Identifiable.addIdentifiable(dataFile, this.userCollection.getFiles());
+        return Identifiable.addIdentifiable(dataFile, getOIDataFileList());
     }
 
     /**
@@ -306,7 +315,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @return removed OIDataFile instance or null if the identifier was not found
      */
     private OIDataFile removeOIDataFile(final String name) {
-        return Identifiable.removeIdentifiable(name, this.userCollection.getFiles());
+        return Identifiable.removeIdentifiable(name, getOIDataFileList());
     }
 
     /* --- subset definition handling ------------------------------------- */
@@ -377,7 +386,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         if (logger.isDebugEnabled()) {
             logger.debug("addSubsetDefinitionRef: {}", subsetDefinition);
         }
-        if (Identifiable.addIdentifiable(subsetDefinition, this.userCollection.getSubsetDefinitions())) {
+        if (Identifiable.addIdentifiable(subsetDefinition, getSubsetDefinitionList())) {
+            this.userCollection.incVersion();
             fireSubsetDefinitionListChanged();
             return true;
         }
@@ -390,7 +400,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @return removed SubsetDefinition instance or null if the identifier was not found
      */
     private SubsetDefinition removeSubsetDefinition(final String name) {
-        return Identifiable.removeIdentifiable(name, this.userCollection.getSubsetDefinitions());
+        return Identifiable.removeIdentifiable(name, getSubsetDefinitionList());
     }
 
     /**
@@ -413,7 +423,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @return subset definition (reference) or null if not found
      */
     public SubsetDefinition getSubsetDefinitionRef(final String name) {
-        return Identifiable.getIdentifiable(name, this.userCollection.getSubsetDefinitions());
+        return Identifiable.getIdentifiable(name, getSubsetDefinitionList());
     }
 
     /**
@@ -518,7 +528,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         fireSubsetDefinitionChanged(source, subsetDefinition.getName());
 
         // find dependencies:
-        for (Plot plot : this.userCollection.getPlots()) {
+        for (Plot plot : getPlotList()) {
             if (plot.getSubsetDefinition() != null && plot.getSubsetDefinition().getName().equals(subsetDefinition.getName())) {
                 // match
                 plot.setSubsetDefinition(subsetDefinition);
@@ -595,7 +605,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         if (logger.isDebugEnabled()) {
             logger.debug("addPlotDefinitionRef: {}", plotDefinition);
         }
-        if (Identifiable.addIdentifiable(plotDefinition, this.userCollection.getPlotDefinitions())) {
+        if (Identifiable.addIdentifiable(plotDefinition, getPlotDefinitionList())) {
+            this.userCollection.incVersion();
             firePlotDefinitionListChanged();
             return true;
         }
@@ -608,7 +619,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @return removed PlotDefinition instance or null if the identifier was not found
      */
     private PlotDefinition removePlotDefinition(final String name) {
-        return Identifiable.removeIdentifiable(name, this.userCollection.getPlotDefinitions());
+        return Identifiable.removeIdentifiable(name, getPlotDefinitionList());
     }
 
     /**
@@ -631,7 +642,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @return plot definition (reference) or null if not found
      */
     public PlotDefinition getPlotDefinitionRef(final String name) {
-        return Identifiable.getIdentifiable(name, this.userCollection.getPlotDefinitions());
+        return Identifiable.getIdentifiable(name, getPlotDefinitionList());
     }
 
     /**
@@ -690,7 +701,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         firePlotDefinitionChanged(source, plotDefinition.getName());
 
         // find dependencies:
-        for (Plot plot : this.userCollection.getPlots()) {
+        for (Plot plot : getPlotList()) {
             if (plot.getPlotDefinition() != null && plot.getPlotDefinition().getName().equals(plotDefinition.getName())) {
                 // match
                 plot.setPlotDefinition(plotDefinition);
@@ -768,7 +779,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         if (logger.isDebugEnabled()) {
             logger.debug("addPlotRef: {}", plot);
         }
-        if (Identifiable.addIdentifiable(plot, this.userCollection.getPlots())) {
+        if (Identifiable.addIdentifiable(plot, getPlotList())) {
+            this.userCollection.incVersion();
             firePlotListChanged();
             return true;
         }
@@ -781,7 +793,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @return removed Plot instance or null if the identifier was not found
      */
     private Plot removePlot(final String name) {
-        return Identifiable.removeIdentifiable(name, this.userCollection.getPlots());
+        return Identifiable.removeIdentifiable(name, getPlotList());
     }
 
     /**
@@ -804,7 +816,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @return plot (reference) or null if not found
      */
     public Plot getPlotRef(final String name) {
-        return Identifiable.getIdentifiable(name, this.userCollection.getPlots());
+        return Identifiable.getIdentifiable(name, getPlotList());
     }
 
     /**
@@ -1162,13 +1174,13 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 // CASCADE EVENTS:
 
                 // SubsetDefinition:
-                for (SubsetDefinition subsetDefinition : userCollection.getSubsetDefinitions()) {
+                for (SubsetDefinition subsetDefinition : getSubsetDefinitionList()) {
                     // force fireSubsetChanged, update plot reference and firePlotChanged:
                     updateSubsetDefinitionRef(this, subsetDefinition);
                 }
 
                 // PlotDefinition:
-                for (PlotDefinition plotDefinition : userCollection.getPlotDefinitions()) {
+                for (PlotDefinition plotDefinition : getPlotDefinitionList()) {
                     // force PlotDefinitionChanged, update plot reference and firePlotChanged:
                     updatePlotDefinitionRef(this, plotDefinition);
                 }
