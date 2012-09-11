@@ -5,6 +5,7 @@ package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ImageUtils;
+import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.oiexplorer.core.gui.action.ExportPDFAction;
 import fr.jmmc.oiexplorer.core.gui.chart.BoundedNumberAxis;
 import fr.jmmc.oiexplorer.core.gui.chart.ChartMouseSelectionListener;
@@ -18,12 +19,10 @@ import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.PageSize;
 import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
-import fr.jmmc.oiexplorer.core.model.OIBase;
-import fr.jmmc.oiexplorer.core.model.OIFitsCollectionEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
-import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
-import fr.jmmc.oiexplorer.core.model.event.OIFitsCollectionEventType;
-import fr.jmmc.oiexplorer.core.model.event.PlotEvent;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEvent;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventListener;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType;
 import fr.jmmc.oiexplorer.core.model.oi.Plot;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
@@ -77,7 +76,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public final class Vis2Panel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-                                                                   PDFExportable, OIFitsCollectionEventListener {
+                                                                   PDFExportable, OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -128,7 +127,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * Constructor
      */
     public Vis2Panel() {
-        ocm.getPlotEventNotifier().register(this);
+        ocm.getPlotChangedEventNotifier().register(this);
 
         initComponents();
         postInit();
@@ -1847,41 +1846,6 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         public String getString(final OIData oiData);
     }
 
-    /* --- OIFitsCollectionEventListener implementation --- */
-    /**
-     * Return the optional subject id i.e. related object id that this listener accepts
-     * @see GenericEvent#subjectId
-     * @param type event type
-     * @return subject id i.e. related object id (null allowed)
-     */
-    public String getSubjectId(final OIFitsCollectionEventType type) {
-        switch (type) {
-            case PLOT_CHANGED:
-                return this.plotId;
-            default:
-        }
-        return null;
-    }
-
-    /**
-     * Handle the given OIFits collection event
-     * @param event OIFits collection event
-     */
-    @Override
-    public void onProcess(GenericEvent<OIFitsCollectionEventType> event) {
-        logger.warn("onProcess : {}", event);
-
-        switch (event.getType()) {
-            case PLOT_CHANGED:
-                /* store plot instance (reference) */
-                this.plot = ((PlotEvent) event).getPlot();
-
-                updatePlot();
-                break;
-            default:
-        }
-    }
-
     private Plot getPlot() {
         if (this.plot == null) {
             this.plot = ocm.getPlotRef(plotId);
@@ -1899,10 +1863,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         // force reset:
         this.plot = null;
 
-        if (!OIBase.areEquals(prevPlotId, plotId)) {
+        if (plotId != null && !ObjectUtils.areEquals(prevPlotId, plotId)) {
             logger.warn("setPlotId {}", plotId);
             // fire PlotChanged event to initialize correctly the widget:
-            ocm.firePlotChanged(plotId, this);
+            ocm.firePlotChanged(null, plotId, this); // null forces different source
         }
     }
 
@@ -1944,5 +1908,42 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         ColumnMeta yMeta = null;
         /** y log axis */
         boolean yUseLog;
+    }
+
+    /*
+     * OIFitsCollectionManagerEventListener implementation 
+     */
+    /**
+     * Return the optional subject id i.e. related object id that this listener accepts
+     * @param type event type
+     * @return subject id (null means accept any event) or DISCARDED_SUBJECT_ID to discard event
+     */
+    public String getSubjectId(final OIFitsCollectionManagerEventType type) {
+        switch (type) {
+            case PLOT_CHANGED:
+                return plotId;
+            default:
+        }
+        return DISCARDED_SUBJECT_ID;
+    }
+
+    /**
+     * Handle the given OIFits collection event
+     * @param event OIFits collection event
+     */
+    @Override
+    public void onProcess(final OIFitsCollectionManagerEvent event) {
+        logger.debug("onProcess {}", event);
+
+        switch (event.getType()) {
+            case PLOT_CHANGED:
+                /* store plot instance (reference) */
+                plot = event.getPlot();
+
+                updatePlot();
+                break;
+            default:
+        }
+        logger.debug("onProcess {} - done", event);
     }
 }
