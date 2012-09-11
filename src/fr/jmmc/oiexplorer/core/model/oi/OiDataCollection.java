@@ -174,5 +174,32 @@ public class OiDataCollection
         }
         return this.plots;
     }
+    
+//--simple--preserve
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
+    @Override
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // OIBase
+        if (full) {
+            sb.append("{files=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.files);
+
+            sb.append(", subsetDefinitions=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.subsetDefinitions);
+
+            sb.append(", plotDefinitions=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.plotDefinitions);
+
+            sb.append(", plots=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.plots);
+
+            sb.append('}');
+        }
+    }
+//--simple--preserve
 
 }

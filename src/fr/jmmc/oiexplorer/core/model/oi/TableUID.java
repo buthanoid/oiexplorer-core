@@ -194,10 +194,20 @@ public class TableUID
         return true;
     }
 
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
-                + '[' + file + ((extName != null) ? ' ' + extName + '#' + extNb : "") + ']';
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // OIBase
+        sb.append("{file=").append(this.file);
+        if (extName != null) {
+            sb.append(", extName=").append(this.extName);
+            sb.append(", extNb=").append(this.extNb);
+        }
+        sb.append('}');
     }
 //--simple--preserve
 

@@ -135,10 +135,22 @@ public class View
         return true;
     }
 
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + '#' + Integer.toHexString(System.identityHashCode(this))
-                + "{name= " + name + ", type=" + type + ", subsetDefinition= " + subsetDefinition + '}';
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // Identifiable
+        if (this.type != null) {
+            sb.append(", type='").append(this.type).append('\'');
+        }
+        if (this.subsetDefinition != null) {
+            sb.append(", subsetDefinition=");
+            this.subsetDefinition.toString(sb, full);
+        }
+        // put '}' in child classes
     }
 //--simple--preserve
 

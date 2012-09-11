@@ -76,7 +76,6 @@ public class Range
     }
     
 //--simple--preserve
-
     /**
      * Perform a deep-copy of the given other instance into this instance
      * 
@@ -114,6 +113,19 @@ public class Range
             return false;
         }
         return true;
+    }
+
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
+    @Override
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // OIBase
+        sb.append("{min=").append(this.min);
+        sb.append(", max=").append(this.max);
+        sb.append('}');
     }
 //--simple--preserve
 

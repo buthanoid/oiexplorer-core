@@ -212,10 +212,27 @@ public class Axis
         return true;
     }
 
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
-                + "{name= " + name + '}';
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // OIBase
+        sb.append("{name=").append(this.name);
+        if (full) {
+            sb.append(", logScale=").append(this.logScale);
+            sb.append(", includeZero=").append(this.includeZero);
+            if (this.plotError != null) {
+                sb.append(", plotError=").append(this.plotError);
+            }
+            if (this.range != null) {
+                sb.append(", range=");
+                this.range.toString(sb, full);
+            }
+        }
+        sb.append('}');
     }
 //--simple--preserve
 

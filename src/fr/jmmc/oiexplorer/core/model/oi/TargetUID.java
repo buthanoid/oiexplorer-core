@@ -137,10 +137,15 @@ public class TargetUID
         return true;
     }
 
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
-                + '[' + target + ']';
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // OIBase
+        sb.append("{target=").append(this.target).append('}');
     }
 //--simple--preserve
 

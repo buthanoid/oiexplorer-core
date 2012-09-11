@@ -149,10 +149,10 @@ public class SubsetDefinition
 
         // deep copy target, tables:
         this.target = (subset.getTarget() != null) ? (TargetUID) subset.getTarget().clone() : null;
-        this.tables = deepCopyList(subset.getTables());
+        this.tables = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.getTables());
 
         // copy filters until filter are defined (TODO):
-        this.filters = copyList(subset.getFilters());
+        this.filters = fr.jmmc.jmcs.util.ObjectUtils.copyList(subset.getFilters());
     }
 
     @Override
@@ -192,10 +192,27 @@ public class SubsetDefinition
         this.oiFitsSubset = oiFitsSubset;
     }
 
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     */
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
-                + "{name= " + name + ", target= " + target + ", tables= " + tables + ", filters=" + filters + '}';
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // Identifiable
+
+        if (full) {
+            sb.append(", target='").append(this.target).append('\'');
+
+            sb.append(", tables=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.tables);
+
+            sb.append(", filters=");
+
+            // TODO: fix filter impl:
+            sb.append(this.filters);
+            // fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.filters);
+        }
+        sb.append('}');
     }
 //--simple--preserve
 

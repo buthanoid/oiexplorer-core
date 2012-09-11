@@ -100,10 +100,19 @@ public class Plot
         return true;
     }
 
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
-                + "{name= " + name + ", subsetDefinition=" + subsetDefinition + ", plotDefinition= " + plotDefinition + '}';
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // View
+        if (this.plotDefinition != null) {
+            sb.append(", plotDefinition=");
+            this.plotDefinition.toString(sb, full);
+        }
+        sb.append('}');
     }
 //--simple--preserve
 

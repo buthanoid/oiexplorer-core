@@ -74,5 +74,22 @@ public class PlotDefinitions
         }
         return this.plotDefinitions;
     }
+    
+//--simple--preserve
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
+    @Override
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // OIBase
+        if (full) {
+            sb.append("{plotDefinitions=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.plotDefinitions);
+            sb.append('}');
+        }
+    }
+//--simple--preserve
 
 }

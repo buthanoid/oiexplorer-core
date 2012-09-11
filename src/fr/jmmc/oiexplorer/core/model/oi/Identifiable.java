@@ -121,7 +121,7 @@ public class Identifiable
     public void copy(final OIBase other) {
         final Identifiable identifiable = (Identifiable) other;
 
-        // skip name to avoid override identifier !
+        // skip name to avoid overriding identifier !
         /* this.name = identifiable.getName(); */
 
         // copy description only:
@@ -148,6 +148,127 @@ public class Identifiable
             return false;
         }
         return true;
+    }
+
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     */
+    @Override
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // OIBase
+        sb.append("{id=").append(this.name);
+        if (full) {
+            if (this.description != null) {
+                sb.append(", description='").append(this.description).append('\'');
+            }
+        }
+        // put '}' in child classes
+    }
+
+    /* Generic Identifiable helper methods */
+    /**
+     * Clone the given identifiable instance
+     * @param source identifiable instance to clone
+     * @param <K> identifiable class type
+     * @return clone instance or null if the given instance is null
+     */
+    @SuppressWarnings("unchecked")
+    public static <K extends Identifiable> K clone(final K source) {
+        if (source == null) {
+            return null;
+        }
+        return (K) source.clone();
+    }
+
+    /**
+     * Copy the given identifiable instance values (source) into the given identifiable instance (dest)
+     * @param source identifiable instance to get its values
+     * @param dest identifiable instance to copy into
+     * @param <K> identifiable class type
+     */
+    public static <K extends Identifiable> void copy(final K source, final K dest) {
+        if (source != null) {
+            throw new IllegalStateException("undefined source object");
+        }
+        dest.copy(source);
+    }
+
+    /**
+     * Return the identifiable instance corresponding to the given identifier in the given list of identifiable instances 
+     * @param id identifiable identifier
+     * @param list list of identifiable instances
+     * @param <K> identifiable class type
+     * @return identifiable instance or null if the identifier was not found
+     */
+    public static <K extends Identifiable> K getIdentifiable(final String id, final java.util.List<K> list) {
+        for (K identifiable : list) {
+            if (id.equals(identifiable.getName())) {
+                return identifiable;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Return true if this identifiable identifier is present in the given list of identifiable instances 
+     * @param id identifiable identifier
+     * @param list list of identifiable instances
+     * @param <K> identifiable class type
+     * @return true if this identifiable identifier is present; false otherwise
+     */
+    public static <K extends Identifiable> boolean hasIdentifiable(final String id, final java.util.List<K> list) {
+        return getIdentifiable(id, list) != null;
+    }
+
+    /**
+     * Add the given identifiable instance into the given list of identifiable instances if its identifier is not already present
+     * @param identifiable identifiable instance to add
+     * @param list list of identifiable instances
+     * @param <K> identifiable class type
+     * @return true if the given identifiable instance was added; false otherwise
+     */
+    public static <K extends Identifiable> boolean addIdentifiable(final K identifiable, final java.util.List<K> list) {
+        if (identifiable != null && identifiable.getName() != null && getIdentifiable(identifiable.getName(), list) == null) {
+            // replace previous ??
+            list.add(identifiable);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Remove the identifiable instance from the given list of identifiable instances corresponding to its identifier
+     * @param identifiable identifiable instance to remove by its identifier
+     * @param list list of identifiable instances
+     * @param <K> identifiable class type
+     * @return removed identifiable instance or null if the identifier was not found
+     */
+    public static <K extends Identifiable> K removeIdentifiable(final K identifiable, final java.util.List<K> list) {
+        if (identifiable != null) {
+            return removeIdentifiable(identifiable.getName(), list);
+        }
+        return null;
+    }
+
+    /**
+     * Remove the identifiable instance from the given list of identifiable instances given its identifier
+     * @param id identifiable identifier
+     * @param list list of identifiable instances
+     * @param <K> identifiable class type
+     * @return removed identifiable instance or null if the identifier was not found
+     */
+    public static <K extends Identifiable> K removeIdentifiable(final String id, final java.util.List<K> list) {
+        if (id != null) {
+            final K previous = getIdentifiable(id, list);
+
+            if (previous != null) {
+                list.remove(previous);
+            }
+
+            return previous;
+        }
+        return null;
     }
 //--simple--preserve
 

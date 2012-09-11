@@ -140,7 +140,6 @@ public class PlotDefinition
     }
     
 //--simple--preserve
-
     /**
      * Perform a deep-copy of the given other instance into this instance
      * 
@@ -160,7 +159,7 @@ public class PlotDefinition
 
         // deep copy xAxis, yAxes:
         this.xAxis = (plotDef.getXAxis() != null) ? (Axis) plotDef.getXAxis().clone() : null;
-        this.yAxes = deepCopyList(plotDef.getYAxes());
+        this.yAxes = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(plotDef.getYAxes());
     }
 
     @Override
@@ -184,10 +183,25 @@ public class PlotDefinition
         return true;
     }
 
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     */
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this))
-                + "{name= " + name + ", xAxis= " + xAxis + ", yAxes=" + yAxes + '}';
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // Identifiable
+        if (full) {
+            sb.append(", skipFlaggedData='").append(this.skipFlaggedData).append('\'');
+            sb.append(", drawLine='").append(this.drawLine).append('\'');
+
+            sb.append(", xAxis=");
+            if (this.xAxis != null) {
+                this.xAxis.toString(sb, full);
+            }
+            sb.append(", yAxes=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.yAxes);
+        }
+        sb.append('}');
     }
 //--simple--preserve
 

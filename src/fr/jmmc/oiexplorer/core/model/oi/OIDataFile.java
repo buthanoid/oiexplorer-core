@@ -85,27 +85,40 @@ public class OIDataFile
     }
     
 //--simple--preserve
+    /** loaded oiFitsFile structure (read only) */
+    @javax.xml.bind.annotation.XmlTransient
+    private fr.jmmc.oitools.model.OIFitsFile oiFitsFile = null;
 
-  /** loaded oiFitsFile structure (read only) */
-  @javax.xml.bind.annotation.XmlTransient
-  private fr.jmmc.oitools.model.OIFitsFile oiFitsFile = null;
+    /**
+     * Return the loaded oiFitsFile structure
+     * @return loaded oiFitsFile structure
+     */
+    public final fr.jmmc.oitools.model.OIFitsFile getOIFitsFile() {
+        return this.oiFitsFile;
+    }
 
-  /**
-   * Return the loaded oiFitsFile structure
-   * @return loaded oiFitsFile structure
-   */
-  public final fr.jmmc.oitools.model.OIFitsFile getOIFitsFile() {
-    return this.oiFitsFile;
-  }
+    /**
+     * Return the loaded oiFitsFile structure
+     * @param loaded oiFitsFile structure
+     */
+    public final void setOIFitsFile(final fr.jmmc.oitools.model.OIFitsFile oiFitsFile) {
+        this.oiFitsFile = oiFitsFile;
+    }
 
-  /**
-   * Return the loaded oiFitsFile structure
-   * @param loaded oiFitsFile structure
-   */
-  public final void setOIFitsFile(final fr.jmmc.oitools.model.OIFitsFile oiFitsFile) {
-    this.oiFitsFile = oiFitsFile;
-  }
-    
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
+    @Override
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // Identifiable
+        sb.append(", file='").append(this.file).append('\'');
+        if (full) {
+            sb.append(", checksum=").append(this.checksum);
+        }
+        sb.append('}');
+    }
 //--simple--preserve
 
 }
