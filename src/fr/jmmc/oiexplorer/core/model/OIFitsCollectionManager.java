@@ -101,7 +101,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         if (logger.isDebugEnabled()) {
             logger.debug("dispose: {}", ObjectUtils.getObjectInfo(this));
         }
-        
+
         throw new IllegalStateException("Using OIFitsCollectionManager.dispose() is invalid !");
     }
 
@@ -243,7 +243,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 addOIDataFileRef(dataFile);
             }
 
-            this.userCollection.incVersion();
             fireOIFitsCollectionChanged();
         }
     }
@@ -400,7 +399,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             logger.debug("addSubsetDefinitionRef: {}", subsetDefinition);
         }
         if (Identifiable.addIdentifiable(subsetDefinition, getSubsetDefinitionList())) {
-            this.userCollection.incVersion();
             fireSubsetDefinitionListChanged();
             return true;
         }
@@ -537,6 +535,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         subsetDefinition.setOIFitsSubset(oiFitsSubset);
+        subsetDefinition.incVersion();
 
         fireSubsetDefinitionChanged(source, subsetDefinition.getName());
 
@@ -545,8 +544,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             if (plot.getSubsetDefinition() != null && plot.getSubsetDefinition().getName().equals(subsetDefinition.getName())) {
                 // match
                 plot.setSubsetDefinition(subsetDefinition);
-                // fire PlotChanged event:
-                firePlotChanged(source, plot.getName());
+
+                // update plot version and fire events (PlotChanged):
+                updatePlotRef(source, plot);
             }
         }
     }
@@ -602,7 +602,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         if (addPlotDefinitionRef(plotDefinition)) {
-            // update plot definition reference and fire events (PlotDefinitionChanged, PlotChanged):
+            // update plot definition version and fire events (PlotDefinitionChanged, PlotChanged):
             updatePlotDefinitionRef(this, plotDefinition);
             return true;
         }
@@ -619,7 +619,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             logger.debug("addPlotDefinitionRef: {}", plotDefinition);
         }
         if (Identifiable.addIdentifiable(plotDefinition, getPlotDefinitionList())) {
-            this.userCollection.incVersion();
             firePlotDefinitionListChanged();
             return true;
         }
@@ -696,7 +695,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             // copy data:
             plotDef.copy(plotDefinition);
 
-            // update plot definition reference and fire events (PlotDefinitionChanged, PlotChanged):
+            // update plot definition version and fire events (PlotDefinitionChanged, PlotChanged):
             updatePlotDefinitionRef(source, plotDefinition);
         }
     }
@@ -711,6 +710,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             logger.debug("updatePlotDefinitionRef: plotDefinition: {}", plotDefinition);
         }
 
+        plotDefinition.incVersion();
         firePlotDefinitionChanged(source, plotDefinition.getName());
 
         // find dependencies:
@@ -718,8 +718,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             if (plot.getPlotDefinition() != null && plot.getPlotDefinition().getName().equals(plotDefinition.getName())) {
                 // match
                 plot.setPlotDefinition(plotDefinition);
-                // fire PlotChanged event:
-                firePlotChanged(source, plot.getName());
+
+                // update plot version and fire events (PlotChanged):
+                updatePlotRef(source, plot);
             }
         }
     }
@@ -776,8 +777,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         if (addPlotRef(plot)) {
-            // fire PlotChanged event:
-            firePlotChanged(this, plot.getName());
+            // update plot version and fire events (PlotChanged):
+            updatePlotRef(this, plot);
             return true;
         }
         return false;
@@ -793,7 +794,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             logger.debug("addPlotRef: {}", plot);
         }
         if (Identifiable.addIdentifiable(plot, getPlotList())) {
-            this.userCollection.incVersion();
             firePlotListChanged();
             return true;
         }
@@ -870,9 +870,23 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             // copy data:
             plotRef.copy(plot);
 
-            // fire PlotChanged event:
-            firePlotChanged(source, plot.getName());
+            // update plot version and fire events (PlotChanged):
+            updatePlotRef(source, plot);
         }
+    }
+
+    /**
+     * Update the given plot (reference) and fire events
+     * @param source event source
+     * @param plot plot (reference)
+     */
+    private void updatePlotRef(final Object source, final Plot plot) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("updatePlotRef: plot: {}", plot);
+        }
+
+        plot.incVersion();
+        firePlotChanged(source, plot.getName());
     }
 
     // --- EVENTS ----------------------------------------------------------------
