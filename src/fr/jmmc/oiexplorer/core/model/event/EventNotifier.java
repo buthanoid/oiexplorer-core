@@ -126,11 +126,11 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
      * @param listener event listener
      */
     public void unregister(final GenericEventListener<K, V, O> listener) {
-        if (DEBUG_LISTENER) {
-            logger.warn("UNREGISTER {} FROM {}", ObjectUtils.getObjectInfo(listener), this, (DEBUG_STACK) ? new Throwable() : null);
-        }
         final int pos = findListener(listener);
         if (pos != -1) {
+            if (DEBUG_LISTENER) {
+                logger.warn("UNREGISTER {} FROM {}", ObjectUtils.getObjectInfo(listener), this, (DEBUG_STACK) ? new Throwable() : null);
+            }
             this.listeners.remove(pos);
         }
     }

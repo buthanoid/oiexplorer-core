@@ -54,7 +54,6 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTextAnnotation;
-import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.event.ChartProgressEvent;
 import org.jfree.chart.event.ChartProgressListener;
@@ -132,6 +131,19 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         initComponents();
         postInit();
+    }
+
+    /**
+     * Free any ressource or reference to this instance :
+     * remove this instance from OIFitsCollectionManager event notifiers
+     */
+    @Override
+    public void dispose() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("dispose: {}", ObjectUtils.getObjectInfo(this));
+        }
+
+        ocm.unbind(this);
     }
 
     /**

@@ -47,6 +47,19 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         initComponents();
     }
 
+    /**
+     * Free any ressource or reference to this instance :
+     * remove this instance from OIFitsCollectionManager event notifiers
+     */
+    @Override
+    public void dispose() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("dispose: {}", ObjectUtils.getObjectInfo(this));
+        }
+
+        ocm.unbind(this);
+    }
+
     public void initialize(final String plotId) {
         logger.warn("initialize {}", plotId);
 
@@ -196,11 +209,13 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         subsetComboBox.setModel(new GenericListModel<String>(subsetNames, true));
 
         // restore previous selection: TODO: handle case where it becomes invalid.
-        if (oldValue != null && subsetNames.contains(oldValue)) {
-            subsetComboBox.setSelectedItem(oldValue);
-        } else {
-            // TODO: handle case where it becomes invalid.
-            logger.warn("refreshSubsetNames: {} - invalid subset {}", plotId, oldValue);
+        if (oldValue != null) {
+            if (subsetNames.contains(oldValue)) {
+                subsetComboBox.setSelectedItem(oldValue);
+            } else {
+                // TODO: handle case where it becomes invalid.
+                logger.warn("refreshSubsetNames: {} - invalid subset {}", plotId, oldValue);
+            }
         }
 
         // hide subset combo if only 1
@@ -226,11 +241,13 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         plotDefinitionComboBox.setModel(new GenericListModel<String>(new ArrayList<String>(plotDefNames), true));
 
         // restore previous selection: TODO: handle case where it becomes invalid.
-        if (oldValue != null && plotDefNames.contains(oldValue)) {
-            plotDefinitionComboBox.setSelectedItem(oldValue);
-        } else {
-            // TODO: handle case where it becomes invalid.
-            logger.warn("refreshPlotDefinitionNames: {} - invalid plot def {}", plotId, oldValue);
+        if (oldValue != null) {
+            if (plotDefNames.contains(oldValue)) {
+                plotDefinitionComboBox.setSelectedItem(oldValue);
+            } else {
+                // TODO: handle case where it becomes invalid.
+                logger.warn("refreshPlotDefinitionNames: {} - invalid plot def {}", plotId, oldValue);
+            }
         }
     }
 

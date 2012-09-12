@@ -73,6 +73,19 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
     }
 
     /**
+     * Free any ressource or reference to this instance :
+     * remove this instance from OIFitsCollectionManager event notifiers
+     */
+    @Override
+    public void dispose() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("dispose: {}", ObjectUtils.getObjectInfo(this));
+        }
+
+        ocm.unbind(this);
+    }
+
+    /**
      * This method is useful to set the models and specific features of initialized swing components :
      */
     private void postInit() {
@@ -412,7 +425,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
                 }
             }
             logger.warn("update plotDef {}", plotDefCopy);
-            
+
             ocm.updatePlotDefinition(this, plotDefCopy);
         }
     }

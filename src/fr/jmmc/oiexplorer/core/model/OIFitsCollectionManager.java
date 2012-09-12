@@ -92,6 +92,19 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         reset();
     }
 
+    /**
+     * Free any ressource or reference to this instance :
+     * throw an IllegalStateException as it is invalid
+     */
+    @Override
+    public void dispose() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("dispose: {}", ObjectUtils.getObjectInfo(this));
+        }
+        
+        throw new IllegalStateException("Using OIFitsCollectionManager.dispose() is invalid !");
+    }
+
     /* --- OIFits file collection handling ------------------------------------- */
     /**
      * Load the given OI Fits Files with the given checker component
@@ -863,6 +876,16 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     // --- EVENTS ----------------------------------------------------------------
+    /**
+     * Unbind the given listener to ANY event
+     * @param listener listener to unbind
+     */
+    public void unbind(final OIFitsCollectionManagerEventListener listener) {
+        for (final EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object> eventNotifier : this.oiFitsCollectionManagerEventNotifierMap.values()) {
+            eventNotifier.unregister(listener);
+        }
+    }
+
     /**
      * Bind the given listener to COLLECTION_CHANGED event and fire such event to initialize the listener properly
      * @param listener listener to bind
