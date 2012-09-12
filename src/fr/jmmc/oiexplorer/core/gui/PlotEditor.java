@@ -36,8 +36,6 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
     private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** Associated plot identifier */
     private String plotId = null;
-    /** Associated plot instance */
-    private Plot plot = null;
 
     /** Creates new form PlotEditor */
     public PlotEditor() {
@@ -168,8 +166,6 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
     public void setPlotId(final String plotId) {
         final String prevPlotId = this.plotId;
         this.plotId = plotId;
-        // force reset:
-        this.plot = null;
 
         if (plotId != null && !ObjectUtils.areEquals(prevPlotId, plotId)) {
             logger.warn("setPlotId {}", plotId);
@@ -178,11 +174,12 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         }
     }
 
+    /**
+     * Return a new copy of the Plot given its identifier (to update it)
+     * @return copy of the Plot or null if not found
+     */
     private Plot getPlot() {
-        if (this.plot == null) {
-            this.plot = ocm.getPlot(plotId);
-        }
-        return this.plot;
+        return ocm.getPlot(plotId);
     }
 
     private void refreshSubsetNames(final List<SubsetDefinition> subsetDefinitionList) {
@@ -199,7 +196,12 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         subsetComboBox.setModel(new GenericListModel<String>(subsetNames, true));
 
         // restore previous selection: TODO: handle case where it becomes invalid.
-        subsetComboBox.setSelectedItem(oldValue);
+        if (oldValue != null && subsetNames.contains(oldValue)) {
+            subsetComboBox.setSelectedItem(oldValue);
+        } else {
+            // TODO: handle case where it becomes invalid.
+            logger.warn("refreshSubsetNames: {} - invalid subset {}", plotId, oldValue);
+        }
 
         // hide subset combo if only 1
         final boolean showSubsets = (subsetComboBox.getModel().getSize() > 1);
@@ -224,7 +226,12 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         plotDefinitionComboBox.setModel(new GenericListModel<String>(new ArrayList<String>(plotDefNames), true));
 
         // restore previous selection: TODO: handle case where it becomes invalid.
-        plotDefinitionComboBox.setSelectedItem(oldValue);
+        if (oldValue != null && plotDefNames.contains(oldValue)) {
+            plotDefinitionComboBox.setSelectedItem(oldValue);
+        } else {
+            // TODO: handle case where it becomes invalid.
+            logger.warn("refreshPlotDefinitionNames: {} - invalid plot def {}", plotId, oldValue);
+        }
     }
 
     private void refreshPlot(final Plot plotRef) {

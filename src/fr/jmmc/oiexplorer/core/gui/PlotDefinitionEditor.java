@@ -46,8 +46,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
     private String plotId = null;
     /** plot definition identifier */
     private String plotDefId = null;
-    /** Main plot definition */
-    private PlotDefinition plotDefinition = null;
     /* Swing components */
     /** Store all choices available to plot on x axis given to current data to plot */
     private final List<String> xAxisChoices = new LinkedList<String>();
@@ -90,32 +88,11 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         };
     }
 
-    /** 
-     * Init the plotDefinition with user adjusted widgets. 
-     */
-    private void updateCustomPlotDefinition() {
-        // handle xAxis
-        final Axis xAxis = new Axis();
-        xAxis.setName(getxAxis());
-        getPlotDefinition().setXAxis(xAxis);
-
-        // handle yAxes
-        final List<Axis> yAxes = getPlotDefinition().getYAxes();
-        yAxes.clear();
-        for (String yname : getyAxes()) {
-            final Axis yAxis = new Axis();
-            yAxis.setName(yname);
-            yAxes.add(yAxis);
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("Setting custom plot definition x: {}, y : {}", getxAxis(), getyAxes());
-        }
-    }
-
     /**
      * Fill axes comboboxes with all distinct columns present in the available
      * tables.
+     * @param plotDef plot definition to use
+     * @param oiFitsSubset OIFits structure coming from plot's subset definition
      */
     private void refreshForm(final PlotDefinition plotDef, final OIFitsFile oiFitsSubset) {
         logger.warn("refreshForm : plotDefId = {} - plotDef {}", plotDefId, plotDef);
@@ -411,10 +388,32 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
 
     //TODO rename
     public void actionPerformed(ActionEvent e) {
-        if (getPlotDefinition() != null && initStep) {
-            updateCustomPlotDefinition();
-            logger.warn("Using custom plot {}", getPlotDefinition());
-            ocm.updatePlotDefinition(this, getPlotDefinition());
+        if (initStep) {
+            // get copy:
+            final PlotDefinition plotDefCopy = getPlotDefinition();
+
+            if (plotDefCopy != null) {
+                // handle xAxis
+                final Axis xAxis = new Axis();
+                xAxis.setName(getxAxis());
+                plotDefCopy.setXAxis(xAxis);
+
+                // handle yAxes
+                final List<Axis> yAxes = plotDefCopy.getYAxes();
+                yAxes.clear();
+                for (String yname : getyAxes()) {
+                    final Axis yAxis = new Axis();
+                    yAxis.setName(yname);
+                    yAxes.add(yAxis);
+                }
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Setting custom plot definition x: {}, y : {}", getxAxis(), getyAxes());
+                }
+            }
+            logger.warn("update plotDef {}", plotDefCopy);
+            
+            ocm.updatePlotDefinition(this, plotDefCopy);
         }
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -469,11 +468,15 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         }
     }
 
+    /**
+     * Return a new copy of the PlotDefinition given its identifier (to update it)
+     * @return copy of the PlotDefinition or null if not found
+     */
     private PlotDefinition getPlotDefinition() {
-        if (this.plotDefinition == null && plotDefId != null) {
-            this.plotDefinition = ocm.getPlotDefinition(plotDefId);
+        if (plotDefId != null) {
+            return ocm.getPlotDefinition(plotDefId);
         }
-        return this.plotDefinition;
+        return null;
     }
 
     /**
@@ -520,8 +523,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         logger.warn("_setPlotDefId {}", plotDefId);
 
         this.plotDefId = plotDefId;
-        // force reset:
-        this.plotDefinition = null;
 
         // do not change plotId
     }
