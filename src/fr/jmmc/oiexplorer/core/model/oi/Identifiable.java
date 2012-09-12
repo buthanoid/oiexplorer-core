@@ -109,6 +109,33 @@ public class Identifiable
     }
     
 //--simple--preserve
+    /** instance version to track effective changes (read only) */
+    @javax.xml.bind.annotation.XmlTransient
+    private int version = 0;
+
+    /**
+     * Return the instance version
+     * @return instance version
+     */
+    public final int getVersion() {
+        return version;
+    }
+
+    /**
+     * PROTECTED: Increment the version
+     */
+    public final void incVersion() {
+        this.version++;
+    }
+
+    /**
+     * Return an new identifiable version (id + version) comparable later
+     * @return new identifiable version
+     */
+    public final fr.jmmc.oiexplorer.core.model.IdentifiableVersion getIdentifiableVersion() {
+        return new fr.jmmc.oiexplorer.core.model.IdentifiableVersion(this.name, this.version);
+    }
+
     /**
      * Perform a deep-copy of the given other instance into this instance
      * 
@@ -124,8 +151,9 @@ public class Identifiable
         // skip name to avoid overriding identifier !
         /* this.name = identifiable.getName(); */
 
-        // copy description only:
+        // copy description, version:
         this.description = identifiable.getDescription();
+        this.version = identifiable.getVersion();
     }
 
     @Override
@@ -158,6 +186,9 @@ public class Identifiable
     public void toString(final StringBuilder sb, final boolean full) {
         super.toString(sb, full); // OIBase
         sb.append("{id=").append(this.name);
+        if (this.version > 1) {
+            sb.append(", version=").append(this.version);
+        }
         if (full) {
             if (this.description != null) {
                 sb.append(", description='").append(this.description).append('\'');

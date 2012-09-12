@@ -20,30 +20,11 @@ public class OIBase implements PublicCloneable, ToStringable {
     /** flag to use full verbosity in toString() implementation */
     public static final boolean TO_STRING_VERBOSITY = true;
 
-    /* member */
-    /** instance version to track effective changes */
-    private int version = 0;
-
     /**
      * Public Constructor
      */
     public OIBase() {
         super();
-    }
-
-    /**
-     * Return the instance version
-     * @return instance version
-     */
-    public final int getVersion() {
-        return version;
-    }
-
-    /**
-     * PROTECTED: Increment the version
-     */
-    protected final void incVersion() {
-        this.version++;
     }
 
     /**
@@ -55,8 +36,7 @@ public class OIBase implements PublicCloneable, ToStringable {
      * @param other other instance
      */
     public void copy(final OIBase other) {
-        // copy version only:
-        this.version = other.getVersion();
+        // nothing to copy
     }
 
     /**
@@ -99,8 +79,5 @@ public class OIBase implements PublicCloneable, ToStringable {
      */
     public void toString(final StringBuilder sb, final boolean full) {
         ObjectUtils.getObjectInfo(sb, this);
-        if (version != 0) {
-            sb.append("[version=").append(version).append(']');
-        }
     }
 }

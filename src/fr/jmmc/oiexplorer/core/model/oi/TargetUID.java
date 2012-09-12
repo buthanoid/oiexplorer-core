@@ -127,13 +127,15 @@ public class TargetUID
             if ((this.target == null) ? (other.target != null) : !this.target.equals(other.getTarget())) {
                 return false;
             }
-        }
-        if (String.class == obj.getClass()) {
+        } else if (String.class == obj.getClass()) {
             final String other = (String) obj;
             if ((this.target == null) ? (other != null) : !this.target.equals(other)) {
                 return false;
             }
+        } else {
+            return false;
         }
+
         return true;
     }
 
