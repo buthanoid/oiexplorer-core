@@ -29,16 +29,16 @@ import org.slf4j.LoggerFactory;
  */
 public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements Comparable<EventNotifier<?, ?, ?>> {
 
+    /** flag to log ONLY information when firing events (less verbose) */
+    private static final boolean LOG_FIRE_EVENT = false;
+    /** flag to use full verbosity in toString() implementation of EventContext / GenericEvent i.e. show subjectValue */
+    public static final boolean TO_STRING_VERBOSITY = true;
     /** flag to log a stack trace in method register/unregister to debug registration */
     private static final boolean DEBUG_LISTENER = false;
-    /** flag to log information when firing events */
-    private static final boolean LOG_FIRE_EVENT = true;
     /** flag to log information useful to debug events */
     private static final boolean DEBUG_FIRE_EVENT = false;
     /** flag to log also a stack trace to debug events */
     private static final boolean DEBUG_STACK = false;
-    /** flag to use full verbosity in toString() implementation of EventContext / GenericEvent i.e. show subjectValue */
-    public static final boolean TO_STRING_VERBOSITY = true;
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(EventNotifier.class);
     /** EventNotifierController singleton */
