@@ -95,7 +95,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** plot identifier */
     private String plotId = null;
-    /** plot object reference */
+    /** plot object reference (read only) */
     private Plot plot = null;
     /** flag to indicate if this plot has data */
     private boolean hasData = false;
@@ -206,7 +206,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 getDistinct(oiFitsSubset.getOiT3(), distinct, arrNameOperator);
             }
             if (!distinct.isEmpty()) {
-                toString(distinct, sb, "_", "_");
+                toString(distinct, sb, "_", "_", 3, "MULTI_ARRNAME");
             }
 
             sb.append('_');
@@ -225,7 +225,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 getDistinct(oiFitsSubset.getOiT3(), distinct, insNameOperator);
             }
             if (!distinct.isEmpty()) {
-                toString(distinct, sb, "_", "_");
+                toString(distinct, sb, "_", "_", 3, "MULTI_INSNAME");
             }
 
             sb.append('_');
@@ -241,7 +241,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 getDistinctStaConfs(oiFitsSubset.getOiT3(), distinct);
             }
             if (!distinct.isEmpty()) {
-                toString(distinct, sb, "-", "_");
+                toString(distinct, sb, "-", "_", 3, "MULTI_CONF");
             }
 
             sb.append('_');
@@ -260,7 +260,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 getDistinct(oiFitsSubset.getOiT3(), distinct, dateObsOperator);
             }
             if (!distinct.isEmpty()) {
-                toString(distinct, sb, "_", "_");
+                toString(distinct, sb, "_", "_", 3, "MULTI_DATE");
             }
 
             sb.append('.').append(PDF_EXT);
@@ -1869,10 +1869,31 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     }
 
     private static void toString(final Set<String> set, final StringBuilder sb, final String internalSeparator, final String separator) {
+        toString(set, sb, internalSeparator, separator, Integer.MAX_VALUE);
+    }
+
+    private static void toString(final Set<String> set, final StringBuilder sb, final String internalSeparator, final String separator, final int threshold, final String alternateText) {
+        // hard coded limit:
+        if (set.size() > threshold) {
+            sb.append(alternateText);
+        } else {
+            toString(set, sb, internalSeparator, separator, Integer.MAX_VALUE);
+        }
+    }
+
+    private static void toString(final Set<String> set, final StringBuilder sb, final String internalSeparator, final String separator, final int maxLength) {
+        int n = 0;
         for (String v : set) {
             sb.append(v.replaceAll("\\s", internalSeparator)).append(separator);
+            n++;
+            if (n > maxLength) {
+                return;
+            }
         }
-        sb.setLength(sb.length() - separator.length());
+        if (n != 0) {
+            // remove separator at the end:
+            sb.setLength(sb.length() - separator.length());
+        }
     }
 
     /**
