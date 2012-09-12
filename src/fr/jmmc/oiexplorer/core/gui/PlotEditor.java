@@ -60,8 +60,12 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         ocm.unbind(this);
     }
 
+    /**
+     * Initialize the widget for the given plot identifier
+     * @param plotId plot identifier
+     */
     public void initialize(final String plotId) {
-        logger.warn("initialize {}", plotId);
+        logger.debug("initialize {}", plotId);
 
         // TODO: this can be done automatically when this instance registers !
         // => fire initial events !
@@ -181,7 +185,8 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         this.plotId = plotId;
 
         if (plotId != null && !ObjectUtils.areEquals(prevPlotId, plotId)) {
-            logger.warn("setPlotId {}", plotId);
+            logger.debug("setPlotId {}", plotId);
+            
             // fire PlotChanged event to initialize correctly the widget:
             ocm.firePlotChanged(null, plotId, this); // null forces different source
         }
@@ -196,7 +201,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
     }
 
     private void refreshSubsetNames(final List<SubsetDefinition> subsetDefinitionList) {
-        logger.warn("refreshSubsetNames: {}", plotId);
+        logger.debug("refreshSubsetNames: {}", plotId);
 
         // Put all subset references:
         final List<String> subsetNames = new ArrayList<String>();
@@ -225,7 +230,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
     }
 
     private void refreshPlotDefinitionNames(final List<PlotDefinition> plotDefinitionList) {
-        logger.warn("refreshPlotDefinitionNames: {}", plotId);
+        logger.debug("refreshPlotDefinitionNames: {}", plotId);
 
         // use identifiers to keep unique values:
         final Set<String> plotDefNames = new LinkedHashSet<String>();
@@ -252,7 +257,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
     }
 
     private void refreshPlot(final Plot plotRef) {
-        logger.warn("refreshPlot: {}", plotId);
+        logger.debug("refreshPlot: {}", plotId);
 
         if (plotRef != null) {
             subsetComboBox.setSelectedItem((plotRef.getSubsetDefinition() != null) ? plotRef.getSubsetDefinition().getName() : null);
@@ -299,9 +304,6 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
                 refreshPlotDefinitionNames(event.getPlotDefinitionList());
                 break;
             case PLOT_CHANGED:
-                // force clean up ...
-                setPlotId(plotId); // TODO: clean up !!
-
                 refreshPlot(event.getPlot());
                 break;
             default:

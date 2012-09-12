@@ -108,7 +108,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
      * @param oiFitsSubset OIFits structure coming from plot's subset definition
      */
     private void refreshForm(final PlotDefinition plotDef, final OIFitsFile oiFitsSubset) {
-        logger.warn("refreshForm : plotDefId = {} - plotDef {}", plotDefId, plotDef);
+        logger.debug("refreshForm : plotDefId = {} - plotDef {}", plotDefId, plotDef);
 
         try {
             // Leave programatic changes on widgets ignored to prevent model changes 
@@ -153,7 +153,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
                 }
             }
 
-            logger.warn("refreshForm : xAxisChoices {}, yAxisChoices {}", xAxisChoices, yAxisChoices);
+            logger.debug("refreshForm : xAxisChoices {}, yAxisChoices {}", xAxisChoices, yAxisChoices);
 
             if (!xAxisChoices.isEmpty()) {
                 // Use label of associated plotdefinition if any, else try old value and finally use first by default
@@ -168,7 +168,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
 
             if (!yAxisChoices.isEmpty()) {
                 if (plotDef.getYAxes().isEmpty()) {
-                    logger.warn("refreshForm : no yaxes to copy");
+                    logger.debug("refreshForm : no yaxes to copy");
                     for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
                         if (lastYComboBoxesValues.size() > i && yAxisChoices.contains(lastYComboBoxesValues.get(i))) {
                             yComboBoxes.get(i).setSelectedItem(lastYComboBoxesValues.get(i));
@@ -178,7 +178,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
                     }
                 } else {
                     // fill with associated plotdefinition            
-                    logger.warn("refreshForm : yaxes to add : {}", plotDef.getYAxes());
+                    logger.debug("refreshForm : yaxes to add : {}", plotDef.getYAxes());
                     for (Axis yAxis : plotDef.getYAxes()) {
                         addYCombo(yAxis.getName());
                     }
@@ -240,7 +240,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
             if (meta != null) {
                 oiTable.getNumericalColumnsNames(columns);
             } else {
-                logger.warn("Can't use data from '{}' table with column '{}'", oiTable, columnName);
+                logger.debug("Can't use data from '{}' table with column '{}'", oiTable, columnName);
             }
         }
         for (OITable oiTable : oiFitsFile.getOiVis()) {
@@ -248,7 +248,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
             if (meta != null) {
                 oiTable.getNumericalColumnsNames(columns);
             } else {
-                logger.warn("Can't use data from '{}' table with column '{}'", oiTable, columnName);
+                logger.debug("Can't use data from '{}' table with column '{}'", oiTable, columnName);
             }
         }
         for (OITable oiTable : oiFitsFile.getOiT3()) {
@@ -256,7 +256,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
             if (meta != null) {
                 oiTable.getNumericalColumnsNames(columns);
             } else {
-                logger.warn("Can't use data from '{}' table with column '{}'", oiTable, columnName);
+                logger.debug("Can't use data from '{}' table with column '{}'", oiTable, columnName);
             }
         }
         return columns;
@@ -424,7 +424,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
                     logger.debug("Setting custom plot definition x: {}, y : {}", getxAxis(), getyAxes());
                 }
             }
-            logger.warn("update plotDef {}", plotDefCopy);
+            logger.debug("update plotDef {}", plotDefCopy);
 
             ocm.updatePlotDefinition(this, plotDefCopy);
         }
@@ -445,14 +445,14 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
      * @param plotId plot identifier or null to reset state
      */
     public void setPlotId(final String plotId) {
-        logger.warn("setPlotId {}", plotId);
+        logger.debug("setPlotId {}", plotId);
 
         final String prevPlotId = this.plotId;
 
         _setPlotId(plotId);
 
         if (plotId != null && !ObjectUtils.areEquals(prevPlotId, plotId)) {
-            logger.warn("firePlotChanged {}", plotId);
+            logger.debug("firePlotChanged {}", plotId);
 
             // bind(plotId) ?
             // fire PlotChanged event to initialize correctly the widget:
@@ -465,7 +465,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
      * @param plotId plot identifier or null to reset state
      */
     private void _setPlotId(final String plotId) {
-        logger.warn("_setPlotId {}", plotId);
+        logger.debug("_setPlotId {}", plotId);
 
         this.plotId = plotId;
 
@@ -497,7 +497,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
      * @param plotDefId plot definition identifier
      */
     public void setPlotDefId(final String plotDefId) {
-        logger.warn("setPlotDefId {}", plotDefId);
+        logger.debug("setPlotDefId {}", plotDefId);
 
         final String prevPlotDefId = this.plotDefId;
 
@@ -520,7 +520,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         }
 
         if (plotDefId != null && !ObjectUtils.areEquals(prevPlotDefId, plotDefId)) {
-            logger.warn("firePlotDefinitionChanged {}", plotDefId);
+            logger.debug("firePlotDefinitionChanged {}", plotDefId);
 
             // bind(plotDefId) ?
             // fire PlotDefinitionChanged event to initialize correctly the widget:
@@ -533,7 +533,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
      * @param plotDefId plot definition identifier
      */
     private void _setPlotDefId(final String plotDefId) {
-        logger.warn("_setPlotDefId {}", plotDefId);
+        logger.debug("_setPlotDefId {}", plotDefId);
 
         this.plotDefId = plotDefId;
 

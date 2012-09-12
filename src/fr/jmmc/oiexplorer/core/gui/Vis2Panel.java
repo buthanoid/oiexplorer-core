@@ -1939,7 +1939,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         this.plot = null;
 
         if (plotId != null && !ObjectUtils.areEquals(prevPlotId, plotId)) {
-            logger.warn("setPlotId {}", plotId);
+            logger.debug("setPlotId {}", plotId);
+
             // fire PlotChanged event to initialize correctly the widget:
             ocm.firePlotChanged(null, plotId, this); // null forces different source
         }
