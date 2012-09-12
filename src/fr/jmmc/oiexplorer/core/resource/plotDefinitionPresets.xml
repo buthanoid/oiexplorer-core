@@ -91,4 +91,57 @@
             <includeZero>false</includeZero>
         </yAxes> 
     </plotDefinition>
+    
+    <!-- plot (VisAmp - VisPhi) vs spatial freq  -->    
+    <plotDefinition>
+        <name>VISAMP_VISPHI/SPATIAL_FREQ</name>
+        <skipFlaggedData>false</skipFlaggedData>
+        <drawLine>false</drawLine>
+        <xAxis>
+            <name>SPATIAL_FREQ</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+            <!-- TODO : refaire l'equivalent de    
+            plotDef.setxAxisScalingFactor(1e-6d);
+            plotDef.setxAxisUnit("M\u03BB");
+            -->
+        </xAxis>
+        <yAxes>
+            <name>VISAMP</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>VISPHI</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes> 
+    </plotDefinition>
+
+    <!-- plot log(VisAmp - Vis2) vs spatial freq  -->    
+    <plotDefinition>
+        <name>LOG_VISAMP_VIS2DATA/SPATIAL_FREQ</name>
+        <skipFlaggedData>false</skipFlaggedData>
+        <drawLine>false</drawLine>
+        <xAxis>
+            <name>SPATIAL_FREQ</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+            <!-- TODO : refaire l'equivalent de    
+            plotDef.setxAxisScalingFactor(1e-6d);
+            plotDef.setxAxisUnit("M\u03BB");
+            -->
+        </xAxis>
+        <yAxes>
+            <name>VISAMP</name>
+            <logScale>true</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>VIS2DATA</name>
+            <logScale>true</logScale>
+            <includeZero>false</includeZero>
+        </yAxes> 
+    </plotDefinition>
+        
 </p:plotDefinitions>
