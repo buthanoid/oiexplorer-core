@@ -71,20 +71,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This panel presents the interferometer plot (station, base lines ...)
+ * This panel provides the chart panel representing one OIFitsExplorer plot instance (using its subset and plot definition)
  * 
  * @author bourgesl
  */
-public final class Vis2Panel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-                                                                   PDFExportable, OIFitsCollectionManagerEventListener {
+public final class PlotChartPanel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
+                                                                         PDFExportable, OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
     /** Class logger */
-    private static final Logger logger = LoggerFactory.getLogger(Vis2Panel.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(PlotChartPanel.class.getName());
     /** default color model (aspro - Rainbow) */
     private final static IndexColorModel RAINBOW_COLOR_MODEL = ColorModels.getColorModel("Rainbow");
-    /** data margin in percents */
+    /** data margin in percents (5%) */
     private final static double MARGIN_PERCENTS = 5d / 100d;
     /** double formatter for wave lengths */
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
@@ -113,20 +113,21 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private CombinedCrosshairOverlay crosshairOverlay = null;
     /** selection overlay */
     private SelectionOverlay selectionOverlay = null;
-    /* TODO: List<XYPlot */
-    /** xy plot instance for VIS2 */
-    private XYPlot xyPlotV2;
-    /** xy plot instance for T3 */
-    private XYPlot xyPlotT3;
+    /* TODO: List<XYPlot> */
+    /** xy plot instance 1 */
+    private XYPlot xyPlotPlot1;
+    /** xy plot instance 2 */
+    private XYPlot xyPlotPlot2;
+    /* TODO: List<XYTextAnnotation> */
     /** JMMC annotation */
-    private XYTextAnnotation aJMMCV2 = null;
+    private XYTextAnnotation aJMMCPlot1 = null;
     /** JMMC annotation */
-    private XYTextAnnotation aJMMCT3 = null;
+    private XYTextAnnotation aJMMCPlot2 = null;
 
     /**
      * Constructor
      */
-    public Vis2Panel() {
+    public PlotChartPanel() {
         ocm.getPlotChangedEventNotifier().register(this);
 
         initComponents();
@@ -186,6 +187,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
             final OIFitsFile oiFitsSubset = getOiFitsSubset();
 
+            // TODO: use plot columns to generate file name ?
+            
             final boolean hasVis2 = oiFitsSubset.hasOiVis2();
             final boolean hasT3 = oiFitsSubset.hasOiT3();
 
@@ -314,12 +317,12 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     private void postInit() {
 
         final boolean usePlotCrossHairSupport = false;
-        final boolean useSelectionSupport = false;
+        final boolean useSelectionSupport = false; // TODO: enable selection ASAP (TODO sub plot support)
 
         final boolean showLegend = false;
 
         // create chart and add listener :
-        this.combinedXYPlot = new CombinedDomainXYPlot(ChartUtils.createAxis("UV radius (M\u03BB)"));
+        this.combinedXYPlot = new CombinedDomainXYPlot(ChartUtils.createAxis(""));
         this.combinedXYPlot.setGap(10.0D);
         this.combinedXYPlot.setOrientation(PlotOrientation.VERTICAL);
 
@@ -354,15 +357,15 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         // Create sub plots (TODO externalize):
 
-        this.xyPlotV2 = createScientificScatterPlot(null, "V²", usePlotCrossHairSupport);
+        this.xyPlotPlot1 = createScientificScatterPlot(null, "", usePlotCrossHairSupport);
 
-        this.aJMMCV2 = ChartUtils.createJMMCAnnotation(Constants.JMMC_ANNOTATION);
-        this.xyPlotV2.getRenderer().addAnnotation(this.aJMMCV2, Layer.BACKGROUND);
+        this.aJMMCPlot1 = ChartUtils.createJMMCAnnotation(Constants.JMMC_ANNOTATION);
+        this.xyPlotPlot1.getRenderer().addAnnotation(this.aJMMCPlot1, Layer.BACKGROUND);
 
-        this.xyPlotT3 = createScientificScatterPlot(null, "Closure phase (deg)", usePlotCrossHairSupport);
+        this.xyPlotPlot2 = createScientificScatterPlot(null, "", usePlotCrossHairSupport);
 
-        this.aJMMCT3 = ChartUtils.createJMMCAnnotation(Constants.JMMC_ANNOTATION);
-        this.xyPlotT3.getRenderer().addAnnotation(this.aJMMCT3, Layer.BACKGROUND);
+        this.aJMMCPlot2 = ChartUtils.createJMMCAnnotation(Constants.JMMC_ANNOTATION);
+        this.xyPlotPlot2.getRenderer().addAnnotation(this.aJMMCPlot2, Layer.BACKGROUND);
 
         if (!usePlotCrossHairSupport) {
             Integer plotIndex = Integer.valueOf(1);
@@ -478,16 +481,16 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
             final Integer plotIndex = Integer.valueOf(subplotIndex + 1);
 
-            final XYPlot plot = this.plotIndexMapping.get(plotIndex);
-            if (plot == null) {
+            final XYPlot xyPlot = this.plotIndexMapping.get(plotIndex);
+            if (xyPlot == null) {
                 return;
             }
 
-            final ValueAxis domainAxis = plot.getDomainAxis();
-            final double domainValue = domainAxis.java2DToValue(point2D.getX(), dataArea, plot.getDomainAxisEdge());
+            final ValueAxis domainAxis = xyPlot.getDomainAxis();
+            final double domainValue = domainAxis.java2DToValue(point2D.getX(), dataArea, xyPlot.getDomainAxisEdge());
 
-            final ValueAxis rangeAxis = plot.getRangeAxis();
-            final double rangeValue = rangeAxis.java2DToValue(point2D.getY(), dataArea, plot.getRangeAxisEdge());
+            final ValueAxis rangeAxis = xyPlot.getRangeAxis();
+            final double rangeValue = rangeAxis.java2DToValue(point2D.getY(), dataArea, xyPlot.getRangeAxisEdge());
 
             if (logger.isDebugEnabled()) {
                 logger.debug("Mouse coordinates are (" + i + ", " + j + "), in data space = (" + domainValue + ", " + rangeValue + ")");
@@ -498,7 +501,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             final double yRatio = dataArea.getHeight() / Math.abs(rangeAxis.getUpperBound() - rangeAxis.getLowerBound());
 
             // find matching data ie. closest data point according to its screen distance to the mouse clicked point:
-            Point2D dataPoint = findDataPoint(plot, domainValue, rangeValue, xRatio, yRatio);
+            Point2D dataPoint = findDataPoint(xyPlot, domainValue, rangeValue, xRatio, yRatio);
 
             List<Crosshair> xCrosshairs = this.crosshairOverlay.getDomainCrosshairs(plotIndex);
             if (xCrosshairs.size() == 1) {
@@ -548,10 +551,10 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
     public void mouseSelected(final Rectangle2D selection) {
         logger.debug("mouseSelected: rectangle {}", selection);
 
+        // TODO: determine which plot to use ?
+        
         // find data points:
         final List<Point2D> points = findDataPoints(selection);
-
-        this.selectionOverlay.setRectSelArea(selection);
 
         // push data points to overlay for rendering:
         this.selectionOverlay.setPoints(points);
@@ -559,15 +562,15 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
     /**
      * Find data point closest in FIRST dataset to the given coordinates X / Y
-     * @param plot xy plot to get its dataset
+     * @param xyPlot xy plot to get its dataset
      * @param anchorX domain axis coordinate
      * @param anchorY range axis coordinate
      * @param xRatio pixels per data on domain axis
      * @param yRatio pixels per data on range axis
      * @return found Point2D (data coordinates) or Point2D(NaN, NaN)
      */
-    private static Point2D findDataPoint(final XYPlot plot, final double anchorX, final double anchorY, final double xRatio, final double yRatio) {
-        final XYDataset dataset = plot.getDataset();
+    private static Point2D findDataPoint(final XYPlot xyPlot, final double anchorX, final double anchorY, final double xRatio, final double yRatio) {
+        final XYDataset dataset = xyPlot.getDataset();
 
         if (dataset != null) {
 
@@ -633,7 +636,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
      * @return found list of Point2D (data coordinates) or empty list
      */
     private List<Point2D> findDataPoints(final Shape shape) {
-        final XYDataset dataset = this.xyPlotV2.getDataset();
+        // TODO: generalize which plot use
+        final XYDataset dataset = this.xyPlotPlot1.getDataset();
 
         final List<Point2D> points = new ArrayList<Point2D>();
 
@@ -694,8 +698,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         // disable chart & plot notifications:
         this.chart.setNotify(false);
-        this.xyPlotV2.setNotify(false);
-        this.xyPlotT3.setNotify(false);
+        this.xyPlotPlot1.setNotify(false);
+        this.xyPlotPlot2.setNotify(false);
         try {
             // reset title:
             ChartUtils.clearTextSubTitle(this.chart);
@@ -703,8 +707,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             removeAllSubPlots();
 
             // reset dataset:
-            this.xyPlotV2.setDataset(null);
-            this.xyPlotT3.setDataset(null);
+            this.xyPlotPlot1.setDataset(null);
+            this.xyPlotPlot2.setDataset(null);
 
             // useless:
 //            applyColorTheme();
@@ -715,8 +719,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         } finally {
             // restore chart & plot notifications:
-            this.xyPlotT3.setNotify(true);
-            this.xyPlotV2.setNotify(true);
+            this.xyPlotPlot2.setNotify(true);
+            this.xyPlotPlot1.setNotify(true);
             this.chart.setNotify(true);
         }
     }
@@ -750,8 +754,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         // disable chart & plot notifications:
         this.chart.setNotify(false);
-        this.xyPlotV2.setNotify(false);
-        this.xyPlotT3.setNotify(false);
+        this.xyPlotPlot1.setNotify(false);
+        this.xyPlotPlot2.setNotify(false);
 
         try {
             // title :
@@ -878,8 +882,8 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         } finally {
             // restore chart & plot notifications:
-            this.xyPlotT3.setNotify(true);
-            this.xyPlotV2.setNotify(true);
+            this.xyPlotPlot2.setNotify(true);
+            this.xyPlotPlot1.setNotify(true);
             this.chart.setNotify(true);
         }
 
@@ -939,7 +943,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
             if (oiFitsSubset.getNbOiTables() > 0) {
                 final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>();
                 // reset dataset so free memory:
-                this.xyPlotT3.setDataset(null);
+                this.xyPlotPlot2.setDataset(null);
 
                 double minY = Double.POSITIVE_INFINITY;
                 double maxY = Double.NEGATIVE_INFINITY;
@@ -952,7 +956,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 int tableIndex = 0;
                 for (OITable oiTable : oiFitsSubset.getOiTables()) {
 
-                    info = updatePlot(this.xyPlotV2, (OIData) oiTable, tableIndex, plotDef, 0, dataset);
+                    info = updatePlot(this.xyPlotPlot1, (OIData) oiTable, tableIndex, plotDef, 0, dataset);
 
                     if (info != null) {
                         showV2 = true;
@@ -985,9 +989,20 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     logger.info("xyPlotV2: nbSeries = {}", dataset.getSeriesCount());
 
                     // TODO: fix boundaries according to standard data boundaries (VIS between 0-1 ...)
+                    logger.debug("rangeAxis: {} - {}", minY, maxY);
 
                     // Add margin:
-                    if (!yUseLog) {
+                    if (yUseLog) {
+                        double minTen = Math.floor(Math.log10(minY));
+                        double maxTen = Math.ceil(Math.log10(maxY));
+
+                        if (maxTen == minTen) {
+                            maxTen += MARGIN_PERCENTS;
+                        }
+
+                        minY = Math.pow(10d, minTen); // lower power of ten
+                        maxY = Math.pow(10d, maxTen); // upper power of ten
+                    } else {
                         final double marginY = (maxY - minY) * MARGIN_PERCENTS;
                         if (marginY > 0d) {
                             minY -= marginY;
@@ -1000,13 +1015,14 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                             maxY = minY + 1d;
                         }
                     }
+                    logger.debug("fixed rangeAxis: {} - {}", minY, maxY);
 
                     // Update Y axis:
                     if (!yUseLog) {
-                        this.xyPlotV2.setRangeAxis(ChartUtils.createAxis(""));
+                        this.xyPlotPlot1.setRangeAxis(ChartUtils.createAxis(""));
                     }
-                    if (this.xyPlotV2.getRangeAxis() instanceof BoundedNumberAxis) {
-                        axis = (BoundedNumberAxis) this.xyPlotV2.getRangeAxis();
+                    if (this.xyPlotPlot1.getRangeAxis() instanceof BoundedNumberAxis) {
+                        axis = (BoundedNumberAxis) this.xyPlotPlot1.getRangeAxis();
                         axis.setBounds(new Range(minY, maxY));
                         axis.setRange(minY, maxY);
                     }
@@ -1018,7 +1034,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                         if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
                             label += " (" + yMeta.getUnits().getStandardRepresentation() + ")";
                         }
-                        this.xyPlotV2.getRangeAxis().setLabel(label);
+                        this.xyPlotPlot1.getRangeAxis().setLabel(label);
                     }
 
                     if (yUseLog) {
@@ -1027,37 +1043,35 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                         logAxis.setExpTickLabelsFlag(true);
                         logAxis.setAutoRangeNextLogFlag(true);
 
-                        logger.debug("logAxis range: [{} - {}]", minY, maxY);
-
                         logAxis.setBounds(new Range(minY, maxY));
                         logAxis.setRange(minY, maxY);
 
-                        this.xyPlotV2.setRangeAxis(logAxis);
+                        this.xyPlotPlot1.setRangeAxis(logAxis);
                     }
 
                     // update plot's dataset (notify events):
-                    this.xyPlotV2.setDataset(dataset);
+                    this.xyPlotPlot1.setDataset(dataset);
                 }
             }
         }
 
         if (showV2) {
-            this.combinedXYPlot.add(this.xyPlotV2, 1);
+            this.combinedXYPlot.add(this.xyPlotPlot1, 1);
 
             final Integer plotIndex = Integer.valueOf(1);
-            this.plotMapping.put(this.xyPlotV2, plotIndex);
-            this.plotIndexMapping.put(plotIndex, this.xyPlotV2);
+            this.plotMapping.put(this.xyPlotPlot1, plotIndex);
+            this.plotIndexMapping.put(plotIndex, this.xyPlotPlot1);
 
         } else {
             // reset Vis2 dataset:
-            this.xyPlotV2.setDataset(null);
+            this.xyPlotPlot1.setDataset(null);
         }
 
         if (plotDef.getYAxes().size() > 1) {
             if (oiFitsSubset.getNbOiTables() > 0) {
                 final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>();
                 // reset dataset so free memory:
-                this.xyPlotT3.setDataset(null);
+                this.xyPlotPlot2.setDataset(null);
 
                 double minY = Double.POSITIVE_INFINITY;
                 double maxY = Double.NEGATIVE_INFINITY;
@@ -1070,7 +1084,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 int tableIndex = 0;
                 for (OITable oiTable : oiFitsSubset.getOiTables()) {
 
-                    info = updatePlot(this.xyPlotT3, (OIData) oiTable, tableIndex, plotDef, 1, dataset);
+                    info = updatePlot(this.xyPlotPlot2, (OIData) oiTable, tableIndex, plotDef, 1, dataset);
 
                     if (info != null) {
                         showT3 = true;
@@ -1103,9 +1117,20 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                     logger.info("xyPlotT3: nbSeries = {}", dataset.getSeriesCount());
 
                     // TODO: fix boundaries according to standard data boundaries (T3 between -180-180 ...)
+                    logger.debug("rangeAxis: {} - {}", minY, maxY);
 
                     // Add margin:
-                    if (!yUseLog) {
+                    if (yUseLog) {
+                        double minTen = Math.floor(Math.log10(minY));
+                        double maxTen = Math.ceil(Math.log10(maxY));
+
+                        if (maxTen == minTen) {
+                            maxTen += MARGIN_PERCENTS;
+                        }
+
+                        minY = Math.pow(10d, minTen); // lower power of ten
+                        maxY = Math.pow(10d, maxTen); // upper power of ten
+                    } else {
                         final double marginY = (maxY - minY) * MARGIN_PERCENTS;
                         if (marginY > 0d) {
                             minY -= marginY;
@@ -1118,13 +1143,14 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                             maxY = minY + 1d;
                         }
                     }
+                    logger.debug("fixed rangeAxis: {} - {}", minY, maxY);
 
                     // Update Y axis:
                     if (!yUseLog) {
-                        this.xyPlotT3.setRangeAxis(ChartUtils.createAxis(""));
+                        this.xyPlotPlot2.setRangeAxis(ChartUtils.createAxis(""));
                     }
-                    if (this.xyPlotT3.getRangeAxis() instanceof BoundedNumberAxis) {
-                        axis = (BoundedNumberAxis) this.xyPlotT3.getRangeAxis();
+                    if (this.xyPlotPlot2.getRangeAxis() instanceof BoundedNumberAxis) {
+                        axis = (BoundedNumberAxis) this.xyPlotPlot2.getRangeAxis();
                         axis.setBounds(new Range(minY, maxY));
                         axis.setRange(minY, maxY);
                     }
@@ -1136,7 +1162,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                         if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
                             label += " (" + yMeta.getUnits().getStandardRepresentation() + ")";
                         }
-                        this.xyPlotT3.getRangeAxis().setLabel(label);
+                        this.xyPlotPlot2.getRangeAxis().setLabel(label);
                     }
 
                     if (yUseLog) {
@@ -1145,30 +1171,28 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                         logAxis.setExpTickLabelsFlag(true);
                         logAxis.setAutoRangeNextLogFlag(true);
 
-                        logger.debug("logAxis range: [{} - {}]", minY, maxY);
-
                         logAxis.setBounds(new Range(minY, maxY));
                         logAxis.setRange(minY, maxY);
 
-                        this.xyPlotT3.setRangeAxis(logAxis);
+                        this.xyPlotPlot2.setRangeAxis(logAxis);
                     }
 
                     // update plot's dataset (notify events):
-                    this.xyPlotT3.setDataset(dataset);
+                    this.xyPlotPlot2.setDataset(dataset);
                 }
             }
         }
 
         if (showT3) {
-            this.combinedXYPlot.add(this.xyPlotT3, 1);
+            this.combinedXYPlot.add(this.xyPlotPlot2, 1);
 
             final Integer plotIndex = (showV2) ? Integer.valueOf(2) : Integer.valueOf(1);
-            this.plotMapping.put(this.xyPlotT3, plotIndex);
-            this.plotIndexMapping.put(plotIndex, this.xyPlotT3);
+            this.plotMapping.put(this.xyPlotPlot2, plotIndex);
+            this.plotIndexMapping.put(plotIndex, this.xyPlotPlot2);
 
         } else {
             // reset T3 dataset:
-            this.xyPlotT3.setDataset(null);
+            this.xyPlotPlot2.setDataset(null);
         }
 
         if (!showV2 && !showT3) {
@@ -1179,20 +1203,35 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         }
 
         // TODO: fix boundaries according to standard data boundaries (spatial freq >= 0)
-
-        if (plotDef.getXAxis().isIncludeZero()) {
-            // fix minX to include zero spatial frequency:
-            if (minX > 0d) {
-                minX = 0d;
-            }
-        }
+        logger.debug("domainAxis: {} - {}", minX, maxX);
+        
+        // TODO: keep data info to help user define its own range
 
         // Add margin:
-        if (!xUseLog) {
+        if (xUseLog) {
+            double minTen = Math.floor(Math.log10(minX));
+            double maxTen = Math.ceil(Math.log10(maxX));
+
+            if (maxTen == minTen) {
+                maxTen += MARGIN_PERCENTS;
+            }
+
+            minX = Math.pow(10d, minTen); // lower power of ten
+            maxX = Math.pow(10d, maxTen); // upper power of ten
+        } else {
             final double marginX = (maxX - minX) * MARGIN_PERCENTS;
             if (marginX > 0d) {
-                minX -= marginX;
-                maxX += marginX;
+
+                if (plotDef.getXAxis().isIncludeZero()) {
+                    if (minX > 0d) {
+                        minX = 0d;
+                    }
+                    maxX += marginX;
+                } else {
+                    minX -= marginX;
+                    maxX += marginX;
+                }
+
             } else {
                 minX -= minX * MARGIN_PERCENTS;
                 maxX += maxX * MARGIN_PERCENTS;
@@ -1201,7 +1240,7 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
                 maxX = minX + 1d;
             }
         }
-        logger.debug("domainAxis: {} - {}", minX, maxX);
+        logger.debug("fixed domainAxis: {} - {}", minX, maxX);
 
         if (!xUseLog) {
             this.combinedXYPlot.setDomainAxis(ChartUtils.createAxis(""));
@@ -1734,13 +1773,13 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
 
         // Perform custom operations before/after chart rendering:
         // move JMMC annotations:
-        if (this.xyPlotV2.getDomainAxis() != null) {
-            this.aJMMCV2.setX(this.xyPlotV2.getDomainAxis().getUpperBound());
-            this.aJMMCV2.setY(this.xyPlotV2.getRangeAxis().getLowerBound());
+        if (this.xyPlotPlot1.getDomainAxis() != null) {
+            this.aJMMCPlot1.setX(this.xyPlotPlot1.getDomainAxis().getUpperBound());
+            this.aJMMCPlot1.setY(this.xyPlotPlot1.getRangeAxis().getLowerBound());
         }
-        if (this.xyPlotT3.getDomainAxis() != null) {
-            this.aJMMCT3.setX(this.xyPlotT3.getDomainAxis().getUpperBound());
-            this.aJMMCT3.setY(this.xyPlotT3.getRangeAxis().getLowerBound());
+        if (this.xyPlotPlot2.getDomainAxis() != null) {
+            this.aJMMCPlot2.setX(this.xyPlotPlot2.getDomainAxis().getUpperBound());
+            this.aJMMCPlot2.setY(this.xyPlotPlot2.getRangeAxis().getLowerBound());
         }
     }
 
@@ -1748,16 +1787,16 @@ public final class Vis2Panel extends javax.swing.JPanel implements ChartProgress
         // update theme at end :
         ChartUtilities.applyCurrentTheme(this.chart);
 
-        if (this.xyPlotV2 != null) {
-            this.xyPlotV2.setBackgroundPaint(Color.WHITE);
-            this.xyPlotV2.setDomainGridlinePaint(Color.LIGHT_GRAY);
-            this.xyPlotV2.setRangeGridlinePaint(Color.LIGHT_GRAY);
+        if (this.xyPlotPlot1 != null) {
+            this.xyPlotPlot1.setBackgroundPaint(Color.WHITE);
+            this.xyPlotPlot1.setDomainGridlinePaint(Color.LIGHT_GRAY);
+            this.xyPlotPlot1.setRangeGridlinePaint(Color.LIGHT_GRAY);
         }
 
-        if (this.xyPlotT3 != null) {
-            this.xyPlotT3.setBackgroundPaint(Color.WHITE);
-            this.xyPlotT3.setDomainGridlinePaint(Color.LIGHT_GRAY);
-            this.xyPlotT3.setRangeGridlinePaint(Color.LIGHT_GRAY);
+        if (this.xyPlotPlot2 != null) {
+            this.xyPlotPlot2.setBackgroundPaint(Color.WHITE);
+            this.xyPlotPlot2.setDomainGridlinePaint(Color.LIGHT_GRAY);
+            this.xyPlotPlot2.setRangeGridlinePaint(Color.LIGHT_GRAY);
         }
     }
 

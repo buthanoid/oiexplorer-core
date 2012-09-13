@@ -288,7 +288,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 2);
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(yLabel, gridBagConstraints);
 
         xLabel.setText("xAxis");
@@ -296,7 +296,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 2);
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(xLabel, gridBagConstraints);
 
         xAxisComboBox.addActionListener(new java.awt.event.ActionListener() {
@@ -309,6 +309,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(xAxisComboBox, gridBagConstraints);
 
         addYAxisButton.setText("+");
@@ -321,6 +322,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(addYAxisButton, gridBagConstraints);
 
         delYAxisButton.setText("-");
@@ -333,6 +335,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(delYAxisButton, gridBagConstraints);
 
         yComboBoxesPanel.setLayout(new javax.swing.BoxLayout(yComboBoxesPanel, javax.swing.BoxLayout.Y_AXIS));
@@ -342,6 +345,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jScrollPane1, gridBagConstraints);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
