@@ -253,11 +253,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             // Add unique baselines:
             distinct.clear();
             if (hasVis2) {
-//                getDistinctStaNames(oiFitsSubset.getOiVis2(), distinct);
                 getDistinctStaConfs(oiFitsSubset.getOiVis2(), distinct);
             }
             if (hasT3) {
-//                getDistinctStaNames(oiFitsSubset.getOiT3(), distinct);
                 getDistinctStaConfs(oiFitsSubset.getOiT3(), distinct);
             }
             if (!distinct.isEmpty()) {
@@ -833,11 +831,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             // Add unique baselines:
             distinct.clear();
             if (hasVis2) {
-//                getDistinctStaNames(oiFitsSubset.getOiVis2(), distinct);
                 getDistinctStaConfs(oiFitsSubset.getOiVis2(), distinct);
             }
             if (hasT3) {
-//                getDistinctStaNames(oiFitsSubset.getOiT3(), distinct);
                 getDistinctStaConfs(oiFitsSubset.getOiT3(), distinct);
             }
             if (!distinct.isEmpty()) {
@@ -924,6 +920,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @return true if vis2 has data to plot
      */
     private boolean updateChart() {
+        logger.info("updateChart: plot {}", this.plotId);
 
         final long start = System.nanoTime();
 
@@ -932,8 +929,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         removeAllSubPlots();
 
-        boolean showV2 = false;
-        boolean showT3 = false;
+        // clear plot informations
+        plotInfos.clear();
+
+        boolean showPlot1 = false;
+        boolean showPlot2 = false;
 
         ColumnMeta xMeta = null;
 
@@ -951,53 +951,49 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 // reset dataset so free memory:
                 this.xyPlotPlot2.setDataset(null);
 
-                double minY = Double.POSITIVE_INFINITY;
-                double maxY = Double.NEGATIVE_INFINITY;
-                boolean yUseLog = false;
-                String yUnit = null;
-
-                PlotInfo info;
-                Range axisRange;
-                ColumnMeta yMeta = null;
+                final PlotInfo info = new PlotInfo();
 
                 int tableIndex = 0;
                 for (OITable oiTable : oiFitsSubset.getOiTables()) {
 
-                    info = updatePlot(this.xyPlotPlot1, (OIData) oiTable, tableIndex, plotDef, 0, dataset);
-
-                    if (info != null) {
-                        showV2 = true;
-
-                        // combine X range:
-                        axisRange = info.xAxisInfo.dataRange;
-                        minX = Math.min(minX, axisRange.getLowerBound());
-                        maxX = Math.max(maxX, axisRange.getUpperBound());
-
-                        // combine Y range:
-                        axisRange = info.yAxisInfo.dataRange;
-                        minY = Math.min(minY, axisRange.getLowerBound());
-                        maxY = Math.max(maxY, axisRange.getUpperBound());
-
-                        // update X axis Label:
-                        if (xMeta == null && info.xAxisInfo.columnMeta != null) {
-                            xMeta = info.xAxisInfo.columnMeta;
-                            xUseLog = info.xAxisInfo.useLog;
-                            xUnit = info.xAxisInfo.unit;
-                        }
-                        // update Y axis Label:
-                        if (yMeta == null && info.yAxisInfo.columnMeta != null) {
-                            yMeta = info.yAxisInfo.columnMeta;
-                            yUseLog = info.yAxisInfo.useLog;
-                            yUnit = info.yAxisInfo.unit;
-                        }
+                    if (updatePlot(this.xyPlotPlot1, (OIData) oiTable, tableIndex, plotDef, 0, dataset, info)) {
+                        showPlot1 = true;
                     }
                     tableIndex++;
                 }
 
-                if (showV2) {
-                    logger.info("xyPlotV2: nbSeries = {}", dataset.getSeriesCount());
+                if (showPlot1) {
+                    logger.info("showPlot1: nbSeries = {}", dataset.getSeriesCount());
 
-                    // TODO: fix boundaries according to standard data boundaries (VIS between 0-1 ...)
+                    // add plot info:
+                    plotInfos.add(info);
+
+                    // update X axis information:
+                    if (xMeta == null && info.xAxisInfo.columnMeta != null) {
+                        xMeta = info.xAxisInfo.columnMeta;
+                        xUseLog = info.xAxisInfo.useLog;
+                        xUnit = info.xAxisInfo.unit;
+                    }
+
+                    // update X range:
+                    minX = Math.min(minX, info.xAxisInfo.dataRange.getLowerBound());
+                    maxX = Math.max(maxX, info.xAxisInfo.dataRange.getUpperBound());
+
+                    boolean yUseLog = false;
+                    String yUnit = null;
+                    ColumnMeta yMeta = null;
+
+                    // update Y axis information:
+                    if (info.yAxisInfo.columnMeta != null) {
+                        yMeta = info.yAxisInfo.columnMeta;
+                        yUseLog = info.yAxisInfo.useLog;
+                        yUnit = info.yAxisInfo.unit;
+                    }
+
+                    // get Y range:
+                    double minY = info.yAxisInfo.dataRange.getLowerBound();
+                    double maxY = info.yAxisInfo.dataRange.getUpperBound();
+
                     logger.debug("rangeAxis: {} - {}", minY, maxY);
 
                     // use column meta's default range:
@@ -1038,6 +1034,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         }
                     }
                     logger.debug("fixed rangeAxis: {} - {}", minY, maxY);
+
+                    // update view range:
+                    info.yAxisInfo.viewRange = new Range(minY, maxY);
 
                     // Update Y axis:
                     if (!yUseLog) {
@@ -1079,7 +1078,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             }
         }
 
-        if (showV2) {
+        if (showPlot1) {
             this.combinedXYPlot.add(this.xyPlotPlot1, 1);
 
             final Integer plotIndex = Integer.valueOf(1);
@@ -1097,53 +1096,49 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 // reset dataset so free memory:
                 this.xyPlotPlot2.setDataset(null);
 
-                double minY = Double.POSITIVE_INFINITY;
-                double maxY = Double.NEGATIVE_INFINITY;
-                boolean yUseLog = false;
-                String yUnit = null;
-
-                PlotInfo info;
-                Range axisRange;
-                ColumnMeta yMeta = null;
+                final PlotInfo info = new PlotInfo();
 
                 int tableIndex = 0;
                 for (OITable oiTable : oiFitsSubset.getOiTables()) {
 
-                    info = updatePlot(this.xyPlotPlot2, (OIData) oiTable, tableIndex, plotDef, 1, dataset);
-
-                    if (info != null) {
-                        showT3 = true;
-
-                        // combine X range:
-                        axisRange = info.xAxisInfo.dataRange;
-                        minX = Math.min(minX, axisRange.getLowerBound());
-                        maxX = Math.max(maxX, axisRange.getUpperBound());
-
-                        // combine Y range:
-                        axisRange = info.yAxisInfo.dataRange;
-                        minY = Math.min(minY, axisRange.getLowerBound());
-                        maxY = Math.max(maxY, axisRange.getUpperBound());
-
-                        // update X axis Label:
-                        if (xMeta == null && info.xAxisInfo.columnMeta != null) {
-                            xMeta = info.xAxisInfo.columnMeta;
-                            xUseLog = info.xAxisInfo.useLog;
-                            xUnit = info.xAxisInfo.unit;
-                        }
-                        // update Y axis Label:
-                        if (yMeta == null && info.yAxisInfo.columnMeta != null) {
-                            yMeta = info.yAxisInfo.columnMeta;
-                            yUseLog = info.yAxisInfo.useLog;
-                            yUnit = info.yAxisInfo.unit;
-                        }
+                    if (updatePlot(this.xyPlotPlot2, (OIData) oiTable, tableIndex, plotDef, 1, dataset, info)) {
+                        showPlot2 = true;
                     }
                     tableIndex++;
                 }
 
-                if (showT3) {
-                    logger.info("xyPlotT3: nbSeries = {}", dataset.getSeriesCount());
+                if (showPlot2) {
+                    logger.info("xyPlotPlot2: nbSeries = {}", dataset.getSeriesCount());
 
-                    // TODO: fix boundaries according to standard data boundaries (T3 between -180-180 ...)
+                    // add plot info:
+                    plotInfos.add(info);
+
+                    // update X axis information:
+                    if (xMeta == null && info.xAxisInfo.columnMeta != null) {
+                        xMeta = info.xAxisInfo.columnMeta;
+                        xUseLog = info.xAxisInfo.useLog;
+                        xUnit = info.xAxisInfo.unit;
+                    }
+
+                    // update X range:
+                    minX = Math.min(minX, info.xAxisInfo.dataRange.getLowerBound());
+                    maxX = Math.max(maxX, info.xAxisInfo.dataRange.getUpperBound());
+
+                    boolean yUseLog = false;
+                    String yUnit = null;
+                    ColumnMeta yMeta = null;
+
+                    // update Y axis information:
+                    if (info.yAxisInfo.columnMeta != null) {
+                        yMeta = info.yAxisInfo.columnMeta;
+                        yUseLog = info.yAxisInfo.useLog;
+                        yUnit = info.yAxisInfo.unit;
+                    }
+
+                    // get Y range:
+                    double minY = info.yAxisInfo.dataRange.getLowerBound();
+                    double maxY = info.yAxisInfo.dataRange.getUpperBound();
+
                     logger.debug("rangeAxis: {} - {}", minY, maxY);
 
                     // use column meta's default range:
@@ -1185,6 +1180,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
                     logger.debug("fixed rangeAxis: {} - {}", minY, maxY);
 
+                    // update view range:
+                    info.yAxisInfo.viewRange = new Range(minY, maxY);
+
                     // Update Y axis:
                     if (!yUseLog) {
                         this.xyPlotPlot2.setRangeAxis(ChartUtils.createAxis(""));
@@ -1225,10 +1223,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             }
         }
 
-        if (showT3) {
+        if (showPlot2) {
             this.combinedXYPlot.add(this.xyPlotPlot2, 1);
 
-            final Integer plotIndex = (showV2) ? Integer.valueOf(2) : Integer.valueOf(1);
+            final Integer plotIndex = (showPlot1) ? Integer.valueOf(2) : Integer.valueOf(1);
             this.plotMapping.put(this.xyPlotPlot2, plotIndex);
             this.plotIndexMapping.put(plotIndex, this.xyPlotPlot2);
 
@@ -1237,14 +1235,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             this.xyPlotPlot2.setDataset(null);
         }
 
-        if (!showV2 && !showT3) {
+        if (!showPlot1 && !showPlot2) {
             if (logger.isInfoEnabled()) {
                 logger.info("updateChart : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
             }
             return false;
         }
 
-        // TODO: fix boundaries according to standard data boundaries (spatial freq >= 0)
         logger.debug("domainAxis: {} - {}", minX, maxX);
 
         // TODO: keep data info to help user define its own range
@@ -1297,6 +1294,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
         logger.debug("fixed domainAxis: {} - {}", minX, maxX);
 
+        // update view range:
+        for (PlotInfo info : this.plotInfos) {
+            info.xAxisInfo.viewRange = new Range(minX, maxX);
+        }
+
         if (!xUseLog) {
             this.combinedXYPlot.setDomainAxis(ChartUtils.createAxis(""));
         }
@@ -1348,11 +1350,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param plotDef plot definition to use
      * @param yAxisIndex yAxis index to use in plot definition
      * @param dataset FastIntervalXYDataset to fill
-     * @return rectangle giving data area or null if no data
+     * @param info plot information to update
+     * @return true if the given OIData table added date on the plot
      */
-    private PlotInfo updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
-                                final PlotDefinition plotDef, final int yAxisIndex,
-                                final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset) {
+    private boolean updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
+                               final PlotDefinition plotDef, final int yAxisIndex,
+                               final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
+                               final PlotInfo info) {
 
         // Get yAxis data:
         final boolean isYData2D;
@@ -1374,7 +1378,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             if (logger.isDebugEnabled()) {
                 logger.debug("unsupported yAxis : {} on {}", yAxis.getName(), oiData);
             }
-            return null;
+            return false;
         }
         logger.debug("yMeta:{}", yMeta);
 
@@ -1412,7 +1416,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             if (logger.isDebugEnabled()) {
                 logger.debug("unsupported xAxis : {} on {}", xAxis.getName(), oiData);
             }
-            return null;
+            return false;
         }
         logger.debug("xMeta:{}", yMeta);
 
@@ -1513,7 +1517,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         dataset.ensureCapacity(seriesCount + nStaIndexes * nWaveChannels);
 
         // Use FastIntervalXYDataset for performance (arrays XY intervals)
-        boolean hasData = false;
+        boolean hasPlotData = false;
         boolean hasDataFlag = false;
         boolean hasDataErrorX = false;
         boolean hasDataErrorY = false;
@@ -1536,10 +1540,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         int nSkipTarget = 0;
         int nSkipFlag = 0;
-
-        long start, total = 0l;
-
-        // TODO: support both 1D and 2D columns:
 
         // TODO: unroll loops (wave / baseline) ... and avoid repeated checks on rows (targetId, baseline ...)
 
@@ -1714,7 +1714,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 } // loop on data rows
 
                 if (idx > 0) {
-                    hasData = true;
+                    hasPlotData = true;
 
                     // crop data arrays:
                     if (idx < nRows) {
@@ -1737,12 +1737,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     // TODO: add oiTable, i (row), j (nWave) in dataset:
                     serieKey = new OITableSerieKey(tableIndex, k, j);
 
-                    start = System.nanoTime();
-
                     // Avoid any key conflict:
                     dataset.addSeries(serieKey, new double[][]{xValue, xLower, xUpper, yValue, yLower, yUpper});
-
-                    total += System.nanoTime() - start;
 
                     // TODO: adjust renderer settings per Serie (color, shape ...) !
                     renderer.setSeriesPaint(seriesCount, colors[j], false);
@@ -1754,6 +1750,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         } // iterate on wave channels
 
+        if (!hasPlotData) {
+            return false;
+        }
+
         if (logger.isDebugEnabled()) {
             if (nSkipFlag > 0) {
                 logger.debug("Nb SkipFlag: {}", nSkipFlag);
@@ -1764,16 +1764,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             logger.debug("nSeries {} vs {}", seriesCount, dataset.getSeriesCount());
         }
-        logger.warn("total addSeries duration = {} ms.", 1e-6d * total);
 
-        if (!hasData) {
-            return null;
-        }
+        // TODO: move out any reference to Plot/Renderer at higher level
 
         // TODO: adjust renderer settings per Serie (color, shape ...) !
-
-        // set shape depending on error (triangle or square):
-        final Shape shape = getPointShape(!hasDataFlag);
 
         // enable/disable X error rendering (performance):
         renderer.setDrawXError(hasDataErrorX);
@@ -1782,21 +1776,34 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         renderer.setDrawYError(hasDataErrorY);
 
         // use deprecated method but defines shape once for ALL series (performance):
-        renderer.setShape(shape);
+        // set shape depending on error (triangle or square):
+        renderer.setShape(getPointShape(!hasDataFlag));
+
         renderer.setLinesVisible(plotDef.isDrawLine());
 
-        final PlotInfo info = new PlotInfo();
+        // update plot information (should be consistent between calls):
+
+        if (info.xAxisInfo.dataRange != null) {
+            // combine X range:
+            minX = Math.min(minX, info.xAxisInfo.dataRange.getLowerBound());
+            maxX = Math.max(maxX, info.xAxisInfo.dataRange.getUpperBound());
+        }
         info.xAxisInfo.dataRange = new Range(minX, maxX);
         info.xAxisInfo.columnMeta = xMeta;
         info.xAxisInfo.useLog = xUseLog;
         info.xAxisInfo.unit = (doScaleX) ? xConverter.getUnit() : null;
 
+        if (info.yAxisInfo.dataRange != null) {
+            // combine Y range:
+            minY = Math.min(minY, info.yAxisInfo.dataRange.getLowerBound());
+            maxY = Math.max(maxY, info.yAxisInfo.dataRange.getUpperBound());
+        }
         info.yAxisInfo.dataRange = new Range(minY, maxY);
         info.yAxisInfo.columnMeta = yMeta;
         info.yAxisInfo.useLog = yUseLog;
         info.yAxisInfo.unit = (doScaleY) ? yConverter.getUnit() : null;
 
-        return info;
+        return true;
     }
 
     private double[] extract(final double[] input, final int len) {
