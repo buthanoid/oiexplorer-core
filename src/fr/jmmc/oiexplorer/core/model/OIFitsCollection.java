@@ -59,7 +59,7 @@ public final class OIFitsCollection implements ToStringable {
      * @param oifitsFile OIFits file
      * @return previous OIFits file or null if not present
      */
-    protected OIFitsFile addOIFitsFile(final OIFitsFile oifitsFile) {
+    OIFitsFile addOIFitsFile(final OIFitsFile oifitsFile) {
         if (oifitsFile != null) {
             final String key = getFilePath(oifitsFile);
 
@@ -89,7 +89,7 @@ public final class OIFitsCollection implements ToStringable {
         return null;
     }
 
-    protected OIFitsFile removeOIFitsFile(final OIFitsFile oifitsFile) {
+    OIFitsFile removeOIFitsFile(final OIFitsFile oifitsFile) {
         if (oifitsFile != null) {
             final String key = getFilePath(oifitsFile);
             final OIFitsFile previous = oiFitsCollection.remove(key);
@@ -113,7 +113,7 @@ public final class OIFitsCollection implements ToStringable {
      * @return string representation
      */
     @Override
-    public final String toString() {
+    public String toString() {
         final StringBuilder sb = new StringBuilder(256);
         toString(sb, OIBase.TO_STRING_VERBOSITY);
         return sb.toString();
