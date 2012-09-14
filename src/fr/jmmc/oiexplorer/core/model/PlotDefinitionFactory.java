@@ -36,10 +36,11 @@ public final class PlotDefinitionFactory {
 
     /* members */
     /** default plot definitions */
-    private final Map<String, PlotDefinition> defaults = new LinkedHashMap<String, PlotDefinition>();
+    private final Map<String, PlotDefinition> defaults = new LinkedHashMap<String, PlotDefinition>(16);
 
     /** 
      * Return the factory singleton instance 
+     * @return factory singleton instance 
      */
     public static PlotDefinitionFactory getInstance() {
         if (instance == null) {
@@ -101,9 +102,19 @@ public final class PlotDefinitionFactory {
         return defaults.values();
     }
 
-    /** Get the default preset given to its name. 
-     @return PlotDefinition associated to given name.*/
-    public PlotDefinition getDefault(final String key) {
-        return defaults.get(key);
+    /** 
+     * Get the default preset given to its name. 
+     * @param name name to look for 
+     * @return PlotDefinition associated to given name.
+     */
+    public PlotDefinition getDefault(final String name) {
+        if (name == null || name.length() == 0) {
+            return null;
+        }
+        final PlotDefinition plotDefinition = defaults.get(name);
+        if (plotDefinition == null) {
+            throw new IllegalArgumentException("Plot definition [" + name + "] not found !");
+        }
+        return plotDefinition;
     }
 }

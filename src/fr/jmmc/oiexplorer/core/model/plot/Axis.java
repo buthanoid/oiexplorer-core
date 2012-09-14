@@ -27,6 +27,7 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
  *         &lt;element name="includeZero" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
  *         &lt;element name="plotError" type="{http://www.w3.org/2001/XMLSchema}boolean" minOccurs="0"/>
  *         &lt;element name="range" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Range" minOccurs="0"/>
+ *         &lt;element name="converter" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -41,7 +42,8 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
     "logScale",
     "includeZero",
     "plotError",
-    "range"
+    "range",
+    "converter"
 })
 public class Axis
     extends OIBase
@@ -53,6 +55,7 @@ public class Axis
     protected boolean includeZero;
     protected Boolean plotError;
     protected Range range;
+    protected String converter;
 
     /**
      * Gets the value of the name property.
@@ -156,6 +159,30 @@ public class Axis
      */
     public void setRange(Range value) {
         this.range = value;
+    }
+
+    /**
+     * Gets the value of the converter property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
+     *     
+     */
+    public String getConverter() {
+        return converter;
+    }
+
+    /**
+     * Sets the value of the converter property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
+     *     
+     */
+    public void setConverter(String value) {
+        this.converter = value;
     }
     
 //--simple--preserve

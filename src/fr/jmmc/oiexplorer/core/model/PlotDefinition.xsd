@@ -144,6 +144,13 @@
                 
             <!-- TODO enum fonction -->
             <!-- TODO unit conversion -->
+            <xsd:element name="converter" type="xsd:string" minOccurs="0" maxOccurs="1">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Converter key associated to this axis
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>            
                                                   
         </xsd:sequence>
     </xsd:complexType>
