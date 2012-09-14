@@ -6,6 +6,8 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ImageUtils;
 import fr.jmmc.jmcs.util.ObjectUtils;
+import fr.jmmc.oiexplorer.core.function.Converter;
+import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.gui.action.ExportPDFAction;
 import fr.jmmc.oiexplorer.core.gui.chart.BoundedLogAxis;
 import fr.jmmc.oiexplorer.core.gui.chart.BoundedNumberAxis;
@@ -29,6 +31,7 @@ import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oitools.meta.ColumnMeta;
+import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
@@ -76,7 +79,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public final class PlotChartPanel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-                                                                         PDFExportable, OIFitsCollectionManagerEventListener {
+                                                                        PDFExportable, OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -98,6 +101,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private Plot plot = null;
     /** flag to indicate if this plot has data */
     private boolean hasData = false;
+    /** plot information(s): TODO fill it */
+    private final List<PlotInfo> plotInfos = new ArrayList<PlotInfo>();
     /* plot data */
     /** jFreeChart instance */
     private JFreeChart chart;
@@ -188,7 +193,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             final OIFitsFile oiFitsSubset = getOiFitsSubset();
 
             // TODO: use plot columns to generate file name ?
-            
+
             final boolean hasVis2 = oiFitsSubset.hasOiVis2();
             final boolean hasT3 = oiFitsSubset.hasOiT3();
 
@@ -552,7 +557,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         logger.debug("mouseSelected: rectangle {}", selection);
 
         // TODO: determine which plot to use ?
-        
+
         // find data points:
         final List<Point2D> points = findDataPoints(selection);
 
@@ -937,6 +942,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         double minX = Double.POSITIVE_INFINITY;
         double maxX = Double.NEGATIVE_INFINITY;
         boolean xUseLog = false;
+        String xUnit = null;
 
         if (!plotDef.getYAxes().isEmpty()) {
 
@@ -948,6 +954,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 double minY = Double.POSITIVE_INFINITY;
                 double maxY = Double.NEGATIVE_INFINITY;
                 boolean yUseLog = false;
+                String yUnit = null;
 
                 PlotInfo info;
                 Range axisRange;
@@ -960,26 +967,28 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     if (info != null) {
                         showV2 = true;
-                        xUseLog = info.xUseLog;
-                        yUseLog = info.yUseLog;
 
                         // combine X range:
-                        axisRange = info.xRange;
+                        axisRange = info.xAxisInfo.dataRange;
                         minX = Math.min(minX, axisRange.getLowerBound());
                         maxX = Math.max(maxX, axisRange.getUpperBound());
 
                         // combine Y range:
-                        axisRange = info.yRange;
+                        axisRange = info.yAxisInfo.dataRange;
                         minY = Math.min(minY, axisRange.getLowerBound());
                         maxY = Math.max(maxY, axisRange.getUpperBound());
 
                         // update X axis Label:
-                        if (xMeta == null && info.xMeta != null) {
-                            xMeta = info.xMeta;
+                        if (xMeta == null && info.xAxisInfo.columnMeta != null) {
+                            xMeta = info.xAxisInfo.columnMeta;
+                            xUseLog = info.xAxisInfo.useLog;
+                            xUnit = info.xAxisInfo.unit;
                         }
                         // update Y axis Label:
-                        if (yMeta == null && info.yMeta != null) {
-                            yMeta = info.yMeta;
+                        if (yMeta == null && info.yAxisInfo.columnMeta != null) {
+                            yMeta = info.yAxisInfo.columnMeta;
+                            yUseLog = info.yAxisInfo.useLog;
+                            yUnit = info.yAxisInfo.unit;
                         }
                     }
                     tableIndex++;
@@ -990,6 +999,19 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     // TODO: fix boundaries according to standard data boundaries (VIS between 0-1 ...)
                     logger.debug("rangeAxis: {} - {}", minY, maxY);
+
+                    // use column meta's default range:
+                    if (!yUseLog && yMeta != null && yMeta.getDataRange() != null) {
+                        final DataRange dataRange = yMeta.getDataRange();
+
+                        if (!Double.isNaN(dataRange.getMin())) {
+                            minY = Math.min(minY, dataRange.getMin());
+                        }
+
+                        if (!Double.isNaN(dataRange.getMax())) {
+                            maxY = Math.max(maxY, dataRange.getMax());
+                        }
+                    }
 
                     // Add margin:
                     if (yUseLog) {
@@ -1031,7 +1053,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     String label = "";
                     if (yMeta != null) {
                         label = yMeta.getName();
-                        if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
+                        if (yUnit != null) {
+                            label += " (" + yUnit + ")";
+                        } else if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
                             label += " (" + yMeta.getUnits().getStandardRepresentation() + ")";
                         }
                         this.xyPlotPlot1.getRangeAxis().setLabel(label);
@@ -1076,6 +1100,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 double minY = Double.POSITIVE_INFINITY;
                 double maxY = Double.NEGATIVE_INFINITY;
                 boolean yUseLog = false;
+                String yUnit = null;
 
                 PlotInfo info;
                 Range axisRange;
@@ -1088,26 +1113,28 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     if (info != null) {
                         showT3 = true;
-                        xUseLog = info.xUseLog;
-                        yUseLog = info.yUseLog;
 
                         // combine X range:
-                        axisRange = info.xRange;
+                        axisRange = info.xAxisInfo.dataRange;
                         minX = Math.min(minX, axisRange.getLowerBound());
                         maxX = Math.max(maxX, axisRange.getUpperBound());
 
                         // combine Y range:
-                        axisRange = info.yRange;
+                        axisRange = info.yAxisInfo.dataRange;
                         minY = Math.min(minY, axisRange.getLowerBound());
                         maxY = Math.max(maxY, axisRange.getUpperBound());
 
                         // update X axis Label:
-                        if (xMeta == null && info.xMeta != null) {
-                            xMeta = info.xMeta;
+                        if (xMeta == null && info.xAxisInfo.columnMeta != null) {
+                            xMeta = info.xAxisInfo.columnMeta;
+                            xUseLog = info.xAxisInfo.useLog;
+                            xUnit = info.xAxisInfo.unit;
                         }
                         // update Y axis Label:
-                        if (yMeta == null && info.yMeta != null) {
-                            yMeta = info.yMeta;
+                        if (yMeta == null && info.yAxisInfo.columnMeta != null) {
+                            yMeta = info.yAxisInfo.columnMeta;
+                            yUseLog = info.yAxisInfo.useLog;
+                            yUnit = info.yAxisInfo.unit;
                         }
                     }
                     tableIndex++;
@@ -1118,6 +1145,19 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     // TODO: fix boundaries according to standard data boundaries (T3 between -180-180 ...)
                     logger.debug("rangeAxis: {} - {}", minY, maxY);
+
+                    // use column meta's default range:
+                    if (!yUseLog && yMeta != null && yMeta.getDataRange() != null) {
+                        final DataRange dataRange = yMeta.getDataRange();
+
+                        if (!Double.isNaN(dataRange.getMin())) {
+                            minY = Math.min(minY, dataRange.getMin());
+                        }
+
+                        if (!Double.isNaN(dataRange.getMax())) {
+                            maxY = Math.max(maxY, dataRange.getMax());
+                        }
+                    }
 
                     // Add margin:
                     if (yUseLog) {
@@ -1159,7 +1199,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     String label = "";
                     if (yMeta != null) {
                         label = yMeta.getName();
-                        if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
+                        if (yUnit != null) {
+                            label += " (" + yUnit + ")";
+                        } else if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
                             label += " (" + yMeta.getUnits().getStandardRepresentation() + ")";
                         }
                         this.xyPlotPlot2.getRangeAxis().setLabel(label);
@@ -1204,8 +1246,21 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // TODO: fix boundaries according to standard data boundaries (spatial freq >= 0)
         logger.debug("domainAxis: {} - {}", minX, maxX);
-        
+
         // TODO: keep data info to help user define its own range
+
+        // use column meta's default range:
+        if (!xUseLog && xMeta != null && xMeta.getDataRange() != null) {
+            final DataRange dataRange = xMeta.getDataRange();
+
+            if (!Double.isNaN(dataRange.getMin())) {
+                minX = Math.min(minX, dataRange.getMin());
+            }
+
+            if (!Double.isNaN(dataRange.getMax())) {
+                maxX = Math.max(maxX, dataRange.getMax());
+            }
+        }
 
         // Add margin:
         if (xUseLog) {
@@ -1255,7 +1310,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         String label = "";
         if (xMeta != null) {
             label = xMeta.getName();
-            if (xMeta != null && xMeta.getUnits() != Units.NO_UNIT) {
+            if (xUnit != null) {
+                label += " (" + xUnit + ")";
+            } else if (xMeta != null && xMeta.getUnits() != Units.NO_UNIT) {
                 label += " (" + xMeta.getUnits().getStandardRepresentation() + ")";
             }
             this.combinedXYPlot.getDomainAxis().setLabel(label);
@@ -1308,6 +1365,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final String yAxisName = yAxis.getName();
         final boolean yUseLog = yAxis.isLogScale();
 
+        final Converter yConverter = ConverterFactory.getInstance().getDefault(yAxis.getConverter());
+        final boolean doScaleY = yConverter != null;
+
         final ColumnMeta yMeta = oiData.getColumnMeta(yAxisName);
 
         if (yMeta == null) {
@@ -1343,6 +1403,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final String xAxisName = xAxis.getName();
         final boolean xUseLog = xAxis.isLogScale();
 
+        final Converter xConverter = ConverterFactory.getInstance().getDefault(xAxis.getConverter());
+        final boolean doScaleX = xConverter != null;
+
         final ColumnMeta xMeta = oiData.getColumnMeta(xAxisName);
 
         if (xMeta == null) {
@@ -1352,12 +1415,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             return null;
         }
         logger.debug("xMeta:{}", yMeta);
-
-        // TODO support scalling function on axes
-        // final boolean doScaleX = (plotDef.getxAxisScalingFactor() != null);
-        // final double xScale = (doScaleX) ? plotDef.getxAxisScalingFactor().doubleValue() : 0d;
-        final boolean doScaleX = false;
-        final double xScale = 1d;
 
         isXData2D = xMeta.isArray();
 
@@ -1556,6 +1613,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
 
                     if (!Double.isNaN(y)) {
+                        // convert y value:
+                        if (doScaleY) {
+                            y = yConverter.evaluate(y);
+                        }
 
                         // Process X value:
                         x = (isXData2D) ? xData2D[i][j] : xData1D[i];
@@ -1566,9 +1627,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         }
 
                         if (!Double.isNaN(x)) {
-                            // Scale X value:
+                            // convert x value:
                             if (doScaleX) {
-                                x *= xScale;
+                                x = xConverter.evaluate(x);
                             }
 
                             // Process X / Y Errors:
@@ -1590,6 +1651,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                 }
                             } else {
                                 hasDataErrorY = true;
+
+                                // convert yErr value:
+                                if (doScaleY) {
+                                    yErr = yConverter.evaluate(yErr);
+                                }
 
                                 // useLog: check if y - err < 0:
                                 yValue[idx] = y;
@@ -1622,9 +1688,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             } else {
                                 hasDataErrorX = true;
 
-                                // Scale X error value:
+                                // convert xErr value:
                                 if (doScaleX) {
-                                    xErr *= xScale;
+                                    xErr = xConverter.evaluate(xErr);
                                 }
 
                                 xValue[idx] = x;
@@ -1720,13 +1786,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         renderer.setLinesVisible(plotDef.isDrawLine());
 
         final PlotInfo info = new PlotInfo();
-        info.xRange = new Range(minX, maxX);
-        info.xMeta = xMeta;
-        info.xUseLog = xUseLog;
+        info.xAxisInfo.dataRange = new Range(minX, maxX);
+        info.xAxisInfo.columnMeta = xMeta;
+        info.xAxisInfo.useLog = xUseLog;
+        info.xAxisInfo.unit = (doScaleX) ? xConverter.getUnit() : null;
 
-        info.yRange = new Range(minY, maxY);
-        info.yMeta = yMeta;
-        info.yUseLog = yUseLog;
+        info.yAxisInfo.dataRange = new Range(minY, maxY);
+        info.yAxisInfo.columnMeta = yMeta;
+        info.yAxisInfo.useLog = yUseLog;
+        info.yAxisInfo.unit = (doScaleY) ? yConverter.getUnit() : null;
+
         return info;
     }
 
@@ -2011,18 +2080,27 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     private static class PlotInfo {
 
-        /** x data range */
-        Range xRange = null;
-        /** x colum meta data */
-        ColumnMeta xMeta = null;
-        /** x log axis */
-        boolean xUseLog;
-        /** y data range */
-        Range yRange = null;
-        /** y colum meta data */
-        ColumnMeta yMeta = null;
-        /** y log axis */
-        boolean yUseLog;
+        AxisInfo xAxisInfo;
+        AxisInfo yAxisInfo;
+
+        PlotInfo() {
+            xAxisInfo = new AxisInfo();
+            yAxisInfo = new AxisInfo();
+        }
+    }
+
+    private static class AxisInfo {
+
+        /** colum meta data */
+        ColumnMeta columnMeta = null;
+        /** is log axis */
+        boolean useLog = false;
+        /** data range */
+        Range dataRange = null;
+        /** view range (with margin) */
+        Range viewRange = null;
+        /** converter unit */
+        String unit = null;
     }
 
     /*
