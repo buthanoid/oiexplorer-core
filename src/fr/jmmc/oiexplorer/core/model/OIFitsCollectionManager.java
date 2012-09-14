@@ -4,6 +4,9 @@
 package fr.jmmc.oiexplorer.core.model;
 
 import fr.jmmc.jmcs.gui.component.StatusBar;
+import fr.jmmc.jmcs.jaxb.JAXBFactory;
+import fr.jmmc.jmcs.jaxb.JAXBUtils;
+import fr.jmmc.jmcs.jaxb.XmlBindException;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
@@ -36,6 +39,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(OIFitsCollectionManager.class);
+    /** package name for JAXB generated code */
+    private final static String OIFITS_EXPLORER_MODEL_JAXB_PATH = OiDataCollection.class.getPackage().getName();
     /** Singleton pattern */
     private final static OIFitsCollectionManager instance = new OIFitsCollectionManager();
     /** Current key for SubsetDefinition */
@@ -45,12 +50,16 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     /** Current key for View */
     public final static String CURRENT_VIEW = "CURRENT_VIEW";
     /* members */
+    /** internal JAXB Factory */
+    private final JAXBFactory jf;
     /** flag to enable/disable firing events during startup (before calling start) */
     private boolean enableEvents = false;
+    /** OIFits explorer collection structure */
+    private OiDataCollection userCollection = null;
+    /** associated file to the OIFits explorer collection */
+    private File oiFitsCollectionFile = null;
     /** OIFits collection */
     private OIFitsCollection oiFitsCollection = null;
-    /** Container of loaded data and user plot definitions */
-    private OiDataCollection userCollection = null;
     /* event dispatchers */
     /** OIFitsCollectionManagerEventType event notifier map */
     private final EnumMap<OIFitsCollectionManagerEventType, EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object>> oiFitsCollectionManagerEventNotifierMap;
@@ -69,6 +78,10 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     private OIFitsCollectionManager() {
         super();
+
+        this.jf = JAXBFactory.getInstance(OIFITS_EXPLORER_MODEL_JAXB_PATH);
+
+        logger.debug("OIFitsCollectionManager: JAXBFactory: {}", this.jf);
 
         this.oiFitsCollectionManagerEventNotifierMap = new EnumMap<OIFitsCollectionManagerEventType, EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object>>(OIFitsCollectionManagerEventType.class);
 
@@ -107,6 +120,46 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /* --- OIFits file collection handling ------------------------------------- */
     /**
+     * Load the OIFits collection at given URL
+     * @param file OIFits explorer collection file file to load
+     * @param checker optional OIFits checker instance (may be null)
+     * @throws IOException if an I/O exception occured
+     * @throws IllegalStateException if an unexpected exception occured
+     * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
+     */
+    public void loadOIFitsCollection(final File file, final OIFitsChecker checker) throws IOException, IllegalStateException, XmlBindException {
+        final long startTime = System.nanoTime();
+
+        final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
+
+        setOiFitsCollectionFile(file);
+
+        loadOIDataCollection(loadedUserCollection, checker);
+
+        logger.info("loadOIFitsCollection: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+    }
+
+    /**
+     * Load the OIFits collection at given URL
+     * @param file OIFits explorer collection file file to load
+     * @throws IOException if an I/O exception occured
+     * @throws IllegalStateException if an unexpected exception occured
+     */
+    public void saveOIFitsCollection(final File file) throws IOException, IllegalStateException {
+        final long startTime = System.nanoTime();
+
+        final OiDataCollection savedUserCollection = getUserCollection();
+
+        // TODO: may also save OIFits file copies into zip archive (xml + OIFits files) ??
+
+        JAXBUtils.saveObject(file, savedUserCollection, this.jf);
+
+        setOiFitsCollectionFile(file);
+
+        logger.info("saveOIFitsCollection: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+    }
+
+    /**
      * Load the given OI Fits Files with the given checker component
      * and add it to the OIFits collection
      * @param files files to load
@@ -127,7 +180,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param checker to report validation information
      * @throws IOException if a fits file can not be loaded
      */
-    public void loadOIDataCollection(final OiDataCollection oiDataCollection, final OIFitsChecker checker) throws IOException {
+    private void loadOIDataCollection(final OiDataCollection oiDataCollection, final OIFitsChecker checker) throws IOException {
 
         // first reset:
         reset();
@@ -198,6 +251,22 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
     }
 
+    /**
+     * Return the current OIFits explorer collection file
+     * @return the current OIFits explorer collection file or null if undefined
+     */
+    public File getOiFitsCollectionFile() {
+        return this.oiFitsCollectionFile;
+    }
+
+    /**
+     * Private : define the current OIFits explorer collection file
+     * @param file new OIFits explorer collection file to use
+     */
+    private void setOiFitsCollectionFile(final File file) {
+        this.oiFitsCollectionFile = file;
+    }
+
     // TODO: save / merge ... (elsewhere)
     /**
      * Reset the OIFits file collection and start firing events
@@ -211,18 +280,22 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * Reset the OIFits file collection
      */
     public void reset() {
-        oiFitsCollection = new OIFitsCollection();
         userCollection = new OiDataCollection();
+        oiFitsCollection = new OIFitsCollection();
+
+        setOiFitsCollectionFile(null);
 
         fireOIFitsCollectionChanged();
     }
 
-    OIFitsCollection getOIFitsCollection() {
-        return oiFitsCollection;
-    }
-
-    public void addOIFitsFile(final OIFitsFile oiFitsFile) {
+    /**
+     * Add an OIDataFile given its corresponding OIFits structure
+     * @param oiFitsFile OIFits structure
+     * @return true if an OIDataFile was added
+     */
+    public boolean addOIFitsFile(final OIFitsFile oiFitsFile) {
         if (oiFitsFile != null) {
+
             // check if already present in collection:
             if (oiFitsCollection.addOIFitsFile(oiFitsFile) == null) {
 
@@ -241,12 +314,20 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 dataFile.setOIFitsFile(oiFitsFile);
 
                 addOIDataFileRef(dataFile);
-            }
 
-            fireOIFitsCollectionChanged();
+                fireOIFitsCollectionChanged();
+
+                return true;
+            }
         }
+        return false;
     }
 
+    /**
+     * Remove the OIDataFile given its corresponding OIFits structure (filePath matching) 
+     * @param oiFitsFile OIFits structure
+     * @return removed OIDataFile or null if not found
+     */
     public OIFitsFile removeOIFitsFile(final OIFitsFile oiFitsFile) {
         final OIFitsFile previous = this.oiFitsCollection.removeOIFitsFile(oiFitsFile);
 
@@ -268,13 +349,19 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /** 
-     * This method can be used to export current file list 
-     * @return Container of loaded data and user plot definitions
-     * 
-     * TODO: dangerous so protect this method ASAP
+     * Protected: Return the OIFits explorer collection structure
+     * @return OIFits explorer collection structure
      */
-    public OiDataCollection getUserCollection() {
+    OiDataCollection getUserCollection() {
         return userCollection;
+    }
+
+    /**
+     * Protected: return the OIFits collection
+     * @return OIFits collection
+     */
+    OIFitsCollection getOIFitsCollection() {
+        return oiFitsCollection;
     }
 
     /* --- file handling ------------------------------------- */
