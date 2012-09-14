@@ -27,10 +27,7 @@
             <name>SPATIAL_FREQ</name>
             <logScale>false</logScale>
             <includeZero>true</includeZero>
-            <!-- TODO : refaire l'equivalent de    
-            plotDef.setxAxisScalingFactor(1e-6d);
-            plotDef.setxAxisUnit("M\u03BB");
-            -->
+            <converter>MEGA_LAMBDA</converter>
         </xAxis>
         <yAxes>
             <name>VIS2DATA</name>
@@ -53,10 +50,7 @@
             <name>EFF_WAVE</name>
             <logScale>false</logScale>
             <includeZero>false</includeZero>
-            <!-- TODO : refaire l'equivalent de 
-            plotDef.setxAxisScalingFactor(1e6d);
-            plotDef.setxAxisUnit("micrometer");
-            -->
+            <converter>MICRO_METER</converter>
         </xAxis>
         <yAxes>
             <name>VIS2DATA</name>
@@ -101,10 +95,7 @@
             <name>SPATIAL_FREQ</name>
             <logScale>false</logScale>
             <includeZero>true</includeZero>
-            <!-- TODO : refaire l'equivalent de    
-            plotDef.setxAxisScalingFactor(1e-6d);
-            plotDef.setxAxisUnit("M\u03BB");
-            -->
+            <converter>MEGA_LAMBDA</converter>
         </xAxis>
         <yAxes>
             <name>VISAMP</name>
@@ -127,10 +118,7 @@
             <name>SPATIAL_FREQ</name>
             <logScale>false</logScale>
             <includeZero>true</includeZero>
-            <!-- TODO : refaire l'equivalent de    
-            plotDef.setxAxisScalingFactor(1e-6d);
-            plotDef.setxAxisUnit("M\u03BB");
-            -->
+            <converter>MEGA_LAMBDA</converter>
         </xAxis>
         <yAxes>
             <name>VISAMP</name>
