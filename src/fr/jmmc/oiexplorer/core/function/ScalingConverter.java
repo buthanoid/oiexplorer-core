@@ -4,39 +4,35 @@
 package fr.jmmc.oiexplorer.core.function;
 
 /**
- * This converter performs linear conversion (y = a.x + b)
+ * This converter performs scaling conversion (y = a.x)
  * @author bourgesl
  */
-public final class LinearConverter implements Converter {
+public final class ScalingConverter implements Converter {
 
     /* members */
     /** scaling factor (a) */
     private final double scalingFactor;
-    /** constant part (b) */
-    private final double constant;
     /** optional unit label (may be null) */
     private final String unit;
 
     /**
      * Public constructor
      * @param scalingFactor scaling factor (a)
-     * @param constant constant part (b)
      * @param unit optional unit label (may be null)
      */
-    public LinearConverter(final double scalingFactor, final double constant, final String unit) {
+    public ScalingConverter(final double scalingFactor, final String unit) {
         this.scalingFactor = scalingFactor;
-        this.constant = constant;
         this.unit = unit;
     }
 
     /**
      * Compute an output value given one input value using:
-     * y = a.x + b
+     * y = a.x
      * @param value input value (x)
      * @return output value (y)
      */
     public double evaluate(final double value) {
-        return scalingFactor * value + constant;
+        return scalingFactor * value;
     }
 
     /**
