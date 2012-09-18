@@ -63,7 +63,6 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
     public int getSeriesCount() {
         // Optimized code (use int):
         return seriesCount;
-//        return this.seriesList.size();
     }
 
     /**
@@ -80,7 +79,6 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
     public Comparable<V> getSeriesKey(final int series) {
         // Optimized code (use int):
         if (series < 0 || series >= seriesCount) {
-//        if ((series < 0) || (series >= getSeriesCount())) {
             throw new IllegalArgumentException("Series index out of bounds");
         }
         return this.keysIndexes.get(Integer.valueOf(series));
@@ -100,7 +98,6 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
     public int getItemCount(final int series) {
         // Optimized code (use int):
         if (series < 0 || series >= seriesCount) {
-//        if (series < 0 || series >= getSeriesCount()) {
             throw new IllegalArgumentException("Series index out of bounds");
         }
         final double[][] seriesData = this.seriesList.get(series);
@@ -503,9 +500,10 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      */
     @Override
     public Object clone() throws CloneNotSupportedException {
-        final FastIntervalXYDataset clone = (FastIntervalXYDataset) super.clone();
+        throw new IllegalStateException("Not Implemented !");
         // TODO: implement correctly:
         /*
+         final FastIntervalXYDataset clone = (FastIntervalXYDataset) super.clone();
          clone.seriesKeys = new java.util.ArrayList(this.seriesKeys);
          clone.seriesList = new ArrayList(this.seriesList.size());
          for (int i = 0; i < this.seriesList.size(); i++) {
@@ -530,7 +528,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
          System.arraycopy(yEnd, 0, yyEnd, 0, yEnd.length);
          clone.seriesList.add(i, new double[][]{xx, xxStart, xxEnd, yy, yyStart, yyEnd});
          }
+         return clone;
          */
-        return clone;
     }
 }
