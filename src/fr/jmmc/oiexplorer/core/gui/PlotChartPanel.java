@@ -99,9 +99,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private String plotId = null;
     /** plot object reference (read only) */
     private Plot plot = null;
-    /** flag to indicate if this plot has data */
-    private boolean hasData = false;
-    /** plot information(s): TODO fill it */
+    /** plot information(s) */
     private final List<PlotInfo> plotInfos = new ArrayList<PlotInfo>();
     /* plot data */
     /** jFreeChart instance */
@@ -184,29 +182,32 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     @Override
     public String getPDFDefaultFileName() {
 
-        // TODO: fix this code as the plot will become generic !
+        // TODO: keep values from dataset ONLY: 
+        // - arrName, insName, dateObs (keywords) = OK
+        // - baselines or configurations (rows) = KO ... IF HAS DATA (filtered)
 
-        // TODO: keep values from dataset: insName, baselines, dateObs ... IF HAS DATA (filtered)
-
-        if (getOiFitsSubset() != null && getPlotDefinition() != null) {
-
-            final OIFitsFile oiFitsSubset = getOiFitsSubset();
-
-            // TODO: use plot columns to generate file name ?
-
-            final boolean hasVis2 = oiFitsSubset.hasOiVis2();
-            final boolean hasT3 = oiFitsSubset.hasOiT3();
+        if (isHasData()) {
 
             final Set<String> distinct = new LinkedHashSet<String>();
 
             final StringBuilder sb = new StringBuilder(32);
+            AxisInfo axisInfo;
 
-            if (hasVis2) {
-                sb.append("Vis2_");
+            // add Y axes:
+            for (PlotInfo info : this.plotInfos) {
+                axisInfo = info.yAxisInfo;
+                distinct.add((axisInfo.useLog) ? "log_" + axisInfo.columnMeta.getName() : axisInfo.columnMeta.getName());
             }
-            if (oiFitsSubset.hasOiT3()) {
-                sb.append("T3_");
+            if (!distinct.isEmpty()) {
+                toString(distinct, sb, "_", "_");
             }
+
+            sb.append("_vs_");
+
+            // add X axis:
+            axisInfo = this.plotInfos.get(0).xAxisInfo;
+            sb.append((axisInfo.useLog) ? "log_" + axisInfo.columnMeta.getName() : axisInfo.columnMeta.getName());
+            sb.append('_');
 
             // Add target name:
             final String altName = getTargetName().replaceAll(Constants.REGEXP_INVALID_TEXT_CHARS, "_");
@@ -219,11 +220,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     return oiData.getArrName();
                 }
             };
-            if (hasVis2) {
-                getDistinct(oiFitsSubset.getOiVis2(), distinct, arrNameOperator);
-            }
-            if (hasT3) {
-                getDistinct(oiFitsSubset.getOiT3(), distinct, arrNameOperator);
+
+            distinct.clear();
+            for (PlotInfo info : this.plotInfos) {
+                getDistinct(info.oidataList, distinct, arrNameOperator);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "_", "_", 3, "MULTI_ARRNAME");
@@ -237,12 +237,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     return oiData.getInsName();
                 }
             };
+
             distinct.clear();
-            if (hasVis2) {
-                getDistinct(oiFitsSubset.getOiVis2(), distinct, insNameOperator);
-            }
-            if (hasT3) {
-                getDistinct(oiFitsSubset.getOiT3(), distinct, insNameOperator);
+            for (PlotInfo info : this.plotInfos) {
+                getDistinct(info.oidataList, distinct, insNameOperator);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "_", "_", 3, "MULTI_INSNAME");
@@ -250,13 +248,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             sb.append('_');
 
-            // Add unique baselines:
+            // Add unique configurations:
             distinct.clear();
-            if (hasVis2) {
-                getDistinctStaConfs(oiFitsSubset.getOiVis2(), distinct);
-            }
-            if (hasT3) {
-                getDistinctStaConfs(oiFitsSubset.getOiT3(), distinct);
+            for (PlotInfo info : this.plotInfos) {
+                getDistinctStaConfs(info.oidataList, distinct);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "-", "_", 3, "MULTI_CONF");
@@ -270,12 +265,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     return oiData.getDateObs();
                 }
             };
+
             distinct.clear();
-            if (hasVis2) {
-                getDistinct(oiFitsSubset.getOiVis2(), distinct, dateObsOperator);
-            }
-            if (hasT3) {
-                getDistinct(oiFitsSubset.getOiT3(), distinct, dateObsOperator);
+            for (PlotInfo info : this.plotInfos) {
+                getDistinct(info.oidataList, distinct, dateObsOperator);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "_", "_", 3, "MULTI_DATE");
@@ -415,9 +408,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
 
-        // only display Y error:
-        renderer.setDrawXError(false);
-
         // force to use the base shape
         renderer.setAutoPopulateSeriesShape(false);
 
@@ -425,12 +415,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         renderer.setAutoPopulateSeriesPaint(false);
         renderer.clearSeriesPaints(false);
 
-        // define deprecated methods to set renderer options for ALL series (performance):
+        // set renderer options for ALL series (performance):
         renderer.setShapesVisible(true);
         renderer.setShapesFilled(true);
         renderer.setDrawOutlines(false);
-
-        renderer.setItemLabelsVisible(false);
 
         // define error bar settings:
         renderer.setErrorStroke(AbstractRenderer.DEFAULT_STROKE);
@@ -540,6 +528,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     @Override
     public void chartMouseMoved(final ChartMouseEvent chartMouseEvent) {
+        // enable this to move crosshair when the mouse is over the plot:
         if (false) {
             chartMouseClicked(chartMouseEvent);
         }
@@ -697,7 +686,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * Reset plot
      */
     private void resetPlot() {
-        this.hasData = false;
+
+        // clear plot informations
+        this.plotInfos.clear();
 
         // disable chart & plot notifications:
         this.chart.setNotify(false);
@@ -713,12 +704,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             this.xyPlotPlot1.setDataset(null);
             this.xyPlotPlot2.setDataset(null);
 
-            // useless:
-//            applyColorTheme();
-
-            this.resetOverlays();
-
-            this.chartPanel.setVisible(this.hasData);
+            this.chartPanel.setVisible(!this.plotInfos.isEmpty());
 
         } finally {
             // restore chart & plot notifications:
@@ -728,12 +714,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
     }
 
+    /**
+     * Remove all subplots in the combined plot and in the plot index
+     */
     private void removeAllSubPlots() {
+
+        this.resetOverlays();
+
         // remove all sub plots: 
         // Note: use toArray() to avoid concurrentModification exceptions:
-        for (Object plot : this.combinedXYPlot.getSubplots().toArray()) {
-            final XYPlot xyPlot = (XYPlot) plot;
-            this.combinedXYPlot.remove((XYPlot) plot);
+        for (Object subPlot : this.combinedXYPlot.getSubplots().toArray()) {
+            final XYPlot xyPlot = (XYPlot) subPlot;
+            this.combinedXYPlot.remove(xyPlot);
 
             final Integer index = this.plotMapping.remove(xyPlot);
             this.plotIndexMapping.remove(index);
@@ -753,7 +745,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final long start = System.nanoTime();
 
-        this.hasData = false;
+        // clear plot informations
+        this.plotInfos.clear();
 
         // disable chart & plot notifications:
         this.chart.setNotify(false);
@@ -764,122 +757,108 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             // title :
             ChartUtils.clearTextSubTitle(this.chart);
 
-            final OIFitsFile oiFitsSubset = getOiFitsSubset();
-
-            final boolean hasVis2 = oiFitsSubset.hasOiVis2();
-            final boolean hasT3 = oiFitsSubset.hasOiT3();
-
-            final Set<String> distinct = new LinkedHashSet<String>();
-
-            // TODO: fix this code as the plot will become generic !
-
-            // TODO: keep values from dataset: insName, baselines, dateObs ... IF HAS DATA (filtered)
-
-            final StringBuilder sb = new StringBuilder(32);
-
-            // Add distinct arrNames:
-            final GetOIDataString arrNameOperator = new GetOIDataString() {
-                public String getString(final OIData oiData) {
-                    return oiData.getArrName();
-                }
-            };
-            if (hasVis2) {
-                getDistinct(oiFitsSubset.getOiVis2(), distinct, arrNameOperator);
-            }
-            if (hasT3) {
-                getDistinct(oiFitsSubset.getOiT3(), distinct, arrNameOperator);
-            }
-            if (!distinct.isEmpty()) {
-                toString(distinct, sb, " ", " / ");
-            }
-
-            sb.append(" - ");
-
-            // Add unique insNames:
-            final GetOIDataString insNameOperator = new GetOIDataString() {
-                public String getString(final OIData oiData) {
-                    return oiData.getInsName();
-                }
-            };
-            distinct.clear();
-            if (hasVis2) {
-                getDistinct(oiFitsSubset.getOiVis2(), distinct, insNameOperator);
-            }
-            if (hasT3) {
-                getDistinct(oiFitsSubset.getOiT3(), distinct, insNameOperator);
-            }
-            if (!distinct.isEmpty()) {
-                toString(distinct, sb, " ", " / ");
-            }
-
-            sb.append(" ");
-
-            // Add wavelength ranges:
-            distinct.clear();
-            if (hasVis2) {
-                getDistinctWaveLengthRange(oiFitsSubset.getOiVis2(), distinct);
-            }
-            if (hasT3) {
-                getDistinctWaveLengthRange(oiFitsSubset.getOiT3(), distinct);
-            }
-            if (!distinct.isEmpty()) {
-                toString(distinct, sb, " ", " / ");
-            }
-
-            sb.append(" - ");
-
-            // Add unique baselines:
-            distinct.clear();
-            if (hasVis2) {
-                getDistinctStaConfs(oiFitsSubset.getOiVis2(), distinct);
-            }
-            if (hasT3) {
-                getDistinctStaConfs(oiFitsSubset.getOiT3(), distinct);
-            }
-            if (!distinct.isEmpty()) {
-                toString(distinct, sb, " ", " / ");
-            }
-
-            ChartUtils.addSubtitle(this.chart, sb.toString());
-
-            // date - Source:
-            sb.setLength(0);
-            sb.append("Day: ");
-
-            // Add unique dateObs:
-            final GetOIDataString dateObsOperator = new GetOIDataString() {
-                public String getString(final OIData oiData) {
-                    return oiData.getDateObs();
-                }
-            };
-            distinct.clear();
-            if (hasVis2) {
-                getDistinct(oiFitsSubset.getOiVis2(), distinct, dateObsOperator);
-            }
-            if (hasT3) {
-                getDistinct(oiFitsSubset.getOiT3(), distinct, dateObsOperator);
-            }
-            if (!distinct.isEmpty()) {
-                toString(distinct, sb, " ", " / ");
-            }
-
-            sb.append(" - Source: ").append(getTargetName());
-
-            ChartUtils.addSubtitle(this.chart, sb.toString());
+            removeAllSubPlots();
 
             // computed data are valid :
             // TODO: externalize dataset creation using SwingWorker to be able to 
             // - cancel long data processing task
             // - do not block EDT !
-            this.hasData = updateChart();
+            updateChart();
 
-            if (this.hasData) {
+            final boolean hasData = isHasData();
+
+            if (hasData) {
+
+                final Set<String> distinct = new LinkedHashSet<String>();
+
+                // TODO: keep values from dataset ONLY: 
+                // - arrName, insName, dateObs (keywords) = OK
+                // - baselines or configurations (rows) = KO ... IF HAS DATA (filtered)
+
+                final StringBuilder sb = new StringBuilder(32);
+
+                // Add distinct arrNames:
+                final GetOIDataString arrNameOperator = new GetOIDataString() {
+                    public String getString(final OIData oiData) {
+                        return oiData.getArrName();
+                    }
+                };
+
+                distinct.clear();
+                for (PlotInfo info : this.plotInfos) {
+                    getDistinct(info.oidataList, distinct, arrNameOperator);
+                }
+                if (!distinct.isEmpty()) {
+                    toString(distinct, sb, " ", " / ");
+                }
+
+                sb.append(" - ");
+
+                // Add unique insNames:
+                final GetOIDataString insNameOperator = new GetOIDataString() {
+                    public String getString(final OIData oiData) {
+                        return oiData.getInsName();
+                    }
+                };
+
+                distinct.clear();
+                for (PlotInfo info : this.plotInfos) {
+                    getDistinct(info.oidataList, distinct, insNameOperator);
+                }
+                if (!distinct.isEmpty()) {
+                    toString(distinct, sb, " ", " / ");
+                }
+
+                sb.append(" ");
+
+                // Add wavelength ranges:
+                distinct.clear();
+                for (PlotInfo info : this.plotInfos) {
+                    getDistinctWaveLengthRange(info.oidataList, distinct);
+                }
+                if (!distinct.isEmpty()) {
+                    toString(distinct, sb, " ", " / ");
+                }
+
+                sb.append(" - ");
+
+                // Add unique configurations:
+                distinct.clear();
+                for (PlotInfo info : this.plotInfos) {
+                    getDistinctStaConfs(info.oidataList, distinct);
+                }
+                if (!distinct.isEmpty()) {
+                    toString(distinct, sb, " ", " / ");
+                }
+
+                ChartUtils.addSubtitle(this.chart, sb.toString());
+
+                // date - Source:
+                sb.setLength(0);
+                sb.append("Day: ");
+
+                // Add unique dateObs:
+                final GetOIDataString dateObsOperator = new GetOIDataString() {
+                    public String getString(final OIData oiData) {
+                        return oiData.getDateObs();
+                    }
+                };
+                distinct.clear();
+                for (PlotInfo info : this.plotInfos) {
+                    getDistinct(info.oidataList, distinct, dateObsOperator);
+                }
+                if (!distinct.isEmpty()) {
+                    toString(distinct, sb, " ", " / ");
+                }
+
+                sb.append(" - Source: ").append(getTargetName());
+
+                ChartUtils.addSubtitle(this.chart, sb.toString());
+
                 applyColorTheme();
             }
 
-            this.resetOverlays();
-
-            this.chartPanel.setVisible(this.hasData);
+            this.chartPanel.setVisible(hasData);
 
         } finally {
             // restore chart & plot notifications:
@@ -917,20 +896,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
     /**
      * Update the datasets
-     * @return true if vis2 has data to plot
      */
-    private boolean updateChart() {
+    private void updateChart() {
         logger.info("updateChart: plot {}", this.plotId);
 
         final long start = System.nanoTime();
 
         final OIFitsFile oiFitsSubset = getOiFitsSubset();
         final PlotDefinition plotDef = getPlotDefinition();
-
-        removeAllSubPlots();
-
-        // clear plot informations
-        plotInfos.clear();
 
         boolean showPlot1 = false;
         boolean showPlot2 = false;
@@ -944,29 +917,33 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         boolean xUseLog = false;
         String xUnit = null;
 
+        // reset dataset anyway (so free memory):
+        this.xyPlotPlot1.setDataset(null);
+
         if (!plotDef.getYAxes().isEmpty()) {
 
             if (oiFitsSubset.getNbOiTables() > 0) {
                 final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>();
-                // reset dataset so free memory:
-                this.xyPlotPlot2.setDataset(null);
 
                 final PlotInfo info = new PlotInfo();
 
                 int tableIndex = 0;
                 for (OITable oiTable : oiFitsSubset.getOiTables()) {
 
-                    if (updatePlot(this.xyPlotPlot1, (OIData) oiTable, tableIndex, plotDef, 0, dataset, info)) {
-                        showPlot1 = true;
-                    }
+                    // process data and add data series into given dataset:
+                    updatePlot(this.xyPlotPlot1, (OIData) oiTable, tableIndex, plotDef, 0, dataset, info);
+
                     tableIndex++;
                 }
 
-                if (showPlot1) {
-                    logger.info("showPlot1: nbSeries = {}", dataset.getSeriesCount());
+                if (info.hasPlotData) {
+                    showPlot1 = true;
+
+                    logger.info("xyPlotPlot1: nData = {}", info.nData);
+                    logger.info("xyPlotPlot1: nbSeries = {}", dataset.getSeriesCount());
 
                     // add plot info:
-                    plotInfos.add(info);
+                    this.plotInfos.add(info);
 
                     // update X axis information:
                     if (xMeta == null && info.xAxisInfo.columnMeta != null) {
@@ -1072,6 +1049,23 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         this.xyPlotPlot1.setRangeAxis(logAxis);
                     }
 
+                    // update plot's renderer before dataset (avoid notify events):
+                    final FastXYErrorRenderer renderer = (FastXYErrorRenderer) this.xyPlotPlot1.getRenderer();
+
+                    // TODO: adjust renderer settings per Serie (color, shape ...) !
+
+                    // enable/disable X error rendering (performance):
+                    renderer.setDrawXError(info.xAxisInfo.hasDataError);
+
+                    // enable/disable Y error rendering (performance):
+                    renderer.setDrawYError(info.yAxisInfo.hasDataError);
+
+                    // use deprecated method but defines shape once for ALL series (performance):
+                    // set shape depending on error (triangle or square):
+                    renderer.setBaseShape(getPointShape(!info.hasDataFlag), false);
+
+                    renderer.setLinesVisible(plotDef.isDrawLine());
+
                     // update plot's dataset (notify events):
                     this.xyPlotPlot1.setDataset(dataset);
                 }
@@ -1084,34 +1078,35 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             final Integer plotIndex = Integer.valueOf(1);
             this.plotMapping.put(this.xyPlotPlot1, plotIndex);
             this.plotIndexMapping.put(plotIndex, this.xyPlotPlot1);
-
-        } else {
-            // reset Vis2 dataset:
-            this.xyPlotPlot1.setDataset(null);
         }
+
+
+        // reset dataset anyway (so free memory):
+        this.xyPlotPlot2.setDataset(null);
 
         if (plotDef.getYAxes().size() > 1) {
             if (oiFitsSubset.getNbOiTables() > 0) {
                 final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>();
-                // reset dataset so free memory:
-                this.xyPlotPlot2.setDataset(null);
 
                 final PlotInfo info = new PlotInfo();
 
                 int tableIndex = 0;
                 for (OITable oiTable : oiFitsSubset.getOiTables()) {
 
-                    if (updatePlot(this.xyPlotPlot2, (OIData) oiTable, tableIndex, plotDef, 1, dataset, info)) {
-                        showPlot2 = true;
-                    }
+                    // process data and add data series into given dataset:
+                    updatePlot(this.xyPlotPlot2, (OIData) oiTable, tableIndex, plotDef, 1, dataset, info);
+
                     tableIndex++;
                 }
 
-                if (showPlot2) {
+                if (info.hasPlotData) {
+                    showPlot2 = true;
+
+                    logger.info("xyPlotPlot2: nData = {}", info.nData);
                     logger.info("xyPlotPlot2: nbSeries = {}", dataset.getSeriesCount());
 
                     // add plot info:
-                    plotInfos.add(info);
+                    this.plotInfos.add(info);
 
                     // update X axis information:
                     if (xMeta == null && info.xAxisInfo.columnMeta != null) {
@@ -1217,7 +1212,24 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         this.xyPlotPlot2.setRangeAxis(logAxis);
                     }
 
-                    // update plot's dataset (notify events):
+                    // update plot's renderer before dataset (avoid notify events):
+                    final FastXYErrorRenderer renderer = (FastXYErrorRenderer) this.xyPlotPlot2.getRenderer();
+
+                    // TODO: adjust renderer settings per Serie (color, shape ...) !
+
+                    // enable/disable X error rendering (performance):
+                    renderer.setDrawXError(info.xAxisInfo.hasDataError);
+
+                    // enable/disable Y error rendering (performance):
+                    renderer.setDrawYError(info.yAxisInfo.hasDataError);
+
+                    // use deprecated method but defines shape once for ALL series (performance):
+                    // set shape depending on error (triangle or square):
+                    renderer.setBaseShape(getPointShape(!info.hasDataFlag), false);
+
+                    renderer.setLinesVisible(plotDef.isDrawLine());
+
+                    // update plot's dataset at the end (notify events):
                     this.xyPlotPlot2.setDataset(dataset);
                 }
             }
@@ -1229,17 +1241,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             final Integer plotIndex = (showPlot1) ? Integer.valueOf(2) : Integer.valueOf(1);
             this.plotMapping.put(this.xyPlotPlot2, plotIndex);
             this.plotIndexMapping.put(plotIndex, this.xyPlotPlot2);
-
-        } else {
-            // reset T3 dataset:
-            this.xyPlotPlot2.setDataset(null);
         }
 
         if (!showPlot1 && !showPlot2) {
             if (logger.isInfoEnabled()) {
                 logger.info("updateChart : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
             }
-            return false;
+            return;
         }
 
         logger.debug("domainAxis: {} - {}", minX, maxX);
@@ -1338,7 +1346,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         if (logger.isInfoEnabled()) {
             logger.info("updateChart : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
         }
-        return true;
     }
 
     /**
@@ -1351,26 +1358,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param yAxisIndex yAxis index to use in plot definition
      * @param dataset FastIntervalXYDataset to fill
      * @param info plot information to update
-     * @return true if the given OIData table added date on the plot
      */
-    private boolean updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
-                               final PlotDefinition plotDef, final int yAxisIndex,
-                               final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
-                               final PlotInfo info) {
+    private void updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
+                            final PlotDefinition plotDef, final int yAxisIndex,
+                            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
+                            final PlotInfo info) {
 
         // Get yAxis data:
-        final boolean isYData2D;
-        final double[] yData1D;
-        final double[] yData1DErr;
-        final double[][] yData2D;
-        final double[][] yData2DErr;
-
         final Axis yAxis = plotDef.getYAxes().get(yAxisIndex);
         final String yAxisName = yAxis.getName();
-        final boolean yUseLog = yAxis.isLogScale();
-
-        final Converter yConverter = ConverterFactory.getInstance().getDefault(yAxis.getConverter());
-        final boolean doScaleY = yConverter != null;
 
         final ColumnMeta yMeta = oiData.getColumnMeta(yAxisName);
 
@@ -1378,11 +1374,20 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             if (logger.isDebugEnabled()) {
                 logger.debug("unsupported yAxis : {} on {}", yAxis.getName(), oiData);
             }
-            return false;
+            return;
         }
         logger.debug("yMeta:{}", yMeta);
 
-        isYData2D = yMeta.isArray();
+        final boolean yUseLog = yAxis.isLogScale();
+
+        final Converter yConverter = ConverterFactory.getInstance().getDefault(yAxis.getConverter());
+        final boolean doScaleY = yConverter != null;
+
+        final boolean isYData2D = yMeta.isArray();
+        final double[] yData1D;
+        final double[] yData1DErr;
+        final double[][] yData2D;
+        final double[][] yData2DErr;
 
         if (isYData2D) {
             yData1D = null;
@@ -1397,18 +1402,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         // Get xAxis data:
-        final boolean isXData2D;
-        final double[] xData1D;
-        final double[] xData1DErr;
-        final double[][] xData2D;
-        final double[][] xData2DErr;
-
         final Axis xAxis = plotDef.getXAxis();
         final String xAxisName = xAxis.getName();
-        final boolean xUseLog = xAxis.isLogScale();
-
-        final Converter xConverter = ConverterFactory.getInstance().getDefault(xAxis.getConverter());
-        final boolean doScaleX = xConverter != null;
 
         final ColumnMeta xMeta = oiData.getColumnMeta(xAxisName);
 
@@ -1416,11 +1411,20 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             if (logger.isDebugEnabled()) {
                 logger.debug("unsupported xAxis : {} on {}", xAxis.getName(), oiData);
             }
-            return false;
+            return;
         }
         logger.debug("xMeta:{}", yMeta);
 
-        isXData2D = xMeta.isArray();
+        final boolean xUseLog = xAxis.isLogScale();
+
+        final Converter xConverter = ConverterFactory.getInstance().getDefault(xAxis.getConverter());
+        final boolean doScaleX = xConverter != null;
+
+        final boolean isXData2D = xMeta.isArray();
+        final double[] xData1D;
+        final double[] xData1DErr;
+        final double[][] xData2D;
+        final double[][] xData2DErr;
 
         if (isXData2D) {
             xData1D = null;
@@ -1434,9 +1438,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             xData2DErr = null;
         }
 
-
         final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
 
+        // serie count:
         int seriesCount = dataset.getSeriesCount();
 
         final int nRows = oiData.getNbRows();
@@ -1454,6 +1458,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final boolean hasFlag = (flags != null);
         final boolean hasTargetId = (targetIds != null);
 
+        // Get distinct staIndex in OIData (baseline or triplet):
         final short[][] distinctStaIndexes = oiData.getDistinctStaIndexes();
         final int nStaIndexes = distinctStaIndexes.length;
         logger.debug("nStaIndexes: {}", nStaIndexes);
@@ -1464,8 +1469,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final int nFlagged = oiData.getNFlagged();
         logger.debug("nFlagged: {}", nFlagged);
 
-        // flag to check flags on each 2D data:
-        final boolean checkFlaggedData = skipFlaggedData && hasFlag && (nFlagged > 0) && (isXData2D || isYData2D);
+        // flag to check flags on every 2D data:
+        final boolean checkFlaggedData = hasFlag && (nFlagged > 0) && (isXData2D || isYData2D);
         logger.debug("checkFlaggedData: {}", checkFlaggedData);
 
         // flag to check targetId on each data row:
@@ -1483,16 +1488,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // TODO: perform correct palette when using different OIWaveLength tables:
 
-        // Prepare palette
+        // Prepare palette:
         final Color[] colors = new Color[nWaves];
 
         final IndexColorModel colorModel = RAINBOW_COLOR_MODEL;
-
         final int iMaxColor = colorModel.getMapSize() - 1;
 
         final float factor = ((float) iMaxColor) / nWaves;
         float value;
 
+        // 80% opacity:
         final int alphaMask = Math.round(255 * 0.8f) << 24;
 
         for (int i = 0; i < nWaves; i++) {
@@ -1514,20 +1519,25 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             logger.debug("nbSeries to create : {}", nStaIndexes * nWaveChannels);
         }
 
+        // prepare dataset:
         dataset.ensureCapacity(seriesCount + nStaIndexes * nWaveChannels);
 
-        // Use FastIntervalXYDataset for performance (arrays XY intervals)
+        // flag indicating that this table has data to plot:
         boolean hasPlotData = false;
+        // flag indicating that the dataset contains flagged data:
         boolean hasDataFlag = false;
+        // flag indicating that the dataset has data with error on x axis:
         boolean hasDataErrorX = false;
+        // flag indicating that the dataset has data with error on y axis:
         boolean hasDataErrorY = false;
 
+        // x and y data ranges:
         double minX = Double.POSITIVE_INFINITY;
         double maxX = Double.NEGATIVE_INFINITY;
         double minY = Double.POSITIVE_INFINITY;
         double maxY = Double.NEGATIVE_INFINITY;
 
-        double[] xValue, xLower, xUpper, yValue, yLower, yUpper, tmp;
+        double[] xValue, xLower, xUpper, yValue, yLower, yUpper;
 
         boolean recycleArray = false;
         double[][] arrayPool = new double[6][];
@@ -1541,12 +1551,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         int nSkipTarget = 0;
         int nSkipFlag = 0;
 
+        int nData = 0;
+
         // TODO: unroll loops (wave / baseline) ... and avoid repeated checks on rows (targetId, baseline ...)
 
-        // Iterate on wave channels:
+        // Iterate on wave channels (j):
         for (int i, j = 0, k, idx; j < nWaveChannels; j++) {
 
-            // Iterate on baselines:
+            // Iterate on baselines (k):
             for (k = 0; k < nStaIndexes; k++) {
 
                 // get the sta index array:
@@ -1572,6 +1584,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 idx = 0;
 
+                // Iterate on table rows (i):
                 for (i = 0; i < nRows; i++) {
 
                     // check sta indexes ?
@@ -1601,7 +1614,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         }
                     }
 
-                    // TODO: filter data (wavelength, baseline ...)
+                    // TODO: filter data (wavelength, baseline, configuration, time ...)
+                    // TODO: support function (min, max, mean) applied to array data (2D)
 
 
                     // Process Y value:
@@ -1706,7 +1720,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                 }
                             }
 
+                            // increment number of valid data in serie arrays:
                             idx++;
+
                         } // x defined
 
                     } // y defined
@@ -1715,6 +1731,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 if (idx > 0) {
                     hasPlotData = true;
+                    nData += idx;
 
                     // crop data arrays:
                     if (idx < nRows) {
@@ -1751,7 +1768,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         } // iterate on wave channels
 
         if (!hasPlotData) {
-            return false;
+            return;
         }
 
         if (logger.isDebugEnabled()) {
@@ -1765,45 +1782,37 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             logger.debug("nSeries {} vs {}", seriesCount, dataset.getSeriesCount());
         }
 
-        // TODO: move out any reference to Plot/Renderer at higher level
-
-        // TODO: adjust renderer settings per Serie (color, shape ...) !
-
-        // enable/disable X error rendering (performance):
-        renderer.setDrawXError(hasDataErrorX);
-
-        // enable/disable Y error rendering (performance):
-        renderer.setDrawYError(hasDataErrorY);
-
-        // use deprecated method but defines shape once for ALL series (performance):
-        // set shape depending on error (triangle or square):
-        renderer.setShape(getPointShape(!hasDataFlag));
-
-        renderer.setLinesVisible(plotDef.isDrawLine());
-
         // update plot information (should be consistent between calls):
+        info.hasPlotData = true;
+        info.nData += nData;
+        info.hasDataFlag |= hasDataFlag; // logical OR
+        info.yAxisIndex = yAxisIndex;
+        // add given table:
+        info.oidataList.add(oiData);
 
-        if (info.xAxisInfo.dataRange != null) {
+        AxisInfo axisInfo = info.xAxisInfo;
+        if (axisInfo.dataRange != null) {
             // combine X range:
-            minX = Math.min(minX, info.xAxisInfo.dataRange.getLowerBound());
-            maxX = Math.max(maxX, info.xAxisInfo.dataRange.getUpperBound());
+            minX = Math.min(minX, axisInfo.dataRange.getLowerBound());
+            maxX = Math.max(maxX, axisInfo.dataRange.getUpperBound());
         }
-        info.xAxisInfo.dataRange = new Range(minX, maxX);
-        info.xAxisInfo.columnMeta = xMeta;
-        info.xAxisInfo.useLog = xUseLog;
-        info.xAxisInfo.unit = (doScaleX) ? xConverter.getUnit() : null;
+        axisInfo.dataRange = new Range(minX, maxX);
+        axisInfo.columnMeta = xMeta;
+        axisInfo.unit = (doScaleX) ? xConverter.getUnit() : null;
+        axisInfo.useLog = xUseLog;
+        axisInfo.hasDataError |= hasDataErrorX; // logical OR
 
-        if (info.yAxisInfo.dataRange != null) {
+        axisInfo = info.yAxisInfo;
+        if (axisInfo.dataRange != null) {
             // combine Y range:
-            minY = Math.min(minY, info.yAxisInfo.dataRange.getLowerBound());
-            maxY = Math.max(maxY, info.yAxisInfo.dataRange.getUpperBound());
+            minY = Math.min(minY, axisInfo.dataRange.getLowerBound());
+            maxY = Math.max(maxY, axisInfo.dataRange.getUpperBound());
         }
-        info.yAxisInfo.dataRange = new Range(minY, maxY);
-        info.yAxisInfo.columnMeta = yMeta;
-        info.yAxisInfo.useLog = yUseLog;
-        info.yAxisInfo.unit = (doScaleY) ? yConverter.getUnit() : null;
-
-        return true;
+        axisInfo.dataRange = new Range(minY, maxY);
+        axisInfo.columnMeta = yMeta;
+        axisInfo.unit = (doScaleY) ? yConverter.getUnit() : null;
+        axisInfo.useLog = yUseLog;
+        axisInfo.hasDataError |= hasDataErrorY; // logical OR
     }
 
     private double[] extract(final double[] input, final int len) {
@@ -1903,7 +1912,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @return true if the plot has data 
      */
     public boolean isHasData() {
-        return hasData;
+        return !this.plotInfos.isEmpty();
+    }
+
+    /**
+     * TODO: make PlotInfo public !!
+     * @return plotInfo list
+     */
+    public List<PlotInfo> getPlotInfos() {
+        return this.plotInfos;
     }
 
     /* --- OIFits helper : TODO move elsewhere --- */
@@ -1914,7 +1931,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param operator operator to get String values
      * @return unique String values
      */
-    private static Set<String> getDistinct(final OIData[] oiDataList, final Set<String> set, final GetOIDataString operator) {
+    private static Set<String> getDistinct(final List<OIData> oiDataList, final Set<String> set, final GetOIDataString operator) {
         String value;
         for (OIData oiData : oiDataList) {
             value = operator.getString(oiData);
@@ -1938,7 +1955,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param oiDataList OIData tables
      * @param set set instance to use
      */
-    private static void getDistinctStaNames(final OIData[] oiDataList, final Set<String> set) {
+    private static void getDistinctStaNames(final List<OIData> oiDataList, final Set<String> set) {
         String staNames;
         for (OIData oiData : oiDataList) {
             for (short[] staIndexes : oiData.getDistinctStaIndex()) {
@@ -1956,7 +1973,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param oiDataList OIData tables
      * @param set set instance to use
      */
-    private static void getDistinctStaConfs(final OIData[] oiDataList, final Set<String> set) {
+    private static void getDistinctStaConfs(final List<OIData> oiDataList, final Set<String> set) {
         String staNames;
         for (OIData oiData : oiDataList) {
             for (short[] staIndexes : oiData.getDistinctStaConf()) {
@@ -1974,7 +1991,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param oiDataList OIData tables
      * @param set set instance to use
      */
-    private static void getDistinctWaveLengthRange(final OIData[] oiDataList, final Set<String> set) {
+    private static void getDistinctWaveLengthRange(final List<OIData> oiDataList, final Set<String> set) {
         final StringBuilder sb = new StringBuilder();
 
         String wlenRange;
@@ -2087,10 +2104,23 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     private static class PlotInfo {
 
+        /** flag indicating that this table has data to plot */
+        boolean hasPlotData = false;
+        /** total number of data points */
+        int nData = 0;
+        /** flag indicating that the dataset contains flagged data */
+        boolean hasDataFlag = false;
+        /* y axis index in plot definition */
+        int yAxisIndex = -1;
+        /** list of OIData tables used */
+        List<OIData> oidataList;
+        /** x axis information */
         AxisInfo xAxisInfo;
+        /** y axis information */
         AxisInfo yAxisInfo;
 
         PlotInfo() {
+            oidataList = new ArrayList<OIData>();
             xAxisInfo = new AxisInfo();
             yAxisInfo = new AxisInfo();
         }
@@ -2100,14 +2130,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         /** colum meta data */
         ColumnMeta columnMeta = null;
-        /** is log axis */
-        boolean useLog = false;
         /** data range */
         Range dataRange = null;
         /** view range (with margin) */
         Range viewRange = null;
         /** converter unit */
         String unit = null;
+        /** is log axis */
+        boolean useLog = false;
+        /** flag indicating that the dataset has data with error */
+        boolean hasDataError = false;
     }
 
     /*
