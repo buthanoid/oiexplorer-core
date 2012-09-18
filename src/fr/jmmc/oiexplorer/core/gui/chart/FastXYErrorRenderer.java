@@ -6,7 +6,6 @@ package fr.jmmc.oiexplorer.core.gui.chart;
 import java.awt.Graphics2D;
 import java.awt.Paint;
 import java.awt.Stroke;
-import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -265,7 +264,8 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
                          final ValueAxis domainAxis, final ValueAxis rangeAxis, final XYDataset dataset,
                          final int series, final int item, final CrosshairState crosshairState, final int pass) {
 
-        if (isLinePass(pass) && (drawXError || drawYError) && dataset instanceof IntervalXYDataset && getItemVisible(series, item)) {
+        if (isLinePass(pass) && (drawYError || drawXError) && dataset instanceof IntervalXYDataset 
+                /* && getItemVisible(series, item) */) {
             final IntervalXYDataset ixyd = (IntervalXYDataset) dataset;
 
             final FastXYLineAndShapeRenderer.State state = (FastXYLineAndShapeRenderer.State) renderState;
@@ -290,7 +290,7 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
                 g2.setStroke(getItemStroke(series, item));
             }
 
-            if (this.getDrawXError()) {
+            if (drawXError) {
                 // draw the error bar for the x-interval
                 final double x0 = ixyd.getStartXValue(series, item);
                 final double x1 = ixyd.getEndXValue(series, item);
@@ -301,7 +301,6 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
                     final double xx1 = domainAxis.valueToJava2D(x1, dataArea, xAxisLocation);
                     final double yy = rangeAxis.valueToJava2D(y, dataArea, yAxisLocation);
 
-                    // TODO: recycle line objects !
                     if (orientation == PlotOrientation.VERTICAL) {
                         state.workingLine.setLine(xx0, yy, xx1, yy);
                         g2.draw(state.workingLine);
@@ -325,7 +324,7 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
                     }
                 }
             }
-            if (this.getDrawYError()) {
+            if (drawYError) {
                 // draw the error bar for the y-interval
                 final double y0 = ixyd.getStartYValue(series, item);
                 final double y1 = ixyd.getEndYValue(series, item);
@@ -361,20 +360,6 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
             }
         }
         super.drawItem(g2, renderState, dataArea, info, plot, domainAxis, rangeAxis, dataset, series, item, crosshairState, pass);
-    }
-
-    /**
-     * Returns a boolean that indicates whether or not the specified item
-     * should be drawn (this is typically used to hide an entire series).
-     *
-     * @param series  the series index.
-     * @param item  the item index.
-     *
-     * @return A boolean.
-     */
-    @Override
-    public boolean getItemVisible(final int series, final int item) {
-        return true;
     }
 
     /**

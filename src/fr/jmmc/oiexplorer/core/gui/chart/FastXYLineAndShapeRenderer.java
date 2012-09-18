@@ -18,7 +18,6 @@ import java.io.Serializable;
 import org.jfree.chart.LegendItem;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.entity.EntityCollection;
-import org.jfree.chart.event.RendererChangeEvent;
 import org.jfree.chart.plot.CrosshairState;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.PlotRenderingInfo;
@@ -57,45 +56,18 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
     private static final long serialVersionUID = -7435246895986425885L;
     /**
      * A flag that controls whether or not lines are visible for ALL series.
-     *
-     * @deprecated As of 1.0.7.
      */
-    private Boolean linesVisible;
-    /**
-     * A table of flags that control (per series) whether or not lines are
-     * visible.
-     */
-    private BooleanList seriesLinesVisible;
-    /** The default value returned by the getLinesVisible() method. */
-    private boolean baseLinesVisible;
+    private boolean linesVisible;
     /** The shape that is used to represent a line in the legend. */
     private transient Shape legendLine;
     /**
      * A flag that controls whether or not shapes are visible for ALL series.
-     *
-     * @deprecated As of 1.0.7.
      */
-    private Boolean shapesVisible;
-    /**
-     * A table of flags that control (per series) whether or not shapes are
-     * visible.
-     */
-    private BooleanList seriesShapesVisible;
-    /** The default value returned by the getShapeVisible() method. */
-    private boolean baseShapesVisible;
+    private boolean shapesVisible;
     /**
      * A flag that controls whether or not shapes are filled for ALL series.
-     *
-     * @deprecated As of 1.0.7.
      */
-    private Boolean shapesFilled;
-    /**
-     * A table of flags that control (per series) whether or not shapes are
-     * filled.
-     */
-    private BooleanList seriesShapesFilled;
-    /** The default value returned by the getShapeFilled() method. */
-    private boolean baseShapesFilled;
+    private boolean shapesFilled;
     /** A flag that controls whether outlines are drawn for shapes. */
     private boolean drawOutlines;
     /**
@@ -128,19 +100,13 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param shapes  shapes visible?
      */
     public FastXYLineAndShapeRenderer(boolean lines, boolean shapes) {
-        this.linesVisible = null;
-        this.seriesLinesVisible = new BooleanList();
-        this.baseLinesVisible = lines;
+        this.linesVisible = false;
         this.legendLine = new Line2D.Double(-7.0, 0.0, 7.0, 0.0);
 
-        this.shapesVisible = null;
-        this.seriesShapesVisible = new BooleanList();
-        this.baseShapesVisible = shapes;
+        this.shapesVisible = false;
 
-        this.shapesFilled = null;
+        this.shapesFilled = false;
         this.useFillPaint = false;     // use item paint for fills by default
-        this.seriesShapesFilled = new BooleanList();
-        this.baseShapesFilled = true;
 
         this.drawOutlines = true;
         this.useOutlinePaint = false;  // use item paint for outlines by
@@ -184,6 +150,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      *
      * @return The pass count.
      */
+    @Override
     public int getPassCount() {
         return 2;
     }
@@ -198,16 +165,8 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      *
      * @return A boolean.
      */
-    public boolean getItemLineVisible(int series, int item) {
-        Boolean flag = this.linesVisible;
-        if (flag == null) {
-            flag = getSeriesLinesVisible(series);
-        }
-        if (flag != null) {
-            return flag.booleanValue();
-        } else {
-            return this.baseLinesVisible;
-        }
+    public final boolean getItemLineVisible(final int series, final int item) {
+        return this.linesVisible;
     }
 
     /**
@@ -218,28 +177,9 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @return A flag (possibly <code>null</code>).
      *
      * @see #setLinesVisible(Boolean)
-     *
-     * @deprecated As of 1.0.7, use the per-series and base level settings.
      */
-    public Boolean getLinesVisible() {
+    public final boolean isLinesVisible() {
         return this.linesVisible;
-    }
-
-    /**
-     * Sets a flag that controls whether or not lines are drawn between the
-     * items in ALL series, and sends a {@link RendererChangeEvent} to all
-     * registered listeners.  You need to set this to <code>null</code> if you
-     * want the "per series" settings to apply.
-     *
-     * @param visible  the flag (<code>null</code> permitted).
-     *
-     * @see #getLinesVisible()
-     *
-     * @deprecated As of 1.0.7, use the per-series and base level settings.
-     */
-    public void setLinesVisible(Boolean visible) {
-        this.linesVisible = visible;
-        fireChangeEvent();
     }
 
     /**
@@ -250,77 +190,9 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param visible  the flag.
      *
      * @see #getLinesVisible()
-     *
-     * @deprecated As of 1.0.7, use the per-series and base level settings.
      */
-    public void setLinesVisible(boolean visible) {
-        // we use BooleanUtilities here to preserve JRE 1.3.1 compatibility
-        setLinesVisible(BooleanUtilities.valueOf(visible));
-    }
-
-    /**
-     * Returns the flag used to control whether or not the lines for a series
-     * are visible.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The flag (possibly <code>null</code>).
-     *
-     * @see #setSeriesLinesVisible(int, Boolean)
-     */
-    public Boolean getSeriesLinesVisible(int series) {
-        return this.seriesLinesVisible.getBoolean(series);
-    }
-
-    /**
-     * Sets the 'lines visible' flag for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param flag  the flag (<code>null</code> permitted).
-     *
-     * @see #getSeriesLinesVisible(int)
-     */
-    public void setSeriesLinesVisible(int series, Boolean flag) {
-        this.seriesLinesVisible.setBoolean(series, flag);
-        fireChangeEvent();
-    }
-
-    /**
-     * Sets the 'lines visible' flag for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the flag.
-     *
-     * @see #getSeriesLinesVisible(int)
-     */
-    public void setSeriesLinesVisible(int series, boolean visible) {
-        setSeriesLinesVisible(series, BooleanUtilities.valueOf(visible));
-    }
-
-    /**
-     * Returns the base 'lines visible' attribute.
-     *
-     * @return The base flag.
-     *
-     * @see #setBaseLinesVisible(boolean)
-     */
-    public boolean getBaseLinesVisible() {
-        return this.baseLinesVisible;
-    }
-
-    /**
-     * Sets the base 'lines visible' flag and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param flag  the flag.
-     *
-     * @see #getBaseLinesVisible()
-     */
-    public void setBaseLinesVisible(boolean flag) {
-        this.baseLinesVisible = flag;
-        fireChangeEvent();
+    public final void setLinesVisible(final boolean visible) {
+        this.linesVisible = visible;
     }
 
     /**
@@ -364,20 +236,8 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      *
      * @return A boolean.
      */
-    public final boolean getItemShapeVisible(int series, int item) {
-        // LBO: optmized code:
-        return true;
-        /*
-         Boolean flag = this.shapesVisible;
-         if (flag == null) {
-         flag = getSeriesShapesVisible(series);
-         }
-         if (flag != null) {
-         return flag.booleanValue();
-         } else {
-         return this.baseShapesVisible;
-         }
-         */
+    public final boolean getItemShapeVisible(final int series, final int item) {
+        return this.shapesVisible;
     }
 
     /**
@@ -387,10 +247,8 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @return The flag (possibly <code>null</code>).
      *
      * @see #setShapesVisible(Boolean)
-     *
-     * @deprecated As of 1.0.7, use the per-series and base level settings.
      */
-    public Boolean getShapesVisible() {
+    public boolean getShapesVisible() {
         return this.shapesVisible;
     }
 
@@ -401,90 +259,9 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param visible  the flag (<code>null</code> permitted).
      *
      * @see #getShapesVisible()
-     *
-     * @deprecated As of 1.0.7, use the per-series and base level settings.
-     */
-    public void setShapesVisible(Boolean visible) {
-        this.shapesVisible = visible;
-        fireChangeEvent();
-    }
-
-    /**
-     * Sets the 'shapes visible' for ALL series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param visible  the flag.
-     *
-     * @see #getShapesVisible()
-     *
-     * @deprecated As of 1.0.7, use the per-series and base level settings.
      */
     public void setShapesVisible(boolean visible) {
-        setShapesVisible(BooleanUtilities.valueOf(visible));
-    }
-
-    /**
-     * Returns the flag used to control whether or not the shapes for a series
-     * are visible.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return A boolean.
-     *
-     * @see #setSeriesShapesVisible(int, Boolean)
-     */
-    public Boolean getSeriesShapesVisible(int series) {
-        return this.seriesShapesVisible.getBoolean(series);
-    }
-
-    /**
-     * Sets the 'shapes visible' flag for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the flag.
-     *
-     * @see #getSeriesShapesVisible(int)
-     */
-    public void setSeriesShapesVisible(int series, boolean visible) {
-        setSeriesShapesVisible(series, BooleanUtilities.valueOf(visible));
-    }
-
-    /**
-     * Sets the 'shapes visible' flag for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param flag  the flag.
-     *
-     * @see #getSeriesShapesVisible(int)
-     */
-    public void setSeriesShapesVisible(int series, Boolean flag) {
-        this.seriesShapesVisible.setBoolean(series, flag);
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the base 'shape visible' attribute.
-     *
-     * @return The base flag.
-     *
-     * @see #setBaseShapesVisible(boolean)
-     */
-    public boolean getBaseShapesVisible() {
-        return this.baseShapesVisible;
-    }
-
-    /**
-     * Sets the base 'shapes visible' flag and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param flag  the flag.
-     *
-     * @see #getBaseShapesVisible()
-     */
-    public void setBaseShapesVisible(boolean flag) {
-        this.baseShapesVisible = flag;
+        this.shapesVisible = visible;
         fireChangeEvent();
     }
 
@@ -502,32 +279,8 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      *
      * @return A boolean.
      */
-    public final boolean getItemShapeFilled(int series, int item) {
-        // LBO: optmized code:
-        return true;
-        /*
-         Boolean flag = this.shapesFilled;
-         if (flag == null) {
-         flag = getSeriesShapesFilled(series);
-         }
-         if (flag != null) {
-         return flag.booleanValue();
-         } else {
-         return this.baseShapesFilled;
-         }
-         */
-    }
-
-    /**
-     * Sets the 'shapes filled' for ALL series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param filled  the flag.
-     *
-     * @deprecated As of 1.0.7, use the per-series and base level settings.
-     */
-    public void setShapesFilled(boolean filled) {
-        setShapesFilled(BooleanUtilities.valueOf(filled));
+    public final boolean getItemShapeFilled(final int series, final int item) {
+        return this.shapesFilled;
     }
 
     /**
@@ -535,76 +288,9 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * {@link RendererChangeEvent} to all registered listeners.
      *
      * @param filled  the flag (<code>null</code> permitted).
-     *
-     * @deprecated As of 1.0.7, use the per-series and base level settings.
      */
-    public void setShapesFilled(Boolean filled) {
+    public void setShapesFilled(boolean filled) {
         this.shapesFilled = filled;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the flag used to control whether or not the shapes for a series
-     * are filled.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return A boolean.
-     *
-     * @see #setSeriesShapesFilled(int, Boolean)
-     */
-    public Boolean getSeriesShapesFilled(int series) {
-        return this.seriesShapesFilled.getBoolean(series);
-    }
-
-    /**
-     * Sets the 'shapes filled' flag for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param flag  the flag.
-     *
-     * @see #getSeriesShapesFilled(int)
-     */
-    public void setSeriesShapesFilled(int series, boolean flag) {
-        setSeriesShapesFilled(series, BooleanUtilities.valueOf(flag));
-    }
-
-    /**
-     * Sets the 'shapes filled' flag for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param flag  the flag.
-     *
-     * @see #getSeriesShapesFilled(int)
-     */
-    public void setSeriesShapesFilled(int series, Boolean flag) {
-        this.seriesShapesFilled.setBoolean(series, flag);
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the base 'shape filled' attribute.
-     *
-     * @return The base flag.
-     *
-     * @see #setBaseShapesFilled(boolean)
-     */
-    public boolean getBaseShapesFilled() {
-        return this.baseShapesFilled;
-    }
-
-    /**
-     * Sets the base 'shapes filled' flag and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param flag  the flag.
-     *
-     * @see #getBaseShapesFilled()
-     */
-    public void setBaseShapesFilled(boolean flag) {
-        this.baseShapesFilled = flag;
         fireChangeEvent();
     }
 
@@ -759,15 +445,14 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
                                     int firstItem, int lastItem, int pass, int passCount) {
             this.seriesPath.reset();
             this.lastPointGood = false;
-            super.startSeriesPass(dataset, series, firstItem, lastItem, pass,
-                    passCount);
+            super.startSeriesPass(dataset, series, firstItem, lastItem, pass, passCount);
         }
         /** cached Translate Graphics2D AffineTransform */
-        public transient AffineTransform g2AT;
+        transient AffineTransform g2AT;
         /** cached xAxis location */
-        public transient RectangleEdge xAxisLocation;
+        transient RectangleEdge xAxisLocation;
         /** cached yAxis location */
-        public transient RectangleEdge yAxisLocation;
+        transient RectangleEdge yAxisLocation;
     }
 
     /**
@@ -794,7 +479,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
 
         final FastXYLineAndShapeRenderer.State state = new FastXYLineAndShapeRenderer.State(info);
         state.seriesPath = new GeneralPath();
-        
+
         // not very efficient with the FastIntervalXYDataset:
         state.setProcessVisibleItemsOnly(false);
 
@@ -1014,6 +699,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         double transY1 = rangeAxis.valueToJava2D(y1, dataArea, yAxisLocation);
 
         FastXYLineAndShapeRenderer.State s = (FastXYLineAndShapeRenderer.State) state;
+        
         // update path to reflect latest point
         if (!Double.isNaN(transX1) && !Double.isNaN(transY1)) {
             float x = (float) transX1;
@@ -1097,7 +783,6 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
                 } else {
                     visible = shape.intersects(dataArea.getX() - transX1, dataArea.getY() - transY1, dataArea.getWidth(), dataArea.getHeight());
                 }
-
                 if (visible) {
                     // Perform transformation
                     if (orientation == PlotOrientation.HORIZONTAL) {
@@ -1145,12 +830,6 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         }
 
         // LBO: disable updateCrosshairValues
-        if (false) {
-            int domainAxisIndex = plot.getDomainAxisIndex(domainAxis);
-            int rangeAxisIndex = plot.getRangeAxisIndex(rangeAxis);
-            updateCrosshairValues(crosshairState, x1, y1, domainAxisIndex,
-                    rangeAxisIndex, transX1, transY1, orientation);
-        }
 
         // add an entity for the item, but only if it falls within the data
         // area...
@@ -1235,12 +914,9 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      */
     public Object clone() throws CloneNotSupportedException {
         FastXYLineAndShapeRenderer clone = (FastXYLineAndShapeRenderer) super.clone();
-        clone.seriesLinesVisible = (BooleanList) this.seriesLinesVisible.clone();
         if (this.legendLine != null) {
             clone.legendLine = ShapeUtilities.clone(this.legendLine);
         }
-        clone.seriesShapesVisible = (BooleanList) this.seriesShapesVisible.clone();
-        clone.seriesShapesFilled = (BooleanList) this.seriesShapesFilled.clone();
         return clone;
     }
 
@@ -1265,34 +941,13 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         if (!ObjectUtilities.equal(this.linesVisible, that.linesVisible)) {
             return false;
         }
-        if (!ObjectUtilities.equal(
-                this.seriesLinesVisible, that.seriesLinesVisible)) {
-            return false;
-        }
-        if (this.baseLinesVisible != that.baseLinesVisible) {
-            return false;
-        }
         if (!ShapeUtilities.equal(this.legendLine, that.legendLine)) {
             return false;
         }
         if (!ObjectUtilities.equal(this.shapesVisible, that.shapesVisible)) {
             return false;
         }
-        if (!ObjectUtilities.equal(
-                this.seriesShapesVisible, that.seriesShapesVisible)) {
-            return false;
-        }
-        if (this.baseShapesVisible != that.baseShapesVisible) {
-            return false;
-        }
         if (!ObjectUtilities.equal(this.shapesFilled, that.shapesFilled)) {
-            return false;
-        }
-        if (!ObjectUtilities.equal(
-                this.seriesShapesFilled, that.seriesShapesFilled)) {
-            return false;
-        }
-        if (this.baseShapesFilled != that.baseShapesFilled) {
             return false;
         }
         if (this.drawOutlines != that.drawOutlines) {
@@ -1336,8 +991,48 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         SerialUtilities.writeShape(this.legendLine, stream);
     }
 
-    public final boolean isItemLabelVisible(int row, int column) {
-        // LBO: optmized code:
+    // ITEM VISIBLE
+    /**
+     * Returns a boolean that indicates whether or not the specified item
+     * should be drawn (this is typically used to hide an entire series).
+     *
+     * @param series  the series index.
+     * @param item  the item index.
+     *
+     * @return A boolean.
+     */
+    @Override
+    public final boolean getItemVisible(final int series, final int item) {
+        return true;
+    }
+
+    // ITEM LABEL VISIBILITY...
+    /**
+     * Returns <code>true</code> if an item label is visible, and
+     * <code>false</code> otherwise.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public final boolean isItemLabelVisible(final int row, final int column) {
         return false;
+    }
+    // SHAPE
+
+    /**
+     * Returns a shape used to represent a data item.
+     *
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     *
+     * @return The shape (never <code>null</code>).
+     */
+    @Override
+    public final Shape getItemShape(final int series, final int item) {
+        // TODO: use shape per [serie, item]
+        return getBaseShape();
     }
 }
