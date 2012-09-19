@@ -1,9 +1,11 @@
+
 package fr.jmmc.oiexplorer.core.model.plot;
 
-import fr.jmmc.oiexplorer.core.model.OIBase;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlType;
+import fr.jmmc.oiexplorer.core.model.OIBase;
+
 
 /**
  * 
@@ -35,7 +37,8 @@ import javax.xml.bind.annotation.XmlType;
     "max"
 })
 public class Range
-        extends OIBase {
+    extends OIBase
+{
 
     protected double min;
     protected double max;
@@ -71,7 +74,7 @@ public class Range
     public void setMax(double value) {
         this.max = value;
     }
-
+    
 //--simple--preserve
     /**
      * Perform a deep-copy of the given other instance into this instance
@@ -125,4 +128,5 @@ public class Range
         sb.append('}');
     }
 //--simple--preserve
+
 }

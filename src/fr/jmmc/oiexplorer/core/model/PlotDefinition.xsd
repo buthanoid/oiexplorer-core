@@ -88,6 +88,17 @@
                         </xsd:annotation>
                     </xsd:element>
 
+                    <!-- use a specialized colorAxis ?? to use custom value to encode color (linear / log) ... -->
+                    <xsd:element name="colorMapping" type="ColorMapping" minOccurs="1" maxOccurs="1">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Color mapping (enumerated value)
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:element>            
+                    
+                    <!-- TODO: group by or split by baseline, configuration, dateObs -->
+
                     <xsd:element name="xAxis" type="Axis" minOccurs="1" maxOccurs="1"/>
 
                     <xsd:element name="yAxes" type="Axis" minOccurs="1" maxOccurs="unbounded"/>
@@ -169,6 +180,47 @@
             <xsd:element name="max" type="xsd:double" minOccurs="1" maxOccurs="1"/>
         </xsd:sequence>
     </xsd:complexType>
+
+
+
+
+  <!-- enumerations -->
+  <!-- TODO: ViewType (table, plot ...) -->
+  
+  <!-- ColorMapping -->
+  <xsd:simpleType name="ColorMapping">
+    <xsd:annotation>
+      <xsd:documentation>
+        Possible values for the color mapping :
+        - WavelengthRange (EFF_WAVE)
+        - StationIndex (STA_INDEX) (baseline or triplet)
+        - Configuration (STA_CONF)
+        - ObservationDate (DATE_OBS)          
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="WavelengthRange">
+        <xsd:annotation>
+          <xsd:documentation>'WavelengthRange' indicates to use the effective wave length (EFF_WAVE)</xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="StationIndex">
+        <xsd:annotation>
+          <xsd:documentation>'StationIndex' indicates to use the station index array (STA_INDEX) (baseline or triplet)</xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="Configuration">
+        <xsd:annotation>
+          <xsd:documentation>'Configuration' indicates to use the station configuration (STA_CONF)</xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="ObservationDate">
+        <xsd:annotation>
+          <xsd:documentation>'ObservationDate' indicates to use the observation date (DATE_OBS)</xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+    </xsd:restriction>
+  </xsd:simpleType>
 
   
 </xsd:schema>

@@ -24,6 +24,7 @@ import javax.xml.bind.annotation.XmlType;
  *       &lt;sequence>
  *         &lt;element name="skipFlaggedData" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
  *         &lt;element name="drawLine" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
+ *         &lt;element name="colorMapping" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}ColorMapping"/>
  *         &lt;element name="xAxis" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Axis"/>
  *         &lt;element name="yAxes" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Axis" maxOccurs="unbounded"/>
  *       &lt;/sequence>
@@ -38,6 +39,7 @@ import javax.xml.bind.annotation.XmlType;
 @XmlType(name = "PlotDefinition", propOrder = {
     "skipFlaggedData",
     "drawLine",
+    "colorMapping",
     "xAxis",
     "yAxes"
 })
@@ -46,6 +48,8 @@ public class PlotDefinition
 
     protected boolean skipFlaggedData;
     protected boolean drawLine;
+    @XmlElement(required = true)
+    protected ColorMapping colorMapping;
     @XmlElement(required = true)
     protected Axis xAxis;
     @XmlElement(required = true)
@@ -81,6 +85,30 @@ public class PlotDefinition
      */
     public void setDrawLine(boolean value) {
         this.drawLine = value;
+    }
+
+    /**
+     * Gets the value of the colorMapping property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link ColorMapping }
+     *     
+     */
+    public ColorMapping getColorMapping() {
+        return colorMapping;
+    }
+
+    /**
+     * Sets the value of the colorMapping property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link ColorMapping }
+     *     
+     */
+    public void setColorMapping(ColorMapping value) {
+        this.colorMapping = value;
     }
 
     /**
@@ -150,9 +178,10 @@ public class PlotDefinition
         super.copy(other); // Identifiable
         final PlotDefinition plotDef = (PlotDefinition) other;
 
-        // copy skipFlaggedData, drawLine:
+        // copy skipFlaggedData, drawLine, colorMapping:
         this.skipFlaggedData = plotDef.isSkipFlaggedData();
         this.drawLine = plotDef.isDrawLine();
+        this.colorMapping = plotDef.getColorMapping();
 
         // deep copy xAxis, yAxes:
         this.xAxis = (plotDef.getXAxis() != null) ? (Axis) plotDef.getXAxis().clone() : null;
@@ -169,6 +198,9 @@ public class PlotDefinition
             return false;
         }
         if (this.drawLine != other.drawLine) {
+            return false;
+        }
+        if (this.colorMapping != other.colorMapping) {
             return false;
         }
         if (this.xAxis != other.xAxis && (this.xAxis == null || !this.xAxis.equals(other.xAxis))) {
@@ -190,6 +222,7 @@ public class PlotDefinition
         if (full) {
             sb.append(", skipFlaggedData='").append(this.skipFlaggedData).append('\'');
             sb.append(", drawLine='").append(this.drawLine).append('\'');
+            sb.append(", colorMapping='").append(this.colorMapping).append('\'');
 
             sb.append(", xAxis=");
             if (this.xAxis != null) {
