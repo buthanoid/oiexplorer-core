@@ -53,8 +53,9 @@ public final class TimeFormat extends DateFormat {
      * @param fieldPosition unused
      * @return the string buffer passed in as toAppendTo, with formatted text appended.
      */
+    @Override
     public StringBuffer format(final Date date, final StringBuffer toAppendTo,
-                               final FieldPosition fieldPosition) {
+            final FieldPosition fieldPosition) {
 
         final Calendar cal = getCalendar();
         cal.setTime(date);
@@ -95,6 +96,7 @@ public final class TimeFormat extends DateFormat {
      *
      * @throws UnsupportedOperationException as it is not implemented
      */
+    @Override
     public Date parse(final String source, final ParsePosition pos)
             throws UnsupportedOperationException {
         throw new UnsupportedOperationException("Not implemented !");

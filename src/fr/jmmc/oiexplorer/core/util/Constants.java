@@ -15,7 +15,7 @@ public interface Constants {
     /* ASTRO constants */
     /** EPOCH J2000 */
     public final static float EPOCH_J2000 = 2000.f;
-    /** micrometres to meter */
+    /** micrometers to meter */
     public final static double MICRO_METER = 1e-6;
     /** no value for combo boxes */
     public static final String NONE = "None";

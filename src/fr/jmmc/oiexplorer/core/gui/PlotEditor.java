@@ -186,7 +186,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
 
         if (plotId != null && !ObjectUtils.areEquals(prevPlotId, plotId)) {
             logger.debug("setPlotId {}", plotId);
-            
+
             // fire PlotChanged event to initialize correctly the widget:
             ocm.firePlotChanged(null, plotId, this); // null forces different source
         }
@@ -215,7 +215,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
 
         // restore previous selection: TODO: handle case where it becomes invalid.
         if (oldValue != null) {
-            if (subsetNames.contains(oldValue)) {
+            if (subsetNames.contains(oldValue.toString())) {
                 subsetComboBox.setSelectedItem(oldValue);
             } else {
                 // TODO: handle case where it becomes invalid.
@@ -247,7 +247,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
 
         // restore previous selection: TODO: handle case where it becomes invalid.
         if (oldValue != null) {
-            if (plotDefNames.contains(oldValue)) {
+            if (plotDefNames.contains(oldValue.toString())) {
                 plotDefinitionComboBox.setSelectedItem(oldValue);
             } else {
                 // TODO: handle case where it becomes invalid.
@@ -273,6 +273,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
      * @param type event type
      * @return subject id (null means accept any event) or DISCARDED_SUBJECT_ID to discard event
      */
+    @Override
     public String getSubjectId(final OIFitsCollectionManagerEventType type) {
         switch (type) {
             case SUBSET_LIST_CHANGED:

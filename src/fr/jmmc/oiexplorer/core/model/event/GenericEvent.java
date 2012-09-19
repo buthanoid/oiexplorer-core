@@ -122,6 +122,7 @@ public abstract class GenericEvent<V, O> implements ToStringable {
      * @param sb string builder to append to
      * @param full true to get complete information; false to get main information (shorter)
      */
+    @Override
     public final void toString(final StringBuilder sb, final boolean full) {
         ObjectUtils.getObjectInfo(sb, this);
 

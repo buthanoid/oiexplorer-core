@@ -1,14 +1,12 @@
-
 package fr.jmmc.oiexplorer.core.model.plot;
 
+import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
-import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
-
 
 /**
  * 
@@ -44,8 +42,7 @@ import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
     "yAxes"
 })
 public class PlotDefinition
-    extends Identifiable
-{
+        extends Identifiable {
 
     protected boolean skipFlaggedData;
     protected boolean drawLine;
@@ -138,7 +135,7 @@ public class PlotDefinition
         }
         return this.yAxes;
     }
-    
+
 //--simple--preserve
     /**
      * Perform a deep-copy of the given other instance into this instance
@@ -204,5 +201,4 @@ public class PlotDefinition
         sb.append('}');
     }
 //--simple--preserve
-
 }

@@ -60,6 +60,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      *
      * @return The series count.
      */
+    @Override
     public int getSeriesCount() {
         // Optimized code (use int):
         return seriesCount;
@@ -76,6 +77,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      * @throws IllegalArgumentException if <code>series</code> is not in the
      *     specified range.
      */
+    @Override
     public Comparable<V> getSeriesKey(final int series) {
         // Optimized code (use int):
         if (series < 0 || series >= seriesCount) {
@@ -95,6 +97,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      * @throws IllegalArgumentException if <code>series</code> is not in the
      *     specified range.
      */
+    @Override
     public int getItemCount(final int series) {
         // Optimized code (use int):
         if (series < 0 || series >= seriesCount) {
@@ -264,6 +267,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      *     within the specified range.
      * @see #getEndXValue(int, int)
      */
+    @Override
     public Number getEndX(final int series, final int item) {
         throw new IllegalStateException("Not Implemented !");
 //        return Double.valueOf(getEndXValue(series, item));
@@ -283,6 +287,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      *     within the specified range.
      * @see #getEndYValue(int, int)
      */
+    @Override
     public Number getEndY(final int series, final int item) {
         throw new IllegalStateException("Not Implemented !");
 //        return Double.valueOf(getEndYValue(series, item));
@@ -302,6 +307,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      *     within the specified range.
      * @see #getStartXValue(int, int)
      */
+    @Override
     public Number getStartX(final int series, final int item) {
         throw new IllegalStateException("Not Implemented !");
 //        return Double.valueOf(getStartXValue(series, item));
@@ -321,6 +327,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      *     within the specified range.
      * @see #getStartYValue(int, int)
      */
+    @Override
     public Number getStartY(final int series, final int item) {
         throw new IllegalStateException("Not Implemented !");
 //        return Double.valueOf(getStartYValue(series, item));
@@ -340,6 +347,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      *     within the specified range.
      * @see #getXValue(int, int)
      */
+    @Override
     public Number getX(final int series, final int item) {
         throw new IllegalStateException("Not Implemented !");
 //        return Double.valueOf(getXValue(series, item));
@@ -359,6 +367,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      *     within the specified range.
      * @see #getYValue(int, int)
      */
+    @Override
     public Number getY(final int series, final int item) {
         throw new IllegalStateException("Not Implemented !");
 //        return Double.valueOf(getYValue(series, item));

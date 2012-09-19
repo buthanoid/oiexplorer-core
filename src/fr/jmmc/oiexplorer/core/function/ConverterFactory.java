@@ -28,7 +28,7 @@ public final class ConverterFactory {
     private static volatile ConverterFactory instance = null;
 
     /* members */
-    /** predefined converters : TODO could be loaded from xml file ?? */
+    /** predefined converters : TODO could be loaded from XML file ?? */
     private final Map<String, Converter> converters = new LinkedHashMap<String, Converter>(4);
 
     /** 

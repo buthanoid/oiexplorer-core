@@ -1,8 +1,6 @@
-
 package fr.jmmc.oiexplorer.core.model.plot;
 
 import javax.xml.bind.annotation.XmlRegistry;
-
 
 /**
  * This object contains factory methods for each 
@@ -20,7 +18,6 @@ import javax.xml.bind.annotation.XmlRegistry;
  */
 @XmlRegistry
 public class ObjectFactory {
-
 
     /**
      * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: fr.jmmc.oiexplorer.core.model.plot
@@ -60,5 +57,4 @@ public class ObjectFactory {
     public Axis createAxis() {
         return new Axis();
     }
-
 }

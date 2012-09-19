@@ -35,6 +35,7 @@ public final class LinearConverter implements Converter {
      * @param value input value (x)
      * @return output value (y)
      */
+    @Override
     public double evaluate(final double value) {
         return scalingFactor * value + constant;
     }
@@ -43,6 +44,7 @@ public final class LinearConverter implements Converter {
      * Return the optional unit label
      * @return unit label or null if undefined
      */
+    @Override
     public String getUnit() {
         return unit;
     }

@@ -54,22 +54,22 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
      */
     public void updateOIFits(final OIFitsFile oiFitsFile) {
         String xmlDesc = null;
-        
+
         if (oiFitsFile != null) {
             final long start = System.nanoTime();
-            
+
             this.oiFitsFile = oiFitsFile;
             this.oiTable = null;
-            
+
             this.oiFitsFile.accept(this.xmlSerializer);
-            
+
             xmlDesc = xmlSerializer.toString();
-            
+
             if (logger.isDebugEnabled()) {
                 logger.debug("XmlOutputVisitor: {} ms.", 1e-6d * (System.nanoTime() - start));
             }
         }
-        
+
         update(xmlDesc);
     }
 
@@ -79,22 +79,22 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
      */
     public void updateOIFits(final OITable oiTable) {
         String xmlDesc = null;
-        
+
         if (oiTable != null) {
             final long start = System.nanoTime();
-            
+
             this.oiFitsFile = null;
             this.oiTable = oiTable;
-            
+
             this.oiTable.accept(this.xmlSerializer);
-            
+
             xmlDesc = xmlSerializer.toString();
-            
+
             if (logger.isDebugEnabled()) {
                 logger.debug("XmlOutputVisitor: {} ms.", 1e-6d * (System.nanoTime() - start));
             }
         }
-        
+
         update(xmlDesc);
     }
 
@@ -104,20 +104,20 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
      */
     public void update(final String xmlDesc) {
         String document = "";
-        
+
         if (xmlDesc != null) {
             final long start = System.nanoTime();
 
             // use an XSLT to transform the XML document to an HTML representation :
             document = XmlFactory.transform(xmlDesc, XSLT_FILE);
-            
+
             if (logger.isDebugEnabled()) {
                 logger.debug("transform: {} ms.", 1e-6d * (System.nanoTime() - start));
             }
         }
-        
+
         if (document.length() > 0) {
-            
+
             final long start = System.nanoTime();
             try {
                 this.jOutputPane.read(new StringReader(document), null);
@@ -125,11 +125,11 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
             } catch (IOException ioe) {
                 logger.error("IO exception : ", ioe);
             }
-            
+
             if (logger.isDebugEnabled()) {
                 logger.debug("html: {} ms.", 1e-6d * (System.nanoTime() - start));
             }
-            
+
             this.isEmpty = false;
         } else {
             if (!isEmpty) {
@@ -201,12 +201,12 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
 
         // add a HTMLEditorKit to the editor pane
         pane.setEditorKit(new HTMLEditorKit());
-        
+
         pane.setContentType("text/html");
         pane.setEditable(false);
-        
+
         emptyDocument = pane.getEditorKit().createDefaultDocument();
-        
+
         return pane;
     }
 

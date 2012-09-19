@@ -26,6 +26,7 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
         this.waveLength = waveLength;
     }
 
+    @Override
     public int compareTo(final OITableSerieKey o) {
         throw new UnsupportedOperationException("Not supported yet.");
     }

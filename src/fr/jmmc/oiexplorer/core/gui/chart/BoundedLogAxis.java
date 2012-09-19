@@ -116,7 +116,7 @@ public final class BoundedLogAxis extends LogarithmicAxis {
      */
     @Override
     public void setRange(final Range range, final boolean turnOffAutoRange,
-                         final boolean notify) {
+            final boolean notify) {
 
         Range newRange = range;
 

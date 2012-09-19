@@ -3,9 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
-import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oiexplorer.core.util.TimeFormat;
-
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -61,7 +59,7 @@ public class ChartUtils {
 
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(ChartUtils.class.getName());
-    /** cache for annotation fonts to autofit size */
+    /** cache for annotation fonts to auto-fit size */
     private final static Map<Integer, Font> cachedFonts = new HashMap<Integer, Font>();
     /** The default font for titles. */
     public static final Font DEFAULT_TITLE_FONT = getFont(14, Font.BOLD);
@@ -142,7 +140,7 @@ public class ChartUtils {
     /**
      * Return new chart panel using special draw widths to avoid scaling effects
      * @param chart chart to use
-     * @param tooltips  a flag indicating whether or not tooltips should be enabled for the chart.
+     * @param tooltips  a flag indicating whether or not tool-tips should be enabled for the chart.
      * @return chart panel
      */
     public static ChartPanel createChartPanel(final JFreeChart chart, final boolean tooltips) {
@@ -220,13 +218,13 @@ public class ChartUtils {
      * @param maxWidth maximum pixel width to fit
      * @param minFontSize minimum size for the font
      * @param maxFontSize maximum size for the font
-     * @param allowDontFit flag indicating to use the minimum font size if the text dont fit; null otherwise
+     * @param allowDontFit flag indicating to use the minimum font size if the text doesn't fit; null otherwise
      * @return font
      */
     public static Font autoFitTextWidth(final Graphics2D g2d,
-                                        final String text, final double maxWidth,
-                                        final int minFontSize, final int maxFontSize,
-                                        final boolean allowDontFit) {
+            final String text, final double maxWidth,
+            final int minFontSize, final int maxFontSize,
+            final boolean allowDontFit) {
 
         Font f;
         FontMetrics fm;
@@ -263,13 +261,13 @@ public class ChartUtils {
      * @param maxHeight maximum pixel height to fit
      * @param minFontSize minimum size for the font
      * @param maxFontSize maximum size for the font
-     * @param allowDontFit flag indicating to use the minimum font size if the text dont fit; null otherwise
+     * @param allowDontFit flag indicating to use the minimum font size if the text doesn't fit; null otherwise
      * @return font
      */
     public static Font autoFitTextHeight(final Graphics2D g2d,
-                                         final String text, final double maxHeight,
-                                         final int minFontSize, final int maxFontSize,
-                                         final boolean allowDontFit) {
+            final String text, final double maxHeight,
+            final int minFontSize, final int maxFontSize,
+            final boolean allowDontFit) {
 
         Font f;
         FontMetrics fm;
@@ -360,13 +358,13 @@ public class ChartUtils {
      * @return The chart.
      */
     public static JFreeChart createSquareXYLineChart(final String title,
-                                                     final String xAxisLabel,
-                                                     final String yAxisLabel,
-                                                     final XYDataset dataset,
-                                                     final PlotOrientation orientation,
-                                                     final boolean legend,
-                                                     final boolean tooltips,
-                                                     final boolean urls) {
+            final String xAxisLabel,
+            final String yAxisLabel,
+            final XYDataset dataset,
+            final PlotOrientation orientation,
+            final boolean legend,
+            final boolean tooltips,
+            final boolean urls) {
 
         if (orientation == null) {
             throw new IllegalArgumentException("Null 'orientation' argument.");
@@ -416,12 +414,12 @@ public class ChartUtils {
      * @return The xy plot.
      */
     public static XYPlot createScatterPlot(final String title,
-                                           final String xAxisLabel,
-                                           final String yAxisLabel,
-                                           final XYDataset dataset,
-                                           final PlotOrientation orientation,
-                                           final boolean tooltips,
-                                           final boolean urls) {
+            final String xAxisLabel,
+            final String yAxisLabel,
+            final XYDataset dataset,
+            final PlotOrientation orientation,
+            final boolean tooltips,
+            final boolean urls) {
 
         if (orientation == null) {
             throw new IllegalArgumentException("Null 'orientation' argument.");

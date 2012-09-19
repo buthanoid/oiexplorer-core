@@ -18,6 +18,7 @@ import java.io.Serializable;
 import org.jfree.chart.LegendItem;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.entity.EntityCollection;
+import org.jfree.chart.event.RendererChangeEvent;
 import org.jfree.chart.plot.CrosshairState;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.PlotRenderingInfo;
@@ -28,8 +29,6 @@ import org.jfree.chart.renderer.xy.XYItemRendererState;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.io.SerialUtilities;
 import org.jfree.ui.RectangleEdge;
-import org.jfree.util.BooleanList;
-import org.jfree.util.BooleanUtilities;
 import org.jfree.util.ObjectUtilities;
 import org.jfree.util.PublicCloneable;
 import org.jfree.util.ShapeUtilities;
@@ -229,7 +228,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * <p>
      * The default implementation passes control to the
      * <code>getSeriesShapesVisible</code> method. You can override this method
-     * if you require different behaviour.
+     * if you require different behavior.
      *
      * @param series  the series index (zero-based).
      * @param item  the item index (zero-based).
@@ -253,7 +252,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
     }
 
     /**
-     * Sets the 'shapes visible' for ALL series and sends a
+     * Sets the shapes to visible for ALL series and sends a
      * {@link RendererChangeEvent} to all registered listeners.
      *
      * @param visible  the flag (<code>null</code> permitted).
@@ -442,7 +441,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
          */
         @Override
         public void startSeriesPass(XYDataset dataset, int series,
-                                    int firstItem, int lastItem, int pass, int passCount) {
+                int firstItem, int lastItem, int pass, int passCount) {
             this.seriesPath.reset();
             this.lastPointGood = false;
             super.startSeriesPass(dataset, series, firstItem, lastItem, pass, passCount);
@@ -471,11 +470,12 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      *
      * @return The renderer state.
      */
+    @Override
     public XYItemRendererState initialise(Graphics2D g2,
-                                          Rectangle2D dataArea,
-                                          XYPlot plot,
-                                          XYDataset data,
-                                          PlotRenderingInfo info) {
+            Rectangle2D dataArea,
+            XYPlot plot,
+            XYDataset data,
+            PlotRenderingInfo info) {
 
         final FastXYLineAndShapeRenderer.State state = new FastXYLineAndShapeRenderer.State(info);
         state.seriesPath = new GeneralPath();
@@ -508,18 +508,19 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      *                        (<code>null</code> permitted).
      * @param pass  the pass index.
      */
+    @Override
     public void drawItem(Graphics2D g2,
-                         XYItemRendererState state,
-                         Rectangle2D dataArea,
-                         PlotRenderingInfo info,
-                         XYPlot plot,
-                         ValueAxis domainAxis,
-                         ValueAxis rangeAxis,
-                         XYDataset dataset,
-                         int series,
-                         int item,
-                         CrosshairState crosshairState,
-                         int pass) {
+            XYItemRendererState state,
+            Rectangle2D dataArea,
+            PlotRenderingInfo info,
+            XYPlot plot,
+            ValueAxis domainAxis,
+            ValueAxis rangeAxis,
+            XYDataset dataset,
+            int series,
+            int item,
+            CrosshairState crosshairState,
+            int pass) {
 
         // do nothing if item is not visible
         if (!getItemVisible(series, item)) {
@@ -592,15 +593,15 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param item  the item index (zero-based).
      */
     protected void drawPrimaryLine(FastXYLineAndShapeRenderer.State state,
-                                   Graphics2D g2,
-                                   XYPlot plot,
-                                   XYDataset dataset,
-                                   int pass,
-                                   int series,
-                                   int item,
-                                   ValueAxis domainAxis,
-                                   ValueAxis rangeAxis,
-                                   Rectangle2D dataArea) {
+            Graphics2D g2,
+            XYPlot plot,
+            XYDataset dataset,
+            int pass,
+            int series,
+            int item,
+            ValueAxis domainAxis,
+            ValueAxis rangeAxis,
+            Rectangle2D dataArea) {
         if (item == 0) {
             return;
         }
@@ -679,14 +680,14 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param dataArea  the area within which the data is being drawn.
      */
     protected void drawPrimaryLineAsPath(XYItemRendererState state,
-                                         Graphics2D g2, XYPlot plot,
-                                         XYDataset dataset,
-                                         int pass,
-                                         int series,
-                                         int item,
-                                         ValueAxis domainAxis,
-                                         ValueAxis rangeAxis,
-                                         Rectangle2D dataArea) {
+            Graphics2D g2, XYPlot plot,
+            XYDataset dataset,
+            int pass,
+            int series,
+            int item,
+            ValueAxis domainAxis,
+            ValueAxis rangeAxis,
+            Rectangle2D dataArea) {
 
 
         RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
@@ -699,7 +700,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         double transY1 = rangeAxis.valueToJava2D(y1, dataArea, yAxisLocation);
 
         FastXYLineAndShapeRenderer.State s = (FastXYLineAndShapeRenderer.State) state;
-        
+
         // update path to reflect latest point
         if (!Double.isNaN(transX1) && !Double.isNaN(transY1)) {
             float x = (float) transX1;
@@ -746,14 +747,14 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param entities the entity collection.
      */
     protected void drawSecondaryPass(FastXYLineAndShapeRenderer.State state,
-                                     Graphics2D g2, XYPlot plot,
-                                     XYDataset dataset,
-                                     int pass, int series, int item,
-                                     ValueAxis domainAxis,
-                                     Rectangle2D dataArea,
-                                     ValueAxis rangeAxis,
-                                     CrosshairState crosshairState,
-                                     EntityCollection entities) {
+            Graphics2D g2, XYPlot plot,
+            XYDataset dataset,
+            int pass, int series, int item,
+            ValueAxis domainAxis,
+            Rectangle2D dataArea,
+            ValueAxis rangeAxis,
+            CrosshairState crosshairState,
+            EntityCollection entities) {
 
         // Note: entities are disabled for performance !
         Shape entityArea = null;
@@ -846,6 +847,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      *
      * @return A legend item for the series.
      */
+    @Override
     public LegendItem getLegendItem(int datasetIndex, int series) {
 
         XYPlot plot = getPlot();
@@ -912,6 +914,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      *
      * @throws CloneNotSupportedException if the clone cannot be created.
      */
+    @Override
     public Object clone() throws CloneNotSupportedException {
         FastXYLineAndShapeRenderer clone = (FastXYLineAndShapeRenderer) super.clone();
         if (this.legendLine != null) {
@@ -927,6 +930,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      *
      * @return <code>true</code> or <code>false</code>.
      */
+    @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;

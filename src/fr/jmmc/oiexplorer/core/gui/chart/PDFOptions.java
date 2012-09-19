@@ -8,36 +8,37 @@ package fr.jmmc.oiexplorer.core.gui.chart;
  * @author bourgesl
  */
 public final class PDFOptions {
-  /** default PDF options : A4 - Landscape */
-  public static final PDFOptions DEFAULT_PDF_OPTIONS = new PDFOptions(PageSize.A4, Orientation.Landscape);
-  
-  public enum PageSize {
 
-    A4, A3, A2;
-  }
+    /** default PDF options : A4 - Landscape */
+    public static final PDFOptions DEFAULT_PDF_OPTIONS = new PDFOptions(PageSize.A4, Orientation.Landscape);
 
-  public enum Orientation {
+    public enum PageSize {
 
-    Portait, Landscape;
-  }
-  private final PageSize pageSize;
-  private final Orientation orientation;
+        A4, A3, A2;
+    }
 
-  public PDFOptions(final PageSize pageSize, final Orientation orientation) {
-    this.pageSize = pageSize;
-    this.orientation = orientation;
-  }
+    public enum Orientation {
 
-  public Orientation getOrientation() {
-    return orientation;
-  }
+        Portait, Landscape;
+    }
+    private final PageSize pageSize;
+    private final Orientation orientation;
 
-  public PageSize getPageSize() {
-    return pageSize;
-  }
+    public PDFOptions(final PageSize pageSize, final Orientation orientation) {
+        this.pageSize = pageSize;
+        this.orientation = orientation;
+    }
 
-  @Override
-  public String toString() {
-    return "page: " + getPageSize() + " orientation: " + getOrientation();
-  }
+    public Orientation getOrientation() {
+        return orientation;
+    }
+
+    public PageSize getPageSize() {
+        return pageSize;
+    }
+
+    @Override
+    public String toString() {
+        return "page: " + getPageSize() + " orientation: " + getOrientation();
+    }
 }

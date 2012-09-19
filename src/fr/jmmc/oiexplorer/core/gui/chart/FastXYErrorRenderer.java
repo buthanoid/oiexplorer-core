@@ -260,12 +260,11 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
      */
     @Override
     public void drawItem(final Graphics2D g2, final XYItemRendererState renderState,
-                         final Rectangle2D dataArea, final PlotRenderingInfo info, final XYPlot plot,
-                         final ValueAxis domainAxis, final ValueAxis rangeAxis, final XYDataset dataset,
-                         final int series, final int item, final CrosshairState crosshairState, final int pass) {
+            final Rectangle2D dataArea, final PlotRenderingInfo info, final XYPlot plot,
+            final ValueAxis domainAxis, final ValueAxis rangeAxis, final XYDataset dataset,
+            final int series, final int item, final CrosshairState crosshairState, final int pass) {
 
-        if (isLinePass(pass) && (drawYError || drawXError) && dataset instanceof IntervalXYDataset 
-                /* && getItemVisible(series, item) */) {
+        if (isLinePass(pass) && (drawYError || drawXError) && dataset instanceof IntervalXYDataset /* && getItemVisible(series, item) */) {
             final IntervalXYDataset ixyd = (IntervalXYDataset) dataset;
 
             final FastXYLineAndShapeRenderer.State state = (FastXYLineAndShapeRenderer.State) renderState;

@@ -1,6 +1,6 @@
-
 package fr.jmmc.oiexplorer.core.model.plot;
 
+import fr.jmmc.oiexplorer.core.model.OIBase;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -8,8 +8,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
-import fr.jmmc.oiexplorer.core.model.OIBase;
-
 
 /**
  * 
@@ -40,8 +38,7 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
 })
 @XmlRootElement(name = "plotDefinitions")
 public class PlotDefinitions
-    extends OIBase
-{
+        extends OIBase {
 
     @XmlElement(name = "plotDefinition", required = true)
     protected List<PlotDefinition> plotDefinitions;
@@ -74,7 +71,7 @@ public class PlotDefinitions
         }
         return this.plotDefinitions;
     }
-    
+
 //--simple--preserve
     /**
      * toString() implementation using string builder
@@ -91,5 +88,4 @@ public class PlotDefinitions
         }
     }
 //--simple--preserve
-
 }

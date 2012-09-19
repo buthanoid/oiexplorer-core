@@ -3,19 +3,19 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.action;
 
-import fr.jmmc.oiexplorer.core.gui.chart.PDFUtils;
-import fr.jmmc.jmcs.gui.component.MessagePane;
-import fr.jmmc.jmcs.gui.component.StatusBar;
 import fr.jmmc.jmcs.gui.action.ActionRegistrar;
 import fr.jmmc.jmcs.gui.component.FileChooser;
+import fr.jmmc.jmcs.gui.component.MessagePane;
+import fr.jmmc.jmcs.gui.component.StatusBar;
 import fr.jmmc.jmcs.util.MimeType;
 import fr.jmmc.oiexplorer.core.gui.PDFExportable;
+import fr.jmmc.oiexplorer.core.gui.chart.PDFUtils;
 import java.awt.Component;
 import java.io.File;
 import java.io.IOException;
+import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.jfree.chart.JFreeChart;
 
 /**
  * This registered action represents a File Menu entry to export any chart as a PDF document.

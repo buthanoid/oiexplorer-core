@@ -102,6 +102,7 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
      * @return  a negative integer, zero, or a positive integer as this object
      *          is less than, equal to, or greater than the specified object.
      */
+    @Override
     public int compareTo(final EventNotifier<?, ?, ?> other) {
         final int otherPriority = other.getPriority();
         return (priority < otherPriority) ? -1 : ((priority == otherPriority) ? 0 : 1);
@@ -181,7 +182,7 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
      * @throws IllegalStateException if this method is not called by Swing EDT
      */
     public void queueEvent(final Object source, final K event,
-                           final GenericEventListener<? extends GenericEvent<V, O>, V, O> destination) throws IllegalStateException {
+            final GenericEventListener<? extends GenericEvent<V, O>, V, O> destination) throws IllegalStateException {
 
         // ensure events are fired by Swing EDT:
         if (!SwingUtils.isEDT()) {

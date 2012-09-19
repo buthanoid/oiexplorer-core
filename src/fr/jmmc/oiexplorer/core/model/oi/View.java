@@ -1,4 +1,3 @@
-
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -8,7 +7,6 @@ import javax.xml.bind.annotation.XmlIDREF;
 import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlType;
-
 
 /**
  * 
@@ -43,8 +41,7 @@ import javax.xml.bind.annotation.XmlType;
     Plot.class
 })
 public class View
-    extends Identifiable
-{
+        extends Identifiable {
 
     @XmlElement(required = true)
     protected String type;
@@ -100,7 +97,7 @@ public class View
     public void setSubsetDefinition(SubsetDefinition value) {
         this.subsetDefinition = value;
     }
-    
+
 //--simple--preserve
     /**
      * Perform a deep-copy of the given other instance into this instance
@@ -153,5 +150,4 @@ public class View
         // put '}' in child classes
     }
 //--simple--preserve
-
 }

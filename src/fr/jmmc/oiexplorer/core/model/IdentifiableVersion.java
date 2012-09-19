@@ -95,11 +95,12 @@ public final class IdentifiableVersion implements ToStringable {
     /**
      * toString() implementation using string builder
      * 
-     * Note: to be overriden in child classes to append their fields
+     * Note: to be override in child classes to append their fields
      * 
      * @param sb string builder to append to
      * @param full true to get complete information; false to get main information (shorter)
      */
+    @Override
     public void toString(final StringBuilder sb, final boolean full) {
         ObjectUtils.getObjectInfo(sb, this);
         sb.append("{id=").append(this.id);

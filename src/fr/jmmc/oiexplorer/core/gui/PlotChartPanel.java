@@ -79,7 +79,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public final class PlotChartPanel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-                                                                        PDFExportable, OIFitsCollectionManagerEventListener {
+        PDFExportable, OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -216,6 +216,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             // Add distinct arrNames:
             final GetOIDataString arrNameOperator = new GetOIDataString() {
+                @Override
                 public String getString(final OIData oiData) {
                     return oiData.getArrName();
                 }
@@ -233,6 +234,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             // Add unique insNames:
             final GetOIDataString insNameOperator = new GetOIDataString() {
+                @Override
                 public String getString(final OIData oiData) {
                     return oiData.getInsName();
                 }
@@ -261,6 +263,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             // Add unique dateObs:
             final GetOIDataString dateObsOperator = new GetOIDataString() {
+                @Override
                 public String getString(final OIData oiData) {
                     return oiData.getDateObs();
                 }
@@ -779,6 +782,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 // Add distinct arrNames:
                 final GetOIDataString arrNameOperator = new GetOIDataString() {
+                    @Override
                     public String getString(final OIData oiData) {
                         return oiData.getArrName();
                     }
@@ -796,6 +800,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 // Add unique insNames:
                 final GetOIDataString insNameOperator = new GetOIDataString() {
+                    @Override
                     public String getString(final OIData oiData) {
                         return oiData.getInsName();
                     }
@@ -839,6 +844,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 // Add unique dateObs:
                 final GetOIDataString dateObsOperator = new GetOIDataString() {
+                    @Override
                     public String getString(final OIData oiData) {
                         return oiData.getDateObs();
                     }
@@ -1360,9 +1366,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param info plot information to update
      */
     private void updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
-                            final PlotDefinition plotDef, final int yAxisIndex,
-                            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
-                            final PlotInfo info) {
+            final PlotDefinition plotDef, final int yAxisIndex,
+            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
+            final PlotInfo info) {
 
         // Get yAxis data:
         final Axis yAxis = plotDef.getYAxes().get(yAxisIndex);
@@ -2150,6 +2156,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param type event type
      * @return subject id (null means accept any event) or DISCARDED_SUBJECT_ID to discard event
      */
+    @Override
     public String getSubjectId(final OIFitsCollectionManagerEventType type) {
         switch (type) {
             case PLOT_CHANGED:

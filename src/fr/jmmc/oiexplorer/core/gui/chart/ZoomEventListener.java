@@ -9,10 +9,10 @@ package fr.jmmc.oiexplorer.core.gui.chart;
  */
 public interface ZoomEventListener {
 
-  /**
-   * Invoked when the chart is zoomed in or out.
-   * @param ze zoom event
-   * @see ZoomEvent
-   */
-  public void chartChanged(ZoomEvent ze);
+    /**
+     * Invoked when the chart is zoomed in or out.
+     * @param ze zoom event
+     * @see ZoomEvent
+     */
+    public void chartChanged(ZoomEvent ze);
 }

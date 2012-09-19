@@ -1,8 +1,6 @@
-
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import javax.xml.bind.annotation.XmlRegistry;
-
 
 /**
  * This object contains factory methods for each 
@@ -20,7 +18,6 @@ import javax.xml.bind.annotation.XmlRegistry;
  */
 @XmlRegistry
 public class ObjectFactory {
-
 
     /**
      * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: fr.jmmc.oiexplorer.core.model.oi
@@ -92,5 +89,4 @@ public class ObjectFactory {
     public Identifiable createIdentifiable() {
         return new Identifiable();
     }
-
 }

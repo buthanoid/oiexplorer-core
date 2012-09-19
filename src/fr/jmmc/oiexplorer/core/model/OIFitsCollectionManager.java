@@ -106,7 +106,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
-     * Free any ressource or reference to this instance :
+     * Free any resource or reference to this instance :
      * throw an IllegalStateException as it is invalid
      */
     @Override
@@ -123,8 +123,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * Load the OIFits collection at given URL
      * @param file OIFits explorer collection file file to load
      * @param checker optional OIFits checker instance (may be null)
-     * @throws IOException if an I/O exception occured
-     * @throws IllegalStateException if an unexpected exception occured
+     * @throws IOException if an I/O exception occurred
+     * @throws IllegalStateException if an unexpected exception occurred
      * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker) throws IOException, IllegalStateException, XmlBindException {
@@ -142,8 +142,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     /**
      * Load the OIFits collection at given URL
      * @param file OIFits explorer collection file file to load
-     * @throws IOException if an I/O exception occured
-     * @throws IllegalStateException if an unexpected exception occured
+     * @throws IOException if an I/O exception occurred
+     * @throws IllegalStateException if an unexpected exception occurred
      */
     public void saveOIFitsCollection(final File file) throws IOException, IllegalStateException {
         final long startTime = System.nanoTime();
@@ -1272,6 +1272,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param type event type
      * @return subject id (null means accept any event) or DISCARDED_SUBJECT_ID to discard event
      */
+    @Override
     public String getSubjectId(final OIFitsCollectionManagerEventType type) {
         // accept all
         return null;

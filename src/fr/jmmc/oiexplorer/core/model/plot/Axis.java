@@ -1,12 +1,10 @@
-
 package fr.jmmc.oiexplorer.core.model.plot;
 
+import fr.jmmc.oiexplorer.core.model.OIBase;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
-import fr.jmmc.oiexplorer.core.model.OIBase;
-
 
 /**
  * 
@@ -46,8 +44,7 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
     "converter"
 })
 public class Axis
-    extends OIBase
-{
+        extends OIBase {
 
     @XmlElement(required = true)
     protected String name;
@@ -184,7 +181,7 @@ public class Axis
     public void setConverter(String value) {
         this.converter = value;
     }
-    
+
 //--simple--preserve
     /**
      * Perform a deep-copy of the given other instance into this instance
@@ -262,5 +259,4 @@ public class Axis
         sb.append('}');
     }
 //--simple--preserve
-
 }

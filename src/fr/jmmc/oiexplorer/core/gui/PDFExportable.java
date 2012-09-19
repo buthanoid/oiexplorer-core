@@ -12,35 +12,35 @@ import org.jfree.chart.JFreeChart;
  * @author bourgesl
  */
 public interface PDFExportable {
-  /** PDF extension */
-  public static final String PDF_EXT = MimeType.PDF.getExtension();
 
-  /**
-   * Export the chart component as a PDF document.
-   */
-  public void performPDFAction();
+    /** PDF extension */
+    public static final String PDF_EXT = MimeType.PDF.getExtension();
 
-  /**
-   * Return the PDF default file name
-   * @return PDF default file name
-   */
-  public String getPDFDefaultFileName();
+    /**
+     * Export the chart component as a PDF document.
+     */
+    public void performPDFAction();
 
-  /**
-   * Return the PDF options
-   * @return PDF options
-   */
-  public PDFOptions getPDFOptions();
+    /**
+     * Return the PDF default file name
+     * @return PDF default file name
+     */
+    public String getPDFDefaultFileName();
 
-  /**
-   * Return the chart to export as a PDF document
-   * @return chart
-   */
-  public JFreeChart prepareChart();
+    /**
+     * Return the PDF options
+     * @return PDF options
+     */
+    public PDFOptions getPDFOptions();
 
-  /**
-   * Callback indicating the chart was processed by the PDF engine
-   */
-  public void postPDFExport();
+    /**
+     * Return the chart to export as a PDF document
+     * @return chart
+     */
+    public JFreeChart prepareChart();
 
+    /**
+     * Callback indicating the chart was processed by the PDF engine
+     */
+    public void postPDFExport();
 }

@@ -108,6 +108,7 @@ public final class EventContext<K extends GenericEvent<V, O>, V, O> implements T
      * @param sb string builder to append to
      * @param full true to get complete information; false to get main information (shorter)
      */
+    @Override
     public void toString(final StringBuilder sb, final boolean full) {
         ObjectUtils.getObjectInfo(sb, this);
 

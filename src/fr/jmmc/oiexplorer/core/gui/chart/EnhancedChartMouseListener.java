@@ -3,7 +3,6 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
-import java.awt.geom.Rectangle2D;
 import org.jfree.chart.ChartMouseListener;
 
 /**
@@ -12,15 +11,15 @@ import org.jfree.chart.ChartMouseListener;
  */
 public interface EnhancedChartMouseListener extends ChartMouseListener {
 
-  /** mouse clicked event */
-  public int EVENT_CLICKED = 1;
-  /** mouse moved event */
-  public int EVENT_MOVED = 2;
+    /** mouse clicked event */
+    public int EVENT_CLICKED = 1;
+    /** mouse moved event */
+    public int EVENT_MOVED = 2;
 
-  /**
-   * Return true if this listener implements / uses this mouse event type
-   * @param eventType mouse event type
-   * @return true if this listener implements / uses this mouse event type
-   */
-  public boolean support(final int eventType);
+    /**
+     * Return true if this listener implements / uses this mouse event type
+     * @param eventType mouse event type
+     * @return true if this listener implements / uses this mouse event type
+     */
+    public boolean support(final int eventType);
 }

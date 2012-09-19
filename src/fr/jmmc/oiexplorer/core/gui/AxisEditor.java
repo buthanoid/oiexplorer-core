@@ -4,7 +4,6 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
-import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
 
 /**
@@ -16,7 +15,7 @@ public class AxisEditor extends javax.swing.JPanel {
     
 
     /* members */
-    /** TODO previous selection for combobox */
+    /** TODO previous selection for combo box */
     /** TODO store reference of plotDefinitionEditor for change notifications */
     
     /** Creates new form AxisEditor */
@@ -25,9 +24,9 @@ public class AxisEditor extends javax.swing.JPanel {
         
     }
     
-    /** Init widgets according to given axis 
+    /** Initialize widgets according to given axis 
      * 
-     * @param axis used to init widget states
+     * @param axis used to initialize widget states
      */
     public void initForm(Axis axis){   
         includeZeroCheckBox.setSelected(axis.isIncludeZero());

@@ -30,7 +30,7 @@ public class OIBase implements PublicCloneable, ToStringable {
     /**
      * Perform a deep-copy of the given other instance into this instance
      * 
-     * Note: to be overriden in child class to perform deep-copy of class fields
+     * Note: to be override in child class to perform deep-copy of class fields
      * @see OIBase#clone() 
      * 
      * @param other other instance
@@ -77,6 +77,7 @@ public class OIBase implements PublicCloneable, ToStringable {
      * @param sb string builder to append to
      * @param full true to get complete information; false to get main information (shorter)
      */
+    @Override
     public void toString(final StringBuilder sb, final boolean full) {
         ObjectUtils.getObjectInfo(sb, this);
     }

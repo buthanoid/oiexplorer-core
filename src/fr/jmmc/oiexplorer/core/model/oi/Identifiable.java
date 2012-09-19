@@ -1,6 +1,7 @@
-
 package fr.jmmc.oiexplorer.core.model.oi;
 
+import fr.jmmc.oiexplorer.core.model.OIBase;
+import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -10,9 +11,6 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import fr.jmmc.oiexplorer.core.model.OIBase;
-import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
-
 
 /**
  * 
@@ -50,8 +48,7 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
     View.class
 })
 public class Identifiable
-    extends OIBase
-{
+        extends OIBase {
 
     @XmlElement(required = true)
     @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
@@ -107,7 +104,6 @@ public class Identifiable
     public void setDescription(String value) {
         this.description = value;
     }
-    
 //--simple--preserve
     /** instance version to track effective changes (read only) */
     @javax.xml.bind.annotation.XmlTransient
@@ -302,5 +298,4 @@ public class Identifiable
         return null;
     }
 //--simple--preserve
-
 }
