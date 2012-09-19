@@ -1059,7 +1059,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
 
                     if (yUseLog) {
-                        // test logarithmic axis:
                         final BoundedLogAxis logAxis = new BoundedLogAxis("log " + label);
                         logAxis.setExpTickLabelsFlag(true);
                         logAxis.setAutoRangeNextLogFlag(true);
@@ -1225,7 +1224,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
 
                     if (yUseLog) {
-                        // test logarithmic axis:
                         final BoundedLogAxis logAxis = new BoundedLogAxis("log " + label);
                         logAxis.setExpTickLabelsFlag(true);
                         logAxis.setAutoRangeNextLogFlag(true);
@@ -1353,7 +1351,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         if (xUseLog) {
-            // test logarithmic axis:
             final BoundedLogAxis logAxis = new BoundedLogAxis("log " + label);
             logAxis.setExpTickLabelsFlag(true);
             logAxis.setAutoRangeNextLogFlag(true);
@@ -1569,8 +1566,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // Station configurations:
 
-        // TEST
-        plotDef.setColorMapping(ColorMapping.WAVELENGTH_RANGE);
+        // TEST ColorMapping: TODO remove once ColorMapping are editable by the GUI
+//        plotDef.setColorMapping(ColorMapping.WAVELENGTH_RANGE);
 
         // Use staConf (configuration) on each data row ?
         final boolean useStaConfColors = (info.distinctStaConfNames.size() > 1) && (ColorMapping.CONFIGURATION == plotDef.getColorMapping());
