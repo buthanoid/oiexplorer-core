@@ -13,6 +13,7 @@ import fr.jmmc.oiexplorer.core.gui.chart.BoundedLogAxis;
 import fr.jmmc.oiexplorer.core.gui.chart.BoundedNumberAxis;
 import fr.jmmc.oiexplorer.core.gui.chart.ChartMouseSelectionListener;
 import fr.jmmc.oiexplorer.core.gui.chart.ChartUtils;
+import fr.jmmc.oiexplorer.core.gui.chart.ColorPalette;
 import fr.jmmc.oiexplorer.core.gui.chart.CombinedCrosshairOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.EnhancedChartMouseListener;
 import fr.jmmc.oiexplorer.core.gui.chart.FastXYErrorRenderer;
@@ -28,6 +29,7 @@ import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType;
 import fr.jmmc.oiexplorer.core.model.oi.Plot;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
+import fr.jmmc.oiexplorer.core.model.plot.ColorMapping;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oitools.meta.ColumnMeta;
@@ -35,7 +37,6 @@ import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
-import fr.jmmc.oitools.model.OITable;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Shape;
@@ -56,6 +57,7 @@ import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.LegendItemCollection;
 import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.event.ChartProgressEvent;
@@ -85,8 +87,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private static final long serialVersionUID = 1;
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(PlotChartPanel.class.getName());
-    /** default color model (aspro - Rainbow) */
-    private final static IndexColorModel RAINBOW_COLOR_MODEL = ColorModels.getColorModel("Rainbow");
     /** data margin in percents (5%) */
     private final static double MARGIN_PERCENTS = 5d / 100d;
     /** double formatter for wave lengths */
@@ -194,7 +194,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             AxisInfo axisInfo;
 
             // add Y axes:
-            for (PlotInfo info : this.plotInfos) {
+            for (PlotInfo info : getPlotInfos()) {
                 axisInfo = info.yAxisInfo;
                 distinct.add((axisInfo.useLog) ? "log_" + axisInfo.columnMeta.getName() : axisInfo.columnMeta.getName());
             }
@@ -205,7 +205,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             sb.append("_vs_");
 
             // add X axis:
-            axisInfo = this.plotInfos.get(0).xAxisInfo;
+            axisInfo = getFirstPlotInfo().xAxisInfo;
             sb.append((axisInfo.useLog) ? "log_" + axisInfo.columnMeta.getName() : axisInfo.columnMeta.getName());
             sb.append('_');
 
@@ -223,7 +223,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             };
 
             distinct.clear();
-            for (PlotInfo info : this.plotInfos) {
+            for (PlotInfo info : getPlotInfos()) {
                 getDistinct(info.oidataList, distinct, arrNameOperator);
             }
             if (!distinct.isEmpty()) {
@@ -241,7 +241,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             };
 
             distinct.clear();
-            for (PlotInfo info : this.plotInfos) {
+            for (PlotInfo info : getPlotInfos()) {
                 getDistinct(info.oidataList, distinct, insNameOperator);
             }
             if (!distinct.isEmpty()) {
@@ -250,10 +250,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             sb.append('_');
 
-            // Add unique configurations:
+            // Add unique configurations (FILTERED):
             distinct.clear();
-            for (PlotInfo info : this.plotInfos) {
-                getDistinctStaConfs(info.oidataList, distinct);
+            for (PlotInfo info : getPlotInfos()) {
+                distinct.addAll(info.usedStaConfNames);
             }
             if (!distinct.isEmpty()) {
                 toString(distinct, sb, "-", "_", 3, "MULTI_CONF");
@@ -270,7 +270,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             };
 
             distinct.clear();
-            for (PlotInfo info : this.plotInfos) {
+            for (PlotInfo info : getPlotInfos()) {
                 getDistinct(info.oidataList, distinct, dateObsOperator);
             }
             if (!distinct.isEmpty()) {
@@ -318,8 +318,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final boolean usePlotCrossHairSupport = false;
         final boolean useSelectionSupport = false; // TODO: enable selection ASAP (TODO sub plot support)
 
-        final boolean showLegend = false;
-
         // create chart and add listener :
         this.combinedXYPlot = new CombinedDomainXYPlot(ChartUtils.createAxis(""));
         this.combinedXYPlot.setGap(10.0D);
@@ -327,7 +325,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         configureCrosshair(this.combinedXYPlot, usePlotCrossHairSupport);
 
-        this.chart = ChartUtils.createChart(null, this.combinedXYPlot, showLegend);
+        this.chart = ChartUtils.createChart(null, this.combinedXYPlot, true);
         this.chart.addProgressListener(this);
         this.chartPanel = ChartUtils.createChartPanel(this.chart, false);
 
@@ -415,8 +413,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         renderer.setAutoPopulateSeriesShape(false);
 
         // reset colors :
-        renderer.setAutoPopulateSeriesPaint(false);
         renderer.clearSeriesPaints(false);
+        // side effect with chart theme :
+        renderer.setAutoPopulateSeriesPaint(false);
 
         // set renderer options for ALL series (performance):
         renderer.setShapesVisible(true);
@@ -691,7 +690,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private void resetPlot() {
 
         // clear plot informations
-        this.plotInfos.clear();
+        getPlotInfos().clear();
 
         // disable chart & plot notifications:
         this.chart.setNotify(false);
@@ -707,7 +706,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             this.xyPlotPlot1.setDataset(null);
             this.xyPlotPlot2.setDataset(null);
 
-            this.chartPanel.setVisible(!this.plotInfos.isEmpty());
+            this.chartPanel.setVisible(isHasData());
 
         } finally {
             // restore chart & plot notifications:
@@ -749,7 +748,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final long start = System.nanoTime();
 
         // clear plot informations
-        this.plotInfos.clear();
+        getPlotInfos().clear();
 
         // disable chart & plot notifications:
         this.chart.setNotify(false);
@@ -789,11 +788,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 };
 
                 distinct.clear();
-                for (PlotInfo info : this.plotInfos) {
+                for (PlotInfo info : getPlotInfos()) {
                     getDistinct(info.oidataList, distinct, arrNameOperator);
                 }
                 if (!distinct.isEmpty()) {
-                    toString(distinct, sb, " ", " / ");
+                    toString(distinct, sb, " ", " / ", 3, "MULTI ARRAY");
                 }
 
                 sb.append(" - ");
@@ -807,33 +806,33 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 };
 
                 distinct.clear();
-                for (PlotInfo info : this.plotInfos) {
+                for (PlotInfo info : getPlotInfos()) {
                     getDistinct(info.oidataList, distinct, insNameOperator);
                 }
                 if (!distinct.isEmpty()) {
-                    toString(distinct, sb, " ", " / ");
+                    toString(distinct, sb, " ", " / ", 3, "MULTI INSTRUMENT");
                 }
 
                 sb.append(" ");
 
                 // Add wavelength ranges:
                 distinct.clear();
-                for (PlotInfo info : this.plotInfos) {
+                for (PlotInfo info : getPlotInfos()) {
                     getDistinctWaveLengthRange(info.oidataList, distinct);
                 }
                 if (!distinct.isEmpty()) {
-                    toString(distinct, sb, " ", " / ");
+                    toString(distinct, sb, " ", " / ", 3, "MULTI WAVELENGTH RANGE");
                 }
 
                 sb.append(" - ");
 
-                // Add unique configurations:
+                // Add unique configurations (FILTERED):
                 distinct.clear();
-                for (PlotInfo info : this.plotInfos) {
-                    getDistinctStaConfs(info.oidataList, distinct);
+                for (PlotInfo info : getPlotInfos()) {
+                    distinct.addAll(info.usedStaConfNames);
                 }
                 if (!distinct.isEmpty()) {
-                    toString(distinct, sb, " ", " / ");
+                    toString(distinct, sb, " ", " / ", 3, "MULTI CONFIGURATION");
                 }
 
                 ChartUtils.addSubtitle(this.chart, sb.toString());
@@ -850,11 +849,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
                 };
                 distinct.clear();
-                for (PlotInfo info : this.plotInfos) {
+                for (PlotInfo info : getPlotInfos()) {
                     getDistinct(info.oidataList, distinct, dateObsOperator);
                 }
                 if (!distinct.isEmpty()) {
-                    toString(distinct, sb, " ", " / ");
+                    toString(distinct, sb, " ", " / ", 3, "MULTI DATE");
                 }
 
                 sb.append(" - Source: ").append(getTargetName());
@@ -911,6 +910,19 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final OIFitsFile oiFitsSubset = getOiFitsSubset();
         final PlotDefinition plotDef = getPlotDefinition();
 
+        // Get distinct station indexes from OIFits subset (not filtered):
+        final List<String> distinctStaIndexNames = new ArrayList<String>(getDistinctStaNames(oiFitsSubset.getOiDataList(), new LinkedHashSet<String>()));
+
+        // Get distinct station configuration from OIFits subset (not filtered):
+        final List<String> distinctStaConfNames = new ArrayList<String>(getDistinctStaConfs(oiFitsSubset.getOiDataList(), new LinkedHashSet<String>()));
+
+        final Range waveLengthRange = getWaveLengthRange(oiFitsSubset.getOiDataList());
+
+        logger.debug("distinctStaIndexNames: {}", distinctStaIndexNames);
+        logger.debug("distinctStaConfNames: {}", distinctStaConfNames);
+        logger.debug("waveLengthRange: {}", waveLengthRange);
+
+
         boolean showPlot1 = false;
         boolean showPlot2 = false;
 
@@ -932,12 +944,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>();
 
                 final PlotInfo info = new PlotInfo();
+                info.distinctStaIndexNames = distinctStaIndexNames;
+                info.distinctStaConfNames = distinctStaConfNames;
+                info.waveLengthRange = waveLengthRange;
 
                 int tableIndex = 0;
-                for (OITable oiTable : oiFitsSubset.getOiTables()) {
+                for (OIData oiData : oiFitsSubset.getOiDataList()) {
 
                     // process data and add data series into given dataset:
-                    updatePlot(this.xyPlotPlot1, (OIData) oiTable, tableIndex, plotDef, 0, dataset, info);
+                    updatePlot(this.xyPlotPlot1, oiData, tableIndex, plotDef, 0, dataset, info);
 
                     tableIndex++;
                 }
@@ -949,7 +964,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     logger.info("xyPlotPlot1: nbSeries = {}", dataset.getSeriesCount());
 
                     // add plot info:
-                    this.plotInfos.add(info);
+                    getPlotInfos().add(info);
 
                     // update X axis information:
                     if (xMeta == null && info.xAxisInfo.columnMeta != null) {
@@ -1095,12 +1110,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>();
 
                 final PlotInfo info = new PlotInfo();
+                info.distinctStaIndexNames = distinctStaIndexNames;
+                info.distinctStaConfNames = distinctStaConfNames;
+                info.waveLengthRange = waveLengthRange;
 
                 int tableIndex = 0;
-                for (OITable oiTable : oiFitsSubset.getOiTables()) {
+                for (OIData oiData : oiFitsSubset.getOiDataList()) {
 
                     // process data and add data series into given dataset:
-                    updatePlot(this.xyPlotPlot2, (OIData) oiTable, tableIndex, plotDef, 1, dataset, info);
+                    updatePlot(this.xyPlotPlot2, oiData, tableIndex, plotDef, 1, dataset, info);
 
                     tableIndex++;
                 }
@@ -1112,7 +1130,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     logger.info("xyPlotPlot2: nbSeries = {}", dataset.getSeriesCount());
 
                     // add plot info:
-                    this.plotInfos.add(info);
+                    getPlotInfos().add(info);
 
                     // update X axis information:
                     if (xMeta == null && info.xAxisInfo.columnMeta != null) {
@@ -1309,7 +1327,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         logger.debug("fixed domainAxis: {} - {}", minX, maxX);
 
         // update view range:
-        for (PlotInfo info : this.plotInfos) {
+        for (PlotInfo info : getPlotInfos()) {
             info.xAxisInfo.viewRange = new Range(minX, maxX);
         }
 
@@ -1348,6 +1366,48 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             this.combinedXYPlot.setDomainAxis(logAxis);
         }
 
+        // define custom legend:
+        final ColorPalette palette = ColorPalette.getDefaultColorPaletteAlpha();
+
+        final LegendItemCollection legendCollection = new LegendItemCollection();
+
+        final boolean useStaIndexColors = (distinctStaIndexNames.size() > 1) && (ColorMapping.STATION_INDEX == plotDef.getColorMapping());
+        final boolean useStaConfColors = (distinctStaConfNames.size() > 1) && (ColorMapping.CONFIGURATION == plotDef.getColorMapping());
+
+        if (useStaIndexColors) {
+            // merge all used staIndex names:
+            final Set<String> distinctUsedStaIndexNames = new LinkedHashSet<String>();
+
+            for (PlotInfo info : getPlotInfos()) {
+                distinctUsedStaIndexNames.addAll(info.usedStaIndexNames);
+            }
+
+            int n = 0;
+            for (String staIndexName : distinctUsedStaIndexNames) {
+                legendCollection.add(ChartUtils.createLegendItem(staIndexName, palette.getColor(n)));
+
+                n++;
+            }
+        } else if (useStaConfColors) {
+
+            // merge all used staConf names:
+            final Set<String> distinctUsedStaConfNames = new LinkedHashSet<String>();
+
+            for (PlotInfo info : getPlotInfos()) {
+                distinctUsedStaConfNames.addAll(info.usedStaConfNames);
+            }
+
+            int n = 0;
+            for (String staConfName : distinctUsedStaConfNames) {
+                legendCollection.add(ChartUtils.createLegendItem(staConfName, palette.getColor(n)));
+
+                n++;
+            }
+        }
+
+        // TODO: use ColorScale to paint an horizontal wavelength color scale
+
+        this.combinedXYPlot.setFixedLegendItems(legendCollection);
 
         if (logger.isInfoEnabled()) {
             logger.info("updateChart : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
@@ -1407,6 +1467,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             yData2DErr = null;
         }
 
+        final boolean hasErrY = (yData2DErr != null) || (yData1DErr != null);
+
+
         // Get xAxis data:
         final Axis xAxis = plotDef.getXAxis();
         final String xAxisName = xAxis.getName();
@@ -1444,6 +1507,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             xData2DErr = null;
         }
 
+        final boolean hasErrX = (xData2DErr != null) || (xData1DErr != null);
+
+
         final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
 
         // serie count:
@@ -1454,66 +1520,151 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         logger.debug("nRows - nWaves : {} - {}", nRows, nWaves);
 
+
         // standard columns:
         final short[][] staIndexes = oiData.getStaIndex();
-        final short[] targetIds = oiData.getTargetId();
-        final boolean[][] flags = oiData.getFlag();
+        final short[][] staConfs = oiData.getStaConf();
 
-        final boolean hasErrX = (xData2DErr != null) || (xData1DErr != null);
-        final boolean hasErrY = (yData2DErr != null) || (yData1DErr != null);
-        final boolean hasFlag = (flags != null);
-        final boolean hasTargetId = (targetIds != null);
 
-        // Get distinct staIndex in OIData (baseline or triplet):
-        final short[][] distinctStaIndexes = oiData.getDistinctStaIndexes();
-        final int nStaIndexes = distinctStaIndexes.length;
-        logger.debug("nStaIndexes: {}", nStaIndexes);
-
+        // Use staIndex (baseline or triplet) on each data row ?
+        final int nStaIndexes = oiData.getDistinctStaIndexCount();
         final boolean checkStaIndex = nStaIndexes > 1;
+
+        logger.debug("nStaIndexes: {}", nStaIndexes);
         logger.debug("checkStaIndex: {}", checkStaIndex);
 
-        final int nFlagged = oiData.getNFlagged();
-        logger.debug("nFlagged: {}", nFlagged);
+        // anyway (color mapping or check sta index):
+        final short[][] distinctStaIndexes = oiData.getDistinctStaIndexes();
 
-        // flag to check flags on every 2D data:
-        final boolean checkFlaggedData = hasFlag && (nFlagged > 0) && (isXData2D || isYData2D);
+
+        // Use flags on every 2D data ?
+        final int nFlagged = oiData.getNFlagged();
+        final boolean checkFlaggedData = (nFlagged > 0) && (isXData2D || isYData2D);
+
+        logger.debug("nFlagged: {}", nFlagged);
         logger.debug("checkFlaggedData: {}", checkFlaggedData);
 
-        // flag to check targetId on each data row:
-        final boolean checkTargetId = !oiData.hasSingleTarget() && hasTargetId;
+        final boolean[][] flags = (checkFlaggedData) ? oiData.getFlag() : null;
+
+
+        // Use targetId on each data row ?
+        final boolean checkTargetId = !oiData.hasSingleTarget();
 
         final short matchTargetId;
+        final short[] targetIds;
         if (checkTargetId) {
             // targetID can not be null as the OIData table is supposed to have the target:
             matchTargetId = oiData.getTargetId(getTargetName());
+            targetIds = oiData.getTargetId();
 
             logger.debug("matchTargetId: {}", matchTargetId);
         } else {
             matchTargetId = -1;
-        }
-
-        // TODO: perform correct palette when using different OIWaveLength tables:
-
-        // Prepare palette:
-        final Color[] colors = new Color[nWaves];
-
-        final IndexColorModel colorModel = RAINBOW_COLOR_MODEL;
-        final int iMaxColor = colorModel.getMapSize() - 1;
-
-        final float factor = ((float) iMaxColor) / nWaves;
-        float value;
-
-        // 80% opacity:
-        final int alphaMask = Math.round(255 * 0.8f) << 24;
-
-        for (int i = 0; i < nWaves; i++) {
-            // invert palette to have (VIOLET - BLUE - GREEN - RED) ie color spectrum:
-            value = iMaxColor - factor * i;
-
-            colors[i] = new Color(ImageUtils.getRGB(colorModel, iMaxColor, value, alphaMask), true);
+            targetIds = null;
         }
 
 
+        // Color mapping:
+        final ColorPalette palette = ColorPalette.getDefaultColorPaletteAlpha();
+
+        // Station configurations:
+
+        // TEST
+        plotDef.setColorMapping(ColorMapping.WAVELENGTH_RANGE);
+
+        // Use staConf (configuration) on each data row ?
+        final boolean useStaConfColors = (info.distinctStaConfNames.size() > 1) && (ColorMapping.CONFIGURATION == plotDef.getColorMapping());
+
+        logger.debug("useStaConfColors: {}", useStaConfColors);
+
+        final Map<short[], Color> mappingStaConfs;
+        if (useStaConfColors) {
+            mappingStaConfs = new IdentityHashMap<short[], Color>(oiData.getDistinctStaConfCount());
+
+            String staConfName;
+            for (short[] staConf : oiData.getDistinctStaConf()) {
+                staConfName = oiData.getStaNames(staConf); // cached
+
+                // find index in distinctStaConfNames:
+                int pos = info.distinctStaConfNames.indexOf(staConfName);
+
+                if (pos != -1) {
+                    // note: color mapping is defined for all possible station configuration:
+                    mappingStaConfs.put(staConf, palette.getColor(pos));
+                } else {
+                    throw new IllegalStateException("bad case");
+                }
+            }
+        } else {
+            mappingStaConfs = null;
+        }
+
+
+        final boolean useStaIndexColors = (info.distinctStaIndexNames.size() > 1) && (ColorMapping.STATION_INDEX == plotDef.getColorMapping());
+
+        logger.debug("useStaIndexColors: {}", useStaIndexColors);
+
+        final Map<short[], Color> mappingStaIndexes;
+        if (useStaIndexColors) {
+            mappingStaIndexes = new IdentityHashMap<short[], Color>(oiData.getDistinctStaIndexCount());
+
+            String staIndexName;
+            for (short[] staIndex : oiData.getDistinctStaIndex()) {
+                staIndexName = oiData.getStaNames(staIndex); // cached
+
+                // find index in distinctStaIndexNames:
+                int pos = info.distinctStaIndexNames.indexOf(staIndexName);
+
+                if (pos != -1) {
+                    // note: color mapping is defined for all possible station configuration:
+                    mappingStaIndexes.put(staIndex, palette.getColor(pos));
+                } else {
+                    throw new IllegalStateException("bad case");
+                }
+            }
+        } else {
+            mappingStaIndexes = null;
+        }
+
+
+        // TODO: use an XYZ dataset to have a color axis (z) and then use linear or custom z conversion to colors.
+
+        final boolean useWaveLengthColors = (!useStaConfColors || !useStaIndexColors || ColorMapping.WAVELENGTH_RANGE == plotDef.getColorMapping());
+
+        logger.debug("useWaveLengthColors: {}", useWaveLengthColors);
+
+        final Color[] mappingWaveLengthColors;
+        if (useWaveLengthColors) {
+
+            final float[] effWaveRange = oiData.getEffWaveRange();
+
+            // scale and offset between [0;1]:
+            final float scale = (float) ((effWaveRange[1] - effWaveRange[0]) / info.waveLengthRange.getLength());
+            final float offset = (float) ((effWaveRange[0] - info.waveLengthRange.getLowerBound()) / info.waveLengthRange.getLength());
+
+            final IndexColorModel colorModel = ColorModels.getColorModel(ColorModels.COLOR_MODEL_RAINBOW_ALPHA);
+            final int iMaxColor = colorModel.getMapSize() - 1;
+
+            mappingWaveLengthColors = new Color[nWaves];
+
+            final float factor = (nWaves > 1) ? scale / (nWaves - 1) : scale;
+            float value;
+
+            final float alpha = 0.8f;
+            final int alphaMask = Math.round(255 * alpha) << 24;
+
+            for (int i = 0; i < nWaves; i++) {
+                // invert palette to have (VIOLET - BLUE - GREEN - RED) ie color spectrum:
+                value = (float) iMaxColor - (factor * i + offset) * iMaxColor;
+
+                mappingWaveLengthColors[i] = new Color(ImageUtils.getRGB(colorModel, iMaxColor, value, alphaMask), true);
+            }
+        } else {
+            mappingWaveLengthColors = null;
+        }
+
+
+        // TODO: adjust renderer settings per Serie (color, shape ...) per series and item at higher level using dataset fields
         final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
 
         // try to fill dataset:
@@ -1553,6 +1704,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         OITableSerieKey serieKey;
 
         short[] currentStaIndex;
+        short[] currentStaConf;
 
         int nSkipTarget = 0;
         int nSkipFlag = 0;
@@ -1568,7 +1720,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             for (k = 0; k < nStaIndexes; k++) {
 
                 // get the sta index array:
-                currentStaIndex = (checkStaIndex) ? distinctStaIndexes[k] : null;
+                currentStaIndex = distinctStaIndexes[k];
+                currentStaConf = null;
 
                 // 1 serie per baseline and per spectral channel:
                 if (recycleArray) {
@@ -1619,6 +1772,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             continue;
                         }
                     }
+
+                    // staConf corresponds to the baseline also:
+                    currentStaConf = staConfs[i];
 
                     // TODO: filter data (wavelength, baseline, configuration, time ...)
                     // TODO: support function (min, max, mean) applied to array data (2D)
@@ -1763,10 +1919,32 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     // Avoid any key conflict:
                     dataset.addSeries(serieKey, new double[][]{xValue, xLower, xUpper, yValue, yLower, yUpper});
 
-                    // TODO: adjust renderer settings per Serie (color, shape ...) !
-                    renderer.setSeriesPaint(seriesCount, colors[j], false);
+                    // TODO: adjust renderer settings per Serie (color, shape ...) per series and item at higher level using dataset fields
+
+                    // Use special fields into dataset to encode color mapping (color value as double ?)
+
+                    // use colormapping enum:
+                    if (useStaIndexColors) {
+                        renderer.setSeriesPaint(seriesCount, mappingStaIndexes.get(currentStaIndex), false);
+                    } else if (useStaConfColors) {
+                        renderer.setSeriesPaint(seriesCount, mappingStaConfs.get(currentStaConf), false);
+                    } else if (useWaveLengthColors) {
+                        renderer.setSeriesPaint(seriesCount, mappingWaveLengthColors[j], false);
+                    }
 
                     seriesCount++;
+
+                    // Add staIndex into used station indexes anyway:
+                    if (currentStaIndex != null) {
+                        // NOT OPTIMIZED:
+                        info.usedStaIndexNames.add(oiData.getStaNames(currentStaIndex)); // cached
+                    }
+
+                    // Add staConf into used station configurations anyway:
+                    if (currentStaConf != null) {
+                        // NOT OPTIMIZED:
+                        info.usedStaConfNames.add(oiData.getStaNames(currentStaConf)); // cached
+                    }
                 }
 
             } // iterate on baselines
@@ -1913,14 +2091,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         return path;
     }
 
-    /**
-     * Return true if the plot has data (dataset not empty)
-     * @return true if the plot has data 
-     */
-    public boolean isHasData() {
-        return !this.plotInfos.isEmpty();
-    }
-
+    /* Plot information */
     /**
      * TODO: make PlotInfo public !!
      * @return plotInfo list
@@ -1928,6 +2099,23 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     public List<PlotInfo> getPlotInfos() {
         return this.plotInfos;
     }
+
+    /**
+     * TODO: make PlotInfo public !!
+     * @return first plotInfo
+     */
+    public PlotInfo getFirstPlotInfo() {
+        return getPlotInfos().get(0);
+    }
+
+    /**
+     * Return true if the plot has data (dataset not empty)
+     * @return true if the plot has data 
+     */
+    public boolean isHasData() {
+        return !getPlotInfos().isEmpty();
+    }
+
 
     /* --- OIFits helper : TODO move elsewhere --- */
     /**
@@ -1960,8 +2148,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * Return the unique staNames values from given OIData tables
      * @param oiDataList OIData tables
      * @param set set instance to use
+     * @return given set instance
      */
-    private static void getDistinctStaNames(final List<OIData> oiDataList, final Set<String> set) {
+    private static Set<String> getDistinctStaNames(final List<OIData> oiDataList, final Set<String> set) {
         String staNames;
         for (OIData oiData : oiDataList) {
             for (short[] staIndexes : oiData.getDistinctStaIndex()) {
@@ -1972,24 +2161,27 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 set.add(staNames);
             }
         }
+        return set;
     }
 
     /**
-     * Return the unique staNames values from given OIData tables
+     * Return the unique staConfs values from given OIData tables
      * @param oiDataList OIData tables
      * @param set set instance to use
+     * @return given set instance
      */
-    private static void getDistinctStaConfs(final List<OIData> oiDataList, final Set<String> set) {
+    private static Set<String> getDistinctStaConfs(final List<OIData> oiDataList, final Set<String> set) {
         String staNames;
         for (OIData oiData : oiDataList) {
-            for (short[] staIndexes : oiData.getDistinctStaConf()) {
-                staNames = oiData.getStaNames(staIndexes);
+            for (short[] staConf : oiData.getDistinctStaConf()) {
+                staNames = oiData.getStaNames(staConf);
 
                 logger.debug("staConf : {}", staNames);
 
                 set.add(staNames);
             }
         }
+        return set;
     }
 
     /**
@@ -2016,6 +2208,32 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 set.add(wlenRange);
             }
         }
+    }
+
+    /**
+     * Return the largest wave length range from given OIData tables
+     * @param oiDataList OIData tables
+     * @return largest wave length range
+     */
+    private static Range getWaveLengthRange(final List<OIData> oiDataList) {
+        final float[] range = new float[]{Float.NaN, Float.NaN};
+        float[] effWaveRange;
+        for (OIData oiData : oiDataList) {
+            effWaveRange = oiData.getEffWaveRange();
+
+            if (effWaveRange != null) {
+
+                if (Float.isNaN(range[0]) || range[0] > effWaveRange[0]) {
+                    range[0] = effWaveRange[0];
+                }
+
+                if (Float.isNaN(range[1]) || range[1] < effWaveRange[1]) {
+                    range[1] = effWaveRange[1];
+                }
+            }
+        }
+
+        return new Range(range[0], range[1]);
     }
 
     private static void toString(final Set<String> set, final StringBuilder sb, final String internalSeparator, final String separator) {
@@ -2120,6 +2338,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         int yAxisIndex = -1;
         /** list of OIData tables used */
         List<OIData> oidataList;
+        /** all distinct station indexes from OIData tables (not filtered) */
+        List<String> distinctStaIndexNames;
+        /** used distinct station indexes in the plot (filtered) */
+        Set<String> usedStaIndexNames;
+        /** all distinct station configuration from OIData tables (not filtered) */
+        List<String> distinctStaConfNames;
+        /** used distinct station configuration in the plot (filtered) */
+        Set<String> usedStaConfNames;
+        /** largest wave length range (not filtered) */
+        Range waveLengthRange = null;
+        /** used wave length range (filtered) */
+        Range usedLengthRange = null; // TODO: fill it
         /** x axis information */
         AxisInfo xAxisInfo;
         /** y axis information */
@@ -2127,6 +2357,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         PlotInfo() {
             oidataList = new ArrayList<OIData>();
+            usedStaIndexNames = new LinkedHashSet<String>();
+            usedStaConfNames = new LinkedHashSet<String>();
             xAxisInfo = new AxisInfo();
             yAxisInfo = new AxisInfo();
         }
