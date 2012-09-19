@@ -1,9 +1,11 @@
+
 package fr.jmmc.oiexplorer.core.model.oi;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
+
 
 /**
  * 
@@ -35,7 +37,8 @@ import javax.xml.bind.annotation.XmlType;
     "checksum"
 })
 public class OIDataFile
-        extends Identifiable {
+    extends Identifiable
+{
 
     @XmlElement(required = true)
     protected String file;
@@ -80,6 +83,7 @@ public class OIDataFile
     public void setChecksum(long value) {
         this.checksum = value;
     }
+    
 //--simple--preserve
     /** loaded oiFitsFile structure (read only) */
     @javax.xml.bind.annotation.XmlTransient
@@ -116,4 +120,5 @@ public class OIDataFile
         sb.append('}');
     }
 //--simple--preserve
+
 }

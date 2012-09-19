@@ -1,7 +1,6 @@
+
 package fr.jmmc.oiexplorer.core.model.oi;
 
-import fr.jmmc.oiexplorer.core.model.OIBase;
-import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -9,6 +8,9 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
+import fr.jmmc.oiexplorer.core.model.OIBase;
+import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
+
 
 /**
  * 
@@ -45,7 +47,8 @@ import javax.xml.bind.annotation.XmlType;
 })
 @XmlRootElement(name = "oiDataCollection")
 public class OiDataCollection
-        extends OIBase {
+    extends OIBase
+{
 
     @XmlElement(name = "file", required = true)
     protected List<OIDataFile> files;
@@ -171,7 +174,7 @@ public class OiDataCollection
         }
         return this.plots;
     }
-
+    
 //--simple--preserve
     /**
      * toString() implementation using string builder
@@ -198,4 +201,5 @@ public class OiDataCollection
         }
     }
 //--simple--preserve
+
 }
