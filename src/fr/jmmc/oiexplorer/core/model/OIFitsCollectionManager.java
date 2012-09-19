@@ -17,10 +17,10 @@ import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.oi.TableUID;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.util.Constants;
+import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
-import fr.jmmc.oitools.model.OITable;
 import fr.nom.tam.fits.FitsException;
 import java.io.File;
 import java.io.IOException;
@@ -132,9 +132,10 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
 
-        setOiFitsCollectionFile(file);
-
         loadOIDataCollection(loadedUserCollection, checker);
+
+        // after loadOIDataCollection as it calls reset():
+        setOiFitsCollectionFile(file);
 
         logger.info("loadOIFitsCollection: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
     }
@@ -602,7 +603,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                             final Integer extNb = table.getExtNb();
 
                             // add all tables:
-                            for (OITable oiData : dataForTarget.getOiTables()) {
+                            for (OIData oiData : dataForTarget.getOiDataList()) {
                                 // file path comparison:
                                 if (oiData.getOIFitsFile().equals(oiFitsFile)) {
 

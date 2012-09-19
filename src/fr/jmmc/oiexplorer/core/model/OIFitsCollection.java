@@ -9,7 +9,6 @@ import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -173,7 +172,7 @@ public final class OIFitsCollection implements ToStringable {
             logger.debug("analyzeCollection:");
 
             for (Map.Entry<TargetUID, OIFitsFile> entry : oiFitsPerTarget.entrySet()) {
-                logger.debug("{} : {}", entry.getKey(), Arrays.toString(entry.getValue().getOiTables()));
+                logger.debug("{} : {}", entry.getKey(), entry.getValue().getOiDataList());
             }
         }
     }
