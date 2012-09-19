@@ -12,6 +12,7 @@ import java.awt.Graphics2D;
 import java.awt.Paint;
 import java.awt.Shape;
 import java.awt.Stroke;
+import java.awt.geom.Rectangle2D;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.HashMap;
@@ -23,14 +24,11 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.LegendItem;
 import org.jfree.chart.StandardChartTheme;
 import org.jfree.chart.annotations.XYTextAnnotation;
-import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.DateTickUnit;
 import org.jfree.chart.axis.DateTickUnitType;
-import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.axis.TickUnitSource;
 import org.jfree.chart.axis.TickUnits;
-import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.PlotOrientation;
@@ -514,10 +512,10 @@ public class ChartUtils {
     }
 
     /**
-     * Returns a default legend item for the specified series.
+     * Returns a default legend item given its label and custom paint.
      * note : code inspired from XYBarRenderer.createLegendItem()
      *
-     * @param xyBarRenderer XY bar renderer to get visual default attributes (font, colors ...)
+     * @param xyBarRenderer XY bar renderer to get visual default attributes (font, shape, colors ...)
      * @param label the legend label
      * @param paint the legend shape paint
      *
@@ -548,6 +546,25 @@ public class ChartUtils {
             item.setFillPaintTransformer(xyBarRenderer.getGradientPaintTransformer());
         }
 
+        return item;
+    }
+
+    /**
+     * Returns a default legend item given its label and custom paint.
+     *
+     * @param label the legend label
+     * @param paint the legend shape paint
+     *
+     * @return A legend item for the series.
+     */
+    public static LegendItem createLegendItem(final String label, final Paint paint) {
+
+        final Shape shape = new Rectangle2D.Double(-3.0, -5.0, 6.0, 10.0);
+
+        final LegendItem item;
+
+        item = new LegendItem(label, null, null, null, shape, paint);
+        
         return item;
     }
 
