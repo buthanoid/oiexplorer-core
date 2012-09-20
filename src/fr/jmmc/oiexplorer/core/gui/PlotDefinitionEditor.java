@@ -3,7 +3,6 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui;
 
-import fr.jmmc.jmcs.gui.component.GenericListModel;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEvent;
@@ -14,25 +13,24 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OITable;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import javax.swing.JComboBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This Panel allow to select data to plot and (optionnaly in the future) plots them just below.
- * After being created and inserted in a GUI, it becomes editor after being linked to a plotDefinition through setPlotDefId().
+ * This Panel allow to select columns of data to be plotted.
+ * After being created and inserted in a GUI, it becomes plotDefinition editor of a dedicated plotDefinition using setPlotDefId().
  * It can also be editor for the plotDefinition of a particular Plot using setPlotId(). In the Plot case, 
  * the subset is also watched to find available columns to plot.
  * 
  * @author mella
  */
-public final class PlotDefinitionEditor extends javax.swing.JPanel implements ActionListener, OIFitsCollectionManagerEventListener {
+public final class PlotDefinitionEditor extends javax.swing.JPanel implements OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -47,20 +45,16 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
     /** plot definition identifier */
     private String plotDefId = null;
     /* Swing components */
-    /** Store all choices available to plot on x axis given to current data to plot */
+    /** Store all choices available to plot on x axis given the plot's subset if any */
     private final List<String> xAxisChoices = new LinkedList<String>();
-    /** Store all choices available to plot on y axes given to current data to plot */
+    /** Store all choices available to plot on y axes given the plot's subset if any */
     private final List<String> yAxisChoices = new LinkedList<String>();
-    /** List of combo boxes associated to y axes */
-    private final List<JComboBox> yComboBoxes = new LinkedList<JComboBox>();
-    /** last selected value on x axis */
-    private String lastXComboBoxValue = null;
-    /** list of last selected value on y axes */
-    private List<String> lastYComboBoxesValues = new LinkedList<String>();
-    /** Common listener for y combo boxes */
-    private ActionListener ycomboActionListener;
-    /** Flag to declare that component is initializing */
-    private boolean initStep;
+    /** List of y axes with their editors */
+    private final HashMap<Axis, AxisEditor> yAxes = new LinkedHashMap<Axis, AxisEditor>();
+    /** Flag to declare that component has to notify an event from user gesture */
+    private boolean notify;
+    /** xAxisEditor */
+    private AxisEditor xAxisEditor;
 
     /** Creates new form PlotDefinitionEditor */
     public PlotDefinitionEditor() {
@@ -89,17 +83,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
      * This method is useful to set the models and specific features of initialized swing components :
      */
     private void postInit() {
-        // Comboboxes
-        // TODO: fix that code: invalid as modifying the internal list is forbidden !
-        xAxisComboBox.setModel(new GenericListModel<String>(xAxisChoices, true));
-
-        // Prepare a common listener to group handling in yAxisComboBoxActionPerformed()
-        ycomboActionListener = new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                yAxisComboBoxActionPerformed(e);
-            }
-        };
+        // TODO check if it has to be done by the netbeans GUI builder ?
+        xAxisEditor = new AxisEditor(this);
+        xAxisPanel.add(xAxisEditor);
     }
 
     /**
@@ -113,19 +99,17 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
 
         try {
             // Leave programatic changes on widgets ignored to prevent model changes 
-            initStep = false;
+            notify = false;
 
             // Clear all content
             // TODO: fix that code: invalid as modifying the internal list is forbidden !
-
             xAxisChoices.clear();
             yAxisChoices.clear();
 
-            // remove list yAxis
-            JComboBox[] yCombos = yComboBoxes.toArray(new JComboBox[]{});
-            for (JComboBox yCombo : yCombos) {
-                delYCombo(yCombo);
-            }
+            // clear y AxisEditors
+            // TODO find somehing cleaner
+            yAxes.clear();
+            yAxesPanel.removeAll();
 
             // At present time on plotDef is required to work : if it is null then return and leave in reset state
             if (plotDef == null) {
@@ -156,52 +140,16 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
 
             logger.debug("refreshForm : xAxisChoices {}, yAxisChoices {}", xAxisChoices, yAxisChoices);
 
-            if (!xAxisChoices.isEmpty()) {
-                // Use label of associated plotdefinition if any, else try old value and finally use first by default
-                if (plotDef.getXAxis() != null && plotDef.getXAxis().getName() != null) {
-                    xAxisComboBox.setSelectedItem(plotDef.getXAxis().getName());
-                } else if (lastXComboBoxValue != null && xAxisChoices.contains(lastXComboBoxValue)) {
-                    xAxisComboBox.setSelectedItem(lastXComboBoxValue);
-                } else {
-                    xAxisComboBox.setSelectedIndex(0);
-                }
-            }
+            xAxisEditor.setAxis((Axis) plotDef.getXAxis().clone(), xAxisChoices);
 
-            if (!yAxisChoices.isEmpty()) {
-                if (plotDef.getYAxes().isEmpty()) {
-                    logger.debug("refreshForm : no yaxes to copy");
-                    for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
-                        if (lastYComboBoxesValues.size() > i && yAxisChoices.contains(lastYComboBoxesValues.get(i))) {
-                            yComboBoxes.get(i).setSelectedItem(lastYComboBoxesValues.get(i));
-                        } else {
-                            yComboBoxes.get(i).setSelectedIndex(0);
-                        }
-                    }
-                } else {
-                    // fill with associated plotdefinition            
-                    logger.debug("refreshForm : yaxes to add : {}", plotDef.getYAxes());
-                    for (Axis yAxis : plotDef.getYAxes()) {
-                        addYCombo(yAxis.getName());
-                    }
-                }
+            // fill with associated plotdefinition            
+            logger.warn("refreshForm : yaxes to add : {}", plotDef.getYAxes());
+            for (Axis yAxis : plotDef.getYAxes()) {
+                addYEditor((Axis) yAxis.clone());
             }
         } finally {
-            initStep = true;
+            notify = true;
         }
-    }
-
-    private String getxAxis() {
-        lastXComboBoxValue = (String) xAxisComboBox.getSelectedItem();
-        return lastXComboBoxValue;
-    }
-
-    private List<String> getyAxes() {
-        lastYComboBoxesValues.clear();
-
-        for (int i = 0, len = yComboBoxes.size(); i < len; i++) {
-            lastYComboBoxesValues.add((String) yComboBoxes.get(i).getSelectedItem());
-        }
-        return lastYComboBoxesValues;
     }
 
     /**
@@ -278,12 +226,12 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
 
         yLabel = new javax.swing.JLabel();
         xLabel = new javax.swing.JLabel();
-        xAxisComboBox = new javax.swing.JComboBox();
         addYAxisButton = new javax.swing.JButton();
         delYAxisButton = new javax.swing.JButton();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        yComboBoxesPanel = new javax.swing.JPanel();
+        yAxesScrollPane = new javax.swing.JScrollPane();
+        yAxesPanel = new javax.swing.JPanel();
         plotDefinitionName = new javax.swing.JLabel();
+        xAxisPanel = new javax.swing.JPanel();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -291,8 +239,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
-        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.FIRST_LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 2);
         add(yLabel, gridBagConstraints);
 
         xLabel.setText("xAxis");
@@ -302,19 +250,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(xLabel, gridBagConstraints);
-
-        xAxisComboBox.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                xAxisComboBoxActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        add(xAxisComboBox, gridBagConstraints);
 
         addYAxisButton.setText("+");
         addYAxisButton.addActionListener(new java.awt.event.ActionListener() {
@@ -342,98 +277,108 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(delYAxisButton, gridBagConstraints);
 
-        yComboBoxesPanel.setLayout(new javax.swing.BoxLayout(yComboBoxesPanel, javax.swing.BoxLayout.Y_AXIS));
-        jScrollPane1.setViewportView(yComboBoxesPanel);
+        yAxesScrollPane.setBorder(null);
+
+        yAxesPanel.setBorder(null);
+        yAxesPanel.setLayout(new javax.swing.BoxLayout(yAxesPanel, javax.swing.BoxLayout.Y_AXIS));
+        yAxesScrollPane.setViewportView(yAxesPanel);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        add(jScrollPane1, gridBagConstraints);
+        add(yAxesScrollPane, gridBagConstraints);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.gridwidth = 2;
         add(plotDefinitionName, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        add(xAxisPanel, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void xAxisComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_xAxisComboBoxActionPerformed
-        // TODO Reduce (Update) y combo list with compatible selection
-        // fillyDataSelectors();
-        actionPerformed(null);
-    }//GEN-LAST:event_xAxisComboBoxActionPerformed
-
     private void addYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addYAxisButtonActionPerformed
-        addYCombo(null);
+        Axis axis = new Axis();
+        getPlotDefinition().getYAxes().add(axis);
+        addYEditor(axis);
+        updateModel();
     }//GEN-LAST:event_addYAxisButtonActionPerformed
 
     private void delYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delYAxisButtonActionPerformed
-        if (yComboBoxes.size() > 1) {
-            JComboBox ycombo = yComboBoxes.get(yComboBoxes.size() - 1);
+        if (yAxes.size() > 1) {
             // TODO replace by removal of the last yCombobox which one has lost the foxus
-            delYCombo(ycombo);
+            Axis[] yAxisArray = yAxes.keySet().toArray(new Axis[]{});
+            Axis yAxis = yAxisArray[yAxes.size() - 1];
+            delYEditor(yAxis);
+
+            // Delete from PlotDefinition
+            getPlotDefinition().getYAxes().remove(yAxis);
+            updateModel();
         }
     }//GEN-LAST:event_delYAxisButtonActionPerformed
 
     private void yAxisComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
-        actionPerformed(null);
+        updateModel();
     }
 
-    /** Create a new combobox and update GUI.
-     * @param selectedValue string to be selected (null clears selection)
+    /** Create a new widget to edit given Axis.
+     * @param axis axis to be edited by new yAxisEditor
      */
-    private void addYCombo(final String selectedValue) {
-        final JComboBox ycombo = new JComboBox(new GenericListModel<String>(yAxisChoices, true));
+    private void addYEditor(final Axis yAxis) {
 
-        yComboBoxes.add(ycombo);
-        yComboBoxesPanel.add(ycombo);
-        ycombo.addActionListener(ycomboActionListener);
+        // Link new Editor and Axis
+        AxisEditor yAxisEditor = new AxisEditor(this);
+        yAxisEditor.setAxis(yAxis, yAxisChoices);
 
-        // select entry if any
-        ycombo.setSelectedItem(selectedValue);
+        // Add in editor list
+        yAxesPanel.add(yAxisEditor);
+
+        // Add in Map
+        yAxes.put(yAxis, yAxisEditor);
 
         revalidate();
     }
 
     /** Synchronize management for the addition of a given combo and update GUI. 
-     * @param ycombo ComboBox to remove
+     * @param yAxis yAxis of editor to remove
      */
-    private void delYCombo(final JComboBox ycombo) {
-        yComboBoxes.remove(ycombo);
-        ycombo.removeActionListener(ycomboActionListener);
-        yComboBoxesPanel.remove(ycombo);
+    private void delYEditor(final Axis yAxis) {
+        // Link new Editor and Axis
+        AxisEditor yAxisEditor = yAxes.get(yAxis);
+
+        // Remove from editor list
+        yAxesPanel.remove(yAxisEditor);
+
+        // Delete from Map
+        yAxes.remove(yAxis);
+
         revalidate();
-        actionPerformed(null);
+
     }
 
-    //TODO rename
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        if (initStep) {
+    /** 
+     * Request a plotDefinitionUpdate to the OIFitsCollectionManager     
+     */
+    public void updateModel() {
+        logger.debug("updateModel notify = {}", notify);
+        if (notify) {
             // get copy:
             final PlotDefinition plotDefCopy = getPlotDefinition();
 
             if (plotDefCopy != null) {
                 // handle xAxis
-                final Axis xAxis = new Axis();
-                xAxis.setName(getxAxis());
-                plotDefCopy.setXAxis(xAxis);
-
+                plotDefCopy.setXAxis((Axis) xAxisEditor.getAxis());
                 // handle yAxes
-                final List<Axis> yAxes = plotDefCopy.getYAxes();
-                yAxes.clear();
-                for (String yname : getyAxes()) {
-                    final Axis yAxis = new Axis();
-                    yAxis.setName(yname);
-                    yAxes.add(yAxis);
-                }
-
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Setting custom plot definition x: {}, y : {}", getxAxis(), getyAxes());
-                }
+                final List<Axis> yAxesCopy = plotDefCopy.getYAxes();
+                yAxesCopy.clear();
+                // We may also compute the yAxes Collection calling getAxis on the editor list
+                // This may reduce references nightmare 
+                yAxesCopy.addAll(yAxes.keySet());
             }
-            logger.debug("update plotDef {}", plotDefCopy);
 
             ocm.updatePlotDefinition(this, plotDefCopy);
         }
@@ -441,11 +386,11 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements Ac
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addYAxisButton;
     private javax.swing.JButton delYAxisButton;
-    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel plotDefinitionName;
-    private javax.swing.JComboBox xAxisComboBox;
+    private javax.swing.JPanel xAxisPanel;
     private javax.swing.JLabel xLabel;
-    private javax.swing.JPanel yComboBoxesPanel;
+    private javax.swing.JPanel yAxesPanel;
+    private javax.swing.JScrollPane yAxesScrollPane;
     private javax.swing.JLabel yLabel;
     // End of variables declaration//GEN-END:variables
 
