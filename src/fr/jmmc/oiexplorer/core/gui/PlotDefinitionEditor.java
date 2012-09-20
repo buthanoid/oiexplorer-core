@@ -9,6 +9,7 @@ import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEvent;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
+import fr.jmmc.oiexplorer.core.model.plot.ColorMapping;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.model.OIFitsFile;
@@ -49,7 +50,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private final List<String> xAxisChoices = new LinkedList<String>();
     /** Store all choices available to plot on y axes given the plot's subset if any */
     private final List<String> yAxisChoices = new LinkedList<String>();
-    /** List of y axes with their editors */
+    /** List of y axes with their editors (identity hashcode) */
     private final HashMap<Axis, AxisEditor> yAxes = new LinkedHashMap<Axis, AxisEditor>();
     /** Flag to declare that component has to notify an event from user gesture */
     private boolean notify;
@@ -83,6 +84,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      * This method is useful to set the models and specific features of initialized swing components :
      */
     private void postInit() {
+        // start with compact form
+        extendedPanel.setVisible(false);        
+        
         // TODO check if it has to be done by the netbeans GUI builder ?
         xAxisEditor = new AxisEditor(this);
         xAxisPanel.add(xAxisEditor);
@@ -147,6 +151,21 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             for (Axis yAxis : plotDef.getYAxes()) {
                 addYEditor((Axis) yAxis.clone());
             }
+
+            // Fill colorMapping combobox
+            colorMappingComboBox.removeAllItems();
+            for (ColorMapping cm : ColorMapping.values()) {
+                if (cm != ColorMapping.OBSERVATION_DATE) { // not implemented
+                    colorMappingComboBox.addItem(cm);
+                }
+            }
+            colorMappingComboBox.setSelectedItem((plotDef.getColorMapping() != null) ? plotDef.getColorMapping() : ColorMapping.WAVELENGTH_RANGE);
+
+            // Init flaggedDataCheckBox
+            flaggedDataCheckBox.setSelected(plotDef.isSkipFlaggedData());
+            // Init drawLinesCheckBox
+            drawLinesCheckBox.setSelected(plotDef.isDrawLine());
+            
         } finally {
             notify = true;
         }
@@ -224,16 +243,48 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
+        colorMappingLabel = new javax.swing.JLabel();
+        colorMappingComboBox = new javax.swing.JComboBox();
+        plotDefinitionName = new javax.swing.JLabel();
+        extendedPanel = new javax.swing.JPanel();
         yLabel = new javax.swing.JLabel();
         xLabel = new javax.swing.JLabel();
         addYAxisButton = new javax.swing.JButton();
         delYAxisButton = new javax.swing.JButton();
         yAxesScrollPane = new javax.swing.JScrollPane();
         yAxesPanel = new javax.swing.JPanel();
-        plotDefinitionName = new javax.swing.JLabel();
         xAxisPanel = new javax.swing.JPanel();
+        detailledToggleButton = new javax.swing.JToggleButton();
+        drawLinesCheckBox = new javax.swing.JCheckBox();
+        flaggedDataCheckBox = new javax.swing.JCheckBox();
 
         setLayout(new java.awt.GridBagLayout());
+
+        colorMappingLabel.setText("Colored by");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        add(colorMappingLabel, gridBagConstraints);
+
+        colorMappingComboBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                colorMappingComboBoxActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        add(colorMappingComboBox, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 2;
+        add(plotDefinitionName, gridBagConstraints);
+
+        extendedPanel.setLayout(new java.awt.GridBagLayout());
 
         yLabel.setText("yAxis");
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -241,7 +292,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.FIRST_LINE_END;
         gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 2);
-        add(yLabel, gridBagConstraints);
+        extendedPanel.add(yLabel, gridBagConstraints);
 
         xLabel.setText("xAxis");
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -249,7 +300,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 1;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        add(xLabel, gridBagConstraints);
+        extendedPanel.add(xLabel, gridBagConstraints);
 
         addYAxisButton.setText("+");
         addYAxisButton.addActionListener(new java.awt.event.ActionListener() {
@@ -262,7 +313,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        add(addYAxisButton, gridBagConstraints);
+        extendedPanel.add(addYAxisButton, gridBagConstraints);
 
         delYAxisButton.setText("-");
         delYAxisButton.addActionListener(new java.awt.event.ActionListener() {
@@ -275,7 +326,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        add(delYAxisButton, gridBagConstraints);
+        extendedPanel.add(delYAxisButton, gridBagConstraints);
 
         yAxesScrollPane.setBorder(null);
 
@@ -287,18 +338,56 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        add(yAxesScrollPane, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = 2;
-        add(plotDefinitionName, gridBagConstraints);
+        extendedPanel.add(yAxesScrollPane, gridBagConstraints);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        add(xAxisPanel, gridBagConstraints);
+        gridBagConstraints.weightx = 0.1;
+        extendedPanel.add(xAxisPanel, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = java.awt.GridBagConstraints.REMAINDER;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        add(extendedPanel, gridBagConstraints);
+
+        detailledToggleButton.setText("...");
+        detailledToggleButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                detailledToggleButtonActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 0;
+        add(detailledToggleButton, gridBagConstraints);
+
+        drawLinesCheckBox.setText("draw lines");
+        drawLinesCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                drawLinesCheckBoxActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        add(drawLinesCheckBox, gridBagConstraints);
+
+        flaggedDataCheckBox.setText("skip flagged data");
+        flaggedDataCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                flaggedDataCheckBoxActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        add(flaggedDataCheckBox, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void addYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addYAxisButtonActionPerformed
@@ -320,6 +409,31 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             updateModel();
         }
     }//GEN-LAST:event_delYAxisButtonActionPerformed
+
+    private void colorMappingComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_colorMappingComboBoxActionPerformed
+        updateModel();
+    }//GEN-LAST:event_colorMappingComboBoxActionPerformed
+
+    private void detailledToggleButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_detailledToggleButtonActionPerformed
+        extendedPanel.setVisible(detailledToggleButton.isSelected());
+        revalidate();
+    }//GEN-LAST:event_detailledToggleButtonActionPerformed
+
+    private void flaggedDataCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_flaggedDataCheckBoxActionPerformed
+        updateModel();
+    }//GEN-LAST:event_flaggedDataCheckBoxActionPerformed
+
+    private void drawLinesCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_drawLinesCheckBoxActionPerformed
+        updateModel();
+    }//GEN-LAST:event_drawLinesCheckBoxActionPerformed
+
+    /**
+     * Return colorMapping Value stored by associated combobox.
+     * @return the colorMapping Value stored by associated combobox.
+     */
+    private ColorMapping getColorMapping() {
+        return (ColorMapping) colorMappingComboBox.getSelectedItem();
+    }
 
     private void yAxisComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
         updateModel();
@@ -380,12 +494,23 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 yAxesCopy.addAll(yAxes.keySet());
             }
 
+            plotDefCopy.setColorMapping(getColorMapping());
+            
+            plotDefCopy.setDrawLine(drawLinesCheckBox.isSelected());
+            plotDefCopy.setSkipFlaggedData(flaggedDataCheckBox.isSelected());
+
             ocm.updatePlotDefinition(this, plotDefCopy);
         }
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addYAxisButton;
+    private javax.swing.JComboBox colorMappingComboBox;
+    private javax.swing.JLabel colorMappingLabel;
     private javax.swing.JButton delYAxisButton;
+    private javax.swing.JToggleButton detailledToggleButton;
+    private javax.swing.JCheckBox drawLinesCheckBox;
+    private javax.swing.JPanel extendedPanel;
+    private javax.swing.JCheckBox flaggedDataCheckBox;
     private javax.swing.JLabel plotDefinitionName;
     private javax.swing.JPanel xAxisPanel;
     private javax.swing.JLabel xLabel;
