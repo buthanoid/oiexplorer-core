@@ -35,6 +35,4 @@ public interface Constants {
     public static final String JMMC_ANNOTATION = "Made by OIFitsExplorer/JMMC ";
     /** label to display when multiple configurations are in use (file names, chart titles ...) */
     public static final String MULTI_CONF = "MULTI CONFIGURATION";
-    /** regular expression used to match characters different than alpha/numeric/+/- */
-    public static final String REGEXP_INVALID_TEXT_CHARS = "[^a-zA-Z_\\+\\-0-9]";
 }

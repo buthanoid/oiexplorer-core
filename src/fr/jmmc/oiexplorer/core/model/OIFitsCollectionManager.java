@@ -8,6 +8,7 @@ import fr.jmmc.jmcs.jaxb.JAXBFactory;
 import fr.jmmc.jmcs.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.jaxb.XmlBindException;
 import fr.jmmc.jmcs.util.ObjectUtils;
+import fr.jmmc.jmcs.util.StringUtils;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
@@ -16,7 +17,6 @@ import fr.jmmc.oiexplorer.core.model.oi.Plot;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.oi.TableUID;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
-import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsFile;
@@ -303,7 +303,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 // Add new OIDataFile in collection 
                 final OIDataFile dataFile = new OIDataFile();
 
-                final String id = oiFitsFile.getName().replaceAll(Constants.REGEXP_INVALID_TEXT_CHARS, "_");
+                final String id = StringUtils.replaceNonAlphaNumericCharsByUnderscore(oiFitsFile.getName());
 
                 // TODO: make it unique !!
                 dataFile.setName(id);

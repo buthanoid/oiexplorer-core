@@ -6,6 +6,7 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ImageUtils;
 import fr.jmmc.jmcs.util.ObjectUtils;
+import fr.jmmc.jmcs.util.StringUtils;
 import fr.jmmc.oiexplorer.core.function.Converter;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.gui.action.ExportPDFAction;
@@ -210,7 +211,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             sb.append('_');
 
             // Add target name:
-            final String altName = getTargetName().replaceAll(Constants.REGEXP_INVALID_TEXT_CHARS, "_");
+            final String altName = StringUtils.replaceNonAlphaNumericCharsByUnderscore(getTargetName());
 
             sb.append(altName).append('_');
 
@@ -2249,7 +2250,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private static void toString(final Set<String> set, final StringBuilder sb, final String internalSeparator, final String separator, final int maxLength) {
         int n = 0;
         for (String v : set) {
-            sb.append(v.replaceAll("\\s", internalSeparator)).append(separator);
+            sb.append(StringUtils.replaceWhiteSpaces(v, internalSeparator)).append(separator);
             n++;
             if (n > maxLength) {
                 return;
