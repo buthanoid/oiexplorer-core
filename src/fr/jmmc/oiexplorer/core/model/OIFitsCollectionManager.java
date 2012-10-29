@@ -230,13 +230,13 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param checker checker component
      * @throws IOException if a fits file can not be loaded
      */
-    private void loadOIFitsFile(final String fileLocation, final OIFitsChecker checker) throws IOException {
+    public void loadOIFitsFile(final String fileLocation, final OIFitsChecker checker) throws IOException {
         //@todo test if file has already been loaded before going further ??        
 
         StatusBar.show("loading file: " + fileLocation);
 
         try {
-            // The file must be one oidata file (next line automatically unzip gz files)
+            // The file must be one oidata file
             final OIFitsFile oifitsFile = OIFitsLoader.loadOIFits(checker, fileLocation);
 
             addOIFitsFile(oifitsFile);
