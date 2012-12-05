@@ -105,6 +105,11 @@ public class ChartUtils {
         if (ChartFactory.getChartTheme() instanceof StandardChartTheme) {
             CHART_THEME = (StandardChartTheme) ChartFactory.getChartTheme();
 
+            // Set background and grid line colors:
+            CHART_THEME.setPlotBackgroundPaint(Color.WHITE);
+            CHART_THEME.setDomainGridlinePaint(Color.LIGHT_GRAY);
+            CHART_THEME.setRangeGridlinePaint(Color.LIGHT_GRAY);
+
             // Disable Bar shadows :
             CHART_THEME.setShadowVisible(false);
 
@@ -220,9 +225,9 @@ public class ChartUtils {
      * @return font
      */
     public static Font autoFitTextWidth(final Graphics2D g2d,
-            final String text, final double maxWidth,
-            final int minFontSize, final int maxFontSize,
-            final boolean allowDontFit) {
+                                        final String text, final double maxWidth,
+                                        final int minFontSize, final int maxFontSize,
+                                        final boolean allowDontFit) {
 
         Font f;
         FontMetrics fm;
@@ -263,9 +268,9 @@ public class ChartUtils {
      * @return font
      */
     public static Font autoFitTextHeight(final Graphics2D g2d,
-            final String text, final double maxHeight,
-            final int minFontSize, final int maxFontSize,
-            final boolean allowDontFit) {
+                                         final String text, final double maxHeight,
+                                         final int minFontSize, final int maxFontSize,
+                                         final boolean allowDontFit) {
 
         Font f;
         FontMetrics fm;
@@ -356,13 +361,13 @@ public class ChartUtils {
      * @return The chart.
      */
     public static JFreeChart createSquareXYLineChart(final String title,
-            final String xAxisLabel,
-            final String yAxisLabel,
-            final XYDataset dataset,
-            final PlotOrientation orientation,
-            final boolean legend,
-            final boolean tooltips,
-            final boolean urls) {
+                                                     final String xAxisLabel,
+                                                     final String yAxisLabel,
+                                                     final XYDataset dataset,
+                                                     final PlotOrientation orientation,
+                                                     final boolean legend,
+                                                     final boolean tooltips,
+                                                     final boolean urls) {
 
         if (orientation == null) {
             throw new IllegalArgumentException("Null 'orientation' argument.");
@@ -412,12 +417,12 @@ public class ChartUtils {
      * @return The xy plot.
      */
     public static XYPlot createScatterPlot(final String title,
-            final String xAxisLabel,
-            final String yAxisLabel,
-            final XYDataset dataset,
-            final PlotOrientation orientation,
-            final boolean tooltips,
-            final boolean urls) {
+                                           final String xAxisLabel,
+                                           final String yAxisLabel,
+                                           final XYDataset dataset,
+                                           final PlotOrientation orientation,
+                                           final boolean tooltips,
+                                           final boolean urls) {
 
         if (orientation == null) {
             throw new IllegalArgumentException("Null 'orientation' argument.");
@@ -564,7 +569,7 @@ public class ChartUtils {
         final LegendItem item;
 
         item = new LegendItem(label, null, null, null, shape, paint);
-        
+
         return item;
     }
 

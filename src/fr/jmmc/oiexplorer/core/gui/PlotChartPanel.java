@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public final class PlotChartPanel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-        PDFExportable, OIFitsCollectionManagerEventListener {
+                                                                        PDFExportable, OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -404,9 +404,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         plot.setInsets(new RectangleInsets(2d, 10d, 2d, 20d));
 
         configureCrosshair(plot, usePlotCrossHairSupport);
-
-        plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
-        plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
 
         final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
 
@@ -861,7 +858,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 ChartUtils.addSubtitle(this.chart, sb.toString());
 
-                applyColorTheme();
+                ChartUtilities.applyCurrentTheme(this.chart);
             }
 
             this.chartPanel.setVisible(hasData);
@@ -1424,9 +1421,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param info plot information to update
      */
     private void updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
-            final PlotDefinition plotDef, final int yAxisIndex,
-            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
-            final PlotInfo info) {
+                            final PlotDefinition plotDef, final int yAxisIndex,
+                            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
+                            final PlotInfo info) {
 
         // Get yAxis data:
         final Axis yAxis = plotDef.getYAxes().get(yAxisIndex);
@@ -2047,23 +2044,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         if (this.xyPlotPlot2.getDomainAxis() != null) {
             this.aJMMCPlot2.setX(this.xyPlotPlot2.getDomainAxis().getUpperBound());
             this.aJMMCPlot2.setY(this.xyPlotPlot2.getRangeAxis().getLowerBound());
-        }
-    }
-
-    private void applyColorTheme() {
-        // update theme at end :
-        ChartUtilities.applyCurrentTheme(this.chart);
-
-        if (this.xyPlotPlot1 != null) {
-            this.xyPlotPlot1.setBackgroundPaint(Color.WHITE);
-            this.xyPlotPlot1.setDomainGridlinePaint(Color.LIGHT_GRAY);
-            this.xyPlotPlot1.setRangeGridlinePaint(Color.LIGHT_GRAY);
-        }
-
-        if (this.xyPlotPlot2 != null) {
-            this.xyPlotPlot2.setBackgroundPaint(Color.WHITE);
-            this.xyPlotPlot2.setDomainGridlinePaint(Color.LIGHT_GRAY);
-            this.xyPlotPlot2.setRangeGridlinePaint(Color.LIGHT_GRAY);
         }
     }
 
