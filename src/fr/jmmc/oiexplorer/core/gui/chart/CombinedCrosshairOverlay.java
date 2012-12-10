@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
+import fr.jmmc.jmcs.util.NumberUtils;
 import java.awt.Graphics2D;
 import java.awt.Paint;
 import java.awt.Shape;
@@ -46,7 +47,7 @@ public class CombinedCrosshairOverlay extends AbstractOverlay implements Overlay
         PropertyChangeListener, PublicCloneable, Cloneable, Serializable {
 
     /** main plot index (0) */
-    public final static Integer MAIN_PLOT = Integer.valueOf(0);
+    public final static Integer MAIN_PLOT = NumberUtils.valueOf(0);
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1L;
 
@@ -245,7 +246,7 @@ public class CombinedCrosshairOverlay extends AbstractOverlay implements Overlay
 
                     final Rectangle2D dataArea = chartPanel.scale(plotInfo.getSubplotInfo(i).getDataArea());
 
-                    paintPlotCrosshair(g2, dataArea, subPlot, Integer.valueOf(i + 1));
+                    paintPlotCrosshair(g2, dataArea, subPlot, NumberUtils.valueOf(i + 1));
 
                     // restore clip:
                     g2.setClip(savedClip);

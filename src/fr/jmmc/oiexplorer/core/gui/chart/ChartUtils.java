@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
+import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oiexplorer.core.util.TimeFormat;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -205,7 +206,7 @@ public class ChartUtils {
      * @return annotation font
      */
     private static Font getFont(final int size, final int style) {
-        final Integer key = Integer.valueOf(size);
+        final Integer key = NumberUtils.valueOf(size);
         Font f = cachedFonts.get(key);
         if (f == null) {
             f = new Font("SansSerif", style, size);

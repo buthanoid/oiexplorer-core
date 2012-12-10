@@ -5,6 +5,7 @@ package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ImageUtils;
+import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.jmcs.util.StringUtils;
 import fr.jmmc.oiexplorer.core.function.Converter;
@@ -366,11 +367,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         this.xyPlotPlot2.getRenderer().addAnnotation(this.aJMMCPlot2, Layer.BACKGROUND);
 
         if (!usePlotCrossHairSupport) {
-            Integer plotIndex = Integer.valueOf(1);
+            Integer plotIndex = NumberUtils.valueOf(1);
             crosshairOverlay.addDomainCrosshair(plotIndex, createCrosshair());
             crosshairOverlay.addRangeCrosshair(plotIndex, createCrosshair());
 
-            plotIndex = Integer.valueOf(2);
+            plotIndex = NumberUtils.valueOf(2);
             crosshairOverlay.addDomainCrosshair(plotIndex, createCrosshair());
             crosshairOverlay.addRangeCrosshair(plotIndex, createCrosshair());
         }
@@ -470,7 +471,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             // data area for sub plot:
             final Rectangle2D dataArea = plotInfo.getSubplotInfo(subplotIndex).getDataArea();
 
-            final Integer plotIndex = Integer.valueOf(subplotIndex + 1);
+            final Integer plotIndex = NumberUtils.valueOf(subplotIndex + 1);
 
             final XYPlot xyPlot = this.plotIndexMapping.get(plotIndex);
             if (xyPlot == null) {
@@ -870,9 +871,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             this.chart.setNotify(true);
         }
 
-        if (logger.isInfoEnabled()) {
-            logger.info("plot : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
-        }
+        logger.info("plot : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
     }
 
     /**
@@ -901,9 +900,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * Update the datasets
      */
     private void updateChart() {
-        logger.info("updateChart: plot {}", this.plotId);
-
-        final long start = System.nanoTime();
+        logger.debug("updateChart: plot {}", this.plotId);
 
         final OIFitsFile oiFitsSubset = getOiFitsSubset();
         final PlotDefinition plotDef = getPlotDefinition();
@@ -919,7 +916,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         logger.debug("distinctStaIndexNames: {}", distinctStaIndexNames);
         logger.debug("distinctStaConfNames: {}", distinctStaConfNames);
         logger.debug("waveLengthRange: {}", waveLengthRange);
-
 
         boolean showPlot1 = false;
         boolean showPlot2 = false;
@@ -958,8 +954,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 if (info.hasPlotData) {
                     showPlot1 = true;
 
-                    logger.info("xyPlotPlot1: nData = {}", info.nData);
-                    logger.info("xyPlotPlot1: nbSeries = {}", dataset.getSeriesCount());
+                    logger.debug("xyPlotPlot1: nData = {}", info.nData);
+                    logger.debug("xyPlotPlot1: nbSeries = {}", dataset.getSeriesCount());
 
                     // add plot info:
                     getPlotInfos().add(info);
@@ -1093,7 +1089,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         if (showPlot1) {
             this.combinedXYPlot.add(this.xyPlotPlot1, 1);
 
-            final Integer plotIndex = Integer.valueOf(1);
+            final Integer plotIndex = NumberUtils.valueOf(1);
             this.plotMapping.put(this.xyPlotPlot1, plotIndex);
             this.plotIndexMapping.put(plotIndex, this.xyPlotPlot1);
         }
@@ -1123,8 +1119,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 if (info.hasPlotData) {
                     showPlot2 = true;
 
-                    logger.info("xyPlotPlot2: nData = {}", info.nData);
-                    logger.info("xyPlotPlot2: nbSeries = {}", dataset.getSeriesCount());
+                    logger.debug("xyPlotPlot2: nData = {}", info.nData);
+                    logger.debug("xyPlotPlot2: nbSeries = {}", dataset.getSeriesCount());
 
                     // add plot info:
                     getPlotInfos().add(info);
@@ -1258,15 +1254,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         if (showPlot2) {
             this.combinedXYPlot.add(this.xyPlotPlot2, 1);
 
-            final Integer plotIndex = (showPlot1) ? Integer.valueOf(2) : Integer.valueOf(1);
+            final Integer plotIndex = (showPlot1) ? NumberUtils.valueOf(2) : NumberUtils.valueOf(1);
             this.plotMapping.put(this.xyPlotPlot2, plotIndex);
             this.plotIndexMapping.put(plotIndex, this.xyPlotPlot2);
         }
 
         if (!showPlot1 && !showPlot2) {
-            if (logger.isInfoEnabled()) {
-                logger.info("updateChart : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
-            }
             return;
         }
 
@@ -1403,10 +1396,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // TODO: use ColorScale to paint an horizontal wavelength color scale
 
         this.combinedXYPlot.setFixedLegendItems(legendCollection);
-
-        if (logger.isInfoEnabled()) {
-            logger.info("updateChart : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
-        }
     }
 
     /**
@@ -1432,9 +1421,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final ColumnMeta yMeta = oiData.getColumnMeta(yAxisName);
 
         if (yMeta == null) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("unsupported yAxis : {} on {}", yAxis.getName(), oiData);
-            }
+            logger.debug("unsupported yAxis : {} on {}", yAxis.getName(), oiData);
             return;
         }
         logger.debug("yMeta:{}", yMeta);
@@ -1472,9 +1459,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final ColumnMeta xMeta = oiData.getColumnMeta(xAxisName);
 
         if (xMeta == null) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("unsupported xAxis : {} on {}", xAxis.getName(), oiData);
-            }
+            logger.debug("unsupported xAxis : {} on {}", xAxis.getName(), oiData);
             return;
         }
         logger.debug("xMeta:{}", yMeta);
@@ -2312,7 +2297,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         int nData = 0;
         /** flag indicating that the dataset contains flagged data */
         boolean hasDataFlag = false;
-        /* y axis index in plot definition */
+        /** y axis index in plot definition */
         int yAxisIndex = -1;
         /** list of OIData tables used */
         List<OIData> oidataList;

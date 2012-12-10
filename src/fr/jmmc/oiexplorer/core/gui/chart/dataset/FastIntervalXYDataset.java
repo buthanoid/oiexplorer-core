@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart.dataset;
 
+import fr.jmmc.jmcs.util.NumberUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -83,7 +84,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
         if (series < 0 || series >= seriesCount) {
             throw new IllegalArgumentException("Series index out of bounds");
         }
-        return this.keysIndexes.get(Integer.valueOf(series));
+        return this.keysIndexes.get(NumberUtils.valueOf(series));
     }
 
     /**
@@ -406,7 +407,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
             this.seriesList.add(data);
 
             // cache serie index into maps:
-            final Integer seriesIdx = Integer.valueOf(this.seriesCount);
+            final Integer seriesIdx = NumberUtils.valueOf(this.seriesCount);
             this.seriesKeys.put(seriesKey, seriesIdx);
             this.keysIndexes.put(seriesIdx, seriesKey);
 
