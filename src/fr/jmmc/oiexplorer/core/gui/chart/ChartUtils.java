@@ -59,7 +59,7 @@ public class ChartUtils {
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(ChartUtils.class.getName());
     /** cache for annotation fonts to auto-fit size */
-    private final static Map<Integer, Font> cachedFonts = new HashMap<Integer, Font>();
+    private final static Map<Integer, Font> cachedFonts = new HashMap<Integer, Font>(32);
     /** The default font for titles. */
     public static final Font DEFAULT_TITLE_FONT = getFont(14, Font.BOLD);
     /** The default font for titles. */
@@ -74,6 +74,8 @@ public class ChartUtils {
     public static final Stroke THIN_STROKE = new BasicStroke(0.5f);
     /** larger draw stroke */
     public static final Stroke LARGE_STROKE = new BasicStroke(1.25f);
+    /** dotted stroke */
+    public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 4.0f, new float[]{4.0f}, 0.0f);
     /** default tick label rectangle insets */
     public final static RectangleInsets TICK_LABEL_INSETS = new RectangleInsets(2.0, 2.0, 2.0, 2.0);
     /** default axis offset */
