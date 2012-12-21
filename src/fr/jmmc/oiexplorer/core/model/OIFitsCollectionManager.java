@@ -41,14 +41,16 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     private static final Logger logger = LoggerFactory.getLogger(OIFitsCollectionManager.class);
     /** package name for JAXB generated code */
     private final static String OIFITS_EXPLORER_MODEL_JAXB_PATH = OiDataCollection.class.getPackage().getName();
-    /** Singleton pattern */
-    private final static OIFitsCollectionManager instance = new OIFitsCollectionManager();
     /** Current key for SubsetDefinition */
     public final static String CURRENT_SUBSET_DEFINITION = "CURRENT_SUBSET";
     /** Current key for PlotDefinition */
     public final static String CURRENT_PLOT_DEFINITION = "CURRENT_PLOT_DEF";
     /** Current key for View */
     public final static String CURRENT_VIEW = "CURRENT_VIEW";
+    /** Singleton pattern */
+    private final static OIFitsCollectionManager instance = new OIFitsCollectionManager();
+    /** Plot Definition factory singleton */
+    private final static PlotDefinitionFactory plotDefFactory = PlotDefinitionFactory.getInstance();
     /* members */
     /** internal JAXB Factory */
     private final JAXBFactory jf;
@@ -672,7 +674,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             plotDefinition.setName(CURRENT_PLOT_DEFINITION);
 
             // HACK:
-            plotDefinition.copy(PlotDefinitionFactory.getInstance().getDefault(PlotDefinitionFactory.PLOT_DEFAULT));
+            plotDefinition.copy(plotDefFactory.getDefault(PlotDefinitionFactory.PLOT_DEFAULT));
 
             addPlotDefinitionRef(plotDefinition);
         }
