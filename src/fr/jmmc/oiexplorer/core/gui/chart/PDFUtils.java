@@ -12,6 +12,7 @@ import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 import fr.jmmc.jmcs.App;
+import fr.jmmc.jmcs.data.ApplicationDescription;
 import fr.jmmc.jmcs.util.FileUtils;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.Orientation;
 import java.awt.Graphics2D;
@@ -174,7 +175,7 @@ public final class PDFUtils {
      * @param document pdf document
      */
     private static void definePDFProperties(final Document document) {
-        document.addCreator(App.getSharedApplicationDataModel().getProgramName() + " v" + App.getSharedApplicationDataModel().getProgramVersion());
+        document.addCreator(ApplicationDescription.getInstance().getProgramName() + " v" + ApplicationDescription.getInstance().getProgramVersion());
     }
 
     /**
