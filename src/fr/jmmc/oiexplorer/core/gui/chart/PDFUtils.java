@@ -13,6 +13,7 @@ import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 import fr.jmmc.jmcs.data.ApplicationDescription;
 import fr.jmmc.jmcs.util.FileUtils;
+import fr.jmmc.oiexplorer.core.gui.PDFExportable;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.Orientation;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
@@ -50,7 +51,7 @@ public final class PDFUtils {
     /**
      * Save the given chart as a PDF document in the given file
      * @param file PDF file to create
-     * @param chart chart to export
+     * @param exportable exportable component
      * @param options PDF options
      *
      * @throws IOException if the file exists but is a directory
@@ -58,7 +59,7 @@ public final class PDFUtils {
      *                   be created, or cannot be opened for any other reason
      * @throws IllegalStateException if a PDF document exception occurred
      */
-    public static void saveChartAsPDF(final File file, final JFreeChart chart, final PDFOptions options)
+    public static void savePDF(final File file, final PDFExportable exportable, final PDFOptions options)
             throws IOException, IllegalStateException {
 
         final long start = System.nanoTime();
@@ -67,7 +68,7 @@ public final class PDFUtils {
         try {
             bo = new BufferedOutputStream(new FileOutputStream(file));
 
-            writeChartAsPDF(bo, chart, options);
+            writeChartAsPDF(bo, exportable, options);
 
         } finally {
             FileUtils.closeStream(bo);
@@ -81,13 +82,13 @@ public final class PDFUtils {
     /**
      * Create a PDF document with the given chart and save it in the given stream
      * @param outputStream output stream
-     * @param chart chart instance
+     * @param exportable exportable component
      * @param options PDF options
      * 
      * @throws IllegalStateException if a PDF document exception occurred
      */
-    private static void writeChartAsPDF(final OutputStream outputStream, final JFreeChart chart,
-            final PDFOptions options) throws IllegalStateException {
+    private static void writeChartAsPDF(final OutputStream outputStream,
+                                        final PDFExportable exportable, final PDFOptions options) throws IllegalStateException {
 
         Graphics2D g2 = null;
 
@@ -143,21 +144,34 @@ public final class PDFUtils {
 
             final PdfContentByte pdfContentByte = writer.getDirectContent();
 
-            final PdfTemplate pdfTemplate = pdfContentByte.createTemplate(width, height);
+            for (int pageIndex = 1, numberOfPages = options.getNumberOfPages(); pageIndex <= numberOfPages; pageIndex++) {
+                // new page:
+                document.newPage();
 
-            if (RENDER_TEXT_AS_SHAPES) {
-                // text rendered as shapes so the file is bigger but correct
-                g2 = pdfTemplate.createGraphicsShapes(innerWidth, innerHeight);
-            } else {
-                // depending on the font mapper, special characters like greek chars are not rendered:
-                g2 = pdfTemplate.createGraphics(innerWidth, innerHeight, getFontMapper());
+                // TODO: avoid using template ??
+                final PdfTemplate pdfTemplate = pdfContentByte.createTemplate(width, height);
+
+                if (RENDER_TEXT_AS_SHAPES) {
+                    // text rendered as shapes so the file is bigger but correct
+                    g2 = pdfTemplate.createGraphicsShapes(innerWidth, innerHeight);
+                } else {
+                    // depending on the font mapper, special characters like greek chars are not rendered:
+                    g2 = pdfTemplate.createGraphics(innerWidth, innerHeight, getFontMapper());
+                }
+
+                final Rectangle2D.Float drawArea = new Rectangle2D.Float(0F, 0F, innerWidth, innerHeight);
+
+                // Get Chart:
+                final JFreeChart chart = exportable.prepareChart(pageIndex);
+                // draw chart:
+                chart.draw(g2, drawArea);
+
+                pdfContentByte.addTemplate(pdfTemplate, margin, margin);
+
+                // free graphics:
+                g2.dispose();
+                g2 = null;
             }
-
-            final Rectangle2D.Float drawArea = new Rectangle2D.Float(0F, 0F, innerWidth, innerHeight);
-
-            chart.draw(g2, drawArea);
-
-            pdfContentByte.addTemplate(pdfTemplate, margin, margin);
 
         } catch (DocumentException de) {
             throw new IllegalStateException("PDF document exception : ", de);

@@ -287,20 +287,21 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     /**
-     * Return the PDF options
+     * Prepare the chart(s) before exporting them as a PDF document:
+     * Performs layout and return PDF options
      * @return PDF options
      */
-    @Override
-    public PDFOptions getPDFOptions() {
-        return new PDFOptions(PageSize.A3, Orientation.Landscape);
+    public PDFOptions preparePDFExport() {
+        return PDFOptions.PDF_A3_LANDSCAPE;
     }
 
     /**
-     * Return the chart to export as a PDF document
+     * Return the chart to export on the given page index
+     * @param pageIndex page index (1..n)
      * @return chart
      */
     @Override
-    public JFreeChart prepareChart() {
+    public JFreeChart prepareChart(final int pageIndex) {
         return this.chart;
     }
 

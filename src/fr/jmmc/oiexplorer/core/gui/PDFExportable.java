@@ -28,19 +28,21 @@ public interface PDFExportable {
     public String getPDFDefaultFileName();
 
     /**
-     * Return the PDF options
+     * Prepare the chart(s) before exporting them as a PDF document:
+     * Performs layout and return PDF options
      * @return PDF options
      */
-    public PDFOptions getPDFOptions();
+    public PDFOptions preparePDFExport();
 
     /**
-     * Return the chart to export as a PDF document
+     * Return the chart to export on the given page index
+     * @param pageIndex page index (1..n)
      * @return chart
      */
-    public JFreeChart prepareChart();
+    public JFreeChart prepareChart(final int pageIndex);
 
     /**
-     * Callback indicating the chart was processed by the PDF engine
+     * Callback indicating the PDF document is done to reset the chart(s)
      */
     public void postPDFExport();
 }

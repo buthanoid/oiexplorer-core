@@ -9,11 +9,11 @@ import fr.jmmc.jmcs.gui.component.MessagePane;
 import fr.jmmc.jmcs.gui.component.StatusBar;
 import fr.jmmc.jmcs.util.MimeType;
 import fr.jmmc.oiexplorer.core.gui.PDFExportable;
+import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFUtils;
 import java.awt.Component;
 import java.io.File;
 import java.io.IOException;
-import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,10 +102,10 @@ public abstract class ExportPDFAction extends WaitingTaskAction {
         // If a file was defined (No cancel in the dialog)
         if (file != null) {
 
-            // prepare Chart :
-            final JFreeChart chart = exportable.prepareChart();
+            // prepare PDF export (layout and options):
+            final PDFOptions options = exportable.preparePDFExport();
             try {
-                PDFUtils.saveChartAsPDF(file, chart, exportable.getPDFOptions());
+                PDFUtils.savePDF(file, exportable, options);
 
                 if (!avoidUseStatusBar) {
                     StatusBar.show(file.getName() + " created.");
@@ -114,7 +114,7 @@ public abstract class ExportPDFAction extends WaitingTaskAction {
             } catch (IOException ioe) {
                 MessagePane.showErrorMessage("Could not write to file : " + file.getAbsolutePath(), ioe);
             } finally {
-                // restore Chart state if modified :
+                // post PDF export: restore Chart state if modified:
                 exportable.postPDFExport();
             }
         }
