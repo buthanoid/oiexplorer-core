@@ -128,7 +128,7 @@ public final class PDFUtils {
          */
 
         // margin = 1 cm :
-        final float marginCM = 1f;
+        final float marginCM = 0.5f;
         // in points :
         final float margin = marginCM * 72f / 2.54f;
 
