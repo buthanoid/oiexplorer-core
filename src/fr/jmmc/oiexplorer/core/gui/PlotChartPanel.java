@@ -2007,15 +2007,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         // DEBUG (TODO KILL ASAP):
-        switch (event.getType()) {
-            case ChartProgressEvent.DRAWING_STARTED:
-                this.chartDrawStartTime = System.nanoTime();
-                break;
-            case ChartProgressEvent.DRAWING_FINISHED:
-                logger.warn("Drawing chart time[{}] = {} ms.", getTargetName(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
-                this.chartDrawStartTime = 0l;
-                break;
-            default:
+        if (false) {
+            switch (event.getType()) {
+                case ChartProgressEvent.DRAWING_STARTED:
+                    this.chartDrawStartTime = System.nanoTime();
+                    break;
+                case ChartProgressEvent.DRAWING_FINISHED:
+                    logger.warn("Drawing chart time[{}] = {} ms.", getTargetName(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                    this.chartDrawStartTime = 0l;
+                    break;
+                default:
+            }
         }
 
         // Perform custom operations before/after chart rendering:

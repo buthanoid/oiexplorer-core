@@ -85,8 +85,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      */
     private void postInit() {
         // start with compact form
-        extendedPanel.setVisible(false);        
-        
+        extendedPanel.setVisible(false);
+
         // TODO check if it has to be done by the netbeans GUI builder ?
         xAxisEditor = new AxisEditor(this);
         xAxisPanel.add(xAxisEditor);
@@ -147,7 +147,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             xAxisEditor.setAxis((Axis) plotDef.getXAxis().clone(), xAxisChoices);
 
             // fill with associated plotdefinition            
-            logger.warn("refreshForm : yaxes to add : {}", plotDef.getYAxes());
+            if (logger.isDebugEnabled()) {
+                logger.debug("refreshForm : yaxes to add : {}", plotDef.getYAxes());
+            }
             for (Axis yAxis : plotDef.getYAxes()) {
                 addYEditor((Axis) yAxis.clone());
             }
@@ -165,7 +167,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             flaggedDataCheckBox.setSelected(plotDef.isSkipFlaggedData());
             // Init drawLinesCheckBox
             drawLinesCheckBox.setSelected(plotDef.isDrawLine());
-            
+
         } finally {
             notify = true;
         }
@@ -495,7 +497,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
 
             plotDefCopy.setColorMapping(getColorMapping());
-            
+
             plotDefCopy.setDrawLine(drawLinesCheckBox.isSelected());
             plotDefCopy.setSkipFlaggedData(flaggedDataCheckBox.isSelected());
 
