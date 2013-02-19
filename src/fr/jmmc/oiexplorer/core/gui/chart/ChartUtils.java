@@ -76,10 +76,12 @@ public class ChartUtils {
     public static final Stroke LARGE_STROKE = new BasicStroke(1.25f);
     /** dotted stroke */
     public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 4.0f, new float[]{4.0f}, 0.0f);
+    /** zero insets */
+    public final static RectangleInsets ZERO_INSETS = RectangleInsets.ZERO_INSETS;
     /** default tick label rectangle insets */
     public final static RectangleInsets TICK_LABEL_INSETS = new RectangleInsets(2.0, 2.0, 2.0, 2.0);
-    /** default axis offset */
-    public final static RectangleInsets ZERO_AXIS_OFFSET = new RectangleInsets(0.0, 0.0, 0.0, 0.0);
+    /** normal plot insets (10px on left, 20px on right side) to have last displayed value */
+    public static final RectangleInsets NORMAL_PLOT_INSETS = new RectangleInsets(2d, 10d, 2d, 20d);
     /** custom chart theme */
     public final static StandardChartTheme CHART_THEME;
     /** The default panel width. */
@@ -120,7 +122,7 @@ public class ChartUtils {
             CHART_THEME.setXYBarPainter(new StandardXYBarPainter());
 
             // Axis offset = gap between the axis line and the data area :
-            CHART_THEME.setAxisOffset(ZERO_AXIS_OFFSET);
+            CHART_THEME.setAxisOffset(ZERO_INSETS);
 
             // plot outline :
             CHART_THEME.setPlotOutlinePaint(Color.BLACK);
