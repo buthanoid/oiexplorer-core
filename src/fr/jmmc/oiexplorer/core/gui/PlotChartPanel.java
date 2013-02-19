@@ -20,8 +20,6 @@ import fr.jmmc.oiexplorer.core.gui.chart.CombinedCrosshairOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.EnhancedChartMouseListener;
 import fr.jmmc.oiexplorer.core.gui.chart.FastXYErrorRenderer;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions;
-import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.Orientation;
-import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.PageSize;
 import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
@@ -73,7 +71,6 @@ import org.jfree.chart.renderer.AbstractRenderer;
 import org.jfree.data.Range;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.ui.Layer;
-import org.jfree.ui.RectangleInsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -403,7 +400,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         plot.setNoDataMessage("No data for " + yAxisLabel);
 
         // enlarge right margin to have last displayed value:
-        plot.setInsets(new RectangleInsets(2d, 10d, 2d, 20d));
+        plot.setInsets(ChartUtils.NORMAL_PLOT_INSETS);
 
         configureCrosshair(plot, usePlotCrossHairSupport);
 
