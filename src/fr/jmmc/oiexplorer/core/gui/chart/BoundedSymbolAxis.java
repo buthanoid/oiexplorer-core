@@ -14,7 +14,7 @@ import org.jfree.data.Range;
  *
  * @author bourgesl
  */
-public final class BoundedSymbolAxis extends SymbolAxis {
+public class BoundedSymbolAxis extends SymbolAxis {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -57,7 +57,7 @@ public final class BoundedSymbolAxis extends SymbolAxis {
      * Return the axis bounds
      * @return axis bounds or null if undefined
      */
-    public Range getBounds() {
+    public final Range getBounds() {
         return this.bounds;
     }
 
@@ -65,7 +65,7 @@ public final class BoundedSymbolAxis extends SymbolAxis {
      * Define the axis bounds
      * @param bounds axis bounds or null
      */
-    public void setBounds(final Range bounds) {
+    public final void setBounds(final Range bounds) {
         this.bounds = bounds;
     }
 
@@ -81,7 +81,7 @@ public final class BoundedSymbolAxis extends SymbolAxis {
      * @see #isAutoRange()
      */
     @Override
-    protected void setAutoRange(final boolean auto, final boolean notify) {
+    protected final void setAutoRange(final boolean auto, final boolean notify) {
         if (auto) {
             // autoRange must stay disabled.
 
@@ -121,8 +121,8 @@ public final class BoundedSymbolAxis extends SymbolAxis {
      *                notified.
      */
     @Override
-    public void setRange(final Range range, final boolean turnOffAutoRange,
-            final boolean notify) {
+    public final void setRange(final Range range, final boolean turnOffAutoRange,
+                               final boolean notify) {
 
         Range newRange = range;
 
