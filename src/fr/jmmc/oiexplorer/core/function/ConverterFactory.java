@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.function;
 
+import fr.jmmc.jmcs.util.SpecialChars;
 import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -54,8 +55,8 @@ public final class ConverterFactory {
      * @throws IllegalStateException if the preset file is not found, an I/O exception occured, unmarshalling failed
      */
     private void initializeDefaults() throws IllegalStateException {
-        converters.put(CONVERTER_MEGA_LAMBDA, new ScalingConverter(1e-6d, "M\u03BB"));
-        converters.put(CONVERTER_MICRO_METER, new ScalingConverter(1e6d, "micrometer"));
+        converters.put(CONVERTER_MEGA_LAMBDA, new ScalingConverter(1e-6d, SpecialChars.UNIT_MEGA_LAMBDA));
+        converters.put(CONVERTER_MICRO_METER, new ScalingConverter(1e6d, SpecialChars.UNIT_MICRO_METER));
     }
 
     /** 
