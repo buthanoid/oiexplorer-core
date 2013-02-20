@@ -7,6 +7,7 @@ import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ImageUtils;
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.jmcs.util.ObjectUtils;
+import fr.jmmc.jmcs.util.SpecialChars;
 import fr.jmmc.jmcs.util.StringUtils;
 import fr.jmmc.oiexplorer.core.function.Converter;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
@@ -2161,7 +2162,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             effWaveRange = oiData.getEffWaveRange();
 
             if (effWaveRange != null) {
-                sb.append("[").append(df4.format(1e6f * effWaveRange[0])).append(" \u00B5m - ").append(df4.format(1e6f * effWaveRange[1])).append(" \u00B5m]");
+                sb.append("[").append(df4.format(1e6f * effWaveRange[0])).append(" ").append(SpecialChars.UNIT_MICRO_METER);
+                sb.append(" - ").append(df4.format(1e6f * effWaveRange[1])).append(" ").append(SpecialChars.UNIT_MICRO_METER).append("]");
 
                 wlenRange = sb.toString();
                 sb.setLength(0);
