@@ -6,7 +6,7 @@ package fr.jmmc.oiexplorer.core.model;
 import fr.jmmc.jmcs.jaxb.JAXBFactory;
 import fr.jmmc.jmcs.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.jaxb.XmlBindException;
-import fr.jmmc.jmcs.util.FileUtils;
+import fr.jmmc.jmcs.util.ResourceUtils;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinitions;
 import java.io.IOException;
@@ -57,7 +57,7 @@ public final class PlotDefinitionFactory {
 
     /**
      * Initialize default presets extracted from preset file.
-     * @throws IllegalStateException if the preset file is not found, an I/O exception occured, unmarshalling failed
+     * @throws IllegalStateException if the preset file is not found, an I/O exception occurred, unmarshalling failed
      */
     private void initializeDefaults() throws IllegalStateException {
 
@@ -65,7 +65,7 @@ public final class PlotDefinitionFactory {
         try {
             JAXBFactory jbf = JAXBFactory.getInstance(PlotDefinition.class.getPackage().getName());
 
-            URL presetUrl = FileUtils.getResource(PRESETS_FILENAME);
+            URL presetUrl = ResourceUtils.getResource(PRESETS_FILENAME);
 
             logger.info("Loading presets from : {}", presetUrl);
 
