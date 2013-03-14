@@ -3,7 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui;
 
-import fr.jmmc.jmcs.util.XmlFactory;
+import fr.jmmc.jmcs.util.XslTransform;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OITable;
 import fr.jmmc.oitools.model.XmlOutputVisitor;
@@ -109,7 +109,7 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
             final long start = System.nanoTime();
 
             // use an XSLT to transform the XML document to an HTML representation :
-            document = XmlFactory.transform(xmlDesc, XSLT_FILE);
+            document = XslTransform.transform(xmlDesc, XSLT_FILE);
 
             if (logger.isDebugEnabled()) {
                 logger.debug("transform: {} ms.", 1e-6d * (System.nanoTime() - start));
