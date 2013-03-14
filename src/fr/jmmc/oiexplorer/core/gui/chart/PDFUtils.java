@@ -11,7 +11,7 @@ import com.lowagie.text.pdf.FontMapper;
 import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
-import fr.jmmc.jmcs.data.ApplicationDescription;
+import fr.jmmc.jmcs.data.app.ApplicationDescription;
 import fr.jmmc.jmcs.util.FileUtils;
 import fr.jmmc.oiexplorer.core.gui.PDFExportable;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.Orientation;
