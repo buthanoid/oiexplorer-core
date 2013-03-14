@@ -3,7 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui;
 
-import fr.jmmc.jmcs.util.XslTransform;
+import fr.jmmc.jmcs.service.XslTransform;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OITable;
 import fr.jmmc.oitools.model.XmlOutputVisitor;
