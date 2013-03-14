@@ -4,9 +4,9 @@
 package fr.jmmc.oiexplorer.core.model;
 
 import fr.jmmc.jmcs.gui.component.StatusBar;
-import fr.jmmc.jmcs.jaxb.JAXBFactory;
-import fr.jmmc.jmcs.jaxb.JAXBUtils;
-import fr.jmmc.jmcs.jaxb.XmlBindException;
+import fr.jmmc.jmcs.util.jaxb.JAXBFactory;
+import fr.jmmc.jmcs.util.jaxb.JAXBUtils;
+import fr.jmmc.jmcs.util.jaxb.XmlBindException;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.jmcs.util.StringUtils;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;

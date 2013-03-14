@@ -3,9 +3,9 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
-import fr.jmmc.jmcs.jaxb.JAXBFactory;
-import fr.jmmc.jmcs.jaxb.JAXBUtils;
-import fr.jmmc.jmcs.jaxb.XmlBindException;
+import fr.jmmc.jmcs.util.jaxb.JAXBFactory;
+import fr.jmmc.jmcs.util.jaxb.JAXBUtils;
+import fr.jmmc.jmcs.util.jaxb.XmlBindException;
 import fr.jmmc.jmcs.util.ResourceUtils;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinitions;
