@@ -3,7 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui;
 
-import fr.jmmc.jmcs.util.MimeType;
+import fr.jmmc.jmcs.data.MimeType;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions;
 import org.jfree.chart.JFreeChart;
 

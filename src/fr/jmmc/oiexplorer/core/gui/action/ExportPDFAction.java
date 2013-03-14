@@ -7,7 +7,7 @@ import fr.jmmc.jmcs.gui.action.ActionRegistrar;
 import fr.jmmc.jmcs.gui.component.FileChooser;
 import fr.jmmc.jmcs.gui.component.MessagePane;
 import fr.jmmc.jmcs.gui.component.StatusBar;
-import fr.jmmc.jmcs.util.MimeType;
+import fr.jmmc.jmcs.data.MimeType;
 import fr.jmmc.oiexplorer.core.gui.PDFExportable;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFUtils;
