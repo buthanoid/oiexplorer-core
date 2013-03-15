@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
+import fr.jmmc.jmcs.util.IntrospectionUtils;
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oiexplorer.core.util.TimeFormat;
 import java.awt.BasicStroke;
@@ -142,6 +143,20 @@ public class ChartUtils {
 
         } else {
             throw new IllegalStateException("Unsupported chart theme : " + ChartFactory.getChartTheme());
+        }
+
+        // Disable JFreeChart (internal) Logs:
+        try {
+            final org.jfree.util.Log log = org.jfree.util.Log.getInstance();
+            final java.lang.reflect.Field logLevelField = IntrospectionUtils.getField(log.getClass(), "debuglevel");
+            if (logLevelField != null) {
+                // make private field accessible:
+                logLevelField.setAccessible(true);
+                // 0 means ERROR level:
+                logLevelField.setInt(log, 0);
+            }
+        } catch (Exception e) {
+            logger.warn("Unable to disable JFreeChart Log:", e);
         }
     }
 
