@@ -3,7 +3,6 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
-import org.jfree.chart.axis.SymbolAxis;
 import org.jfree.chart.event.AxisChangeEvent;
 import org.jfree.data.Range;
 
@@ -14,7 +13,7 @@ import org.jfree.data.Range;
  *
  * @author bourgesl
  */
-public class BoundedSymbolAxis extends SymbolAxis {
+public class BoundedSymbolAxis extends MutableSymbolAxis {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -168,7 +167,8 @@ public class BoundedSymbolAxis extends SymbolAxis {
             }
         }
 
-        if (!getRange().equals(newRange)) {
+        final Range prevRange = getRange();
+        if (!prevRange.equals(newRange) || prevRange.getClass() != newRange.getClass()) {
             super.setRange(newRange, turnOffAutoRange, notify);
         }
     }
