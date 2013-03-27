@@ -120,7 +120,7 @@ public final class BoundedDateAxis extends DateAxis {
      */
     @Override
     public void setRange(final Range range, final boolean turnOffAutoRange,
-            final boolean notify) {
+                         final boolean notify) {
 
         Range newRange = range;
 
@@ -166,7 +166,8 @@ public final class BoundedDateAxis extends DateAxis {
             }
         }
 
-        if (!getRange().equals(newRange)) {
+        final Range prevRange = getRange();
+        if (!prevRange.equals(newRange) || prevRange.getClass() != newRange.getClass()) {
             super.setRange(newRange, turnOffAutoRange, notify);
         }
     }

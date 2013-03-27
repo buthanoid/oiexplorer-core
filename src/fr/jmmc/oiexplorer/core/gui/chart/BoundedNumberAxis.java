@@ -150,7 +150,8 @@ public class BoundedNumberAxis extends NumberAxis {
             }
         }
 
-        if (!getRange().equals(newRange)) {
+        final Range prevRange = getRange();
+        if (!prevRange.equals(newRange) || prevRange.getClass() != newRange.getClass()) {
             super.setRange(newRange, turnOffAutoRange, notify);
         }
     }
