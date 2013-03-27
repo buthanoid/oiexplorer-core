@@ -76,7 +76,7 @@ public class ChartUtils {
     /** larger draw stroke */
     public static final Stroke LARGE_STROKE = new BasicStroke(1.25f);
     /** dotted stroke */
-    public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 4.0f, new float[]{4.0f}, 0.0f);
+    public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 4.0f, new float[]{4.0f}, 0.0f);
     /** zero insets */
     public final static RectangleInsets ZERO_INSETS = RectangleInsets.ZERO_INSETS;
     /** default tick label rectangle insets */
