@@ -56,6 +56,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private boolean notify;
     /** xAxisEditor */
     private AxisEditor xAxisEditor;
+    /** Define the max number of plots */
+    private final static int MAX_Y_AXES = 2;
 
     /** Creates new form PlotDefinitionEditor */
     public PlotDefinitionEditor() {
@@ -141,7 +143,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                     yAxisChoices.add(currentY);
                 }
             }
-
+            
             logger.debug("refreshForm : xAxisChoices {}, yAxisChoices {}", xAxisChoices, yAxisChoices);
 
             xAxisEditor.setAxis((Axis) plotDef.getXAxis().clone(), xAxisChoices);
@@ -168,6 +170,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             // Init drawLinesCheckBox
             drawLinesCheckBox.setSelected(plotDef.isDrawLine());
 
+            // disable buttons to limit number of yAxes 
+            addYAxisButton.setEnabled(MAX_Y_AXES > yAxes.size());
+            delYAxisButton.setEnabled(yAxes.size() > 1);
         } finally {
             notify = true;
         }
@@ -397,9 +402,15 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         getPlotDefinition().getYAxes().add(axis);
         addYEditor(axis);
         updateModel();
+
+        // disable buttons to limit number of yAxes 
+        addYAxisButton.setEnabled(MAX_Y_AXES > yAxes.size());
+        delYAxisButton.setEnabled(yAxes.size() > 1);
     }//GEN-LAST:event_addYAxisButtonActionPerformed
 
     private void delYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delYAxisButtonActionPerformed
+
+
         if (yAxes.size() > 1) {
             // TODO replace by removal of the last yCombobox which one has lost the foxus
             Axis[] yAxisArray = yAxes.keySet().toArray(new Axis[]{});
@@ -410,6 +421,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             getPlotDefinition().getYAxes().remove(yAxis);
             updateModel();
         }
+
+        // disable buttons to limit number of yAxes 
+        addYAxisButton.setEnabled(MAX_Y_AXES > yAxes.size());
+        delYAxisButton.setEnabled(yAxes.size() > 1);
     }//GEN-LAST:event_delYAxisButtonActionPerformed
 
     private void colorMappingComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_colorMappingComboBoxActionPerformed
