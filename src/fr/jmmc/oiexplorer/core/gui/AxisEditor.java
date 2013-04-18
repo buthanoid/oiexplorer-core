@@ -8,6 +8,7 @@ import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
 import java.util.LinkedList;
 import java.util.List;
+import javax.swing.JComponent;
 import javax.swing.SpinnerNumberModel;
 
 /**
@@ -38,6 +39,11 @@ public class AxisEditor extends javax.swing.JPanel {
         GenericListModel<String> listModel = new GenericListModel<String>(choices, true);
         nameComboBox.setModel(listModel);
 
+        // hidden until request and valid code to get a correct behaviour
+        JComponent[] components = new JComponent[]{ rangeCheckBox, minSpinner, maxSpinner, includeZeroCheckBox };        
+        for (JComponent c : components) {
+            c.setVisible(c.isEnabled());
+        }
     }
 
     /** 
@@ -153,6 +159,7 @@ public class AxisEditor extends javax.swing.JPanel {
         add(nameComboBox, gridBagConstraints);
 
         plotErrorCheckBox.setText("error");
+        plotErrorCheckBox.setEnabled(false);
         plotErrorCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
@@ -176,6 +183,7 @@ public class AxisEditor extends javax.swing.JPanel {
         add(logScaleCheckBox, gridBagConstraints);
 
         includeZeroCheckBox.setText("include 0");
+        includeZeroCheckBox.setEnabled(false);
         includeZeroCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
@@ -187,6 +195,7 @@ public class AxisEditor extends javax.swing.JPanel {
         add(includeZeroCheckBox, gridBagConstraints);
 
         rangeCheckBox.setText("min/max");
+        rangeCheckBox.setEnabled(false);
         rangeCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
@@ -198,6 +207,7 @@ public class AxisEditor extends javax.swing.JPanel {
         add(rangeCheckBox, gridBagConstraints);
 
         minSpinner.setModel(new javax.swing.SpinnerNumberModel(Double.valueOf(0.0d), null, null, Double.valueOf(1.0d)));
+        minSpinner.setEnabled(false);
         minSpinner.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
                 AxisEditor.this.stateChanged(evt);
@@ -209,6 +219,7 @@ public class AxisEditor extends javax.swing.JPanel {
         add(minSpinner, gridBagConstraints);
 
         maxSpinner.setModel(new javax.swing.SpinnerNumberModel(Double.valueOf(0.0d), null, null, Double.valueOf(1.0d)));
+        maxSpinner.setEnabled(false);
         maxSpinner.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
                 AxisEditor.this.stateChanged(evt);
