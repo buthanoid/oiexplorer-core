@@ -361,9 +361,10 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /**
      * Protected: return the OIFits collection
+     * // TODO try to make method private back and replace by event handling for datatreepanel update ( see MainPanel.updateDataTree() )
      * @return OIFits collection
      */
-    OIFitsCollection getOIFitsCollection() {
+    public OIFitsCollection getOIFitsCollection() {
         return oiFitsCollection;
     }
 
@@ -893,10 +894,17 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     /**
      * Remove the Plot given its identifier
      * @param name Plot identifier
-     * @return removed Plot instance or null if the identifier was not found
+     * @return true if the given Plot was removed
      */
-    private Plot removePlot(final String name) {
-        return Identifiable.removeIdentifiable(name, getPlotList());
+    public boolean removePlot(final String name) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("removePlot: {}", name);
+        }
+        if (Identifiable.removeIdentifiable(name, getPlotList())!=null ) {
+            firePlotListChanged();
+            return true;
+        }
+        return false;        
     }
 
     /**
