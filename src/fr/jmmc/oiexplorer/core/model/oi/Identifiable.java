@@ -174,7 +174,10 @@ public class Identifiable
         }
         if ((this.description == null) ? (other.getDescription() != null) : !this.description.equals(other.getDescription())) {
             return false;
-        }
+        }        
+        if (this.version != other.getVersion()) {
+            return false;
+        }                
         return true;
     }
 
