@@ -4,6 +4,7 @@
 package fr.jmmc.oiexplorer.core.model;
 
 import fr.jmmc.jmcs.gui.component.StatusBar;
+import fr.jmmc.jmcs.service.RecentFilesManager;
 import fr.jmmc.jmcs.util.jaxb.JAXBFactory;
 import fr.jmmc.jmcs.util.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.util.jaxb.XmlBindException;
@@ -131,7 +132,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker) throws IOException, IllegalStateException, XmlBindException {
         final long startTime = System.nanoTime();
-
+                
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
 
         loadOIDataCollection(loadedUserCollection, checker);
@@ -140,6 +141,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         setOiFitsCollectionFile(file);
 
         logger.info("loadOIFitsCollection: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+        
+        // add given file to Open recent menu
+        RecentFilesManager.addFile(file);
     }
 
     /**
@@ -160,6 +164,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         setOiFitsCollectionFile(file);
 
         logger.info("saveOIFitsCollection: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+        
+        // add given file to Open recent menu
+        RecentFilesManager.addFile(file);
     }
 
     /**
