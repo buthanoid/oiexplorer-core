@@ -40,7 +40,7 @@ public class AxisEditor extends javax.swing.JPanel {
         nameComboBox.setModel(listModel);
 
         // hidden until request and valid code to get a correct behaviour
-        JComponent[] components = new JComponent[]{ rangeCheckBox, minSpinner, maxSpinner, includeZeroCheckBox };        
+        JComponent[] components = new JComponent[]{ plotErrorCheckBox ,rangeCheckBox, minSpinner, maxSpinner, includeZeroCheckBox };        
         for (JComponent c : components) {
             c.setVisible(c.isEnabled());
         }
@@ -156,6 +156,7 @@ public class AxisEditor extends javax.swing.JPanel {
         gridBagConstraints.gridy = 0;
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
         add(nameComboBox, gridBagConstraints);
 
         plotErrorCheckBox.setText("error");
@@ -166,7 +167,7 @@ public class AxisEditor extends javax.swing.JPanel {
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridx = 5;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.gridwidth = 2;
         add(plotErrorCheckBox, gridBagConstraints);
@@ -178,8 +179,8 @@ public class AxisEditor extends javax.swing.JPanel {
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 0;
         add(logScaleCheckBox, gridBagConstraints);
 
         includeZeroCheckBox.setText("include 0");
