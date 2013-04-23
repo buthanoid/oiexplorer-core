@@ -12,8 +12,6 @@ public enum OIFitsCollectionManagerEventType {
     COLLECTION_CHANGED,
     /** plot collection changed (first as it create PlotViews) */
     PLOT_LIST_CHANGED,
-    /** active plot changed (ie. user is working/looking on a new plot) */
-    ACTIVE_PLOT_CHANGED,
     /** subset collection changed */
     SUBSET_LIST_CHANGED,
     /** plot definition collection changed */
@@ -23,5 +21,7 @@ public enum OIFitsCollectionManagerEventType {
     /** plot definition changed */
     PLOT_DEFINITION_CHANGED,
     /** plot changed (last as SUBSET_CHANGED and PLOT_DEFINITION_CHANGED fire PLOT_CHANGED) */
-    PLOT_CHANGED
+    PLOT_CHANGED,
+    /** active plot changed (ie. user is working/looking on a new plot) */
+    ACTIVE_PLOT_CHANGED
 }
