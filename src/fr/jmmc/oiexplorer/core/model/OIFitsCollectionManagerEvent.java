@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
+import static fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType.PLOT_CHANGED;
 import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
 import fr.jmmc.oiexplorer.core.model.oi.Plot;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
@@ -20,6 +21,7 @@ import java.util.List;
  * - PLOT_DEFINITION_CHANGED         PlotDefinition
  * - PLOT_LIST_CHANGED               List<Plot>
  * - PLOT_CHANGED                    Plot
+ * - ACTIVE_PLOT_CHANGED             Plot
  * @author bourgesl
  */
 public final class OIFitsCollectionManagerEvent extends GenericEvent<OIFitsCollectionManagerEventType, Object> {
@@ -59,6 +61,9 @@ public final class OIFitsCollectionManagerEvent extends GenericEvent<OIFitsColle
                 value = OIFitsCollectionManager.getInstance().getPlotList();
                 break;
             case PLOT_CHANGED:
+                value = OIFitsCollectionManager.getInstance().getPlotRef(getSubjectId());
+                break;
+            case ACTIVE_PLOT_CHANGED:
                 value = OIFitsCollectionManager.getInstance().getPlotRef(getSubjectId());
                 break;
             default:
@@ -148,6 +153,18 @@ public final class OIFitsCollectionManagerEvent extends GenericEvent<OIFitsColle
     @SuppressWarnings("unchecked")
     public Plot getPlot() {
         if (getType() == OIFitsCollectionManagerEventType.PLOT_CHANGED) {
+            return (Plot) getSubjectValue();
+        }
+        return null;
+    }
+    
+    /**
+     * Return the active Plot if this event is only ACTIVE_PLOT_CHANGED
+     * @return Plot or null if wrong event type
+     */
+    @SuppressWarnings("unchecked")
+    public Plot getActivePlot() {
+        if (getType() == OIFitsCollectionManagerEventType.ACTIVE_PLOT_CHANGED) {
             return (Plot) getSubjectValue();
         }
         return null;
