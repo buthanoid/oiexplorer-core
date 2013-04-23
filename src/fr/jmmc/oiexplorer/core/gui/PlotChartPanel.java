@@ -1358,10 +1358,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final LegendItemCollection legendCollection = new LegendItemCollection();
 
-        final boolean useStaIndexColors = (distinctStaIndexNames.size() > 1) && (ColorMapping.STATION_INDEX == plotDef.getColorMapping());
-        final boolean useStaConfColors = (distinctStaConfNames.size() > 1) && (ColorMapping.CONFIGURATION == plotDef.getColorMapping());
-
-        if (useStaIndexColors) {
+        if (ColorMapping.STATION_INDEX == plotDef.getColorMapping()) {
             // merge all used staIndex names:
             final Set<String> distinctUsedStaIndexNames = new LinkedHashSet<String>();
 
@@ -1375,7 +1372,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 n++;
             }
-        } else if (useStaConfColors) {
+        } else if (ColorMapping.CONFIGURATION == plotDef.getColorMapping()) {
 
             // merge all used staConf names:
             final Set<String> distinctUsedStaConfNames = new LinkedHashSet<String>();
@@ -1547,12 +1544,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final ColorPalette palette = ColorPalette.getDefaultColorPaletteAlpha();
 
         // Station configurations:
-
-        // TEST ColorMapping: TODO remove once ColorMapping are editable by the GUI
-//        plotDef.setColorMapping(ColorMapping.WAVELENGTH_RANGE);
-
         // Use staConf (configuration) on each data row ?
-        final boolean useStaConfColors = (info.distinctStaConfNames.size() > 1) && (ColorMapping.CONFIGURATION == plotDef.getColorMapping());
+        final boolean useStaConfColors = (ColorMapping.CONFIGURATION == plotDef.getColorMapping());
 
         logger.debug("useStaConfColors: {}", useStaConfColors);
 
@@ -1579,7 +1572,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
 
-        final boolean useStaIndexColors = (info.distinctStaIndexNames.size() > 1) && (ColorMapping.STATION_INDEX == plotDef.getColorMapping());
+        final boolean useStaIndexColors = (ColorMapping.STATION_INDEX == plotDef.getColorMapping());
 
         logger.debug("useStaIndexColors: {}", useStaIndexColors);
 
@@ -1608,7 +1601,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // TODO: use an XYZ dataset to have a color axis (z) and then use linear or custom z conversion to colors.
 
-        final boolean useWaveLengthColors = (!useStaConfColors || !useStaIndexColors || ColorMapping.WAVELENGTH_RANGE == plotDef.getColorMapping());
+        final boolean useWaveLengthColors = (ColorMapping.WAVELENGTH_RANGE == plotDef.getColorMapping());
 
         logger.debug("useWaveLengthColors: {}", useWaveLengthColors);
 
@@ -1641,7 +1634,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         } else {
             mappingWaveLengthColors = null;
         }
-
 
         // TODO: adjust renderer settings per Serie (color, shape ...) per series and item at higher level using dataset fields
         final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
