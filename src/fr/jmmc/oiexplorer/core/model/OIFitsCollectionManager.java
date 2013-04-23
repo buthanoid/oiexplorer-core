@@ -63,9 +63,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     private File oiFitsCollectionFile = null;
     /** OIFits collection */
     private OIFitsCollection oiFitsCollection = null;
-    /** Active Plot = last selected one */
-    private Plot activePlot = null;
-    
     /* event dispatchers */
     /** OIFitsCollectionManagerEventType event notifier map */
     private final EnumMap<OIFitsCollectionManagerEventType, EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object>> oiFitsCollectionManagerEventNotifierMap;
@@ -135,7 +132,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker) throws IOException, IllegalStateException, XmlBindException {
         final long startTime = System.nanoTime();
-                
+
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
 
         loadOIDataCollection(loadedUserCollection, checker);
@@ -144,7 +141,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         setOiFitsCollectionFile(file);
 
         logger.info("loadOIFitsCollection: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
-        
+
         // add given file to Open recent menu
         RecentFilesManager.addFile(file);
     }
@@ -167,7 +164,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         setOiFitsCollectionFile(file);
 
         logger.info("saveOIFitsCollection: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
-        
+
         // add given file to Open recent menu
         RecentFilesManager.addFile(file);
     }
@@ -826,28 +823,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
     }
 
-    /* --- active plot handling --------- ---------------------------- */
-    /**
-     * Return the active plot (reference)
-     * @return active plot (reference) may be null if nothing is selected/shown
-     */
-    public Plot getActivePlot() {
-        return this.activePlot;
-    }
-    
-    /** 
-     * Change active plot.
-     * An event is fired if given plot is different from the previous one.
-     * @param plotRef last selected plot reference     
-     */
-    public void setActivePlot(Plot plotRef){
-        boolean notify = ! activePlot.equals(plotRef);
-        this.activePlot = plotRef;        
-        if(notify){
-            fireActivePlotChanged();
-        }
-    }
-    
     /* --- plot handling --------- ---------------------------- */
     /**
      * Return the plot list (reference)
@@ -932,11 +907,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         if (logger.isDebugEnabled()) {
             logger.debug("removePlot: {}", name);
         }
-        if (Identifiable.removeIdentifiable(name, getPlotList())!=null ) {
+        if (Identifiable.removeIdentifiable(name, getPlotList()) != null) {
             firePlotListChanged();
             return true;
         }
-        return false;        
+        return false;
     }
 
     /**
@@ -1107,25 +1082,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         return this.oiFitsCollectionManagerEventNotifierMap.get(OIFitsCollectionManagerEventType.PLOT_LIST_CHANGED);
     }
 
-    /**
-     * Bind the given listener to ACTIVE_PLOT_CHANGED event and fire such event to initialize the listener properly
-     * @param listener listener to bind
-     */
-    public void bindActivePlotChangedEvent(final OIFitsCollectionManagerEventListener listener) {
-        getActivePlotChangedEventNotifier().register(listener);
-
-        // force fire ACTIVE_PLOT_CHANGED event to initialize the listener with current OIFitsCollection ASAP:
-        fireActivePlotChanged(null, listener);
-    }
-
-    /**
-     * Return the ACTIVE_PLOT_CHANGED event notifier
-     * @return ACTIVE_PLOT_CHANGED event notifier
-     */
-    private EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object> getActivePlotChangedEventNotifier() {
-        return this.oiFitsCollectionManagerEventNotifierMap.get(OIFitsCollectionManagerEventType.ACTIVE_PLOT_CHANGED);
-    }
-
     /* TODO: use bind instead of eventNotifier directly */
     /**
      * Return the SUBSET_CHANGED event notifier
@@ -1149,6 +1105,14 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     public EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object> getPlotChangedEventNotifier() {
         return this.oiFitsCollectionManagerEventNotifierMap.get(OIFitsCollectionManagerEventType.PLOT_CHANGED);
+    }
+
+    /**
+     * Return the ACTIVE_PLOT_CHANGED event notifier
+     * @return ACTIVE_PLOT_CHANGED event notifier
+     */
+    public EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object> getActivePlotChangedEventNotifier() {
+        return this.oiFitsCollectionManagerEventNotifierMap.get(OIFitsCollectionManagerEventType.ACTIVE_PLOT_CHANGED);
     }
 
     /**
@@ -1252,32 +1216,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
-     * This fires a PLOT_LIST_CHANGED event to given registered listener ASYNCHRONOUSLY !
-     * 
-     * Note: this is ONLY useful to initialize new registered listeners properly !
-     * 
-     * @param source event source
-     * @param destination destination listener (null means all)
-     */
-    public void fireActivePlotChanged(final Object source, final OIFitsCollectionManagerEventListener destination) {
-        if (enableEvents) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("fireActivePlotChanged");
-            }
-            getActivePlotChangedEventNotifier().queueEvent((source != null) ? source : this,
-                    new OIFitsCollectionManagerEvent(OIFitsCollectionManagerEventType.ACTIVE_PLOT_CHANGED, null), destination);
-        }
-    }
-
-    
-    /**
-     * This fires an ACTIVE_PLOT_CHANGED event to all registered listeners ASYNCHRONOUSLY !
-     */
-    private void fireActivePlotChanged() {
-        fireActivePlotChanged(this, null);
-    }
-
-    /**
      * This fires a SUBSET_CHANGED event to given registered listener ASYNCHRONOUSLY !
      * @param source event source
      * @param subsetId subset definition identifier
@@ -1350,6 +1288,22 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     private void firePlotChanged(final Object source, final String plotId) {
         firePlotChanged(source, plotId, null);
+    }
+
+    /**
+     * This fires a ACTIVE_PLOT_CHANGED event to given registered listener ASYNCHRONOUSLY !
+     * @param source event source
+     * @param plotId plot identifier
+     * @param destination destination listener (null means all)
+     */
+    public void fireActivePlotChanged(final Object source, final String plotId, final OIFitsCollectionManagerEventListener destination) {
+        if (enableEvents) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("fireActivePlotChanged [{}] TO {}", plotId, (destination != null) ? destination : "ALL");
+            }
+            getActivePlotChangedEventNotifier().queueEvent((source != null) ? source : this,
+                    new OIFitsCollectionManagerEvent(OIFitsCollectionManagerEventType.ACTIVE_PLOT_CHANGED, plotId), destination);
+        }
     }
 
     /*
