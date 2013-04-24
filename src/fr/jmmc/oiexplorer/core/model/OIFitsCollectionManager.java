@@ -209,7 +209,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         for (SubsetDefinition subsetDefinition : oiDataCollection.getSubsetDefinitions()) {
             // fix OIDataFile reference:
             for (TableUID tableUID : subsetDefinition.getTables()) {
-                tableUID.setFile(getOIDataFile(tableUID.getFile().getName()));
+                tableUID.setFile(getOIDataFile(tableUID.getFile().getId()));
                 // if missing, remove ?
             }
             addSubsetDefinitionRef(subsetDefinition);
@@ -315,7 +315,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 final String id = StringUtils.replaceNonAlphaNumericCharsByUnderscore(oiFitsFile.getName());
 
                 // TODO: make it unique !!
-                dataFile.setName(id);
+                dataFile.setId(id);
+                
+                dataFile.setName(oiFitsFile.getName());
 
                 dataFile.setFile(oiFitsFile.getAbsoluteFilePath());
                 // checksum !
@@ -385,12 +387,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
-     * Return an OIDataFile given its name
-     * @param name file name
+     * Return an OIDataFile given its identifier
+     * @param id OIDataFile identifier
      * @return OIDataFile or null if not found
      */
-    public OIDataFile getOIDataFile(final String name) {
-        return Identifiable.getIdentifiable(name, getOIDataFileList());
+    public OIDataFile getOIDataFile(final String id) {
+        return Identifiable.getIdentifiable(id, getOIDataFileList());
     }
 
     /**
@@ -421,11 +423,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /**
      * Remove the OIDataFile given its identifier
-     * @param name OIDataFile identifier
+     * @param id OIDataFile identifier
      * @return removed OIDataFile instance or null if the identifier was not found
      */
-    private OIDataFile removeOIDataFile(final String name) {
-        return Identifiable.removeIdentifiable(name, getOIDataFileList());
+    private OIDataFile removeOIDataFile(final String id) {
+        return Identifiable.removeIdentifiable(id, getOIDataFileList());
     }
 
     /* --- subset definition handling ------------------------------------- */
@@ -505,20 +507,20 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /**
      * Remove the SubsetDefinition given its identifier
-     * @param name SubsetDefinition identifier
+     * @param id SubsetDefinition identifier
      * @return removed SubsetDefinition instance or null if the identifier was not found
      */
-    private SubsetDefinition removeSubsetDefinition(final String name) {
-        return Identifiable.removeIdentifiable(name, getSubsetDefinitionList());
+    private SubsetDefinition removeSubsetDefinition(final String id) {
+        return Identifiable.removeIdentifiable(id, getSubsetDefinitionList());
     }
 
     /**
-     * Return a subset definition (copy) by its name
-     * @param name subset definition name
+     * Return a subset definition (copy) by its identifier
+     * @param id subset definition id
      * @return subset definition (copy) or null if not found
      */
-    public SubsetDefinition getSubsetDefinition(final String name) {
-        final SubsetDefinition subsetDefinition = Identifiable.clone(getSubsetDefinitionRef(name));
+    public SubsetDefinition getSubsetDefinition(final String id) {
+        final SubsetDefinition subsetDefinition = Identifiable.clone(getSubsetDefinitionRef(id));
 
         if (logger.isDebugEnabled()) {
             logger.debug("getSubsetDefinition {}", subsetDefinition);
@@ -527,21 +529,21 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
-     * Return a subset definition (reference) by its name
-     * @param name plot definition name
+     * Return a subset definition (reference) by its identifier
+     * @param id subsetDefinition identifier
      * @return subset definition (reference) or null if not found
      */
-    public SubsetDefinition getSubsetDefinitionRef(final String name) {
-        return Identifiable.getIdentifiable(name, getSubsetDefinitionList());
+    public SubsetDefinition getSubsetDefinitionRef(final String id) {
+        return Identifiable.getIdentifiable(id, getSubsetDefinitionList());
     }
 
     /**
-     * Return true if this subset definition exists in this data collection given its name
-     * @param name subset definition name
-     * @return true if this subset definition exists in this data collection given its name
+     * Return true if this subset definition exists in this data collection given its identifier
+     * @param id subset definition identifier
+     * @return true if this subset definition exists in this data collection given its identifier
      */
-    public boolean hasSubsetDefinition(final String name) {
-        return getSubsetDefinitionRef(name) != null;
+    public boolean hasSubsetDefinition(final String id) {
+        return getSubsetDefinitionRef(id) != null;
     }
 
     /**
@@ -550,7 +552,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param subsetDefinition subset definition with updated values
      */
     public void updateSubsetDefinition(final Object source, final SubsetDefinition subsetDefinition) {
-        final SubsetDefinition subset = getSubsetDefinitionRef(subsetDefinition.getName());
+        final SubsetDefinition subset = getSubsetDefinitionRef(subsetDefinition.getId());
 
         if (subset == null) {
             throw new IllegalStateException("subset not found : " + subsetDefinition);
@@ -635,11 +637,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         subsetDefinition.setOIFitsSubset(oiFitsSubset);
         subsetDefinition.incVersion();
 
-        fireSubsetDefinitionChanged(source, subsetDefinition.getName());
+        fireSubsetDefinitionChanged(source, subsetDefinition.getId());
 
         // find dependencies:
         for (Plot plot : getPlotList()) {
-            if (plot.getSubsetDefinition() != null && plot.getSubsetDefinition().getName().equals(subsetDefinition.getName())) {
+            if (plot.getSubsetDefinition() != null && plot.getSubsetDefinition().getId().equals(subsetDefinition.getId())) {
                 // match
                 plot.setSubsetDefinition(subsetDefinition);
 
@@ -725,20 +727,20 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /**
      * Remove the PlotDefinition given its identifier
-     * @param name PlotDefinition identifier
+     * @param id PlotDefinition identifier
      * @return removed PlotDefinition instance or null if the identifier was not found
      */
-    private PlotDefinition removePlotDefinition(final String name) {
-        return Identifiable.removeIdentifiable(name, getPlotDefinitionList());
+    private PlotDefinition removePlotDefinition(final String id) {
+        return Identifiable.removeIdentifiable(id, getPlotDefinitionList());
     }
 
     /**
-     * Return a plot definition (copy) by its name
-     * @param name plot definition name
+     * Return a plot definition (copy) by its identifier
+     * @param id plot identifier
      * @return plot definition (copy) or null if not found
      */
-    public PlotDefinition getPlotDefinition(final String name) {
-        final PlotDefinition plotDefinition = Identifiable.clone(getPlotDefinitionRef(name));
+    public PlotDefinition getPlotDefinition(final String id) {
+        final PlotDefinition plotDefinition = Identifiable.clone(getPlotDefinitionRef(id));
 
         if (logger.isDebugEnabled()) {
             logger.debug("getPlotDefinition {}", plotDefinition);
@@ -747,21 +749,21 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
-     * Return a plot definition (reference) by its name
-     * @param name plot definition name
+     * Return a plot definition (reference) by its identifier
+     * @param id plot definition identifier
      * @return plot definition (reference) or null if not found
      */
-    public PlotDefinition getPlotDefinitionRef(final String name) {
-        return Identifiable.getIdentifiable(name, getPlotDefinitionList());
+    public PlotDefinition getPlotDefinitionRef(final String id) {
+        return Identifiable.getIdentifiable(id, getPlotDefinitionList());
     }
 
     /**
-     * Return true if this plot definition exists in this data collection given its name
-     * @param name plot definition name
-     * @return true if this plot definition exists in this data collection given its name
+     * Return true if this plot definition exists in this data collection given its identifier
+     * @param id plot definition identifier
+     * @return true if this plot definition exists in this data collection given its identifier
      */
-    public boolean hasPlotDefinition(final String name) {
-        return getPlotDefinitionRef(name) != null;
+    public boolean hasPlotDefinition(final String id) {
+        return getPlotDefinitionRef(id) != null;
     }
 
     /**
@@ -770,7 +772,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param plotDefinition plot definition with updated values
      */
     public void updatePlotDefinition(final Object source, final PlotDefinition plotDefinition) {
-        final PlotDefinition plotDef = getPlotDefinitionRef(plotDefinition.getName());
+        final PlotDefinition plotDef = getPlotDefinitionRef(plotDefinition.getId());
 
         if (plotDef == null) {
             throw new IllegalStateException("plot definition not found : " + plotDefinition);
@@ -809,11 +811,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         plotDefinition.incVersion();
-        firePlotDefinitionChanged(source, plotDefinition.getName());
+        firePlotDefinitionChanged(source, plotDefinition.getId());
 
         // find dependencies:
         for (Plot plot : getPlotList()) {
-            if (plot.getPlotDefinition() != null && plot.getPlotDefinition().getName().equals(plotDefinition.getName())) {
+            if (plot.getPlotDefinition() != null && plot.getPlotDefinition().getId().equals(plotDefinition.getId())) {
                 // match
                 plot.setPlotDefinition(plotDefinition);
 
@@ -900,14 +902,14 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /**
      * Remove the Plot given its identifier
-     * @param name Plot identifier
+     * @param id Plot identifier
      * @return true if the given Plot was removed
      */
-    public boolean removePlot(final String name) {
+    public boolean removePlot(final String id) {
         if (logger.isDebugEnabled()) {
-            logger.debug("removePlot: {}", name);
+            logger.debug("removePlot: {}", id);
         }
-        if (Identifiable.removeIdentifiable(name, getPlotList()) != null) {
+        if (Identifiable.removeIdentifiable(id, getPlotList()) != null) {
             firePlotListChanged();
             return true;
         }
@@ -915,12 +917,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
-     * Return a plot (copy) by its name
-     * @param name plot name
+     * Return a plot (copy) by its identifier
+     * @param id plot identifier
      * @return plot (copy) or null if not found
      */
-    public Plot getPlot(final String name) {
-        final Plot plot = Identifiable.clone(getPlotRef(name));
+    public Plot getPlot(final String id) {
+        final Plot plot = Identifiable.clone(getPlotRef(id));
 
         if (logger.isDebugEnabled()) {
             logger.debug("getPlot {}", plot);
@@ -929,21 +931,21 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
-     * Return a plot (reference) by its name
-     * @param name plot name
+     * Return a plot (reference) by its identifier
+     * @param id plot identifier
      * @return plot (reference) or null if not found
      */
-    public Plot getPlotRef(final String name) {
-        return Identifiable.getIdentifiable(name, getPlotList());
+    public Plot getPlotRef(final String id) {
+        return Identifiable.getIdentifiable(id, getPlotList());
     }
 
     /**
-     * Return true if this plot exists in this data collection given its name
-     * @param name plot name
-     * @return true if this plot exists in this data collection given its name
+     * Return true if this plot exists in this data collection given its identifier
+     * @param id plot identifier
+     * @return true if this plot exists in this data collection given its identifier
      */
-    public boolean hasPlot(final String name) {
-        return getPlotRef(name) != null;
+    public boolean hasPlot(final String id) {
+        return getPlotRef(id) != null;
     }
 
     /**
@@ -952,7 +954,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param plot plot with updated values
      */
     public void updatePlot(final Object source, final Plot plot) {
-        final Plot plotRef = getPlotRef(plot.getName());
+        final Plot plotRef = getPlotRef(plot.getId());
 
         if (plotRef == null) {
             throw new IllegalStateException("plot not found : " + plot);
@@ -991,7 +993,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         plot.incVersion();
-        firePlotChanged(source, plot.getName());
+        firePlotChanged(source, plot.getId());
     }
 
     // --- EVENTS ----------------------------------------------------------------
