@@ -89,8 +89,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private static final Logger logger = LoggerFactory.getLogger(PlotChartPanel.class.getName());
     /** data margin in percents (5%) */
     private final static double MARGIN_PERCENTS = 5d / 100d;
+    /** invalid error ~ Infinity (1e6) - note: NOT too high else the error bar is not drawn */
+    private final static double INVALID_ERROR = 1e6d;
     /** double formatter for wave lengths */
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
+    private static Shape shapePointValid = null;
+    private static Shape shapePointInvalid = null;
 
     /* members */
     /** OIFitsCollectionManager singleton */
@@ -1240,8 +1244,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     // use deprecated method but defines shape once for ALL series (performance):
                     // set shape depending on error (triangle or square):
-                    renderer.setBaseShape(getPointShape(!info.hasDataFlag), false);
-
+/*                    
+                     renderer.setBaseShape(getPointShape(!info.hasDataFlag), false);
+                     */
                     renderer.setLinesVisible(plotDef.isDrawLine());
 
                     // update plot's dataset at the end (notify events):
@@ -1487,6 +1492,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
 
         final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
+        final ColorMapping colorMapping =
+                           (plotDef.getColorMapping() != null) ? plotDef.getColorMapping() : ColorMapping.WAVELENGTH_RANGE;
 
         // serie count:
         int seriesCount = dataset.getSeriesCount();
@@ -1545,7 +1552,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // Station configurations:
         // Use staConf (configuration) on each data row ?
-        final boolean useStaConfColors = (ColorMapping.CONFIGURATION == plotDef.getColorMapping());
+        final boolean useStaConfColors = (colorMapping == ColorMapping.CONFIGURATION);
 
         logger.debug("useStaConfColors: {}", useStaConfColors);
 
@@ -1572,7 +1579,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
 
-        final boolean useStaIndexColors = (ColorMapping.STATION_INDEX == plotDef.getColorMapping());
+        final boolean useStaIndexColors = (colorMapping == ColorMapping.STATION_INDEX);
 
         logger.debug("useStaIndexColors: {}", useStaIndexColors);
 
@@ -1601,7 +1608,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // TODO: use an XYZ dataset to have a color axis (z) and then use linear or custom z conversion to colors.
 
-        final boolean useWaveLengthColors = (ColorMapping.WAVELENGTH_RANGE == plotDef.getColorMapping());
+        final boolean useWaveLengthColors = (colorMapping == ColorMapping.WAVELENGTH_RANGE);
 
         logger.debug("useWaveLengthColors: {}", useWaveLengthColors);
 
@@ -1638,6 +1645,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // TODO: adjust renderer settings per Serie (color, shape ...) per series and item at higher level using dataset fields
         final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
 
+        // clear item shapes:
+//        renderer.clearItemShapes();
+
         // try to fill dataset:
 
         // avoid loop on wavelength if no 2D data:
@@ -1666,9 +1676,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         double maxY = Double.NEGATIVE_INFINITY;
 
         double[] xValue, xLower, xUpper, yValue, yLower, yUpper;
+        Shape[] itemShapes;
 
         boolean recycleArray = false;
         double[][] arrayPool = new double[6][];
+        Shape[] shapePool = null;
 
         double x, xErr, y, yErr;
 
@@ -1679,6 +1691,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         int nSkipTarget = 0;
         int nSkipFlag = 0;
+        boolean isFlag, isXErrValid, isYErrValid;
 
         int nData = 0;
 
@@ -1703,6 +1716,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     yValue = arrayPool[3];
                     yLower = arrayPool[4];
                     yUpper = arrayPool[5];
+                    itemShapes = shapePool;
                 } else {
                     xValue = new double[nRows];
                     xLower = new double[nRows];
@@ -1710,6 +1724,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     yValue = new double[nRows];
                     yLower = new double[nRows];
                     yUpper = new double[nRows];
+                    itemShapes = new Shape[nRows];
                 }
 
                 idx = 0;
@@ -1726,7 +1741,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         }
                     }
 
+                    isFlag = false;
                     if (checkFlaggedData && flags[i][j]) {
+                        isFlag = true;
                         if (skipFlaggedData) {
                             // data point is flagged so skip it:
                             nSkipFlag++;
@@ -1783,6 +1800,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             yErr = (hasErrY) ? ((isYData2D) ? yData2DErr[i][j] : yData1DErr[i]) : Double.NaN;
                             xErr = (hasErrX) ? ((isXData2D) ? xData2DErr[i][j] : xData1DErr[i]) : Double.NaN;
 
+                            isXErrValid = isYErrValid = true;
+                            
                             // Define Y data:
                             if (Double.isNaN(yErr)) {
                                 yValue[idx] = y;
@@ -1799,22 +1818,37 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             } else {
                                 hasDataErrorY = true;
 
-                                // convert yErr value:
-                                if (doScaleY) {
-                                    yErr = yConverter.evaluate(yErr);
+                                // ensure error is valid ie positive:
+                                if (yErr < 0d) {
+                                    yErr = INVALID_ERROR;
+                                    isYErrValid = false;
+                                } else {
+                                    // convert yErr value:
+                                    if (doScaleY) {
+                                        yErr = yConverter.evaluate(yErr);
+                                    }
                                 }
 
                                 // useLog: check if y - err < 0:
                                 yValue[idx] = y;
-                                yLower[idx] = (yUseLog && (y - yErr) < 0d) ? Double.NaN : (y - yErr);
+                                yLower[idx] = (yUseLog && (y - yErr) < 0d) ? Double.MIN_VALUE : (y - yErr);
                                 yUpper[idx] = y + yErr;
 
-                                // update Y boundaries including error:
-                                if (yLower[idx] < minY) {
-                                    minY = yLower[idx];
-                                }
-                                if (yUpper[idx] > maxY) {
-                                    maxY = yUpper[idx];
+                                if (isYErrValid) {
+                                    // update Y boundaries including error:
+                                    if (yLower[idx] < minY) {
+                                        minY = yLower[idx];
+                                    }
+                                    if (yUpper[idx] > maxY) {
+                                        maxY = yUpper[idx];
+                                    }
+                                } else {
+                                    if (y < minY) {
+                                        minY = y;
+                                    }
+                                    if (y > maxY) {
+                                        maxY = y;
+                                    }
                                 }
                             }
 
@@ -1831,27 +1865,44 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                 if (x > maxX) {
                                     maxX = x;
                                 }
-
                             } else {
                                 hasDataErrorX = true;
 
-                                // convert xErr value:
-                                if (doScaleX) {
-                                    xErr = xConverter.evaluate(xErr);
+                                // ensure error is valid ie positive:
+                                if (xErr < 0d) {
+                                    xErr = INVALID_ERROR;
+                                    isXErrValid = false;
+                                } else {
+                                    // convert xErr value:
+                                    if (doScaleX) {
+                                        xErr = xConverter.evaluate(xErr);
+                                    }
                                 }
 
                                 xValue[idx] = x;
-                                xLower[idx] = (xUseLog && (x - xErr) < 0d) ? Double.NaN : (x - xErr);
+                                xLower[idx] = (xUseLog && (x - xErr) < 0d) ? Double.MIN_VALUE : (x - xErr);
                                 xUpper[idx] = x + xErr;
 
-                                // update X boundaries including error:
-                                if (xLower[idx] < minX) {
-                                    minX = xLower[idx];
-                                }
-                                if (xUpper[idx] > maxX) {
-                                    maxX = xUpper[idx];
+                                if (isXErrValid) {
+                                    // update X boundaries including error:
+                                    if (xLower[idx] < minX) {
+                                        minX = xLower[idx];
+                                    }
+                                    if (xUpper[idx] > maxX) {
+                                        maxX = xUpper[idx];
+                                    }
+                                } else {
+                                    if (x < minX) {
+                                        minX = x;
+                                    }
+                                    if (x > maxX) {
+                                        maxX = x;
+                                    }
                                 }
                             }
+
+                            // Define item shape:
+                            itemShapes[idx] = getPointShape(isYErrValid && !isFlag);
 
                             // increment number of valid data in serie arrays:
                             idx++;
@@ -1875,6 +1926,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         arrayPool[3] = yValue;
                         arrayPool[4] = yLower;
                         arrayPool[5] = yUpper;
+                        shapePool = itemShapes;
 
                         xValue = extract(xValue, idx);
                         xLower = extract(xLower, idx);
@@ -1882,6 +1934,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         yValue = extract(yValue, idx);
                         yLower = extract(yLower, idx);
                         yUpper = extract(yUpper, idx);
+                        itemShapes = extract(itemShapes, idx);
                     }
 
                     // TODO: add oiTable, i (row), j (nWave) in dataset:
@@ -1902,6 +1955,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     } else if (useWaveLengthColors) {
                         renderer.setSeriesPaint(seriesCount, mappingWaveLengthColors[j], false);
                     }
+
+                    // TODO: validate:
+//                    renderer.setItemShapes(seriesCount, itemShapes);
 
                     seriesCount++;
 
@@ -1975,6 +2031,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         System.arraycopy(input, 0, output, 0, len);
         return output;
     }
+
+    private Shape[] extract(final Shape[] input, final int len) {
+        final Shape[] output = new Shape[len];
+        System.arraycopy(input, 0, output, 0, len);
+        return output;
+    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables
     /** drawing started time value */
@@ -2027,24 +2089,26 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
     /**
      * Return the shape used to represent points on the plot
-     * @param hasError flag indicating to return the shape associated to data with error or without
+     * @param valid flag indicating if the the point is valid
      * @return shape
      */
-    private static Shape getPointShape(final boolean hasError) {
+    private static Shape getPointShape(final boolean valid) {
+        if (shapePointValid == null) {
+            // initialize shapes:
+            shapePointValid = new Rectangle2D.Double(-3d, -3d, 6d, 6d);
 
-        if (hasError) {
-            return new Rectangle2D.Double(-3d, -3d, 6d, 6d);
+            // equilateral triangle centered on its barycenter:
+            final GeneralPath triangle = new GeneralPath();
+
+            triangle.moveTo(0f, -4f);
+            triangle.lineTo(3f, 2f);
+            triangle.lineTo(-3f, 2f);
+            triangle.lineTo(0f, -4f);
+
+            shapePointInvalid = triangle;
         }
 
-        // equilateral triangle centered on its barycenter:
-        final GeneralPath path = new GeneralPath();
-
-        path.moveTo(0f, -4f);
-        path.lineTo(3f, 2f);
-        path.lineTo(-3f, 2f);
-        path.lineTo(0f, -4f);
-
-        return path;
+        return (valid) ? shapePointValid : shapePointInvalid;
     }
 
     /* Plot information */
