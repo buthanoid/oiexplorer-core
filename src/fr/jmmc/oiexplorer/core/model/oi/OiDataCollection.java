@@ -26,6 +26,7 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
+ *         &lt;element name="schemaVersion" type="{http://www.w3.org/2001/XMLSchema}float"/>
  *         &lt;element name="file" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}OIDataFile" maxOccurs="unbounded"/>
  *         &lt;element name="subsetDefinition" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}SubsetDefinition" maxOccurs="unbounded" minOccurs="0"/>
  *         &lt;element name="plotDefinition" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}PlotDefinition" maxOccurs="unbounded" minOccurs="0"/>
@@ -40,6 +41,7 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "OIDataCollection", propOrder = {
+    "schemaVersion",
     "files",
     "subsetDefinitions",
     "plotDefinitions",
@@ -50,6 +52,7 @@ public class OiDataCollection
     extends OIBase
 {
 
+    protected float schemaVersion;
     @XmlElement(name = "file", required = true)
     protected List<OIDataFile> files;
     @XmlElement(name = "subsetDefinition")
@@ -58,6 +61,22 @@ public class OiDataCollection
     protected List<PlotDefinition> plotDefinitions;
     @XmlElement(name = "plot")
     protected List<Plot> plots;
+
+    /**
+     * Gets the value of the schemaVersion property.
+     * 
+     */
+    public float getSchemaVersion() {
+        return schemaVersion;
+    }
+
+    /**
+     * Sets the value of the schemaVersion property.
+     * 
+     */
+    public void setSchemaVersion(float value) {
+        this.schemaVersion = value;
+    }
 
     /**
      * Gets the value of the files property.
