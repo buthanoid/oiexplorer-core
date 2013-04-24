@@ -161,7 +161,7 @@ public class Identifiable
      * @return new identifiable version
      */
     public final fr.jmmc.oiexplorer.core.model.IdentifiableVersion getIdentifiableVersion() {
-        return new fr.jmmc.oiexplorer.core.model.IdentifiableVersion(this.name, this.version);
+        return new fr.jmmc.oiexplorer.core.model.IdentifiableVersion(this.id, this.version);
     }
 
     /**
@@ -176,10 +176,11 @@ public class Identifiable
     public void copy(final OIBase other) {
         final Identifiable identifiable = (Identifiable) other;
 
-        // skip name to avoid overriding identifier !
-        /* this.name = identifiable.getName(); */
-
-        // copy description, version:
+        // skip id to avoid overriding identifier !
+        /* this.id = identifiable.getId(); */
+        
+        // copy name, description, version:
+        this.name = identifiable.getName();
         this.description = identifiable.getDescription();
         this.version = identifiable.getVersion();
     }
@@ -197,6 +198,9 @@ public class Identifiable
             return false;
         }
         final Identifiable other = (Identifiable) obj;
+        if ((this.id == null) ? (other.getId() != null) : !this.id.equals(other.getId())) {
+            return false;
+        }
         if ((this.name == null) ? (other.getName() != null) : !this.name.equals(other.getName())) {
             return false;
         }
@@ -216,7 +220,8 @@ public class Identifiable
     @Override
     public void toString(final StringBuilder sb, final boolean full) {
         super.toString(sb, full); // OIBase
-        sb.append("{id=").append(this.name);
+        sb.append("{id=").append(this.id);
+        sb.append(",name=").append(this.name);
         if (this.version > 1) {
             sb.append(", version=").append(this.version);
         }
@@ -265,7 +270,7 @@ public class Identifiable
      */
     public static <K extends Identifiable> K getIdentifiable(final String id, final java.util.List<K> list) {
         for (K identifiable : list) {
-            if (id.equals(identifiable.getName())) {
+            if (id.equals(identifiable.getId())) {
                 return identifiable;
             }
         }
@@ -291,7 +296,7 @@ public class Identifiable
      * @return true if the given identifiable instance was added; false otherwise
      */
     public static <K extends Identifiable> boolean addIdentifiable(final K identifiable, final java.util.List<K> list) {
-        if (identifiable != null && identifiable.getName() != null && getIdentifiable(identifiable.getName(), list) == null) {
+        if (identifiable != null && identifiable.getId() != null && getIdentifiable(identifiable.getId(), list) == null) {
             // replace previous ??
             list.add(identifiable);
             return true;
@@ -308,7 +313,7 @@ public class Identifiable
      */
     public static <K extends Identifiable> K removeIdentifiable(final K identifiable, final java.util.List<K> list) {
         if (identifiable != null) {
-            return removeIdentifiable(identifiable.getName(), list);
+            return removeIdentifiable(identifiable.getId(), list);
         }
         return null;
     }
