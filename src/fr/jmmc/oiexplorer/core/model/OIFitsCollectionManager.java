@@ -909,7 +909,13 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         if (logger.isDebugEnabled()) {
             logger.debug("removePlot: {}", id);
         }
-        if (Identifiable.removeIdentifiable(id, getPlotList()) != null) {
+        Plot p = Identifiable.removeIdentifiable(id, getPlotList());
+        if ( p != null) {            
+            // try to cleanup associated elements
+            // TODO check if some element are shared when available
+            // See also ObservationSetting.checkReferences()
+            removePlotDefinition(p.getPlotDefinition().getId());
+            removeSubsetDefinition(p.getSubsetDefinition().getId());            
             firePlotListChanged();
             return true;
         }
