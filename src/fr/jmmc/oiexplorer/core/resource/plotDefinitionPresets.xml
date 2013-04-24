@@ -20,7 +20,8 @@
     
     <!-- plot (Vis2 - T3) vs spatial freq  -->    
     <plotDefinition>
-        <name>VIS2DATA_T3PHI/SPATIAL_FREQ</name>
+        <id>VIS2DATA_T3PHI/SPATIAL_FREQ</id>
+        <name>Vis2Data and T3Phi vs. Spatial freq.</name>
         <skipFlaggedData>true</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
@@ -43,7 +44,8 @@
     
     <!-- plot(Vis2 - T3) vs wavelength     -->    
     <plotDefinition>
-        <name>VIS2DATA_T3PHI/EFF_WAVE</name>
+        <id>VIS2DATA_T3PHI/EFF_WAVE</id>
+        <name>Vis2Data and T3Phi vs. Eff. Wave</name>
         <skipFlaggedData>true</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
@@ -66,7 +68,8 @@
     
     <!-- plot(Vis2 - T3) vs mjd            -->
     <plotDefinition>
-        <name>VIS2DATA_T3PHI/MJD</name>
+        <id>VIS2DATA_T3PHI/MJD</id>
+        <name>Vis2Data and T3Phi vs. MJD</name>
         <skipFlaggedData>true</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
@@ -88,7 +91,8 @@
     
     <!-- plot (VisAmp - VisPhi) vs spatial freq  -->    
     <plotDefinition>
-        <name>VISAMP_VISPHI/SPATIAL_FREQ</name>
+        <id>VISAMP_VISPHI/SPATIAL_FREQ</id>
+        <name>VisAmp and VisPhi vs. Spatial freq.</name>
         <skipFlaggedData>true</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
@@ -111,7 +115,8 @@
 
     <!-- plot log(VisAmp - Vis2) vs spatial freq  -->    
     <plotDefinition>
-        <name>LOG_VISAMP_VIS2DATA/SPATIAL_FREQ</name>
+        <id>LOG_VISAMP_VIS2DATA/SPATIAL_FREQ</id>
+        <name>log(VisAmp and Vis2Data) vs. Spatial freq.</name>
         <skipFlaggedData>true</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
