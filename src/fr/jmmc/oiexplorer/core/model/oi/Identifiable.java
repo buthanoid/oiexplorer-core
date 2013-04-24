@@ -28,7 +28,8 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
- *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}ID"/>
+ *         &lt;element name="id" type="{http://www.w3.org/2001/XMLSchema}ID"/>
+ *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="description" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
@@ -40,6 +41,7 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "Identifiable", namespace = "http://www.jmmc.fr/oiexplorer-base/0.1", propOrder = {
+    "id",
     "name",
     "description"
 })
@@ -57,8 +59,34 @@ public class Identifiable
     @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
     @XmlID
     @XmlSchemaType(name = "ID")
+    protected String id;
+    @XmlElement(required = true)
     protected String name;
     protected String description;
+
+    /**
+     * Gets the value of the id property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
+     *     
+     */
+    public String getId() {
+        return id;
+    }
+
+    /**
+     * Sets the value of the id property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
+     *     
+     */
+    public void setId(String value) {
+        this.id = value;
+    }
 
     /**
      * Gets the value of the name property.
