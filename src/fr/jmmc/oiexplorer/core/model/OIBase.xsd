@@ -34,10 +34,18 @@
         </xsd:annotation>
         <xsd:sequence>
         
-            <xsd:element name="name" type="xsd:ID">
+            <xsd:element name="id" type="xsd:ID">
                 <xsd:annotation>
                     <xsd:documentation>
                         unique identifier
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+
+            <xsd:element name="name" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        User name (may be overwritten by user)
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
