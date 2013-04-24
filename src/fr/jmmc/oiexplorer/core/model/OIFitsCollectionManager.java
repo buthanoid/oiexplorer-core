@@ -47,7 +47,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     /** Current key for PlotDefinition */
     public final static String CURRENT_PLOT_DEFINITION = "PLOT_DEF_0";
     /** Current key for View */
-    public final static String CURRENT_VIEW = "PLOT_VIEW_0";
+    public final static String CURRENT_VIEW = "VIEW_0";
     /** Singleton pattern */
     private final static OIFitsCollectionManager instance = new OIFitsCollectionManager();
     /** Plot Definition factory singleton */
