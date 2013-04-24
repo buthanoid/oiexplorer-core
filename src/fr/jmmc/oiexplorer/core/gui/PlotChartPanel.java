@@ -89,8 +89,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private static final Logger logger = LoggerFactory.getLogger(PlotChartPanel.class.getName());
     /** data margin in percents (5%) */
     private final static double MARGIN_PERCENTS = 5d / 100d;
-    /** invalid error ~ Infinity (1e6) - note: NOT too high else the error bar is not drawn */
-    private final static double INVALID_ERROR = 1e6d;
     /** double formatter for wave lengths */
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
     private static Shape shapePointValid = null;
@@ -1801,7 +1799,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             xErr = (hasErrX) ? ((isXData2D) ? xData2DErr[i][j] : xData1DErr[i]) : Double.NaN;
 
                             isXErrValid = isYErrValid = true;
-                            
+
                             // Define Y data:
                             if (Double.isNaN(yErr)) {
                                 yValue[idx] = y;
@@ -1820,7 +1818,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                                 // ensure error is valid ie positive:
                                 if (yErr < 0d) {
-                                    yErr = INVALID_ERROR;
+                                    yErr = Double.POSITIVE_INFINITY;
                                     isYErrValid = false;
                                 } else {
                                     // convert yErr value:
@@ -1870,7 +1868,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                                 // ensure error is valid ie positive:
                                 if (xErr < 0d) {
-                                    xErr = INVALID_ERROR;
+                                    xErr = Double.POSITIVE_INFINITY;
                                     isXErrValid = false;
                                 } else {
                                     // convert xErr value:
@@ -2062,7 +2060,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         // DEBUG (TODO KILL ASAP):
-        if (false) {
+        if (true) {
             switch (event.getType()) {
                 case ChartProgressEvent.DRAWING_STARTED:
                     this.chartDrawStartTime = System.nanoTime();
