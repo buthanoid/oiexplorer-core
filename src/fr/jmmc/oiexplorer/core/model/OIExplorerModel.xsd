@@ -44,7 +44,7 @@
             </xsd:documentation>
         </xsd:annotation>
     </xsd:element>
-    
+            
     
     
     
@@ -55,7 +55,14 @@
                 This type describes a collection of oidata ressources.
             </xsd:documentation>
         </xsd:annotation>
-        <xsd:sequence>                            
+        <xsd:sequence>        
+            <xsd:element name="schemaVersion" type="xsd:float">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Schema version for this oidata collection
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>                    
             <xsd:element name="file" type="OIDataFile" maxOccurs="unbounded">
                 <xsd:annotation>
                     <xsd:documentation>
