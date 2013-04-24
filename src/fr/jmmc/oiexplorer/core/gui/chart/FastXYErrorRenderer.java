@@ -260,11 +260,11 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
      */
     @Override
     public void drawItem(final Graphics2D g2, final XYItemRendererState renderState,
-            final Rectangle2D dataArea, final PlotRenderingInfo info, final XYPlot plot,
-            final ValueAxis domainAxis, final ValueAxis rangeAxis, final XYDataset dataset,
-            final int series, final int item, final CrosshairState crosshairState, final int pass) {
+                         final Rectangle2D dataArea, final PlotRenderingInfo info, final XYPlot plot,
+                         final ValueAxis domainAxis, final ValueAxis rangeAxis, final XYDataset dataset,
+                         final int series, final int item, final CrosshairState crosshairState, final int pass) {
 
-        if (isLinePass(pass) && (drawYError || drawXError) && dataset instanceof IntervalXYDataset /* && getItemVisible(series, item) */) {
+        if (isLinePass(pass) && (drawYError || drawXError) && dataset instanceof IntervalXYDataset) {
             final IntervalXYDataset ixyd = (IntervalXYDataset) dataset;
 
             final FastXYLineAndShapeRenderer.State state = (FastXYLineAndShapeRenderer.State) renderState;
@@ -274,20 +274,7 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
             final RectangleEdge xAxisLocation = state.xAxisLocation;
             final RectangleEdge yAxisLocation = state.yAxisLocation;
 
-            final Paint paint = this.errorPaint;
-            final Stroke stroke = this.errorStroke;
             final double adj = (this.useCap) ? 0.5d * this.getCapLength() : 0d;
-
-            if (paint != null) {
-                g2.setPaint(paint);
-            } else {
-                g2.setPaint(getItemPaint(series, item));
-            }
-            if (stroke != null) {
-                g2.setStroke(stroke);
-            } else {
-                g2.setStroke(getItemStroke(series, item));
-            }
 
             if (drawXError) {
                 // draw the error bar for the x-interval
@@ -296,29 +283,52 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
                 final double y = ixyd.getYValue(series, item);
 
                 if (!Double.isNaN(x0) && !Double.isNaN(x1) && !Double.isNaN(y)) {
-                    final double xx0 = domainAxis.valueToJava2D(x0, dataArea, xAxisLocation);
-                    final double xx1 = domainAxis.valueToJava2D(x1, dataArea, xAxisLocation);
-                    final double yy = rangeAxis.valueToJava2D(y, dataArea, yAxisLocation);
+                    double xx0 = domainAxis.valueToJava2D(x0, dataArea, xAxisLocation);
+                    double xx1 = domainAxis.valueToJava2D(x1, dataArea, xAxisLocation);
+                    double yy = rangeAxis.valueToJava2D(y, dataArea, yAxisLocation);
 
                     if (orientation == PlotOrientation.VERTICAL) {
-                        state.workingLine.setLine(xx0, yy, xx1, yy);
-                        g2.draw(state.workingLine);
+                        // clipping:
+                        if (dataArea.intersectsLine(xx0, yy, xx1, yy)) {
+                            // cramp x values:
+                            final double minX = dataArea.getMinX();
+                            final double maxX = dataArea.getMaxX();
+                            xx0 = crop(xx0, minX, maxX);
+                            xx1 = crop(xx1, minX, maxX);
 
-                        if (this.useCap) {
-                            state.workingLine.setLine(xx0, yy - adj, xx0, yy + adj);
+                            setPaintAndStroke(g2, series, item);
+
+                            state.workingLine.setLine(xx0, yy, xx1, yy);
                             g2.draw(state.workingLine);
-                            state.workingLine.setLine(xx1, yy - adj, xx1, yy + adj);
-                            g2.draw(state.workingLine);
+
+                            if (this.useCap) {
+                                state.workingLine.setLine(xx0, yy - adj, xx0, yy + adj);
+                                g2.draw(state.workingLine);
+                                state.workingLine.setLine(xx1, yy - adj, xx1, yy + adj);
+                                g2.draw(state.workingLine);
+                            }
                         }
-                    } else {  // PlotOrientation.HORIZONTAL
-                        state.workingLine.setLine(yy, xx0, yy, xx1);
-                        g2.draw(state.workingLine);
+                    } else {
+                        // PlotOrientation.HORIZONTAL
+                        // clipping:
+                        if (dataArea.intersectsLine(yy, xx0, yy, xx1)) {
+                            // cramp x values:
+                            final double minX = dataArea.getMinY();
+                            final double maxX = dataArea.getMaxY();
+                            xx0 = crop(xx0, minX, maxX);
+                            xx1 = crop(xx1, minX, maxX);
 
-                        if (this.useCap) {
-                            state.workingLine.setLine(yy - adj, xx0, yy + adj, xx0);
+                            setPaintAndStroke(g2, series, item);
+
+                            state.workingLine.setLine(yy, xx0, yy, xx1);
                             g2.draw(state.workingLine);
-                            state.workingLine.setLine(yy - adj, xx1, yy + adj, xx1);
-                            g2.draw(state.workingLine);
+
+                            if (this.useCap) {
+                                state.workingLine.setLine(yy - adj, xx0, yy + adj, xx0);
+                                g2.draw(state.workingLine);
+                                state.workingLine.setLine(yy - adj, xx1, yy + adj, xx1);
+                                g2.draw(state.workingLine);
+                            }
                         }
                     }
                 }
@@ -330,35 +340,84 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
                 final double x = ixyd.getXValue(series, item);
 
                 if (!Double.isNaN(y0) && !Double.isNaN(y1) && !Double.isNaN(x)) {
-                    final double yy0 = rangeAxis.valueToJava2D(y0, dataArea, yAxisLocation);
-                    final double yy1 = rangeAxis.valueToJava2D(y1, dataArea, yAxisLocation);
-                    final double xx = domainAxis.valueToJava2D(x, dataArea, xAxisLocation);
+                    double yy0 = rangeAxis.valueToJava2D(y0, dataArea, yAxisLocation);
+                    double yy1 = rangeAxis.valueToJava2D(y1, dataArea, yAxisLocation);
+                    double xx = domainAxis.valueToJava2D(x, dataArea, xAxisLocation);
 
                     if (orientation == PlotOrientation.VERTICAL) {
-                        state.workingLine.setLine(xx, yy0, xx, yy1);
-                        g2.draw(state.workingLine);
+                        // clipping:
+                        if (dataArea.intersectsLine(xx, yy0, xx, yy1)) {
+                            // cramp y values:
+                            final double minY = dataArea.getMinY();
+                            final double maxY = dataArea.getMaxY();
+                            yy0 = crop(yy0, minY, maxY);
+                            yy1 = crop(yy1, minY, maxY);
 
-                        if (this.useCap) {
-                            state.workingLine.setLine(xx - adj, yy0, xx + adj, yy0);
+                            setPaintAndStroke(g2, series, item);
+
+                            state.workingLine.setLine(xx, yy0, xx, yy1);
                             g2.draw(state.workingLine);
-                            state.workingLine.setLine(xx - adj, yy1, xx + adj, yy1);
-                            g2.draw(state.workingLine);
+
+                            if (this.useCap) {
+                                state.workingLine.setLine(xx - adj, yy0, xx + adj, yy0);
+                                g2.draw(state.workingLine);
+                                state.workingLine.setLine(xx - adj, yy1, xx + adj, yy1);
+                                g2.draw(state.workingLine);
+                            }
                         }
-                    } else {  // PlotOrientation.HORIZONTAL
-                        state.workingLine.setLine(yy0, xx, yy1, xx);
-                        g2.draw(state.workingLine);
+                    } else {
+                        // PlotOrientation.HORIZONTAL
+                        // clipping:
+                        if (dataArea.intersectsLine(yy0, xx, yy1, xx)) {
+                            // cramp y values:
+                            final double minY = dataArea.getMinX();
+                            final double maxY = dataArea.getMaxX();
+                            yy0 = crop(yy0, minY, maxY);
+                            yy1 = crop(yy1, minY, maxY);
 
-                        if (this.useCap) {
-                            state.workingLine.setLine(yy0, xx - adj, yy0, xx + adj);
+                            setPaintAndStroke(g2, series, item);
+
+                            state.workingLine.setLine(yy0, xx, yy1, xx);
                             g2.draw(state.workingLine);
-                            state.workingLine.setLine(yy1, xx - adj, yy1, xx + adj);
-                            g2.draw(state.workingLine);
+
+                            if (this.useCap) {
+                                state.workingLine.setLine(yy0, xx - adj, yy0, xx + adj);
+                                g2.draw(state.workingLine);
+                                state.workingLine.setLine(yy1, xx - adj, yy1, xx + adj);
+                                g2.draw(state.workingLine);
+                            }
                         }
                     }
                 }
             }
         }
         super.drawItem(g2, renderState, dataArea, info, plot, domainAxis, rangeAxis, dataset, series, item, crosshairState, pass);
+    }
+
+    private void setPaintAndStroke(final Graphics2D g2, final int series, final int item) {
+        final Paint paint = this.errorPaint;
+        final Stroke stroke = this.errorStroke;
+
+        if (paint != null) {
+            g2.setPaint(paint);
+        } else {
+            g2.setPaint(getItemPaint(series, item));
+        }
+        if (stroke != null) {
+            g2.setStroke(stroke);
+        } else {
+            g2.setStroke(getItemStroke(series, item));
+        }
+    }
+
+    private double crop(final double value, final double min, final double max) {
+        if (value < min) {
+            return min;
+        }
+        if (value > max) {
+            return max;
+        }
+        return value;
     }
 
     /**
