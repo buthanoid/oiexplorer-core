@@ -81,7 +81,7 @@ public final class PlotDefinitionFactory {
 
         /* Store defaults computing names (actually, as described in constants ) */
         for (PlotDefinition plotDefinition : presets.getPlotDefinitions()) {
-            defaults.put(plotDefinition.getName(), plotDefinition);
+            defaults.put(plotDefinition.getId(), plotDefinition);
         }
     }
 

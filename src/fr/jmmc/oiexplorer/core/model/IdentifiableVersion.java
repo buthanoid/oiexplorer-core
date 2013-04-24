@@ -67,7 +67,7 @@ public final class IdentifiableVersion implements ToStringable {
         } else if (Identifiable.class.isAssignableFrom(obj.getClass())) {
             final Identifiable other = (Identifiable) obj;
 
-            if ((this.id == null) ? (other.getName() != null) : !this.id.equals(other.getName())) {
+            if ((this.id == null) ? (other.getId() != null) : !this.id.equals(other.getId())) {
                 return false;
             }
             if (this.version != other.getVersion()) {

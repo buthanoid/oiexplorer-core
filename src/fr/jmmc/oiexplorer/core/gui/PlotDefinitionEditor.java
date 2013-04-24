@@ -17,6 +17,7 @@ import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OITable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -198,7 +199,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         plotDefNames.add(sb.substring(0, sb.length() - 2));
 
         for (PlotDefinition plotDef : PlotDefinitionFactory.getInstance().getDefaults()) {
-            plotDefNames.add(plotDef.getName());
+            plotDefNames.add("reset to preset: "+plotDef.getName());
         }
 
         plotDefinitionComboBox.setModel(new GenericListModel<String>(new ArrayList<String>(plotDefNames), true));
@@ -513,14 +514,28 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }//GEN-LAST:event_drawLinesCheckBoxActionPerformed
 
     private void plotDefinitionComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_plotDefinitionComboBoxActionPerformed
+        // this method should apply preset on current plotDef
+        
         // TODO find better solution to allow the selection of a preset with keyboard shortcup
         // until now the choice is limited to the first item
         final int idx = plotDefinitionComboBox.getSelectedIndex();
         if (idx == 0) {
             return;
         }
-
-        final String presetPlotDefId = (String) plotDefinitionComboBox.getSelectedItem();
+        
+        
+        String presetPlotDefId=null;
+        
+        Collection<PlotDefinition> presets = PlotDefinitionFactory.getInstance().getDefaults();
+        int i = 1; // first element is not a preset :(
+        for (PlotDefinition plotDefinition : presets) {
+            if(i==plotDefinitionComboBox.getSelectedIndex()){
+                presetPlotDefId=plotDefinition.getId();
+                break;
+            }
+            i++;
+        }                      
+        
 
         if (presetPlotDefId == null) {
             logger.debug("[{}] plotDefinitionComboBoxActionPerformed() event ignored : no current selection", plotId);
@@ -529,15 +544,17 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
         PlotDefinition currentPlotDef = getPlotDefinition();
 
-        // save previous name:        
-        final String plotDefName = currentPlotDef.getName();
+        // save previous id,name:        
+        final String oldPlotDefId = currentPlotDef.getId();
+        final String oldPlotDefName = currentPlotDef.getId();
 
         // init plotDef of plotCopy with preset     
         currentPlotDef.copy((PlotDefinition)PlotDefinitionFactory.getInstance().getDefault(presetPlotDefId).clone());        
-        // save previous name:        
-        currentPlotDef.setName(plotDefName);
+        // restore previous id,name:        
+        currentPlotDef.setId(oldPlotDefId);
+        currentPlotDef.setName(oldPlotDefName);
 
-        plotDefinitionComboBox.setSelectedItem(plotDefName);
+        plotDefinitionComboBox.setSelectedIndex(0);
         refreshForm(currentPlotDef, null);
         updateModel();
     }//GEN-LAST:event_plotDefinitionComboBoxActionPerformed
@@ -781,7 +798,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         switch (event.getType()) {
             case PLOT_DEFINITION_CHANGED:
                 // define id of associated plotDefinition
-                _setPlotDefId(event.getPlotDefinition().getName());
+                _setPlotDefId(event.getPlotDefinition().getId());
 
                 refreshForm(event.getPlotDefinition(), null);
                 break;
@@ -789,7 +806,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 final PlotDefinition plotDef = event.getPlot().getPlotDefinition();
 
                 // define id of associated plotDefinition
-                _setPlotDefId(plotDef.getName());
+                _setPlotDefId(plotDef.getId());
 
                 refreshForm(plotDef, event.getPlot().getSubsetDefinition().getOIFitsSubset());
                 break;

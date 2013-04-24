@@ -43,11 +43,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     /** package name for JAXB generated code */
     private final static String OIFITS_EXPLORER_MODEL_JAXB_PATH = OiDataCollection.class.getPackage().getName();
     /** Current key for SubsetDefinition */
-    public final static String CURRENT_SUBSET_DEFINITION = "CURRENT_SUBSET";
+    public final static String CURRENT_SUBSET_DEFINITION = "SUBSET_0";
     /** Current key for PlotDefinition */
-    public final static String CURRENT_PLOT_DEFINITION = "CURRENT_PLOT_DEF";
+    public final static String CURRENT_PLOT_DEFINITION = "PLOT_DEF_0";
     /** Current key for View */
-    public final static String CURRENT_VIEW = "CURRENT_VIEW";
+    public final static String CURRENT_VIEW = "PLOT_VIEW_0";
     /** Singleton pattern */
     private final static OIFitsCollectionManager instance = new OIFitsCollectionManager();
     /** Plot Definition factory singleton */
@@ -459,8 +459,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     public SubsetDefinition getCurrentSubsetDefinitionRef() {
         SubsetDefinition subsetDefinition = getSubsetDefinitionRef(CURRENT_SUBSET_DEFINITION);
         if (subsetDefinition == null) {
-            subsetDefinition = new SubsetDefinition();
-            subsetDefinition.setName(CURRENT_SUBSET_DEFINITION);
+            subsetDefinition = new SubsetDefinition();            
+            subsetDefinition.setId(CURRENT_SUBSET_DEFINITION);
 
             addSubsetDefinitionRef(subsetDefinition);
         }
@@ -681,7 +681,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         PlotDefinition plotDefinition = getPlotDefinitionRef(CURRENT_PLOT_DEFINITION);
         if (plotDefinition == null) {
             plotDefinition = new PlotDefinition();
-            plotDefinition.setName(CURRENT_PLOT_DEFINITION);
+            plotDefinition.setId(CURRENT_PLOT_DEFINITION);
 
             // HACK:
             plotDefinition.copy(plotDefFactory.getDefault(PlotDefinitionFactory.PLOT_DEFAULT));
@@ -855,7 +855,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         Plot plot = getPlotRef(CURRENT_VIEW);
         if (plot == null) {
             plot = new Plot();
-            plot.setName(CURRENT_VIEW);
+            plot.setId(CURRENT_VIEW);
 
             // HACK to define current pointers:
             plot.setSubsetDefinition(getCurrentSubsetDefinitionRef());

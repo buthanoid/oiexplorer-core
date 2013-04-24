@@ -37,7 +37,9 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
     /** Associated plot identifier */
     private String plotId = null;
 
-    /** Creates new form PlotEditor */
+    /** Creates new form PlotEditor 
+     * TODO refactor when made visible
+     */
     public PlotEditor() {
         // always bind at the beginning of the constructor (to maintain correct ordering):
         ocm.bindSubsetDefinitionListChangedEvent(this);
@@ -206,7 +208,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         // Put all subset references:
         final List<String> subsetNames = new ArrayList<String>();
         for (SubsetDefinition subset : subsetDefinitionList) {
-            subsetNames.add(subset.getName());
+            subsetNames.add(subset.getId());
         }
 
         final Object oldValue = subsetComboBox.getSelectedItem();
@@ -235,10 +237,10 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         // use identifiers to keep unique values:
         final Set<String> plotDefNames = new LinkedHashSet<String>();
         for (PlotDefinition plotDef : plotDefinitionList) {
-            plotDefNames.add(plotDef.getName());
+            plotDefNames.add(plotDef.getId());
         }
         for (PlotDefinition plotDef : PlotDefinitionFactory.getInstance().getDefaults()) {
-            plotDefNames.add(plotDef.getName());
+            plotDefNames.add(plotDef.getId());
         }
 
         final Object oldValue = plotDefinitionComboBox.getSelectedItem();
@@ -260,8 +262,8 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         logger.debug("refreshPlot: {}", plotId);
 
         if (plotRef != null) {
-            subsetComboBox.setSelectedItem((plotRef.getSubsetDefinition() != null) ? plotRef.getSubsetDefinition().getName() : null);
-            plotDefinitionComboBox.setSelectedItem((plotRef.getPlotDefinition() != null) ? plotRef.getPlotDefinition().getName() : null);
+            subsetComboBox.setSelectedItem((plotRef.getSubsetDefinition() != null) ? plotRef.getSubsetDefinition().getId() : null);
+            plotDefinitionComboBox.setSelectedItem((plotRef.getPlotDefinition() != null) ? plotRef.getPlotDefinition().getId() : null);
         }
     }
 
