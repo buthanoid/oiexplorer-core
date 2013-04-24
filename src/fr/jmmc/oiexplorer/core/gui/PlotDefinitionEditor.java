@@ -3,10 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui;
 
-import static fr.jmmc.jmcs.App.getFrame;
 import fr.jmmc.jmcs.gui.component.GenericListModel;
-import fr.jmmc.jmcs.gui.util.SwingUtils;
-import fr.jmmc.jmcs.util.CollectionUtils;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEvent;
@@ -93,7 +90,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      */
     private void postInit() {
         // start with compact form
-        extendedPanel.setVisible(false);
+        detailledToggleButtonActionPerformed(null);
+        
 
         // TODO check if it has to be done by the netbeans GUI builder ?
         xAxisEditor = new AxisEditor(this);
@@ -330,7 +328,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 8;
+        gridBagConstraints.gridx = 7;
         gridBagConstraints.gridy = 0;
         add(detailledToggleButton, gridBagConstraints);
 
@@ -341,7 +339,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridx = 8;
         gridBagConstraints.gridy = 0;
         add(drawLinesCheckBox, gridBagConstraints);
 
@@ -445,7 +443,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 7;
+        gridBagConstraints.gridx = 6;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         add(refreshButton, gridBagConstraints);
@@ -502,6 +500,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
     private void detailledToggleButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_detailledToggleButtonActionPerformed
         extendedPanel.setVisible(detailledToggleButton.isSelected());
+        drawLinesCheckBox.setVisible(detailledToggleButton.isSelected());
         revalidate();
     }//GEN-LAST:event_detailledToggleButtonActionPerformed
 
