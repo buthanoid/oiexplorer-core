@@ -199,7 +199,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         plotDefNames.add(sb.substring(0, sb.length() - 2));
 
         for (PlotDefinition plotDef : PlotDefinitionFactory.getInstance().getDefaults()) {
-            plotDefNames.add("reset to preset: "+plotDef.getName());
+            plotDefNames.add("preset: "+plotDef.getName());
         }
 
         plotDefinitionComboBox.setModel(new GenericListModel<String>(new ArrayList<String>(plotDefNames), true));
