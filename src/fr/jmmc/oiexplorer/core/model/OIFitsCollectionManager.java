@@ -134,7 +134,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         final long startTime = System.nanoTime();
 
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
-
+        
+        OIDataCollectionFileProcessor.onLoad(loadedUserCollection);
+        
         loadOIDataCollection(loadedUserCollection, checker);
 
         // after loadOIDataCollection as it calls reset():
@@ -156,11 +158,13 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         final long startTime = System.nanoTime();
 
         final OiDataCollection savedUserCollection = getUserCollection();
+        
+        OIDataCollectionFileProcessor.onSave(savedUserCollection);
 
         // TODO: may also save OIFits file copies into zip archive (xml + OIFits files) ??
 
         JAXBUtils.saveObject(file, savedUserCollection, this.jf);
-
+                
         setOiFitsCollectionFile(file);
 
         logger.info("saveOIFitsCollection: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
