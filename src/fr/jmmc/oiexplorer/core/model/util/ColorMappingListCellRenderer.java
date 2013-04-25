@@ -51,7 +51,7 @@ public final class ColorMappingListCellRenderer {
             if (value == null) {
                 val = null;
             } else if (value instanceof ColorMapping) {                
-                val = ColorMapping.displayValue((ColorMapping) value);
+                val = displayValue((ColorMapping) value);
             } else {
                 val = value.getClass().getName();
             }
@@ -66,4 +66,25 @@ public final class ColorMappingListCellRenderer {
     private ColorMappingListCellRenderer() {
         // utility class
     }
+         
+    
+    /**
+     * Return a textual value (e.g. to fill comboboxes ) for the given color mapping.
+     * @param c input color mapping 
+     * @return the value to be displayed
+     */
+    public static String displayValue(ColorMapping c) {
+        switch (c) {
+            case WAVELENGTH_RANGE:
+                return "effective wave length";
+            case STATION_INDEX:
+                return "baseline or triplet";
+            case CONFIGURATION:
+                return "station configuration";
+            case OBSERVATION_DATE:
+                return "observation date";
+        }
+        return null;
+    }
+    
 }
