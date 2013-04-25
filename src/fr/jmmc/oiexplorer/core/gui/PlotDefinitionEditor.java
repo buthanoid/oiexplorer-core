@@ -94,7 +94,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         // start with compact form
         detailledToggleButtonActionPerformed(null);                
 
-        colorMappingComboBox.setRenderer(ColorMappingListCellRenderer.getListCellRenderer());
+        //colorMappingComboBox.setRenderer(ColorMappingListCellRenderer.getListCellRenderer());
         
         // TODO check if it has to be done by the netbeans GUI builder ?
         xAxisEditor = new AxisEditor(this);

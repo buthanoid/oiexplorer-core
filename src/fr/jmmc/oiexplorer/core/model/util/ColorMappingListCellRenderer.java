@@ -50,9 +50,8 @@ public final class ColorMappingListCellRenderer {
             final String val;
             if (value == null) {
                 val = null;
-            } else if (value instanceof ColorMapping) {
-                final ColorMapping colorMapping = (ColorMapping) value;
-                val = colorMapping.value();
+            } else if (value instanceof ColorMapping) {                
+                val = ColorMapping.displayValue((ColorMapping) value);
             } else {
                 val = value.getClass().getName();
             }
