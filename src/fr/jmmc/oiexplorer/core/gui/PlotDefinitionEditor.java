@@ -13,6 +13,7 @@ import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.ColorMapping;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
+import fr.jmmc.oiexplorer.core.model.util.ColorMappingListCellRenderer;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OITable;
@@ -91,9 +92,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      */
     private void postInit() {
         // start with compact form
-        detailledToggleButtonActionPerformed(null);
-        
+        detailledToggleButtonActionPerformed(null);                
 
+        colorMappingComboBox.setRenderer(ColorMappingListCellRenderer.getListCellRenderer());
+        
         // TODO check if it has to be done by the netbeans GUI builder ?
         xAxisEditor = new AxisEditor(this);
         xAxisPanel.add(xAxisEditor);
