@@ -616,7 +616,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }
 
     /** 
-     * Request a plotDefinitionUpdate to the OIFitsCollectionManager     
+     * Update current plotDefinition 
+     * and request a plotDefinitionUpdate to the OIFitsCollectionManager.    
      */
     public void updateModel() {
         logger.debug("updateModel notify = {}", notify);
