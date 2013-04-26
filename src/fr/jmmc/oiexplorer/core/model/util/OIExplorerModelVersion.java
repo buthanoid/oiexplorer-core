@@ -9,43 +9,51 @@ package fr.jmmc.oiexplorer.core.model.util;
  */
 public enum OIExplorerModelVersion {
 
-  /** initial revision */
-  InitialRevision(2012.4f),
-  /** december 2030 revision : target IDs and user informations (calibrators) */
-  April2013(2013.4f);
-  
-  /* members */
-  /** version as a float value */
-  private final float version;
+    /** initial revision */
+    InitialRevision(2012.4f),
+    /** OIFitsExplorer 0.1 (id / name) */
+    April2013(2013.4f);
 
-  /**
-   * Protected constructor
-   * @param version as a float value
-   */
-  OIExplorerModelVersion(final float version) {
-    this.version = version;
-  }
-
-  /**
-   * Return the version as a float value
-   * @return version as a float value
-   */
-  public float getVersion() {
-    return this.version;
-  }
-
-  /**
-   * Return the OIExplorerModelVersion corresponding to the given version.
-   * It returns the initial revision if there is no matching revision
-   * @param version version as a float value
-   * @return OIExplorerModelVersion
-   */
-  public static OIExplorerModelVersion valueOf(final float version) {
-    for (OIExplorerModelVersion rev : OIExplorerModelVersion.values()) {
-      if (rev.getVersion() == version) {
-        return rev;
-      }
+    /**
+     * Return the current revision of the OIExplorer DM
+     * @return Current revision of the OIExplorer DM
+     */
+    public static OIExplorerModelVersion getCurrentVersion() {
+        return April2013;
     }
-    return InitialRevision;
-  }
+
+    /* members */
+    /** version as a float value */
+    private final float version;
+
+    /**
+     * Protected constructor
+     * @param version as a float value
+     */
+    OIExplorerModelVersion(final float version) {
+        this.version = version;
+    }
+
+    /**
+     * Return the version as a float value
+     * @return version as a float value
+     */
+    public float getVersion() {
+        return this.version;
+    }
+
+    /**
+     * Return the OIExplorerModelVersion corresponding to the given version.
+     * It returns the initial revision if there is no matching revision
+     * @param version version as a float value
+     * @return OIExplorerModelVersion
+     */
+    public static OIExplorerModelVersion valueOf(final float version) {
+        for (OIExplorerModelVersion rev : OIExplorerModelVersion.values()) {
+            if (rev.getVersion() == version) {
+                return rev;
+            }
+        }
+        return InitialRevision;
+    }
 }

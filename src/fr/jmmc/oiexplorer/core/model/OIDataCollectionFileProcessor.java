@@ -5,10 +5,6 @@ package fr.jmmc.oiexplorer.core.model;
 
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
 import fr.jmmc.oiexplorer.core.model.oi.OiDataCollection;
-import fr.jmmc.oiexplorer.core.model.oi.Plot;
-import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
-import fr.jmmc.oiexplorer.core.model.oi.TableUID;
-import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.util.OIExplorerModelVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +17,6 @@ public final class OIDataCollectionFileProcessor {
 
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(OIDataCollectionFileProcessor.class.getName());
-    /** Current revision of the OIExplorer DM (last enum value) */
-    //public final static OIExplorerModelVersion CURRENT_REVISION = OIExplorerModelVersion.values()[OIExplorerModelVersion.values().length];
-    public final static OIExplorerModelVersion CURRENT_REVISION = OIExplorerModelVersion.April2013;
 
     /**
      * Forbidden constructor
@@ -49,7 +42,7 @@ public final class OIDataCollectionFileProcessor {
         logger.debug("revision = {}", revision);
 
         // convert ?
-        if (revision != CURRENT_REVISION) {
+        if (revision != OIExplorerModelVersion.getCurrentVersion()) {
             // model conversion is needed :
             convertModel(collection, revision);
         }
@@ -65,7 +58,7 @@ public final class OIDataCollectionFileProcessor {
     public static void onSave(final OiDataCollection collection) {
         logger.debug("onSave: {}", collection);
 
-        collection.setSchemaVersion(CURRENT_REVISION.getVersion());
+        collection.setSchemaVersion(OIExplorerModelVersion.getCurrentVersion().getVersion());
 
         // TODO check and update references :
         //collection.checkReferences();
@@ -79,7 +72,7 @@ public final class OIDataCollectionFileProcessor {
     private static void convertModel(final OiDataCollection collection, final OIExplorerModelVersion revision) {
 
         if (revision.getVersion() < OIExplorerModelVersion.April2013.getVersion()) {
-            logger.info("convert collection model from {} to {}", revision, CURRENT_REVISION);
+            logger.info("convert collection model from {} to {}", revision, OIExplorerModelVersion.getCurrentVersion());
 
             // update model to April 2013 version:
             // force to generate identifiers (was name previously) for input data 
