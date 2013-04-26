@@ -4,6 +4,7 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.GenericListModel;
+import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
 import java.util.LinkedList;
@@ -24,7 +25,8 @@ public class AxisEditor extends javax.swing.JPanel {
     /** Edited axis reference */
     private Axis axisToEdit;
     /** List of available choices */
-    private List<String> choices = new LinkedList<String>();
+    //private List<String> choices = new LinkedList<String>();
+    GenericListModel<String> listModel;
     /** Flag notification of associated plotDefinitionEditor */
     private boolean notify = true;
 
@@ -33,14 +35,15 @@ public class AxisEditor extends javax.swing.JPanel {
      * Use setAxis() to change model to edit.
      * @param parent PlotDefinitionEditor to be notified of changes.
      */
-    public AxisEditor(PlotDefinitionEditor parent) {
+    public AxisEditor(final PlotDefinitionEditor parent) {
         initComponents();
         parentToNotify = parent;
-        GenericListModel<String> listModel = new GenericListModel<String>(choices, true);
+        //listModel = new GenericListModel<String>(choices, true);
+        listModel = new GenericListModel<String>(new LinkedList<String>(), true);
         nameComboBox.setModel(listModel);
 
         // hidden until request and valid code to get a correct behaviour
-        JComponent[] components = new JComponent[]{ plotErrorCheckBox ,rangeCheckBox, minSpinner, maxSpinner, includeZeroCheckBox };        
+        JComponent[] components = new JComponent[]{plotErrorCheckBox, rangeCheckBox, minSpinner, maxSpinner, includeZeroCheckBox};
         for (JComponent c : components) {
             c.setVisible(c.isEnabled());
         }
@@ -59,7 +62,7 @@ public class AxisEditor extends javax.swing.JPanel {
      * @param b Boolean object to read
      * @return value of given object or false if given object is null
      * */
-    private boolean getData(Boolean b) {
+    private boolean getData(final Boolean b) {
         if (b == null) {
             return false;
         } else {
@@ -71,17 +74,16 @@ public class AxisEditor extends javax.swing.JPanel {
      * 
      * @param axis used to initialize widget states
      */
-    public void setAxis(Axis axis, List<String> axisChoices) {
+    public void setAxis(final Axis axis, final List<String> axisChoices) {
         axisToEdit = axis;
+        listModel.clear();
         if (axis == null) {
             // TODO push in a reset state
             return;
         }
         try {
-            notify = false;
-
-            choices.clear();
-            choices.addAll(axisChoices);
+            notify = false;            
+            listModel.add(axisChoices);
             nameComboBox.setSelectedItem(axis.getName());
 
             includeZeroCheckBox.setSelected(axis.isIncludeZero());
