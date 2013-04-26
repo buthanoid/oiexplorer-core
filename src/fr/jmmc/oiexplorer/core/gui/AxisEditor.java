@@ -4,10 +4,9 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.GenericListModel;
-import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.SpinnerNumberModel;
@@ -19,14 +18,16 @@ import javax.swing.SpinnerNumberModel;
  */
 public class AxisEditor extends javax.swing.JPanel {
 
+    /** default serial UID for Serializable interface */
+    private static final long serialVersionUID = 1L;
+
     /* members */
     /** PlotDefinitionEditor to notify in case of modification */
     private final PlotDefinitionEditor parentToNotify;
     /** Edited axis reference */
     private Axis axisToEdit;
-    /** List of available choices */
-    //private List<String> choices = new LinkedList<String>();
-    GenericListModel<String> listModel;
+    /** List of available axis names */
+    private final GenericListModel<String> nameComboBoxModel;
     /** Flag notification of associated plotDefinitionEditor */
     private boolean notify = true;
 
@@ -38,9 +39,8 @@ public class AxisEditor extends javax.swing.JPanel {
     public AxisEditor(final PlotDefinitionEditor parent) {
         initComponents();
         parentToNotify = parent;
-        //listModel = new GenericListModel<String>(choices, true);
-        listModel = new GenericListModel<String>(new LinkedList<String>(), true);
-        nameComboBox.setModel(listModel);
+        nameComboBoxModel = new GenericListModel<String>(new ArrayList<String>(25), true);
+        nameComboBox.setModel(nameComboBoxModel);
 
         // hidden until request and valid code to get a correct behaviour
         JComponent[] components = new JComponent[]{plotErrorCheckBox, rangeCheckBox, minSpinner, maxSpinner, includeZeroCheckBox};
@@ -56,6 +56,7 @@ public class AxisEditor extends javax.swing.JPanel {
     public AxisEditor() {
         initComponents();
         parentToNotify = null;
+        nameComboBoxModel = null;
     }
 
     /** Helper that return the value of given Boolean an false it the given value is null
@@ -76,14 +77,14 @@ public class AxisEditor extends javax.swing.JPanel {
      */
     public void setAxis(final Axis axis, final List<String> axisChoices) {
         axisToEdit = axis;
-        listModel.clear();
+        nameComboBoxModel.clear();
         if (axis == null) {
             // TODO push in a reset state
             return;
         }
         try {
-            notify = false;            
-            listModel.add(axisChoices);
+            notify = false;
+            nameComboBoxModel.add(axisChoices);
             nameComboBox.setSelectedItem(axis.getName());
 
             includeZeroCheckBox.setSelected(axis.isIncludeZero());
