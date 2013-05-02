@@ -70,13 +70,13 @@ public class ChartUtils {
     /** The default small font for annotation texts */
     public static final Font SMALL_TEXT_ANNOTATION_FONT = getFont(8);
     /** default draw stroke */
-    public static final Stroke DEFAULT_STROKE = new BasicStroke(1.0f);
+    public static final BasicStroke DEFAULT_STROKE = new BasicStroke(1.0f);
     /** thin draw stroke */
-    public static final Stroke THIN_STROKE = new BasicStroke(0.5f);
+    public static final BasicStroke THIN_STROKE = new BasicStroke(0.5f);
     /** larger draw stroke */
-    public static final Stroke LARGE_STROKE = new BasicStroke(1.25f);
+    public static final BasicStroke LARGE_STROKE = new BasicStroke(1.25f);
     /** larger draw stroke */
-    public static final Stroke VERY_LARGE_STROKE = new BasicStroke(1.75f);
+    public static final BasicStroke VERY_LARGE_STROKE = new BasicStroke(1.75f);
     /** dotted stroke */
     public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 4.0f, new float[]{4.0f}, 0.0f);
     /** zero insets */
@@ -458,7 +458,6 @@ public class ChartUtils {
         // only lines are rendered :
         final FastXYErrorRenderer renderer = new FastXYErrorRenderer();
 
-        // customized XYPlot to have a square data area :
         final XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
 
         plot.setOrientation(orientation);
