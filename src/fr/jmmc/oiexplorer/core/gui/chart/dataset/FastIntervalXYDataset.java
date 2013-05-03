@@ -48,12 +48,15 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
     }
 
     /**
-     * Ensure capacity
-     * @param size new size
+     * Increases the capacity of the list of series, if
+     * necessary, to ensure that it can hold at least the number of elements
+     * specified by the minimum capacity argument.
+     *
+     * @param   minCapacity   the desired minimum capacity
      */
-    public void ensureCapacity(final int size) {
+    public void ensureCapacity(final int minCapacity) {
         // no way to ensure capacity in map (see HashMap.resize package visible)
-        this.seriesList.ensureCapacity(size);
+        this.seriesList.ensureCapacity(minCapacity);
     }
 
     /**
