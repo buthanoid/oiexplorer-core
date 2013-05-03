@@ -172,7 +172,7 @@ public final class FastXYBubbleRenderer extends AbstractXYItemRenderer
 
             if (orientation == PlotOrientation.VERTICAL) {
                 circle.setFrame(transX - 0.5d * transDomain, transY - 0.5d * transRange, transDomain, transRange);
-            } else if (orientation == PlotOrientation.HORIZONTAL) {
+            } else {
                 circle.setFrame(transY - 0.5d * transRange, transX - 0.5d * transDomain, transRange, transDomain);
             }
 
@@ -187,7 +187,7 @@ public final class FastXYBubbleRenderer extends AbstractXYItemRenderer
                 if (isItemLabelVisible(series, item)) {
                     if (orientation == PlotOrientation.VERTICAL) {
                         drawItemLabel(g2, orientation, dataset, series, item, transX, transY, false);
-                    } else if (orientation == PlotOrientation.HORIZONTAL) {
+                    } else {
                         drawItemLabel(g2, orientation, dataset, series, item, transY, transX, false);
                     }
                 }
