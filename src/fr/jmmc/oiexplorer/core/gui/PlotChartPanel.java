@@ -40,8 +40,9 @@ import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import java.awt.Color;
 import java.awt.Point;
+import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.Shape;
-import java.awt.geom.GeneralPath;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.IndexColorModel;
@@ -148,7 +149,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         if (logger.isDebugEnabled()) {
             logger.debug("dispose: {}", ObjectUtils.getObjectInfo(this));
         }
-
         ocm.unbind(this);
     }
 
@@ -702,9 +702,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             removeAllSubPlots();
 
-            // reset dataset:
-            this.xyPlotPlot1.setDataset(null);
-            this.xyPlotPlot2.setDataset(null);
+            // reset plots:
+            resetXYPlot(this.xyPlotPlot1);
+            resetXYPlot(this.xyPlotPlot2);
 
             this.chartPanel.setVisible(isHasData());
 
@@ -930,8 +930,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         boolean xUseLog = false;
         String xUnit = null;
 
-        // reset dataset anyway (so free memory):
-        this.xyPlotPlot1.setDataset(null);
+        // reset plot anyway (so free memory):
+        resetXYPlot(this.xyPlotPlot1);
 
         if (!plotDef.getYAxes().isEmpty()) {
 
@@ -1047,7 +1047,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         label = yMeta.getName();
                         if (yUnit != null) {
                             label += " (" + yUnit + ")";
-                        } else if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
+                        } else if (yMeta.getUnits() != Units.NO_UNIT) {
                             label += " (" + yMeta.getUnits().getStandardRepresentation() + ")";
                         }
                         this.xyPlotPlot1.getRangeAxis().setLabel(label);
@@ -1067,17 +1067,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     // update plot's renderer before dataset (avoid notify events):
                     final FastXYErrorRenderer renderer = (FastXYErrorRenderer) this.xyPlotPlot1.getRenderer();
 
-                    // TODO: adjust renderer settings per Serie (color, shape ...) !
-
                     // enable/disable X error rendering (performance):
-                    renderer.setDrawXError(info.xAxisInfo.hasDataError);
+                    renderer.setDrawXError(info.xAxisInfo.hasDataErrorX);
 
                     // enable/disable Y error rendering (performance):
-                    renderer.setDrawYError(info.yAxisInfo.hasDataError);
+                    renderer.setDrawYError(info.yAxisInfo.hasDataErrorY);
 
                     // use deprecated method but defines shape once for ALL series (performance):
-                    // set shape depending on error (triangle or square):
-                    renderer.setBaseShape(getPointShape(!info.hasDataFlag), false);
+                    // define base shape as valid point (fallback):
+                    renderer.setBaseShape(shapePointValid, false);
 
                     renderer.setLinesVisible(plotDef.isDrawLine());
 
@@ -1096,8 +1094,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
 
-        // reset dataset anyway (so free memory):
-        this.xyPlotPlot2.setDataset(null);
+        // reset plot anyway (so free memory):
+        resetXYPlot(this.xyPlotPlot2);
 
         if (plotDef.getYAxes().size() > 1) {
             if (oiFitsSubset.getNbOiTables() > 0) {
@@ -1212,7 +1210,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         label = yMeta.getName();
                         if (yUnit != null) {
                             label += " (" + yUnit + ")";
-                        } else if (yMeta != null && yMeta.getUnits() != Units.NO_UNIT) {
+                        } else if (yMeta.getUnits() != Units.NO_UNIT) {
                             label += " (" + yMeta.getUnits().getStandardRepresentation() + ")";
                         }
                         this.xyPlotPlot2.getRangeAxis().setLabel(label);
@@ -1232,19 +1230,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     // update plot's renderer before dataset (avoid notify events):
                     final FastXYErrorRenderer renderer = (FastXYErrorRenderer) this.xyPlotPlot2.getRenderer();
 
-                    // TODO: adjust renderer settings per Serie (color, shape ...) !
-
                     // enable/disable X error rendering (performance):
-                    renderer.setDrawXError(info.xAxisInfo.hasDataError);
+                    renderer.setDrawXError(info.xAxisInfo.hasDataErrorX);
 
                     // enable/disable Y error rendering (performance):
-                    renderer.setDrawYError(info.yAxisInfo.hasDataError);
+                    renderer.setDrawYError(info.yAxisInfo.hasDataErrorY);
 
                     // use deprecated method but defines shape once for ALL series (performance):
-                    // set shape depending on error (triangle or square):
-/*                    
-                     renderer.setBaseShape(getPointShape(!info.hasDataFlag), false);
-                     */
+                    // define base shape as valid point (fallback):
+                    renderer.setBaseShape(shapePointValid, false);
+
                     renderer.setLinesVisible(plotDef.isDrawLine());
 
                     // update plot's dataset at the end (notify events):
@@ -1337,7 +1332,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             label = xMeta.getName();
             if (xUnit != null) {
                 label += " (" + xUnit + ")";
-            } else if (xMeta != null && xMeta.getUnits() != Units.NO_UNIT) {
+            } else if (xMeta.getUnits() != Units.NO_UNIT) {
                 label += " (" + xMeta.getUnits().getStandardRepresentation() + ")";
             }
             this.combinedXYPlot.getDomainAxis().setLabel(label);
@@ -1395,6 +1390,19 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // TODO: use ColorScale to paint an horizontal wavelength color scale
 
         this.combinedXYPlot.setFixedLegendItems(legendCollection);
+    }
+
+    private static void resetXYPlot(final XYPlot plot) {
+        // reset plot dataset anyway (so free memory):
+        plot.setDataset(null);
+
+        // TODO: adjust renderer settings per Serie (color, shape ...) per series and item at higher level using dataset fields
+        final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
+        // reset colors :
+        renderer.clearSeriesPaints(false);
+
+        // reset item shapes:
+        renderer.clearItemShapes();
     }
 
     /**
@@ -1643,9 +1651,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // TODO: adjust renderer settings per Serie (color, shape ...) per series and item at higher level using dataset fields
         final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
 
-        // clear item shapes:
-//        renderer.clearItemShapes();
-
         // try to fill dataset:
 
         // avoid loop on wavelength if no 2D data:
@@ -1655,8 +1660,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             logger.debug("nbSeries to create : {}", nStaIndexes * nWaveChannels);
         }
 
-        // prepare dataset:
-        dataset.ensureCapacity(seriesCount + nStaIndexes * nWaveChannels);
+        // Prepare data models to contain a lot of series:
+        final int maxSeriesCount = seriesCount + nStaIndexes * nWaveChannels;
+        dataset.ensureCapacity(maxSeriesCount);
+        renderer.ensureCapacity(maxSeriesCount);
 
         // flag indicating that this table has data to plot:
         boolean hasPlotData = false;
@@ -1741,14 +1748,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     isFlag = false;
                     if (checkFlaggedData && flags[i][j]) {
-                        isFlag = true;
                         if (skipFlaggedData) {
                             // data point is flagged so skip it:
                             nSkipFlag++;
                             continue;
-                        } else {
-                            hasDataFlag = true;
                         }
+                        hasDataFlag = true;
+                        isFlag = true;
                     }
 
                     if (checkTargetId) {
@@ -1899,8 +1905,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                 }
                             }
 
+
+                            // TODO: adjust renderer settings per Serie (color, shape, shape size, outline ....) !
+                            // ~ new custom axis (color, size, shape) 
+
                             // Define item shape:
-                            itemShapes[idx] = getPointShape(isYErrValid && !isFlag);
+                            // invalid shape if flagged or invalid error value
+                            itemShapes[idx] = getPointShape(isYErrValid && isXErrValid && !isFlag);
 
                             // increment number of valid data in serie arrays:
                             idx++;
@@ -1954,8 +1965,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         renderer.setSeriesPaint(seriesCount, mappingWaveLengthColors[j], false);
                     }
 
-                    // TODO: validate:
-//                    renderer.setItemShapes(seriesCount, itemShapes);
+                    // define shape per item in serie:
+                    renderer.setItemShapes(seriesCount, itemShapes);
 
                     seriesCount++;
 
@@ -2009,7 +2020,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         axisInfo.columnMeta = xMeta;
         axisInfo.unit = (doScaleX) ? xConverter.getUnit() : null;
         axisInfo.useLog = xUseLog;
-        axisInfo.hasDataError |= hasDataErrorX; // logical OR
+        axisInfo.hasDataErrorX |= hasDataErrorX; // logical OR
 
         axisInfo = info.yAxisInfo;
         if (axisInfo.dataRange != null) {
@@ -2021,7 +2032,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         axisInfo.columnMeta = yMeta;
         axisInfo.unit = (doScaleY) ? yConverter.getUnit() : null;
         axisInfo.useLog = yUseLog;
-        axisInfo.hasDataError |= hasDataErrorY; // logical OR
+        axisInfo.hasDataErrorY |= hasDataErrorY; // logical OR
     }
 
     private double[] extract(final double[] input, final int len) {
@@ -2093,15 +2104,47 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private static Shape getPointShape(final boolean valid) {
         if (shapePointValid == null) {
             // initialize shapes:
-            shapePointValid = new Rectangle2D.Double(-3d, -3d, 6d, 6d);
+            shapePointValid = new Rectangle(-3, -3, 6, 6) {
+                /** default serial UID for Serializable interface */
+                private static final long serialVersionUID = 1L;
+
+                /**
+                 * Overriden to return the same Rectangle2D instance
+                 */
+                @Override
+                public Rectangle2D getBounds2D() {
+                    return this;
+                }
+            };
 
             // equilateral triangle centered on its barycenter:
-            final GeneralPath triangle = new GeneralPath();
+            final int npoints = 4;
+            final int[] xpoints = new int[npoints];
+            final int[] ypoints = new int[npoints];
+            xpoints[0] = 0;
+            ypoints[0] = -4;
+            xpoints[1] = 3;
+            ypoints[1] = 2;
+            xpoints[2] = -3;
+            ypoints[2] = 2;
+            xpoints[3] = xpoints[0];
+            ypoints[3] = ypoints[0];
 
-            triangle.moveTo(0f, -4f);
-            triangle.lineTo(3f, 2f);
-            triangle.lineTo(-3f, 2f);
-            triangle.lineTo(0f, -4f);
+            final Polygon triangle = new Polygon(xpoints, ypoints, npoints) {
+                /** default serial UID for Serializable interface */
+                private static final long serialVersionUID = 1L;
+
+                /**
+                 * Overriden to return the cached bounds instance
+                 */
+                @Override
+                public Rectangle2D getBounds2D() {
+                    if (bounds != null) {
+                        return bounds;
+                    }
+                    return super.getBounds2D();
+                }
+            };
 
             shapePointInvalid = triangle;
         }
@@ -2395,8 +2438,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         String unit = null;
         /** is log axis */
         boolean useLog = false;
-        /** flag indicating that the dataset has data with error */
-        boolean hasDataError = false;
+        /** flag indicating that the dataset has data with error on X axis */
+        boolean hasDataErrorX = false;
+        /** flag indicating that the dataset has data with error on Y axis */
+        boolean hasDataErrorY = false;
     }
 
     /*
