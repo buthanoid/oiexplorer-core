@@ -871,7 +871,9 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
             // add an entity for the item, but only if it falls within the data area...
             if (entities != null && isPointInRect(dataArea, xx, yy)) {
                 // Note: entities are disabled for performance !
-                final Rectangle2D entityArea = shape.getBounds2D(); // may be slow
+                
+                // Warning: may be slow depending on the concrete Shape#getBounds2D() implementation:
+                final Rectangle2D entityArea = shape.getBounds2D();
 
                 if (orientation == PlotOrientation.HORIZONTAL) {
                     entityArea.setRect(transY1, transX1, entityArea.getWidth(), entityArea.getHeight());
