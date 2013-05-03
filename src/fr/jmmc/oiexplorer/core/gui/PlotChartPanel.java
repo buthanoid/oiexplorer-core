@@ -1019,8 +1019,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             minY -= marginY;
                             maxY += marginY;
                         } else {
-                            minY -= minY * MARGIN_PERCENTS;
-                            maxY += maxY * MARGIN_PERCENTS;
+                            minY -= Math.abs(minY) * MARGIN_PERCENTS;
+                            maxY += Math.abs(maxY) * MARGIN_PERCENTS;
                         }
                         if (maxY == minY) {
                             maxY = minY + 1d;
@@ -1182,8 +1182,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             minY -= marginY;
                             maxY += marginY;
                         } else {
-                            minY -= minY * MARGIN_PERCENTS;
-                            maxY += maxY * MARGIN_PERCENTS;
+                            minY -= Math.abs(minY) * MARGIN_PERCENTS;
+                            maxY += Math.abs(maxY) * MARGIN_PERCENTS;
                         }
                         if (maxY == minY) {
                             maxY = minY + 1d;
@@ -1291,20 +1291,24 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         } else {
             final double marginX = (maxX - minX) * MARGIN_PERCENTS;
             if (marginX > 0d) {
-
                 if (plotDef.getXAxis().isIncludeZero()) {
                     if (minX > 0d) {
                         minX = 0d;
+                        maxX += marginX;
+                    } else if (maxX < 0d) {
+                        minX -= marginX;
+                        maxX = 0d;
+                    } else {
+                        minX -= marginX;
+                        maxX += marginX;
                     }
-                    maxX += marginX;
                 } else {
                     minX -= marginX;
                     maxX += marginX;
                 }
-
             } else {
-                minX -= minX * MARGIN_PERCENTS;
-                maxX += maxX * MARGIN_PERCENTS;
+                minX -= Math.abs(minX) * MARGIN_PERCENTS;
+                maxX += Math.abs(maxX) * MARGIN_PERCENTS;
             }
             if (maxX == minX) {
                 maxX = minX + 1d;
