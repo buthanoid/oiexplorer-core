@@ -8,8 +8,8 @@ import java.awt.Paint;
 import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.GeneralPath;
 import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -18,7 +18,6 @@ import java.io.Serializable;
 import org.jfree.chart.LegendItem;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.entity.EntityCollection;
-import org.jfree.chart.event.RendererChangeEvent;
 import org.jfree.chart.plot.CrosshairState;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.PlotRenderingInfo;
@@ -33,10 +32,6 @@ import org.jfree.util.ObjectUtilities;
 import org.jfree.util.PublicCloneable;
 import org.jfree.util.ShapeUtilities;
 
-/**
- *
- * @author bourgesl
- */
 /**
  * A renderer that connects data points with lines and/or draws shapes at each
  * data point.  This renderer is designed for use with the {@link XYPlot}
@@ -53,6 +48,8 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
 
     /** For serialization. */
     private static final long serialVersionUID = -7435246895986425885L;
+    /** flag to test shape intersection or only data point vs data area */
+    private static boolean useShapeIntersection = false;
     /**
      * A flag that controls whether or not lines are visible for ALL series.
      */
@@ -84,6 +81,10 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * path.
      */
     private boolean drawSeriesLineAsPath;
+    /** item shapes list */
+    private final FastItemShapesList itemShapesList;
+    /** The paint list. */
+    private final FastPaintList paintList;
 
     /**
      * Creates a new renderer with both lines and shapes visible.
@@ -112,6 +113,22 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         // default, not outline paint
 
         this.drawSeriesLineAsPath = false;
+
+        // paint and shape lists:
+        paintList = new FastPaintList();
+        itemShapesList = new FastItemShapesList();
+    }
+
+    /**
+     * Increases the capacity of the paint and item shapes lists, if
+     * necessary, to ensure that it can hold at least the number of elements
+     * specified by the minimum capacity argument.
+     *
+     * @param   minCapacity   the desired minimum capacity
+     */
+    public void ensureCapacity(final int minCapacity) {
+        paintList.ensureCapacity(minCapacity);
+        itemShapesList.ensureCapacity(minCapacity);
     }
 
     /**
@@ -389,10 +406,10 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * information between calls to the drawItem() method for a single chart
      * drawing.
      */
-    public static class State extends XYItemRendererState {
+    protected static class State extends XYItemRendererState {
 
         /** The path for the current series. */
-        GeneralPath seriesPath;
+        Path2D.Double seriesPath;
         /**
          * A flag that indicates if the last (x, y) point was 'good'
          * (non-null).
@@ -404,7 +421,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
          *
          * @param info  the plot rendering info.
          */
-        public State(PlotRenderingInfo info) {
+        protected State(PlotRenderingInfo info) {
             super(info);
         }
 
@@ -441,7 +458,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
          */
         @Override
         public void startSeriesPass(XYDataset dataset, int series,
-                int firstItem, int lastItem, int pass, int passCount) {
+                                    int firstItem, int lastItem, int pass, int passCount) {
             this.seriesPath.reset();
             this.lastPointGood = false;
             super.startSeriesPass(dataset, series, firstItem, lastItem, pass, passCount);
@@ -472,13 +489,13 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      */
     @Override
     public XYItemRendererState initialise(Graphics2D g2,
-            Rectangle2D dataArea,
-            XYPlot plot,
-            XYDataset data,
-            PlotRenderingInfo info) {
+                                          Rectangle2D dataArea,
+                                          XYPlot plot,
+                                          XYDataset data,
+                                          PlotRenderingInfo info) {
 
         final FastXYLineAndShapeRenderer.State state = new FastXYLineAndShapeRenderer.State(info);
-        state.seriesPath = new GeneralPath();
+        state.seriesPath = new Path2D.Double();
 
         // not very efficient with the FastIntervalXYDataset:
         state.setProcessVisibleItemsOnly(false);
@@ -510,17 +527,17 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      */
     @Override
     public void drawItem(Graphics2D g2,
-            XYItemRendererState state,
-            Rectangle2D dataArea,
-            PlotRenderingInfo info,
-            XYPlot plot,
-            ValueAxis domainAxis,
-            ValueAxis rangeAxis,
-            XYDataset dataset,
-            int series,
-            int item,
-            CrosshairState crosshairState,
-            int pass) {
+                         XYItemRendererState state,
+                         Rectangle2D dataArea,
+                         PlotRenderingInfo info,
+                         XYPlot plot,
+                         ValueAxis domainAxis,
+                         ValueAxis rangeAxis,
+                         XYDataset dataset,
+                         int series,
+                         int item,
+                         CrosshairState crosshairState,
+                         int pass) {
 
         // do nothing if item is not visible
         if (!getItemVisible(series, item)) {
@@ -593,15 +610,15 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param item  the item index (zero-based).
      */
     protected void drawPrimaryLine(FastXYLineAndShapeRenderer.State state,
-            Graphics2D g2,
-            XYPlot plot,
-            XYDataset dataset,
-            int pass,
-            int series,
-            int item,
-            ValueAxis domainAxis,
-            ValueAxis rangeAxis,
-            Rectangle2D dataArea) {
+                                   Graphics2D g2,
+                                   XYPlot plot,
+                                   XYDataset dataset,
+                                   int pass,
+                                   int series,
+                                   int item,
+                                   ValueAxis domainAxis,
+                                   ValueAxis rangeAxis,
+                                   Rectangle2D dataArea) {
         if (item == 0) {
             return;
         }
@@ -637,10 +654,11 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         PlotOrientation orientation = plot.getOrientation();
         if (orientation == PlotOrientation.HORIZONTAL) {
             state.workingLine.setLine(transY0, transX0, transY1, transX1);
-        } else if (orientation == PlotOrientation.VERTICAL) {
+        } else {
             state.workingLine.setLine(transX0, transY0, transX1, transY1);
         }
 
+        // clipping checks:
         if (state.workingLine.intersects(dataArea)) {
             drawFirstPassShape(g2, pass, series, item, state.workingLine);
         }
@@ -680,14 +698,14 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param dataArea  the area within which the data is being drawn.
      */
     protected void drawPrimaryLineAsPath(XYItemRendererState state,
-            Graphics2D g2, XYPlot plot,
-            XYDataset dataset,
-            int pass,
-            int series,
-            int item,
-            ValueAxis domainAxis,
-            ValueAxis rangeAxis,
-            Rectangle2D dataArea) {
+                                         Graphics2D g2, XYPlot plot,
+                                         XYDataset dataset,
+                                         int pass,
+                                         int series,
+                                         int item,
+                                         ValueAxis domainAxis,
+                                         ValueAxis rangeAxis,
+                                         Rectangle2D dataArea) {
 
 
         RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
@@ -703,12 +721,11 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
 
         // update path to reflect latest point
         if (!Double.isNaN(transX1) && !Double.isNaN(transY1)) {
-            float x = (float) transX1;
-            float y = (float) transY1;
-            PlotOrientation orientation = plot.getOrientation();
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                x = (float) transY1;
-                y = (float) transX1;
+            double x = transX1;
+            double y = transY1;
+            if (plot.getOrientation() == PlotOrientation.HORIZONTAL) {
+                x = transY1;
+                y = transX1;
             }
             if (s.isLastPointGood()) {
                 s.seriesPath.lineTo(x, y);
@@ -747,21 +764,22 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param entities the entity collection.
      */
     protected void drawSecondaryPass(FastXYLineAndShapeRenderer.State state,
-            Graphics2D g2, XYPlot plot,
-            XYDataset dataset,
-            int pass, int series, int item,
-            ValueAxis domainAxis,
-            Rectangle2D dataArea,
-            ValueAxis rangeAxis,
-            CrosshairState crosshairState,
-            EntityCollection entities) {
+                                     Graphics2D g2, XYPlot plot,
+                                     XYDataset dataset,
+                                     int pass, int series, int item,
+                                     ValueAxis domainAxis,
+                                     Rectangle2D dataArea,
+                                     ValueAxis rangeAxis,
+                                     CrosshairState crosshairState,
+                                     EntityCollection entities) {
 
-        // Note: entities are disabled for performance !
-        Shape entityArea = null;
+        if (!getItemShapeVisible(series, item)) {
+            return;
+        }
 
         // get the data point...
-        double x1 = dataset.getXValue(series, item);
-        double y1 = dataset.getYValue(series, item);
+        final double x1 = dataset.getXValue(series, item);
+        final double y1 = dataset.getYValue(series, item);
         if (Double.isNaN(y1) || Double.isNaN(x1)) {
             return;
         }
@@ -773,69 +791,96 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         final double transX1 = domainAxis.valueToJava2D(x1, dataArea, xAxisLocation);
         final double transY1 = rangeAxis.valueToJava2D(y1, dataArea, yAxisLocation);
 
-        if (getItemShapeVisible(series, item)) {
-            final Shape shape = getItemShape(series, item);
-
-            if (shape != null) {
-
-                final boolean visible;
-                if (orientation == PlotOrientation.HORIZONTAL) {
-                    visible = shape.intersects(dataArea.getX() - transY1, dataArea.getY() - transX1, dataArea.getWidth(), dataArea.getHeight());
-                } else {
-                    visible = shape.intersects(dataArea.getX() - transX1, dataArea.getY() - transY1, dataArea.getWidth(), dataArea.getHeight());
-                }
-                if (visible) {
-                    // Perform transformation
-                    if (orientation == PlotOrientation.HORIZONTAL) {
-                        g2.translate(transY1, transX1);
-                    } else if (orientation == PlotOrientation.VERTICAL) {
-                        g2.translate(transX1, transY1);
-                    }
-
-                    entityArea = shape;
-
-                    if (getItemShapeFilled(series, item)) {
-                        if (this.useFillPaint) {
-                            g2.setPaint(getItemFillPaint(series, item));
-                        } else {
-                            g2.setPaint(getItemPaint(series, item));
-                        }
-                        g2.fill(shape);
-                    }
-                    if (this.drawOutlines) {
-                        if (getUseOutlinePaint()) {
-                            g2.setPaint(getItemOutlinePaint(series, item));
-                        } else {
-                            g2.setPaint(getItemPaint(series, item));
-                        }
-                        g2.setStroke(getItemOutlineStroke(series, item));
-                        g2.draw(shape);
-                    }
-
-                    // Restore original transform (LBO)
-                    g2.setTransform(state.g2AT);
-                }
+        // Fast clipping checks: only test if the data point is inside the data area:
+        if (!useShapeIntersection) {
+            final boolean inside;
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                inside = dataArea.contains(transY1, transX1);
+            } else {
+                inside = dataArea.contains(transX1, transY1);
+            }
+            if (!inside) {
+                return;
             }
         }
 
-        double xx = transX1;
-        double yy = transY1;
+        final Shape shape = getItemShape(series, item);
+        if (shape == null) {
+            return;
+        }
+
+        if (useShapeIntersection) {
+            // Note: Shape.intersects() may be slow for GeneralPath (Path2D) and bounding box may be helpful
+            final boolean visible;
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                visible = shape.intersects(dataArea.getX() - transY1, dataArea.getY() - transX1, dataArea.getWidth(), dataArea.getHeight());
+            } else {
+                visible = shape.intersects(dataArea.getX() - transX1, dataArea.getY() - transY1, dataArea.getWidth(), dataArea.getHeight());
+            }
+            if (!visible) {
+                return;
+            }
+        }
+
+        // Perform translation:
         if (orientation == PlotOrientation.HORIZONTAL) {
-            xx = transY1;
-            yy = transX1;
+            g2.translate(transY1, transX1);
+        } else {
+            g2.translate(transX1, transY1);
         }
 
-        // draw the item label if there is one...
-        if (isItemLabelVisible(series, item)) {
-            drawItemLabel(g2, orientation, dataset, series, item, xx, yy, (y1 < 0.0));
+        if (getItemShapeFilled(series, item)) {
+            if (this.useFillPaint) {
+                g2.setPaint(getItemFillPaint(series, item));
+            } else {
+                g2.setPaint(getItemPaint(series, item));
+            }
+            g2.fill(shape);
+        }
+        if (this.drawOutlines) {
+            if (getUseOutlinePaint()) {
+                g2.setPaint(getItemOutlinePaint(series, item));
+            } else {
+                g2.setPaint(getItemPaint(series, item));
+            }
+            g2.setStroke(getItemOutlineStroke(series, item));
+            g2.draw(shape);
         }
 
-        // LBO: disable updateCrosshairValues
+        // Restore original transform (LBO)
+        g2.setTransform(state.g2AT);
 
-        // add an entity for the item, but only if it falls within the data
-        // area...
-        if (entities != null && isPointInRect(dataArea, xx, yy)) {
-            addEntity(entities, entityArea, dataset, series, item, xx, yy);
+        final boolean labelVisible = isItemLabelVisible(series, item);
+
+        if (labelVisible || entities != null) {
+
+            double xx = transX1;
+            double yy = transY1;
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                xx = transY1;
+                yy = transX1;
+            }
+
+            // draw the item label if there is one...
+            if (labelVisible) {
+                drawItemLabel(g2, orientation, dataset, series, item, xx, yy, (y1 < 0.0));
+            }
+
+            // LBO: disable updateCrosshairValues
+
+            // add an entity for the item, but only if it falls within the data area...
+            if (entities != null && isPointInRect(dataArea, xx, yy)) {
+                // Note: entities are disabled for performance !
+                final Rectangle2D entityArea = shape.getBounds2D(); // may be slow
+
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    entityArea.setRect(transY1, transX1, entityArea.getWidth(), entityArea.getHeight());
+                } else {
+                    entityArea.setRect(transX1, transY1, entityArea.getWidth(), entityArea.getHeight());
+                }
+
+                addEntity(entities, entityArea, dataset, series, item, xx, yy);
+            }
         }
     }
 
@@ -1024,7 +1069,6 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
     public final boolean isItemLabelVisible(final int row, final int column) {
         return false;
     }
-    // SHAPE
 
     /**
      * Returns a shape used to represent a data item.
@@ -1036,7 +1080,95 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      */
     @Override
     public final Shape getItemShape(final int series, final int item) {
-        // TODO: use shape per [serie, item]
+        // use shape per [serie, item]
+        final Shape[] itemShapes = this.itemShapesList.getItemShapes(series);
+        if (itemShapes != null) {
+            if (item < itemShapes.length) {
+                final Shape shape = itemShapes[item];
+                if (shape != null) {
+                    return shape;
+                }
+            }
+        }
+        // fallback: use base shape for the complete serie:
         return getBaseShape();
+    }
+
+    /**
+     * Clears the item shapes settings for this renderer
+     */
+    public final void clearItemShapes() {
+        this.itemShapesList.clear();
+    }
+
+    /**
+     * Define the item shapes settings for this renderer
+     * @param series  the series index (zero-based).
+     * @param itemShapes  the item shapes as array (<code>null</code> permitted).
+     */
+    public final void setItemShapes(int series, Shape[] itemShapes) {
+        this.itemShapesList.setItemShapes(series, itemShapes);
+    }
+
+    /**
+     * Returns the paint used to fill an item drawn by the renderer.
+     *
+     * @param series  the series index (zero-based).
+     *
+     * @return The paint (possibly <code>null</code>).
+     *
+     * @see #setSeriesPaint(int, Paint)
+     */
+    @Override
+    public final Paint getSeriesPaint(int series) {
+        return this.paintList.getPaint(series);
+    }
+
+    /**
+     * Sets the paint used for a series and sends a {@link RendererChangeEvent}
+     * to all registered listeners.
+     *
+     * @param series  the series index (zero-based).
+     * @param paint  the paint (<code>null</code> permitted).
+     *
+     * @see #getSeriesPaint(int)
+     */
+    @Override
+    public final void setSeriesPaint(int series, Paint paint) {
+        setSeriesPaint(series, paint, true);
+    }
+
+    /**
+     * Sets the paint used for a series and, if requested, sends a
+     * {@link RendererChangeEvent} to all registered listeners.
+     *
+     * @param series  the series index.
+     * @param paint  the paint (<code>null</code> permitted).
+     * @param notify  notify listeners?
+     *
+     * @see #getSeriesPaint(int)
+     */
+    @Override
+    public final void setSeriesPaint(int series, Paint paint, boolean notify) {
+        this.paintList.setPaint(series, paint);
+        if (notify) {
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Clears the series paint settings for this renderer and, if requested,
+     * sends a {@link RendererChangeEvent} to all registered listeners.
+     *
+     * @param notify  notify listeners?
+     *
+     * @since 1.0.11
+     */
+    @Override
+    public final void clearSeriesPaints(final boolean notify) {
+        this.paintList.clear();
+        if (notify) {
+            fireChangeEvent();
+        }
     }
 }
