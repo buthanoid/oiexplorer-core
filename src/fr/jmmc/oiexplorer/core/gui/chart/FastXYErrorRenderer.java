@@ -30,7 +30,7 @@ import org.jfree.util.PaintUtilities;
  * This class extends XYErrorRenderer for performance
  * @author bourgesl
  */
-public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYLineAndShapeRenderer */ {
+public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1L;
@@ -275,7 +275,7 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
             final RectangleEdge yAxisLocation = state.yAxisLocation;
 
             final double adj = (this.useCap) ? 0.5d * this.getCapLength() : 0d;
-
+            
             if (drawXError) {
                 // draw the error bar for the x-interval
                 final double x0 = ixyd.getStartXValue(series, item);
@@ -288,7 +288,7 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
                     double yy = rangeAxis.valueToJava2D(y, dataArea, yAxisLocation);
 
                     if (orientation == PlotOrientation.VERTICAL) {
-                        // clipping:
+                        // clipping checks:
                         if (dataArea.intersectsLine(xx0, yy, xx1, yy)) {
                             // cramp x values:
                             final double minX = dataArea.getMinX();
@@ -310,7 +310,7 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
                         }
                     } else {
                         // PlotOrientation.HORIZONTAL
-                        // clipping:
+                        // clipping checks:
                         if (dataArea.intersectsLine(yy, xx0, yy, xx1)) {
                             // cramp x values:
                             final double minX = dataArea.getMinY();
@@ -333,6 +333,7 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer /* XYL
                     }
                 }
             }
+            
             if (drawYError) {
                 // draw the error bar for the y-interval
                 final double y0 = ixyd.getStartYValue(series, item);
