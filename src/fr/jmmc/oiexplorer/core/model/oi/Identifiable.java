@@ -150,7 +150,7 @@ public class Identifiable
     }
 
     /**
-     * PROTECTED: Increment the version
+     * PUBLIC: Increment the version
      */
     public final void incVersion() {
         this.version++;
