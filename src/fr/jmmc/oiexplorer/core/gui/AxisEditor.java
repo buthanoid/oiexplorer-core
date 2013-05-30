@@ -43,7 +43,7 @@ public class AxisEditor extends javax.swing.JPanel {
         nameComboBox.setModel(nameComboBoxModel);
 
         // hidden until request and valid code to get a correct behaviour
-        JComponent[] components = new JComponent[]{plotErrorCheckBox, rangeCheckBox, minSpinner, maxSpinner, includeZeroCheckBox};
+        final JComponent[] components = new JComponent[]{plotErrorCheckBox, rangeCheckBox, minSpinner, maxSpinner, includeZeroCheckBox};
         for (JComponent c : components) {
             c.setVisible(c.isEnabled());
         }
@@ -160,6 +160,7 @@ public class AxisEditor extends javax.swing.JPanel {
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 2, 0);
         add(nameComboBox, gridBagConstraints);
 
         plotErrorCheckBox.setText("error");
@@ -245,6 +246,8 @@ public class AxisEditor extends javax.swing.JPanel {
             axisToEdit.setPlotError(plotErrorCheckBox.isSelected());
         } else if (evt.getSource() == nameComboBox) {
             axisToEdit.setName((String) nameComboBox.getSelectedItem());
+            // reset converter:
+            axisToEdit.setConverter(null);
         } else if (evt.getSource() == rangeCheckBox) {
             if (rangeCheckBox.isSelected()) {
                 axisToEdit.setRange(null);
