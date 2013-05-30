@@ -198,11 +198,12 @@ public class Axis
     public void copy(final fr.jmmc.oiexplorer.core.model.OIBase other) {
         final Axis axis = (Axis) other;
 
-        // copy name, logScale, includeZero, plotError:
+        // copy name, logScale, includeZero, plotError, converter:
         this.name = axis.getName();
         this.logScale = axis.isLogScale();
         this.includeZero = axis.isIncludeZero();
         this.plotError = axis.isPlotError();
+        this.converter = axis.getConverter();
 
         // deep copy range:
         this.range = (axis.getRange() != null) ? (Range) axis.getRange().clone() : null;
@@ -236,6 +237,9 @@ public class Axis
         if (this.range != other.range && (this.range == null || !this.range.equals(other.range))) {
             return false;
         }
+        if ((this.converter == null) ? (other.converter != null) : !this.converter.equals(other.converter)) {
+            return false;
+        }
         return true;
     }
 
@@ -258,6 +262,7 @@ public class Axis
                 sb.append(", range=");
                 this.range.toString(sb, full);
             }
+            sb.append(", converter=").append(this.converter);
         }
         sb.append('}');
     }
