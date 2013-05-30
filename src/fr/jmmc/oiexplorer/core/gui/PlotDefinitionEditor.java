@@ -14,7 +14,6 @@ import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.ColorMapping;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.util.ColorMappingListCellRenderer;
-import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OITable;
 import java.util.ArrayList;
@@ -66,7 +65,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
     /** Creates new form PlotDefinitionEditor */
     public PlotDefinitionEditor() {
-        // TODO maybe move it in setPlotId, setPlotId to register to te proper eventnotifiers instead of all
+        // TODO maybe move it in setPlotId, setPlotId to register to event notifiers instead of both:
         ocm.getPlotDefinitionChangedEventNotifier().register(this);
         ocm.getPlotChangedEventNotifier().register(this);
 
@@ -92,13 +91,40 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      */
     private void postInit() {
         // start with compact form
-        detailledToggleButtonActionPerformed(null);                
+        detailledToggleButtonActionPerformed(null);
 
         colorMappingComboBox.setRenderer(ColorMappingListCellRenderer.getListCellRenderer());
-        
+
+        // Fill colorMapping combobox
+        for (ColorMapping cm : ColorMapping.values()) {
+            if (cm != ColorMapping.OBSERVATION_DATE) { // not implemented
+                colorMappingComboBox.addItem(cm);
+            }
+        }
+
         // TODO check if it has to be done by the netbeans GUI builder ?
         xAxisEditor = new AxisEditor(this);
         xAxisPanel.add(xAxisEditor);
+    }
+
+    private void resetForm() {
+        logger.debug("resetForm : plotDefId = {}", plotDefId);
+
+        // TODO: is it necessary to use notify flag here ?
+        try {
+            // Leave programatic changes on widgets ignored to prevent model changes 
+            notify = false;
+
+            // Clear all content
+            xAxisChoices.clear();
+            yAxisChoices.clear();
+
+            // clear y AxisEditors
+            yAxes.clear();
+            yAxesPanel.removeAll();
+        } finally {
+            notify = true;
+        }
     }
 
     /**
@@ -110,98 +136,106 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private void refreshForm(final PlotDefinition plotDef, final OIFitsFile oiFitsSubset) {
         logger.debug("refreshForm : plotDefId = {} - plotDef {}", plotDefId, plotDef);
 
-        try {
-            // Leave programatic changes on widgets ignored to prevent model changes 
-            notify = false;
+        if (plotDef == null) {
+            resetForm();
+        } else {
+            try {
+                // Leave programatic changes on widgets ignored to prevent model changes 
+                notify = false;
 
-            // Clear all content
-            // TODO: fix that code: invalid as modifying the internal list is forbidden !
-            xAxisChoices.clear();
-            yAxisChoices.clear();
+                // Add column present in associated subset if any
+                // TODO generate one synthetic OiFitsSubset to give all available choices
+                if (oiFitsSubset != null) {
+                    // Get whole available columns
+                    final Set<String> columns = getDistinctColumns(oiFitsSubset);
 
-            // clear y AxisEditors
-            // TODO find somehing cleaner
-            yAxes.clear();
-            yAxesPanel.removeAll();
+                    // Clear all content
+                    xAxisChoices.clear();
+                    xAxisChoices.addAll(columns);
 
-            // At present time on plotDef is required to work : if it is null then return and leave in reset state
-            if (plotDef == null) {
-                return;
-            }
-
-            // Add column present in associated subset if any
-            // TODO generate one synthetic OiFitsSubset to give all available choices
-            if (oiFitsSubset != null) {
-                // Get whole available columns
-                final Set<String> columns = getDistinctColumns(oiFitsSubset);
-
-                xAxisChoices.addAll(columns);
-                yAxisChoices.addAll(columns);
-            }
-            // Add choices present in the associated plotDef
-            final String currentX = plotDef.getXAxis().getName();
-            if (!xAxisChoices.contains(currentX)) {
-                xAxisChoices.add(currentX);
-            }
-
-            for (Axis y : plotDef.getYAxes()) {
-                final String currentY = y.getName();
-                if (!yAxisChoices.contains(currentY)) {
-                    yAxisChoices.add(currentY);
+                    yAxisChoices.clear();
+                    yAxisChoices.addAll(columns);
                 }
-            }
-
-            logger.debug("refreshForm : xAxisChoices {}, yAxisChoices {}", xAxisChoices, yAxisChoices);
-
-            xAxisEditor.setAxis((Axis) plotDef.getXAxis().clone(), xAxisChoices);
-
-            // fill with associated plotdefinition            
-            if (logger.isDebugEnabled()) {
-                logger.debug("refreshForm : yaxes to add : {}", plotDef.getYAxes());
-            }
-            for (Axis yAxis : plotDef.getYAxes()) {
-                addYEditor((Axis) yAxis.clone());
-            }
-
-            // Fill colorMapping combobox
-            colorMappingComboBox.removeAllItems();
-            for (ColorMapping cm : ColorMapping.values()) {
-                if (cm != ColorMapping.OBSERVATION_DATE) { // not implemented
-                    colorMappingComboBox.addItem(cm);
+                
+                // Add choices present in the associated plotDef
+                final String currentX = plotDef.getXAxis().getName();
+                if (!xAxisChoices.contains(currentX)) {
+                    xAxisChoices.add(currentX);
                 }
+
+                for (Axis y : plotDef.getYAxes()) {
+                    final String currentY = y.getName();
+                    if (!yAxisChoices.contains(currentY)) {
+                        yAxisChoices.add(currentY);
+                    }
+                }
+
+                logger.debug("refreshForm : xAxisChoices {}, yAxisChoices {}", xAxisChoices, yAxisChoices);
+
+                xAxisEditor.setAxis((Axis) plotDef.getXAxis().clone(), xAxisChoices);
+
+                // fill with associated plotdefinition            
+                if (logger.isDebugEnabled()) {
+                    logger.debug("refreshForm : yaxes to add : {}", plotDef.getYAxes());
+                }
+
+                // clear y AxisEditors
+                yAxes.clear();
+                yAxesPanel.removeAll();
+
+                for (Axis yAxis : plotDef.getYAxes()) {
+                    addYEditor((Axis) yAxis.clone());
+                }
+
+                // Init colorMapping
+                colorMappingComboBox.setSelectedItem((plotDef.getColorMapping() != null) ? plotDef.getColorMapping() : ColorMapping.WAVELENGTH_RANGE);
+
+                // Init flaggedDataCheckBox
+                flaggedDataCheckBox.setSelected(plotDef.isSkipFlaggedData());
+
+                // Init drawLinesCheckBox
+                drawLinesCheckBox.setSelected(plotDef.isDrawLine());
+
+                checkYAxisActionButtons();
+
+                refreshPlotDefinitionNames(plotDef);
+            } finally {
+                notify = true;
             }
-            colorMappingComboBox.setSelectedItem((plotDef.getColorMapping() != null) ? plotDef.getColorMapping() : ColorMapping.WAVELENGTH_RANGE);
-
-            // Init flaggedDataCheckBox
-            flaggedDataCheckBox.setSelected(plotDef.isSkipFlaggedData());
-            // Init drawLinesCheckBox
-            drawLinesCheckBox.setSelected(plotDef.isDrawLine());
-
-            // disable buttons to limit number of yAxes 
-            addYAxisButton.setEnabled(MAX_Y_AXES > yAxes.size());
-            delYAxisButton.setEnabled(yAxes.size() > 1);
-
-            refreshPlotDefinitionNames();
-        } finally {
-            notify = true;
         }
     }
 
-    private void refreshPlotDefinitionNames() {
+    private void checkYAxisActionButtons() {
+        // disable buttons to limit number of yAxes 
+        addYAxisButton.setEnabled(yAxes.size() < MAX_Y_AXES);
+        delYAxisButton.setEnabled(yAxes.size() > 1);
+    }
+
+    private void refreshPlotDefinitionNames(final PlotDefinition plotDef) {
         logger.debug("refreshPlotDefinitionNames: {}", plotId);
 
         // use identifiers to keep unique values:
         final Set<String> plotDefNames = new LinkedHashSet<String>();
-        final StringBuilder sb = new StringBuilder(255);
-        for (Axis axis : getPlotDefinition().getYAxes()) {
-            sb.append(axis.getName()).append(", ");
+
+        final StringBuilder sb = new StringBuilder(64);
+
+        if (plotDef != null) {
+            // Y axes:
+            for (Axis axis : plotDef.getYAxes()) {
+                sb.append(axis.getName()).append(", ");
+            }
+            sb.setLength(sb.length() - 2);
+            // X axis:
+            sb.append(" vs ").append(plotDef.getXAxis().getName());
+
+            // add first entry corresponding to the edited plot definition:
+            plotDefNames.add(sb.toString());
         }
 
-        // add first dummy entry with selected data
-        plotDefNames.add(sb.substring(0, sb.length() - 2));
-
-        for (PlotDefinition plotDef : PlotDefinitionFactory.getInstance().getDefaults()) {
-            plotDefNames.add("preset: "+plotDef.getName());
+        for (PlotDefinition plotDefPreset : PlotDefinitionFactory.getInstance().getDefaults()) {
+            sb.setLength(0);
+            sb.append("preset: ").append(plotDefPreset.getName());
+            plotDefNames.add(sb.toString());
         }
 
         plotDefinitionComboBox.setModel(new GenericListModel<String>(new ArrayList<String>(plotDefNames), true));
@@ -214,8 +248,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      * @return a Set of Strings with every distinct column names
      */
     private Set<String> getDistinctColumns(final OIFitsFile oiFitsFile) {
-        final Set<String> columns = new LinkedHashSet<String>();
-
+        final Set<String> columns = new LinkedHashSet<String>(32);
 
         // Add every column of every tables for given target into combomodel sets
         // TODO optimization could be operated walking only on the first element
@@ -228,44 +261,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         for (OITable oiTable : oiFitsFile.getOiT3()) {
             oiTable.getNumericalColumnsNames(columns);
         }
-        return columns;
-    }
 
-    /**
-     * Return the set of distinct columns from the tables of given 
-     * OIFitsFile and compatible with given column.
-     * @param oiFitsFile oifitsFile to search data into
-     * @return a Set of Strings with every distinct column names
-     */
-    private Set<String> getDistinctColumns(final OIFitsFile oiFitsFile, String columnName) {
-        final Set<String> columns = new LinkedHashSet<String>();
-
-        // TODO see previous getDistinctColumns() for perf note
-        // Add every column of every tables for given target into combomodel sets
-        for (OITable oiTable : oiFitsFile.getOiVis2()) {
-            ColumnMeta meta = oiTable.getColumnMeta(columnName);
-            if (meta != null) {
-                oiTable.getNumericalColumnsNames(columns);
-            } else {
-                logger.debug("Can't use data from '{}' table with column '{}'", oiTable, columnName);
-            }
-        }
-        for (OITable oiTable : oiFitsFile.getOiVis()) {
-            ColumnMeta meta = oiTable.getColumnMeta(columnName);
-            if (meta != null) {
-                oiTable.getNumericalColumnsNames(columns);
-            } else {
-                logger.debug("Can't use data from '{}' table with column '{}'", oiTable, columnName);
-            }
-        }
-        for (OITable oiTable : oiFitsFile.getOiT3()) {
-            ColumnMeta meta = oiTable.getColumnMeta(columnName);
-            if (meta != null) {
-                oiTable.getNumericalColumnsNames(columns);
-            } else {
-                logger.debug("Can't use data from '{}' table with column '{}'", oiTable, columnName);
-            }
-        }
         return columns;
     }
 
@@ -280,12 +276,14 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
+        plotDefLabel = new javax.swing.JLabel();
+        plotDefinitionComboBox = new javax.swing.JComboBox();
         colorMappingLabel = new javax.swing.JLabel();
         colorMappingComboBox = new javax.swing.JComboBox();
         plotDefinitionName = new javax.swing.JLabel();
+        flaggedDataCheckBox = new javax.swing.JCheckBox();
         detailledToggleButton = new javax.swing.JToggleButton();
         drawLinesCheckBox = new javax.swing.JCheckBox();
-        flaggedDataCheckBox = new javax.swing.JCheckBox();
         extendedPanel = new javax.swing.JPanel();
         yLabel = new javax.swing.JLabel();
         xLabel = new javax.swing.JLabel();
@@ -293,21 +291,47 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         delYAxisButton = new javax.swing.JButton();
         xAxisPanel = new javax.swing.JPanel();
         yAxesPanel = new javax.swing.JPanel();
-        plotDefinitionComboBox = new javax.swing.JComboBox();
         refreshButton = new javax.swing.JButton();
-        fillerPanel = new javax.swing.JPanel();
-        plotDefLabel = new javax.swing.JLabel();
 
         setLayout(new java.awt.GridBagLayout());
 
+        plotDefLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        plotDefLabel.setText("Show");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
+        add(plotDefLabel, gridBagConstraints);
+
+        plotDefinitionComboBox.setPrototypeDisplayValue("01234567890123456789");
+        plotDefinitionComboBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                plotDefinitionComboBoxActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 0.2;
+        add(plotDefinitionComboBox, gridBagConstraints);
+
+        colorMappingLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         colorMappingLabel.setText("Color by");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.weightx = 0.1;
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         add(colorMappingLabel, gridBagConstraints);
 
+        colorMappingComboBox.setPrototypeDisplayValue("0123456789");
         colorMappingComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 colorMappingComboBoxActionPerformed(evt);
@@ -317,34 +341,14 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridx = 4;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 0.2;
         add(colorMappingComboBox, gridBagConstraints);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.gridwidth = 2;
         add(plotDefinitionName, gridBagConstraints);
-
-        detailledToggleButton.setText("...");
-        detailledToggleButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                detailledToggleButtonActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 7;
-        gridBagConstraints.gridy = 0;
-        add(detailledToggleButton, gridBagConstraints);
-
-        drawLinesCheckBox.setText("Draw lines");
-        drawLinesCheckBox.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                drawLinesCheckBoxActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 8;
-        gridBagConstraints.gridy = 0;
-        add(drawLinesCheckBox, gridBagConstraints);
 
         flaggedDataCheckBox.setText("Skip flagged data");
         flaggedDataCheckBox.addActionListener(new java.awt.event.ActionListener() {
@@ -355,27 +359,59 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 5;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
+        gridBagConstraints.weightx = 0.1;
         add(flaggedDataCheckBox, gridBagConstraints);
+
+        detailledToggleButton.setText("...");
+        detailledToggleButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        detailledToggleButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                detailledToggleButtonActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
+        add(detailledToggleButton, gridBagConstraints);
+
+        drawLinesCheckBox.setText("Draw lines");
+        drawLinesCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                drawLinesCheckBoxActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 7;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
+        gridBagConstraints.weightx = 0.1;
+        add(drawLinesCheckBox, gridBagConstraints);
 
         extendedPanel.setLayout(new java.awt.GridBagLayout());
 
-        yLabel.setText("yAxis");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.FIRST_LINE_END;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 2);
-        extendedPanel.add(yLabel, gridBagConstraints);
-
-        xLabel.setText("xAxis");
+        yLabel.setText("y Axes");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        extendedPanel.add(yLabel, gridBagConstraints);
+
+        xLabel.setText("x Axis");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         extendedPanel.add(xLabel, gridBagConstraints);
 
         addYAxisButton.setText("+");
+        addYAxisButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        addYAxisButton.setPreferredSize(new java.awt.Dimension(21, 21));
         addYAxisButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 addYAxisButtonActionPerformed(evt);
@@ -383,12 +419,15 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
-        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         extendedPanel.add(addYAxisButton, gridBagConstraints);
 
         delYAxisButton.setText("-");
+        delYAxisButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        delYAxisButton.setPreferredSize(new java.awt.Dimension(21, 21));
         delYAxisButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 delYAxisButtonActionPerformed(evt);
@@ -396,25 +435,24 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
-        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         extendedPanel.add(delYAxisButton, gridBagConstraints);
 
-        xAxisPanel.setBorder(null);
         xAxisPanel.setLayout(new java.awt.BorderLayout());
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
         extendedPanel.add(xAxisPanel, gridBagConstraints);
 
-        yAxesPanel.setBorder(null);
         yAxesPanel.setLayout(new javax.swing.BoxLayout(yAxesPanel, javax.swing.BoxLayout.Y_AXIS));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.weighty = 1.0;
@@ -423,64 +461,38 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = 9;
+        gridBagConstraints.gridwidth = 8;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 0, 2);
         add(extendedPanel, gridBagConstraints);
-
-        plotDefinitionComboBox.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                plotDefinitionComboBoxActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        add(plotDefinitionComboBox, gridBagConstraints);
 
         refreshButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/fr/jmmc/jmcs/resource/image/refresh.png"))); // NOI18N
         refreshButton.setToolTipText("refresh zoom / remove plot selection");
+        refreshButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
         refreshButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 refreshButtonActionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 6;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        add(refreshButton, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 9;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.gridheight = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        add(fillerPanel, gridBagConstraints);
-
-        plotDefLabel.setText("Show");
-        gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
-        add(plotDefLabel, gridBagConstraints);
+        add(refreshButton, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void addYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addYAxisButtonActionPerformed
         Axis axis = new Axis();
-        getPlotDefinition().getYAxes().add(axis);
+
+        // Add to PlotDefinition
         addYEditor(axis);
         updateModel();
 
-        // disable buttons to limit number of yAxes 
-        addYAxisButton.setEnabled(MAX_Y_AXES > yAxes.size());
-        delYAxisButton.setEnabled(yAxes.size() > 1);
+        checkYAxisActionButtons();
     }//GEN-LAST:event_addYAxisButtonActionPerformed
 
     private void delYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delYAxisButtonActionPerformed
-
-
         if (yAxes.size() > 1) {
             // TODO replace by removal of the last yCombobox which one has lost the foxus
             Axis[] yAxisArray = yAxes.keySet().toArray(new Axis[]{});
@@ -488,13 +500,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             delYEditor(yAxis);
 
             // Delete from PlotDefinition
-            getPlotDefinition().getYAxes().remove(yAxis);
             updateModel();
         }
-
-        // disable buttons to limit number of yAxes 
-        addYAxisButton.setEnabled(MAX_Y_AXES > yAxes.size());
-        delYAxisButton.setEnabled(yAxes.size() > 1);
+        checkYAxisActionButtons();
     }//GEN-LAST:event_delYAxisButtonActionPerformed
 
     private void colorMappingComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_colorMappingComboBoxActionPerformed
@@ -517,55 +525,56 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
     private void plotDefinitionComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_plotDefinitionComboBoxActionPerformed
         // this method should apply preset on current plotDef
-        
+
         // TODO find better solution to allow the selection of a preset with keyboard shortcup
         // until now the choice is limited to the first item
         final int idx = plotDefinitionComboBox.getSelectedIndex();
         if (idx == 0) {
             return;
         }
-        
-        
-        String presetPlotDefId=null;
-        
+
+        String presetPlotDefId = null;
+
         Collection<PlotDefinition> presets = PlotDefinitionFactory.getInstance().getDefaults();
-        int i = 1; // first element is not a preset :(
+
+        int i = 1; // first element is not a preset
         for (PlotDefinition plotDefinition : presets) {
-            if(i==plotDefinitionComboBox.getSelectedIndex()){
-                presetPlotDefId=plotDefinition.getId();
+            if (i == plotDefinitionComboBox.getSelectedIndex()) {
+                presetPlotDefId = plotDefinition.getId();
                 break;
             }
             i++;
-        }                      
-        
+        }
+
 
         if (presetPlotDefId == null) {
             logger.debug("[{}] plotDefinitionComboBoxActionPerformed() event ignored : no current selection", plotId);
             return;
         }
 
-        PlotDefinition currentPlotDef = getPlotDefinition();
+        final PlotDefinition plotDefCopy = getPlotDefinition();
 
         // save previous id,name:        
-        final String oldPlotDefId = currentPlotDef.getId();
-        final String oldPlotDefName = currentPlotDef.getId();
+        final String oldPlotDefId = plotDefCopy.getId();
+        final String oldPlotDefName = plotDefCopy.getId();
 
         // init plotDef of plotCopy with preset     
-        currentPlotDef.copy((PlotDefinition)PlotDefinitionFactory.getInstance().getDefault(presetPlotDefId).clone());        
+        plotDefCopy.copy((PlotDefinition) PlotDefinitionFactory.getInstance().getDefault(presetPlotDefId).clone());
         // restore previous id,name:        
-        currentPlotDef.setId(oldPlotDefId);
-        currentPlotDef.setName(oldPlotDefName);
+        plotDefCopy.setId(oldPlotDefId);
+        plotDefCopy.setName(oldPlotDefName);
 
         plotDefinitionComboBox.setSelectedIndex(0);
-        refreshForm(currentPlotDef, null);
+        refreshForm(plotDefCopy, null);
         updateModel();
     }//GEN-LAST:event_plotDefinitionComboBoxActionPerformed
 
     private void refreshButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_refreshButtonActionPerformed
-        PlotDefinition copy = (PlotDefinition) getPlotDefinition().clone();
-        copy.incVersion();
+        final PlotDefinition plotDefCopy = getPlotDefinition();
 
-        ocm.updatePlotDefinition(this,copy);
+        plotDefCopy.incVersion();
+
+        ocm.updatePlotDefinition(this, plotDefCopy);
     }//GEN-LAST:event_refreshButtonActionPerformed
 
     /**
@@ -576,17 +585,14 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         return (ColorMapping) colorMappingComboBox.getSelectedItem();
     }
 
-    private void yAxisComboBoxActionPerformed(java.awt.event.ActionEvent evt) {
-        updateModel();
-    }
-
-    /** Create a new widget to edit given Axis.
-     * @param axis axis to be edited by new yAxisEditor
+    /** 
+     * Create a new widget to edit given Axis.
+     * @param yAxis axis to be edited by new yAxisEditor
      */
     private void addYEditor(final Axis yAxis) {
 
         // Link new Editor and Axis
-        AxisEditor yAxisEditor = new AxisEditor(this);
+        final AxisEditor yAxisEditor = new AxisEditor(this);
         yAxisEditor.setAxis(yAxis, yAxisChoices);
 
         // Add in editor list
@@ -627,7 +633,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
             if (plotDefCopy != null) {
                 // handle xAxis
-                plotDefCopy.setXAxis((Axis) xAxisEditor.getAxis());
+                plotDefCopy.setXAxis(xAxisEditor.getAxis());
                 // handle yAxes
                 final List<Axis> yAxesCopy = plotDefCopy.getYAxes();
                 yAxesCopy.clear();
@@ -652,7 +658,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private javax.swing.JToggleButton detailledToggleButton;
     private javax.swing.JCheckBox drawLinesCheckBox;
     private javax.swing.JPanel extendedPanel;
-    private javax.swing.JPanel fillerPanel;
     private javax.swing.JCheckBox flaggedDataCheckBox;
     private javax.swing.JLabel plotDefLabel;
     private javax.swing.JComboBox plotDefinitionComboBox;
@@ -701,7 +706,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
 
             // TODO: how to fire reset event ie DELETE(id)
-            refreshForm(null, null);
+            resetForm();
         }
     }
 
@@ -740,10 +745,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
 
             // TODO: how to fire reset event ie DELETE(id)
-            refreshForm(null, null);
-        }
+            resetForm();
 
-        if (plotDefId != null && !ObjectUtils.areEquals(prevPlotDefId, plotDefId)) {
+        } else if (!ObjectUtils.areEquals(prevPlotDefId, plotDefId)) {
             logger.debug("firePlotDefinitionChanged {}", plotDefId);
 
             // bind(plotDefId) ?
