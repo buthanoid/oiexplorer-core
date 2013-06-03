@@ -301,6 +301,17 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
         fireOIFitsCollectionChanged();
     }
+    
+    /**
+     * Remove all OIDataFiles
+     */
+    public void removeAllOIFitsFiles() {
+        this.oiFitsCollection.clear();
+
+        getOIDataFileList().clear();
+
+        fireOIFitsCollectionChanged();
+    }
 
     /**
      * Add an OIDataFile given its corresponding OIFits structure
@@ -576,8 +587,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         if (changed) {
-            // copy data:
-            subset.copy(subsetDefinition);
+            subset.copy(subsetDefinition); // full copy
 
             // update subset reference and fire events (SubsetDefinitionChanged, PlotChanged):
             updateSubsetDefinitionRef(source, subset);
@@ -687,8 +697,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             plotDefinition = new PlotDefinition();
             plotDefinition.setId(CURRENT_PLOT_DEFINITION);
 
-            // HACK:
-            plotDefinition.copy(plotDefFactory.getDefault(PlotDefinitionFactory.PLOT_DEFAULT));
+            // copy values:
+            plotDefinition.copyValues(plotDefFactory.getDefault(PlotDefinitionFactory.PLOT_DEFAULT));
 
             addPlotDefinitionRef(plotDefinition);
         }
@@ -796,8 +806,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         if (changed) {
-            // copy data:
-            plotDef.copy(plotDefinition);
+            plotDef.copy(plotDefinition); // full copy
 
             // update plot definition version and fire events (PlotDefinitionChanged, PlotChanged):
             updatePlotDefinitionRef(source, plotDefinition);
@@ -984,8 +993,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         if (changed) {
-            // copy data:
-            plotRef.copy(plot);
+            plotRef.copy(plot); // full copy
 
             // update plot version and fire events (PlotChanged):
             updatePlotRef(source, plot);
