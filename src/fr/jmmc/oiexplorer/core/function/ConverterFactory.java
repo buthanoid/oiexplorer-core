@@ -5,7 +5,9 @@ package fr.jmmc.oiexplorer.core.function;
 
 import fr.jmmc.jmcs.util.SpecialChars;
 import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
+import fr.jmmc.oitools.OIFitsConstants;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +31,11 @@ public final class ConverterFactory {
     private static volatile ConverterFactory instance = null;
 
     /* members */
-    /** predefined converters : TODO could be loaded from XML file ?? */
+    /* TODO: load configuration from XML file ?? */
+    /** predefined converters */
     private final Map<String, Converter> converters = new LinkedHashMap<String, Converter>(4);
+    /** predefined converters by column names */
+    private final Map<String, String> converterByColumns = new HashMap<String, String>(16);
 
     /** 
      * Return the factory singleton instance 
@@ -55,8 +60,13 @@ public final class ConverterFactory {
      * @throws IllegalStateException if the preset file is not found, an I/O exception occured, unmarshalling failed
      */
     private void initializeDefaults() throws IllegalStateException {
+        // create converters:
         converters.put(CONVERTER_MEGA_LAMBDA, new ScalingConverter(1e-6d, SpecialChars.UNIT_MEGA_LAMBDA));
         converters.put(CONVERTER_MICRO_METER, new ScalingConverter(1e6d, SpecialChars.UNIT_MICRO_METER));
+
+        // associate converters to columns by default:
+        converterByColumns.put(OIFitsConstants.COLUMN_EFF_WAVE, CONVERTER_MICRO_METER);
+        converterByColumns.put(OIFitsConstants.COLUMN_SPATIAL_FREQ, CONVERTER_MEGA_LAMBDA);
     }
 
     /** 
@@ -81,5 +91,14 @@ public final class ConverterFactory {
             throw new IllegalArgumentException("Converter [" + name + "] not found !");
         }
         return converter;
+    }
+
+    /** 
+     * Get the default converter name associated to given to the column name. 
+     * @param columnName column name to look for 
+     * @return converter name associated to given column name.
+     */
+    public String getDefaultByColumn(final String columnName) {
+        return converterByColumns.get(columnName);
     }
 }
