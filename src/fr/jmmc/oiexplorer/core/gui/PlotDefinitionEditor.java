@@ -553,10 +553,16 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
         final PlotDefinition plotDefCopy = getPlotDefinition();
 
+        final ColorMapping colorMapping = plotDefCopy.getColorMapping();
+        
+        // TODO: decide: should only copy axis infos or all ?
         // copy values from preset:
         plotDefCopy.copyValues(PlotDefinitionFactory.getInstance().getDefault(presetPlotDefId));
-
+        
         // TODO: clear name and description fields ?
+
+        // keep color mapping:
+        plotDefCopy.setColorMapping(colorMapping);
 
         plotDefinitionComboBox.setSelectedIndex(0);
         refreshForm(plotDefCopy, null);
