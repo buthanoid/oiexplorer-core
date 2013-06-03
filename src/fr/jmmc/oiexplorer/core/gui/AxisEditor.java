@@ -4,6 +4,7 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.GenericListModel;
+import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
 import java.util.ArrayList;
@@ -74,6 +75,7 @@ public class AxisEditor extends javax.swing.JPanel {
     /** Initialize widgets according to given axis 
      * 
      * @param axis used to initialize widget states
+     * @param axisChoices column names to display
      */
     public void setAxis(final Axis axis, final List<String> axisChoices) {
         axisToEdit = axis;
@@ -237,6 +239,7 @@ public class AxisEditor extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void actionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_actionPerformed
+        boolean forceRefreshPlotDefNames = false;
 
         if (evt.getSource() == includeZeroCheckBox) {
             axisToEdit.setIncludeZero(includeZeroCheckBox.isSelected());
@@ -245,9 +248,17 @@ public class AxisEditor extends javax.swing.JPanel {
         } else if (evt.getSource() == plotErrorCheckBox) {
             axisToEdit.setPlotError(plotErrorCheckBox.isSelected());
         } else if (evt.getSource() == nameComboBox) {
-            axisToEdit.setName((String) nameComboBox.getSelectedItem());
-            // reset converter:
-            axisToEdit.setConverter(null);
+            final String columnName = (String) nameComboBox.getSelectedItem();
+            axisToEdit.setName(columnName);
+
+            // only modify axis if the user changes the axis, not by swing events due to model changes:
+            if (notify) {
+                // reset converter and log scale:
+                axisToEdit.setConverter(ConverterFactory.getInstance().getDefaultByColumn(columnName));
+                axisToEdit.setLogScale(false);
+                // force refresh plot definition names:
+                forceRefreshPlotDefNames = true;
+            }
         } else if (evt.getSource() == rangeCheckBox) {
             if (rangeCheckBox.isSelected()) {
                 axisToEdit.setRange(null);
@@ -262,7 +273,7 @@ public class AxisEditor extends javax.swing.JPanel {
         }
 
         if (notify) {
-            parentToNotify.updateModel();
+            parentToNotify.updateModel(forceRefreshPlotDefNames);
         }
     }//GEN-LAST:event_actionPerformed
 
