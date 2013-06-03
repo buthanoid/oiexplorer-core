@@ -18,6 +18,29 @@
     <!-- first OIfitsExplorer versions may store plotDefinition with the historical names -->
     <!-- Ids should be added to replace name (and accept whole characters...)             -->
     
+    <!-- plot (Vis2 - T3) vs radius -->    
+    <plotDefinition>
+        <id>VIS2DATA_T3PHI/RADIUS</id>
+        <name>Vis2Data and T3Phi vs. Radius</name>
+        <skipFlaggedData>true</skipFlaggedData>
+        <drawLine>false</drawLine>
+        <xAxis>
+            <name>RADIUS</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </xAxis>
+        <yAxes>
+            <name>VIS2DATA</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>T3PHI</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes> 
+    </plotDefinition>
+
     <!-- plot (Vis2 - T3) vs spatial freq  -->    
     <plotDefinition>
         <id>VIS2DATA_T3PHI/SPATIAL_FREQ</id>
@@ -29,6 +52,29 @@
             <logScale>false</logScale>
             <includeZero>true</includeZero>
             <converter>MEGA_LAMBDA</converter>
+        </xAxis>
+        <yAxes>
+            <name>VIS2DATA</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>T3PHI</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes> 
+    </plotDefinition>
+    
+    <!-- plot (Vis2 - T3) vs angle -->    
+    <plotDefinition>
+        <id>VIS2DATA_T3PHI/POS_ANGLE</id>
+        <name>Vis2Data and T3Phi vs. Pos. angle</name>
+        <skipFlaggedData>true</skipFlaggedData>
+        <drawLine>false</drawLine>
+        <xAxis>
+            <name>POS_ANGLE</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
         </xAxis>
         <yAxes>
             <name>VIS2DATA</name>
@@ -88,7 +134,10 @@
             <includeZero>false</includeZero>
         </yAxes> 
     </plotDefinition>
-    
+
+
+        
+                        
     <!-- plot (VisAmp - VisPhi) vs spatial freq  -->    
     <plotDefinition>
         <id>VISAMP_VISPHI/SPATIAL_FREQ</id>
@@ -112,6 +161,33 @@
             <includeZero>false</includeZero>
         </yAxes> 
     </plotDefinition>
+
+    <!-- plot(Vis2 - T3) vs wavelength     -->    
+    <plotDefinition>
+        <id>VISAMP_VISPHI/EFF_WAVE</id>
+        <name>VisAmp and VisPhi vs. Eff. Wave</name>
+        <skipFlaggedData>true</skipFlaggedData>
+        <drawLine>false</drawLine>
+        <xAxis>
+            <name>EFF_WAVE</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+            <converter>MICRO_METER</converter>
+        </xAxis>
+        <yAxes>
+            <name>VISAMP</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>VISPHI</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes> 
+    </plotDefinition>
+
+
+
 
     <!-- plot log(VisAmp - Vis2) vs spatial freq  -->    
     <plotDefinition>
