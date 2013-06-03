@@ -173,16 +173,30 @@ public class Identifiable
      * @param other other instance
      */
     @Override
-    public void copy(final OIBase other) {
+    public final void copy(final OIBase other) {
         final Identifiable identifiable = (Identifiable) other;
 
         // skip id to avoid overriding identifier !
         /* this.id = identifiable.getId(); */
+        this.version = identifiable.getVersion();
         
         // copy name, description, version:
         this.name = identifiable.getName();
         this.description = identifiable.getDescription();
-        this.version = identifiable.getVersion();
+
+        // Copy values (overriden by child classes):
+        copyValues(other); // values
+    }
+    
+    /**
+     * Perform a deep-copy EXCEPT Identifiable attributes of the given other instance into this instance
+     * 
+     * Note: to be overriden in child class to perform deep-copy of class fields
+     * 
+     * @param other other instance
+     */
+    public void copyValues(final OIBase other) {
+        // nothing to copy as wanted
     }
 
     @Override
@@ -258,7 +272,7 @@ public class Identifiable
         if (source != null) {
             throw new IllegalStateException("undefined source object");
         }
-        dest.copy(source);
+        dest.copyValues(source);
     }
 
     /**

@@ -72,16 +72,16 @@ public class Plot
     
 //--simple--preserve
     /**
-     * Perform a deep-copy of the given other instance into this instance
+     * Perform a deep-copy EXCEPT Identifiable attributes of the given other instance into this instance
      * 
      * Note: to be overriden in child class to perform deep-copy of class fields
-     * @see OIBase#clone() 
      * 
      * @param other other instance
      */
     @Override
-    public void copy(final fr.jmmc.oiexplorer.core.model.OIBase other) {
-        super.copy(other); // View
+    public void copyValues(final fr.jmmc.oiexplorer.core.model.OIBase other) {
+        super.copyValues(other); // View
+        
         final Plot plot = (Plot) other;
 
         // copy plotDefinition (reference):
