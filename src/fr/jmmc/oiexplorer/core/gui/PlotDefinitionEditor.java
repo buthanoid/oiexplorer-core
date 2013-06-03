@@ -156,7 +156,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                     yAxisChoices.clear();
                     yAxisChoices.addAll(columns);
                 }
-                
+
                 // Add choices present in the associated plotDef
                 final String currentX = plotDef.getXAxis().getName();
                 if (!xAxisChoices.contains(currentX)) {
@@ -526,7 +526,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private void plotDefinitionComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_plotDefinitionComboBoxActionPerformed
         // this method should apply preset on current plotDef
 
-        // TODO find better solution to allow the selection of a preset with keyboard shortcup
+        // TODO find better solution to allow the selection of a preset with keyboard shortcut
         // until now the choice is limited to the first item
         final int idx = plotDefinitionComboBox.getSelectedIndex();
         if (idx == 0) {
@@ -546,7 +546,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             i++;
         }
 
-
         if (presetPlotDefId == null) {
             logger.debug("[{}] plotDefinitionComboBoxActionPerformed() event ignored : no current selection", plotId);
             return;
@@ -554,15 +553,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
         final PlotDefinition plotDefCopy = getPlotDefinition();
 
-        // save previous id,name:        
-        final String oldPlotDefId = plotDefCopy.getId();
-        final String oldPlotDefName = plotDefCopy.getId();
+        // copy values from preset:
+        plotDefCopy.copyValues(PlotDefinitionFactory.getInstance().getDefault(presetPlotDefId));
 
-        // init plotDef of plotCopy with preset     
-        plotDefCopy.copy((PlotDefinition) PlotDefinitionFactory.getInstance().getDefault(presetPlotDefId).clone());
-        // restore previous id,name:        
-        plotDefCopy.setId(oldPlotDefId);
-        plotDefCopy.setName(oldPlotDefName);
+        // TODO: clear name and description fields ?
 
         plotDefinitionComboBox.setSelectedIndex(0);
         refreshForm(plotDefCopy, null);
@@ -625,8 +619,17 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      * Update current plotDefinition 
      * and request a plotDefinitionUpdate to the OIFitsCollectionManager.    
      */
-    public void updateModel() {
-        logger.debug("updateModel notify = {}", notify);
+    void updateModel() {
+        updateModel(false);
+    }
+
+    /** 
+     * Update current plotDefinition 
+     * and request a plotDefinitionUpdate to the OIFitsCollectionManager.
+     * 
+     * @param forceRefreshPlotDefNames true to refresh plotDefinition names
+     */
+    void updateModel(final boolean forceRefreshPlotDefNames) {
         if (notify) {
             // get copy:
             final PlotDefinition plotDefCopy = getPlotDefinition();
@@ -648,6 +651,13 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             plotDefCopy.setSkipFlaggedData(flaggedDataCheckBox.isSelected());
 
             ocm.updatePlotDefinition(this, plotDefCopy);
+
+            if (forceRefreshPlotDefNames) {
+                refreshPlotDefinitionNames(plotDefCopy);
+            }
+
+        } else {
+            logger.debug("updateModel: disabled");
         }
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
