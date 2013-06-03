@@ -145,6 +145,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     /* members */
     /** OIFitsCollectionManager singleton */
     private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    /** ConverterFactory singleton */
+    private final ConverterFactory cf = ConverterFactory.getInstance();
     /** plot identifier */
     private String plotId = null;
     /** plot object reference (read only) */
@@ -1508,7 +1510,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final boolean yUseLog = yAxis.isLogScale();
 
-        final Converter yConverter = ConverterFactory.getInstance().getDefault(yAxis.getConverter());
+        final Converter yConverter = cf.getDefault(yAxis.getConverter());
         final boolean doScaleY = (yConverter != null);
 
         final boolean isYData2D = yMeta.isArray();
@@ -1550,7 +1552,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final boolean xUseLog = xAxis.isLogScale();
 
-        final Converter xConverter = ConverterFactory.getInstance().getDefault(xAxis.getConverter());
+        final Converter xConverter = cf.getDefault(xAxis.getConverter());
         final boolean doScaleX = (xConverter != null);
 
         final boolean isXData2D = xMeta.isArray();
