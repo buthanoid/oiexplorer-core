@@ -132,7 +132,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
      */
     public static final Paint DEFAULT_GRID_BAND_ALTERNATE_PAINT = new Color(0, 0, 0, 0);  // transparent
     /** The list of symbols to display instead of the numeric values. */
-    private List symbols;
+    private List<String> symbols;
     /** Flag that indicates whether or not grid bands are visible. */
     private boolean gridBandsVisible;
     /** The paint used to color the grid bands (if the bands are visible). */
@@ -179,9 +179,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
      * @return The symbols.
      */
     public String[] getSymbols() {
-        String[] result = new String[this.symbols.size()];
-        result = (String[]) this.symbols.toArray(result);
-        return result;
+        return this.symbols.toArray(new String[this.symbols.size()]);
     }
 
     /**
@@ -737,7 +735,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
     public String valueToString(double value) {
         String strToReturn;
         try {
-            strToReturn = (String) this.symbols.get((int) value);
+            strToReturn = this.symbols.get((int) value);
         } catch (IndexOutOfBoundsException ex) {
             strToReturn = "";
         }
@@ -759,7 +757,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
             return false;
         }
         MutableSymbolAxis that = (MutableSymbolAxis) obj;
-        if (!this.symbols.equals(that.symbols)) {
+        if (!this.symbols.equals(that.getSymbols())) {
             return false;
         }
         if (this.gridBandsVisible != that.gridBandsVisible) {
