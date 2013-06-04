@@ -139,6 +139,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         final Plot plotCopy = getPlot();
         if (plotCopy != null) {
             plotCopy.setSubsetDefinition(ocm.getSubsetDefinitionRef(subsetId));
+            
             ocm.updatePlot(this, plotCopy);
         }
     }//GEN-LAST:event_subsetComboBoxActionPerformed
