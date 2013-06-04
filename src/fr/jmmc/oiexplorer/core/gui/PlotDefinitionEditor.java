@@ -15,7 +15,6 @@ import fr.jmmc.oiexplorer.core.model.plot.ColorMapping;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.util.ColorMappingListCellRenderer;
 import fr.jmmc.oitools.model.OIFitsFile;
-import fr.jmmc.oitools.model.OITable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -222,9 +221,14 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         if (plotDef != null) {
             // Y axes:
             for (Axis axis : plotDef.getYAxes()) {
-                sb.append(axis.getName()).append(", ");
+                // skip invalid axis names:
+                if (axis.getName() != null) {
+                    if (sb.length() != 0) {
+                        sb.append(", ");
+                    }
+                    sb.append(axis.getName());
+                }
             }
-            sb.setLength(sb.length() - 2);
             // X axis:
             sb.append(" vs ").append(plotDef.getXAxis().getName());
 
@@ -250,16 +254,15 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private Set<String> getDistinctColumns(final OIFitsFile oiFitsFile) {
         final Set<String> columns = new LinkedHashSet<String>(32);
 
-        // Add every column of every tables for given target into combomodel sets
-        // TODO optimization could be operated walking only on the first element
-        for (OITable oiTable : oiFitsFile.getOiVis2()) {
-            oiTable.getNumericalColumnsNames(columns);
+        // Add every column of every tables for given target into ordered sets
+        if (oiFitsFile.hasOiVis2()) {
+            oiFitsFile.getOiVis2()[0].getNumericalColumnsNames(columns);
         }
-        for (OITable oiTable : oiFitsFile.getOiVis()) {
-            oiTable.getNumericalColumnsNames(columns);
+        if (oiFitsFile.hasOiVis()) {
+            oiFitsFile.getOiVis()[0].getNumericalColumnsNames(columns);
         }
-        for (OITable oiTable : oiFitsFile.getOiT3()) {
-            oiTable.getNumericalColumnsNames(columns);
+        if (oiFitsFile.hasOiT3()) {
+            oiFitsFile.getOiT3()[0].getNumericalColumnsNames(columns);
         }
 
         return columns;
@@ -487,20 +490,21 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
         // Add to PlotDefinition
         addYEditor(axis);
-        updateModel();
+        updateModel(true);
 
         checkYAxisActionButtons();
     }//GEN-LAST:event_addYAxisButtonActionPerformed
 
     private void delYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delYAxisButtonActionPerformed
-        if (yAxes.size() > 1) {
-            // TODO replace by removal of the last yCombobox which one has lost the foxus
-            Axis[] yAxisArray = yAxes.keySet().toArray(new Axis[]{});
-            Axis yAxis = yAxisArray[yAxes.size() - 1];
+        final int size = yAxes.size();
+        if (size > 1) {
+            // TODO replace by removal of the last yCombobox which one has lost the focus
+            Axis[] yAxisArray = yAxes.keySet().toArray(new Axis[size]);
+            Axis yAxis = yAxisArray[size - 1];
             delYEditor(yAxis);
 
             // Delete from PlotDefinition
-            updateModel();
+            updateModel(true);
         }
         checkYAxisActionButtons();
     }//GEN-LAST:event_delYAxisButtonActionPerformed
@@ -554,11 +558,11 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         final PlotDefinition plotDefCopy = getPlotDefinition();
 
         final ColorMapping colorMapping = plotDefCopy.getColorMapping();
-        
+
         // TODO: decide: should only copy axis infos or all ?
         // copy values from preset:
         plotDefCopy.copyValues(PlotDefinitionFactory.getInstance().getDefault(presetPlotDefId));
-        
+
         // TODO: clear name and description fields ?
 
         // keep color mapping:
