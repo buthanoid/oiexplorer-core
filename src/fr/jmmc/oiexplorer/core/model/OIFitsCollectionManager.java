@@ -870,7 +870,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             plot = new Plot();
             plot.setId(CURRENT_VIEW);
 
-            // HACK to define current pointers:
+            // define current pointers:
             plot.setSubsetDefinition(getCurrentSubsetDefinitionRef());
             plot.setPlotDefinition(getCurrentPlotDefinitionRef());
 
