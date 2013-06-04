@@ -67,6 +67,12 @@ public final class ConverterFactory {
         // associate converters to columns by default:
         converterByColumns.put(OIFitsConstants.COLUMN_EFF_WAVE, CONVERTER_MICRO_METER);
         converterByColumns.put(OIFitsConstants.COLUMN_SPATIAL_FREQ, CONVERTER_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_UCOORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_VCOORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_U1COORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_V1COORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_U2COORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_V2COORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
     }
 
     /** 
