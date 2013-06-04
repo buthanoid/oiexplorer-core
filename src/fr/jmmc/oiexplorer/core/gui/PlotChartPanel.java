@@ -1866,6 +1866,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     // TODO: support function (min, max, mean) applied to array data (2D)
 
 
+                    // Idea: use custom data consumer (2D, 1D, log or not, error or not)
+                    // it will reduce the number of if statements => better performance and simpler code
+                    // such data stream could also perform conversion on the fly
+                    // and maybe handle symetry (u, -u) (v, -v) ...
+                    
                     // Process Y value:
                     y = (isYData2D) ? yData2D[i][j] : yData1D[i];
 
