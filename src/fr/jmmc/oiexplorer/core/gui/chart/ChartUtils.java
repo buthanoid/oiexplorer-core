@@ -76,7 +76,7 @@ public class ChartUtils {
     /** larger draw stroke */
     public static final BasicStroke LARGE_STROKE = new BasicStroke(1.25f);
     /** larger draw stroke */
-    public static final BasicStroke VERY_LARGE_STROKE = new BasicStroke(1.75f);
+    public static final BasicStroke VERY_LARGE_STROKE = new BasicStroke(2.0f);
     /** dotted stroke */
     public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 4.0f, new float[]{4.0f}, 0.0f);
     /** zero insets */
@@ -194,6 +194,16 @@ public class ChartUtils {
      * @return chart panel
      */
     public static SquareChartPanel createSquareChartPanel(final JFreeChart chart) {
+        return createSquareChartPanel(chart, false);
+    }
+
+    /**
+     * Return new square chart panel using special draw widths to avoid scaling effects
+     * @param chart chart to use
+     * @param tooltips  a flag indicating whether or not tool-tips should be enabled for the chart.
+     * @return chart panel
+     */
+    public static SquareChartPanel createSquareChartPanel(final JFreeChart chart, final boolean tooltips) {
         final SquareChartPanel panel = new SquareChartPanel(chart,
                 DEFAULT_HEIGHT, DEFAULT_HEIGHT, /* prefered size */
                 DEFAULT_MINIMUM_DRAW_HEIGHT, DEFAULT_MINIMUM_DRAW_HEIGHT, /* minimum size before scaling */
@@ -204,10 +214,12 @@ public class ChartUtils {
                 true, /* save */
                 true, /* print */
                 false, /* zoom */
-                false /* tooltips */);
+                tooltips);
 
-        // Disable Storage for the chart entities:
-        panel.getChartRenderingInfo().setEntityCollection(null);
+        if (!tooltips) {
+            // Disable Storage for the chart entities:
+            panel.getChartRenderingInfo().setEntityCollection(null);
+        }
         return panel;
     }
 
