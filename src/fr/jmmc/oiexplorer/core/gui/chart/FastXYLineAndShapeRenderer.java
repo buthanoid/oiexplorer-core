@@ -3,8 +3,11 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Paint;
+import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
@@ -18,6 +21,7 @@ import java.io.Serializable;
 import org.jfree.chart.LegendItem;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.entity.EntityCollection;
+import org.jfree.chart.event.RendererChangeEvent;
 import org.jfree.chart.plot.CrosshairState;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.PlotRenderingInfo;
@@ -100,10 +104,10 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param shapes  shapes visible?
      */
     public FastXYLineAndShapeRenderer(boolean lines, boolean shapes) {
-        this.linesVisible = false;
+        this.linesVisible = lines;
         this.legendLine = new Line2D.Double(-7.0, 0.0, 7.0, 0.0);
 
-        this.shapesVisible = false;
+        this.shapesVisible = shapes;
 
         this.shapesFilled = false;
         this.useFillPaint = false;     // use item paint for fills by default
@@ -551,8 +555,15 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
                     drawPrimaryLineAsPath(state, g2, plot, dataset, pass,
                             series, item, domainAxis, rangeAxis, dataArea);
                 } else {
+
+                    // setup for collecting optional entity info...
+                    EntityCollection entities = null;
+                    if (info != null) {
+                        entities = info.getOwner().getEntityCollection();
+                    }
+
                     drawPrimaryLine((FastXYLineAndShapeRenderer.State) state, g2, plot, dataset, pass, series,
-                            item, domainAxis, rangeAxis, dataArea);
+                            item, domainAxis, rangeAxis, dataArea, entities);
                 }
             }
         } // second pass adds shapes where the items are ..
@@ -608,6 +619,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param pass  the pass.
      * @param series  the series index (zero-based).
      * @param item  the item index (zero-based).
+     * @param entities the entity collection.
      */
     protected void drawPrimaryLine(FastXYLineAndShapeRenderer.State state,
                                    Graphics2D g2,
@@ -618,7 +630,8 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
                                    int item,
                                    ValueAxis domainAxis,
                                    ValueAxis rangeAxis,
-                                   Rectangle2D dataArea) {
+                                   Rectangle2D dataArea,
+                                   EntityCollection entities) {
         if (item == 0) {
             return;
         }
@@ -661,6 +674,14 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         // clipping checks:
         if (state.workingLine.intersects(dataArea)) {
             drawFirstPassShape(g2, pass, series, item, state.workingLine);
+
+            // add an entity for the line, but only if it falls within the data area...
+            if (entities != null) {
+                final Shape entityArea = createStrokedLineShape((Line2D.Double)state.workingLine);
+
+                // note: item corresponds to point (x1,y1):
+                addEntity(entities, entityArea, dataset, series, item, Double.NaN, Double.NaN);
+            }
         }
     }
 
@@ -871,7 +892,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
             // add an entity for the item, but only if it falls within the data area...
             if (entities != null && isPointInRect(dataArea, xx, yy)) {
                 // Note: entities are disabled for performance !
-                
+
                 // Warning: may be slow depending on the concrete Shape#getBounds2D() implementation:
                 final Rectangle2D entityArea = shape.getBounds2D();
 
@@ -1171,6 +1192,59 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         this.paintList.clear();
         if (notify) {
             fireChangeEvent();
+        }
+    }
+    
+    /** line half width to compute stroked line shape used by tooltips */
+    private static double lineHalfWidth = 4.0;
+    /** temporary line vector */
+    private static double[] lineVect = new double[2];
+
+    /**
+     * Create the polygon shape arround the given line with a 4px margin
+     * @param line line shape
+     * @return polygon shape
+     */
+    private static Shape createStrokedLineShape(final Line2D.Double line) {
+        final double dx = line.x2 - line.x1;
+        final double dy = line.y2 - line.y1;
+
+        if (dx == 0.0 && dy == 0.0) {
+            return new Rectangle((int)(line.x1 - lineHalfWidth), (int)(line.y1 - lineHalfWidth), (int)(2d * lineHalfWidth), (int)(2d * lineHalfWidth));
+        }
+
+        /** line vector (lx, ly); normal is given by (ly, -lx)*/
+        computeVector(dx, dy, lineVect);
+
+        /** offsets (ox, oy); orthogonal offset is given by (oy, -ox)*/
+        final double ox = lineVect[0] * lineHalfWidth;
+        final double oy = lineVect[1] * lineHalfWidth;
+
+        // use ceil to convert coordinates to smaller integer:
+        final int[] xp = new int[]{
+            (int)(line.x1 - ox + oy),
+            (int)(line.x2 + ox + oy),
+            (int)(line.x2 + ox - oy),
+            (int)(line.x1 - ox - oy)
+        };
+        final int[] yp = new int[]{
+            (int)(line.y1 - oy - ox),
+            (int)(line.y2 + oy - ox),
+            (int)(line.y2 + oy + ox),
+            (int)(line.y1 - oy + ox)
+        };
+        return new Polygon(xp, yp, 4);
+    }
+
+    private static void computeVector(final double lx, final double ly, final double[] m) {
+        // final double len = Math.sqrt(lx * lx + ly * ly);
+        final double len = Math.abs(lx) + Math.abs(ly);
+        if (len == 0.0) {
+            m[0] = m[1] = 0.0;
+        } else {
+            final double inv = 1.0 / len;
+            m[0] = lx * inv;
+            m[1] = ly * inv;
         }
     }
 }
