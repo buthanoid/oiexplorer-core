@@ -27,6 +27,8 @@ public final class ConverterFactory {
     public final static String CONVERTER_MEGA_LAMBDA = "MEGA_LAMBDA";
     /** meter to micro meter converter to convert wave lengths */
     public final static String CONVERTER_MICRO_METER = "MICRO_METER";
+    /** Reflection converter (opposite sign) */
+    public final static String CONVERTER_REFLECT = "REFLECT";
     /** Factory instance */
     private static volatile ConverterFactory instance = null;
 
@@ -61,6 +63,7 @@ public final class ConverterFactory {
      */
     private void initializeDefaults() throws IllegalStateException {
         // create converters:
+        converters.put(CONVERTER_REFLECT, new ReflectConverter());
         converters.put(CONVERTER_MEGA_LAMBDA, new ScalingConverter(1e-6d, SpecialChars.UNIT_MEGA_LAMBDA));
         converters.put(CONVERTER_MICRO_METER, new ScalingConverter(1e6d, SpecialChars.UNIT_MICRO_METER));
 
