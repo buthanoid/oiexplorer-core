@@ -114,7 +114,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         };
 
         // equilateral triangle centered on its barycenter:
-        final int npoints = 4;
+        final int npoints = 3;
         final int[] xpoints = new int[npoints];
         final int[] ypoints = new int[npoints];
         xpoints[0] = 0;
@@ -123,8 +123,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         ypoints[1] = 2;
         xpoints[2] = -3;
         ypoints[2] = 2;
-        xpoints[3] = xpoints[0];
-        ypoints[3] = ypoints[0];
 
         shapePointInvalid = new Polygon(xpoints, ypoints, npoints) {
             /** default serial UID for Serializable interface */
@@ -381,6 +379,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         this.combinedXYPlot = new CombinedDomainXYPlot(ChartUtils.createAxis(""));
         this.combinedXYPlot.setGap(10.0D);
         this.combinedXYPlot.setOrientation(PlotOrientation.VERTICAL);
+        
+        // enlarge right margin to have last displayed value:
+        this.combinedXYPlot.setInsets(ChartUtils.NORMAL_PLOT_INSETS);
 
         configureCrosshair(this.combinedXYPlot, usePlotCrossHairSupport);
 
@@ -454,16 +455,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     private static XYPlot createScientificScatterPlot(final String xAxisLabel, final String yAxisLabel, final boolean usePlotCrossHairSupport) {
 
-        final XYPlot plot = ChartUtils.createScatterPlot(null, xAxisLabel, yAxisLabel, null, PlotOrientation.VERTICAL, false, false);
+        final XYPlot xyPlot = ChartUtils.createScatterPlot(null, xAxisLabel, yAxisLabel, null, PlotOrientation.VERTICAL, false, false);
 
-        plot.setNoDataMessage("No data for " + yAxisLabel);
+        // display axes at [0,0] :
+        xyPlot.setDomainZeroBaselineVisible(true);
+        xyPlot.setRangeZeroBaselineVisible(true);
 
-        // enlarge right margin to have last displayed value:
-        plot.setInsets(ChartUtils.NORMAL_PLOT_INSETS);
+        configureCrosshair(xyPlot, usePlotCrossHairSupport);
 
-        configureCrosshair(plot, usePlotCrossHairSupport);
-
-        final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
+        final FastXYErrorRenderer renderer = (FastXYErrorRenderer) xyPlot.getRenderer();
 
         // force to use the base shape
         renderer.setAutoPopulateSeriesShape(false);
@@ -483,7 +483,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         renderer.setCapLength(0d);
         renderer.setErrorPaint(new Color(192, 192, 192, 128));
 
-        return plot;
+        return xyPlot;
     }
 
     private static void configureCrosshair(final XYPlot plot, final boolean usePlotCrossHairSupport) {
@@ -990,6 +990,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         BoundedNumberAxis axis;
 
+        // Global converter (symmetry)
+        Converter xConverter = null, yConverter = null;
+
         double minX = Double.POSITIVE_INFINITY;
         double maxX = Double.NEGATIVE_INFINITY;
         boolean xUseLog = false;
@@ -1009,10 +1012,25 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 info.waveLengthRange = waveLengthRange;
 
                 int tableIndex = 0;
+
+                // Use symmetry for spatial frequencies:
+                if (useSymmetry(plotDef.getXAxis(), plotDef.getYAxes().get(0))) {
+                    xConverter = yConverter = ConverterFactory.getInstance().getDefault(ConverterFactory.CONVERTER_REFLECT);
+
+                    for (OIData oiData : oiFitsSubset.getOiDataList()) {
+
+                        // process data and add data series into given dataset:
+                        updatePlot(this.xyPlotPlot1, oiData, tableIndex, plotDef, 0, dataset, xConverter, yConverter, info);
+
+                        tableIndex++;
+                    }
+                    xConverter = yConverter = null;
+                }
+
                 for (OIData oiData : oiFitsSubset.getOiDataList()) {
 
                     // process data and add data series into given dataset:
-                    updatePlot(this.xyPlotPlot1, oiData, tableIndex, plotDef, 0, dataset, info);
+                    updatePlot(this.xyPlotPlot1, oiData, tableIndex, plotDef, 0, dataset, xConverter, yConverter, info);
 
                     tableIndex++;
                 }
@@ -1054,31 +1072,31 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     logger.debug("rangeAxis: {} - {}", minY, maxY);
 
-                    // use column meta's default range:
-                    if (!yUseLog && yMeta != null && yMeta.getDataRange() != null) {
-                        final DataRange dataRange = yMeta.getDataRange();
-
-                        if (!Double.isNaN(dataRange.getMin())) {
-                            minY = Math.min(minY, dataRange.getMin());
-                        }
-
-                        if (!Double.isNaN(dataRange.getMax())) {
-                            maxY = Math.max(maxY, dataRange.getMax());
-                        }
-                    }
-
                     // Add margin:
                     if (yUseLog) {
                         double minTen = Math.floor(Math.log10(minY));
                         double maxTen = Math.ceil(Math.log10(maxY));
 
                         if (maxTen == minTen) {
-                            maxTen += MARGIN_PERCENTS;
+                            minTen -= MARGIN_PERCENTS;
                         }
 
                         minY = Math.pow(10d, minTen); // lower power of ten
                         maxY = Math.pow(10d, maxTen); // upper power of ten
                     } else {
+                        // use column meta's default range:
+                        if (yMeta != null && yMeta.getDataRange() != null) {
+                            final DataRange dataRange = yMeta.getDataRange();
+
+                            if (!Double.isNaN(dataRange.getMin())) {
+                                minY = Math.min(minY, dataRange.getMin());
+                            }
+
+                            if (!Double.isNaN(dataRange.getMax())) {
+                                maxY = Math.max(maxY, dataRange.getMax());
+                            }
+                        }
+
                         final double marginY = (maxY - minY) * MARGIN_PERCENTS;
                         if (marginY > 0d) {
                             minY -= marginY;
@@ -1128,6 +1146,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                         this.xyPlotPlot1.setRangeAxis(logAxis);
                     }
+                    // tick color :
+                    this.xyPlotPlot1.getRangeAxis().setTickMarkPaint(Color.BLACK);
 
                     // update plot's renderer before dataset (avoid notify events):
                     final FastXYErrorRenderer renderer = (FastXYErrorRenderer) this.xyPlotPlot1.getRenderer();
@@ -1172,10 +1192,25 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 info.waveLengthRange = waveLengthRange;
 
                 int tableIndex = 0;
+                
+                // Use symmetry for spatial frequencies:
+                if (useSymmetry(plotDef.getXAxis(), plotDef.getYAxes().get(1))) {
+                    xConverter = yConverter = ConverterFactory.getInstance().getDefault(ConverterFactory.CONVERTER_REFLECT);
+
+                    for (OIData oiData : oiFitsSubset.getOiDataList()) {
+
+                        // process data and add data series into given dataset:
+                        updatePlot(this.xyPlotPlot2, oiData, tableIndex, plotDef, 1, dataset, xConverter, yConverter, info);
+
+                        tableIndex++;
+                    }
+                    xConverter = yConverter = null;
+                }
+
                 for (OIData oiData : oiFitsSubset.getOiDataList()) {
 
                     // process data and add data series into given dataset:
-                    updatePlot(this.xyPlotPlot2, oiData, tableIndex, plotDef, 1, dataset, info);
+                    updatePlot(this.xyPlotPlot2, oiData, tableIndex, plotDef, 1, dataset, xConverter, yConverter, info);
 
                     tableIndex++;
                 }
@@ -1217,31 +1252,31 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     logger.debug("rangeAxis: {} - {}", minY, maxY);
 
-                    // use column meta's default range:
-                    if (!yUseLog && yMeta != null && yMeta.getDataRange() != null) {
-                        final DataRange dataRange = yMeta.getDataRange();
-
-                        if (!Double.isNaN(dataRange.getMin())) {
-                            minY = Math.min(minY, dataRange.getMin());
-                        }
-
-                        if (!Double.isNaN(dataRange.getMax())) {
-                            maxY = Math.max(maxY, dataRange.getMax());
-                        }
-                    }
-
                     // Add margin:
                     if (yUseLog) {
                         double minTen = Math.floor(Math.log10(minY));
                         double maxTen = Math.ceil(Math.log10(maxY));
 
                         if (maxTen == minTen) {
-                            maxTen += MARGIN_PERCENTS;
+                            minTen -= MARGIN_PERCENTS;
                         }
 
                         minY = Math.pow(10d, minTen); // lower power of ten
                         maxY = Math.pow(10d, maxTen); // upper power of ten
                     } else {
+                        // use column meta's default range:
+                        if (yMeta != null && yMeta.getDataRange() != null) {
+                            final DataRange dataRange = yMeta.getDataRange();
+
+                            if (!Double.isNaN(dataRange.getMin())) {
+                                minY = Math.min(minY, dataRange.getMin());
+                            }
+
+                            if (!Double.isNaN(dataRange.getMax())) {
+                                maxY = Math.max(maxY, dataRange.getMax());
+                            }
+                        }
+
                         final double marginY = (maxY - minY) * MARGIN_PERCENTS;
                         if (marginY > 0d) {
                             minY -= marginY;
@@ -1291,6 +1326,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                         this.xyPlotPlot2.setRangeAxis(logAxis);
                     }
+                    // tick color :
+                    this.xyPlotPlot2.getRangeAxis().setTickMarkPaint(Color.BLACK);
 
                     // update plot's renderer before dataset (avoid notify events):
                     final FastXYErrorRenderer renderer = (FastXYErrorRenderer) this.xyPlotPlot2.getRenderer();
@@ -1329,46 +1366,53 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // TODO: keep data info to help user define its own range
 
-        // use column meta's default range:
-        if (!xUseLog && xMeta != null && xMeta.getDataRange() != null) {
-            final DataRange dataRange = xMeta.getDataRange();
-
-            if (!Double.isNaN(dataRange.getMin())) {
-                minX = Math.min(minX, dataRange.getMin());
-            }
-
-            if (!Double.isNaN(dataRange.getMax())) {
-                maxX = Math.max(maxX, dataRange.getMax());
-            }
-        }
-
         // Add margin:
         if (xUseLog) {
             double minTen = Math.floor(Math.log10(minX));
             double maxTen = Math.ceil(Math.log10(maxX));
 
             if (maxTen == minTen) {
-                maxTen += MARGIN_PERCENTS;
+                minTen -= MARGIN_PERCENTS;
             }
 
             minX = Math.pow(10d, minTen); // lower power of ten
             maxX = Math.pow(10d, maxTen); // upper power of ten
         } else {
+            boolean fixMin = false;
+            boolean fixMax = false;
+            
+            // use column meta's default range:
+            if (xMeta != null && xMeta.getDataRange() != null) {
+                final DataRange dataRange = xMeta.getDataRange();
+
+                if (!Double.isNaN(dataRange.getMin())) {
+                    fixMin = true;
+                    minX = Math.min(minX, dataRange.getMin());
+                }
+
+                if (!Double.isNaN(dataRange.getMax())) {
+                    fixMax = true;
+                    maxX = Math.max(maxX, dataRange.getMax());
+                }
+            }
+            // use x-axis's include zero flag:
+            if (plotDef.getXAxis().isIncludeZero()) {
+                if (minX > 0d) {
+                    fixMin = true;
+                    minX = 0d;
+                } else if (maxX < 0d) {
+                    fixMax = true;
+                    maxX = 0d;
+                }
+            }
+
+            // adjust x-axis margins:
             final double marginX = (maxX - minX) * MARGIN_PERCENTS;
             if (marginX > 0d) {
-                if (plotDef.getXAxis().isIncludeZero()) {
-                    if (minX > 0d) {
-                        minX = 0d;
-                        maxX += marginX;
-                    } else if (maxX < 0d) {
-                        minX -= marginX;
-                        maxX = 0d;
-                    } else {
-                        minX -= marginX;
-                        maxX += marginX;
-                    }
-                } else {
+                if (!fixMin) {
                     minX -= marginX;
+                }
+                if (!fixMax) {
                     maxX += marginX;
                 }
             } else {
@@ -1419,6 +1463,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             this.combinedXYPlot.setDomainAxis(logAxis);
         }
+        // tick color :
+        this.combinedXYPlot.getDomainAxis().setTickMarkPaint(Color.BLACK);
 
         // define custom legend:
         final ColorPalette palette = ColorPalette.getDefaultColorPaletteAlpha();
@@ -1483,11 +1529,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param plotDef plot definition to use
      * @param yAxisIndex yAxis index to use in plot definition
      * @param dataset FastIntervalXYDataset to fill
+     * @param initialXConverter converter to use first on x axis
+     * @param initialYConverter converter to use first on Y axis
      * @param info plot information to update
      */
     private void updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
                             final PlotDefinition plotDef, final int yAxisIndex,
                             final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
+                            final Converter initialXConverter, final Converter initialYConverter,
                             final PlotInfo info) {
 
         final boolean isLogDebug = logger.isDebugEnabled();
@@ -1509,6 +1558,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         final boolean yUseLog = yAxis.isLogScale();
+        final boolean doConvertY = (initialYConverter != null);
 
         final Converter yConverter = cf.getDefault(yAxis.getConverter());
         final boolean doScaleY = (yConverter != null);
@@ -1551,6 +1601,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         final boolean xUseLog = xAxis.isLogScale();
+        final boolean doConvertX = (initialXConverter != null);
 
         final Converter xConverter = cf.getDefault(xAxis.getConverter());
         final boolean doScaleX = (xConverter != null);
@@ -1870,7 +1921,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     // it will reduce the number of if statements => better performance and simpler code
                     // such data stream could also perform conversion on the fly
                     // and maybe handle symetry (u, -u) (v, -v) ...
-                    
+
                     // Process Y value:
                     y = (isYData2D) ? yData2D[i][j] : yData1D[i];
 
@@ -1881,6 +1932,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     if (!Double.isNaN(y)) {
                         // convert y value:
+                        if (doConvertY) {
+                            y = initialXConverter.evaluate(y);
+                        }
                         if (doScaleY) {
                             y = yConverter.evaluate(y);
                         }
@@ -1895,6 +1949,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                         if (!Double.isNaN(x)) {
                             // convert x value:
+                            if (doConvertX) {
+                                x = initialXConverter.evaluate(x);
+                            }
                             if (doScaleX) {
                                 x = xConverter.evaluate(x);
                             }
@@ -1924,6 +1981,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                 // ensure error is valid ie positive:
                                 if (yErr >= 0d) {
                                     // convert yErr value:
+                                    if (doConvertY) {
+                                        yErr = initialXConverter.evaluate(yErr);
+                                    }
                                     if (doScaleY) {
                                         yErr = yConverter.evaluate(yErr);
                                     }
@@ -1974,6 +2034,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                 // ensure error is valid ie positive:
                                 if (xErr >= 0d) {
                                     // convert xErr value:
+                                    if (doConvertX) {
+                                        xErr = initialXConverter.evaluate(xErr);
+                                    }
                                     if (doScaleX) {
                                         xErr = xConverter.evaluate(xErr);
                                     }
@@ -2485,8 +2548,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         Set<String> usedStaConfNames;
         /** largest wave length range (not filtered) */
         Range waveLengthRange = null;
-        /** used wave length range (filtered) */
-        Range usedLengthRange = null; // TODO: fill it
         /** x axis information */
         AxisInfo xAxisInfo;
         /** y axis information */
@@ -2555,5 +2616,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             default:
         }
         logger.debug("onProcess {} - done", event);
+    }
+    
+    /**
+     * Return true (use symmetry) if both axis use MegaLambda converter (ie 'are' both spatial frequencies)
+     * @param xAxis x axis
+     * @param yAxis y axis
+     * @return true (use symmetry) if both axis 'are' both spatial frequencies
+     */
+    private boolean useSymmetry(final Axis xAxis, final Axis yAxis) {
+        return ConverterFactory.CONVERTER_MEGA_LAMBDA.equals(xAxis.getConverter())
+                && ConverterFactory.CONVERTER_MEGA_LAMBDA.equals(yAxis.getConverter());
     }
 }
