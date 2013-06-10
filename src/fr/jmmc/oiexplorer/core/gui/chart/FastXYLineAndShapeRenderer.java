@@ -53,7 +53,9 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
     /** For serialization. */
     private static final long serialVersionUID = -7435246895986425885L;
     /** flag to test shape intersection or only data point vs data area */
-    private static boolean useShapeIntersection = false;
+    private static final boolean useShapeIntersection = false;
+    /** flag to show entity area (i.e. stroked line area) */
+    private static final boolean debugEntityArea = false;
     /**
      * A flag that controls whether or not lines are visible for ALL series.
      */
@@ -677,7 +679,12 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
 
             // add an entity for the line, but only if it falls within the data area...
             if (entities != null) {
-                final Shape entityArea = createStrokedLineShape((Line2D.Double)state.workingLine);
+                final Shape entityArea = createStrokedLineShape((Line2D.Double) state.workingLine);
+
+                if (debugEntityArea) {
+                    g2.setColor(Color.PINK);
+                    g2.draw(entityArea);
+                }
 
                 // note: item corresponds to point (x1,y1):
                 addEntity(entities, entityArea, dataset, series, item, Double.NaN, Double.NaN);
@@ -1194,7 +1201,6 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
             fireChangeEvent();
         }
     }
-    
     /** line half width to compute stroked line shape used by tooltips */
     private static double lineHalfWidth = 4.0;
     /** temporary line vector */
@@ -1210,7 +1216,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         final double dy = line.y2 - line.y1;
 
         if (dx == 0.0 && dy == 0.0) {
-            return new Rectangle((int)(line.x1 - lineHalfWidth), (int)(line.y1 - lineHalfWidth), (int)(2d * lineHalfWidth), (int)(2d * lineHalfWidth));
+            return new Rectangle((int) (line.x1 - lineHalfWidth), (int) (line.y1 - lineHalfWidth), (int) (2d * lineHalfWidth), (int) (2d * lineHalfWidth));
         }
 
         /** line vector (lx, ly); normal is given by (ly, -lx)*/
@@ -1222,16 +1228,16 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
 
         // use ceil to convert coordinates to smaller integer:
         final int[] xp = new int[]{
-            (int)(line.x1 - ox + oy),
-            (int)(line.x2 + ox + oy),
-            (int)(line.x2 + ox - oy),
-            (int)(line.x1 - ox - oy)
+            (int) (line.x1 - ox + oy),
+            (int) (line.x2 + ox + oy),
+            (int) (line.x2 + ox - oy),
+            (int) (line.x1 - ox - oy)
         };
         final int[] yp = new int[]{
-            (int)(line.y1 - oy - ox),
-            (int)(line.y2 + oy - ox),
-            (int)(line.y2 + oy + ox),
-            (int)(line.y1 - oy + ox)
+            (int) (line.y1 - oy - ox),
+            (int) (line.y2 + oy - ox),
+            (int) (line.y2 + oy + ox),
+            (int) (line.y1 - oy + ox)
         };
         return new Polygon(xp, yp, 4);
     }
