@@ -42,7 +42,7 @@ public class ColorPalette {
     /** default color palette */
     private static ColorPalette DEFAULT_COLOR_PALETTE = new ColorPalette(DEFAULT_COLORS);
     /** default color palette with 80% opacity */
-    private static ColorPalette DEFAULT_COLOR_PALETTE_ALPHA = new ColorPalette(DEFAULT_COLORS, 0.75f);
+    private static ColorPalette DEFAULT_COLOR_PALETTE_ALPHA = new ColorPalette(DEFAULT_COLORS, 0.8f);
 
     /**
      * Return the default color palette
