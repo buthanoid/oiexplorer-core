@@ -569,7 +569,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         // keep color mapping:
         plotDefCopy.setColorMapping(colorMapping);
 
-        plotDefinitionComboBox.setSelectedIndex(0);
         refreshForm(plotDefCopy, null);
         updateModel();
     }//GEN-LAST:event_plotDefinitionComboBoxActionPerformed
