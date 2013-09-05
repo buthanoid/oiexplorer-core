@@ -379,7 +379,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         this.combinedXYPlot = new CombinedDomainXYPlot(ChartUtils.createAxis(""));
         this.combinedXYPlot.setGap(10.0D);
         this.combinedXYPlot.setOrientation(PlotOrientation.VERTICAL);
-        
+
         // enlarge right margin to have last displayed value:
         this.combinedXYPlot.setInsets(ChartUtils.NORMAL_PLOT_INSETS);
 
@@ -1038,8 +1038,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 if (info.hasPlotData) {
                     showPlot1 = true;
 
-                    logger.debug("xyPlotPlot1: nData = {}", info.nData);
-                    logger.debug("xyPlotPlot1: nbSeries = {}", dataset.getSeriesCount());
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("xyPlotPlot1: nData = {}", info.nData);
+                        logger.debug("xyPlotPlot1: nbSeries = {}", dataset.getSeriesCount());
+                    }
 
                     // add plot info:
                     getPlotInfos().add(info);
@@ -1192,7 +1194,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 info.waveLengthRange = waveLengthRange;
 
                 int tableIndex = 0;
-                
+
                 // Use symmetry for spatial frequencies:
                 if (useSymmetry(plotDef.getXAxis(), plotDef.getYAxes().get(1))) {
                     xConverter = yConverter = ConverterFactory.getInstance().getDefault(ConverterFactory.CONVERTER_REFLECT);
@@ -1218,8 +1220,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 if (info.hasPlotData) {
                     showPlot2 = true;
 
-                    logger.debug("xyPlotPlot2: nData = {}", info.nData);
-                    logger.debug("xyPlotPlot2: nbSeries = {}", dataset.getSeriesCount());
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("xyPlotPlot2: nData = {}", info.nData);
+                        logger.debug("xyPlotPlot2: nbSeries = {}", dataset.getSeriesCount());
+                    }
 
                     // add plot info:
                     getPlotInfos().add(info);
@@ -1380,7 +1384,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         } else {
             boolean fixMin = false;
             boolean fixMax = false;
-            
+
             // use column meta's default range:
             if (xMeta != null && xMeta.getDataRange() != null) {
                 final DataRange dataRange = xMeta.getDataRange();
@@ -1469,7 +1473,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // define custom legend:
         final ColorPalette palette = ColorPalette.getDefaultColorPaletteAlpha();
 
-        final LegendItemCollection legendCollection = new LegendItemCollection();
+        LegendItemCollection legendCollection = new LegendItemCollection();
 
         if (ColorMapping.STATION_INDEX == plotDef.getColorMapping()) {
             // merge all used staIndex names:
@@ -1503,6 +1507,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         // TODO: use ColorScale to paint an horizontal wavelength color scale
+        if (legendCollection.getItemCount() > 100) {
+            // avoid too many legend items:
+            if (logger.isDebugEnabled()) {
+                logger.debug("legend items: {}", legendCollection.getItemCount());
+            }
+
+            legendCollection = new LegendItemCollection();
+        }
 
         this.combinedXYPlot.setFixedLegendItems(legendCollection);
     }
@@ -2617,7 +2629,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
         logger.debug("onProcess {} - done", event);
     }
-    
+
     /**
      * Return true (use symmetry) if both axis use MegaLambda converter (ie 'are' both spatial frequencies)
      * @param xAxis x axis
