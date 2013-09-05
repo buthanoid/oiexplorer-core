@@ -135,16 +135,16 @@
         </yAxes> 
     </plotDefinition>
     
-    <!-- plot(Vis2 - T3) vs mjd -->
+    <!-- plot(Vis2 - T3) vs hour angle -->
     <plotDefinition>
-        <id>VIS2DATA_T3PHI/MJD</id>
-        <name>Vis2Data and T3Phi vs. MJD</name>
+        <id>VIS2DATA_T3PHI/HOUR_ANGLE</id>
+        <name>Vis2Data and T3Phi vs. Hour angle</name>
         <skipFlaggedData>true</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
-            <name>MJD</name>
+            <name>HOUR_ANGLE</name>
             <logScale>false</logScale>
-            <includeZero>false</includeZero>
+            <includeZero>true</includeZero>
         </xAxis>
         <yAxes>
             <name>VIS2DATA</name>
@@ -255,16 +255,16 @@
         </yAxes> 
     </plotDefinition>
     
-    <!-- plot(Vis2 / VisAmp) vs mjd -->
+    <!-- plot(Vis2 / VisAmp) vs hour angle -->
     <plotDefinition>
-        <id>VIS2DATA_VISAMP/MJD</id>
-        <name>Vis2Data and VisAmp vs. MJD</name>
+        <id>VIS2DATA_VISAMP/HOUR_ANGLE</id>
+        <name>Vis2Data and VisAmp vs. Hour angle</name>
         <skipFlaggedData>true</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
-            <name>MJD</name>
+            <name>HOUR_ANGLE</name>
             <logScale>false</logScale>
-            <includeZero>false</includeZero>
+            <includeZero>true</includeZero>
         </xAxis>
         <yAxes>
             <name>VIS2DATA</name>
