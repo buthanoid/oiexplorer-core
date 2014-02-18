@@ -21,13 +21,13 @@
         <dependency>
             <groupId>fr.jmmc.jmal</groupId>
             <artifactId>jmal</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>TRUNK</version>
         </dependency>
 
         <dependency>
             <groupId>fr.jmmc.oitools</groupId>
             <artifactId>oitools</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>TRUNK</version>
         </dependency>
 
         <dependency>
