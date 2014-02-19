@@ -16,7 +16,17 @@
     <packaging>jar</packaging>
     <name>OIFitsExplorerCore</name>
 
+    <properties>
+	<!-- do copy dependencies (JNLP) -->
+	<mdep.skip>false</mdep.skip>
+    </properties>
+
     <dependencies>
+        <dependency>
+            <groupId>fr.jmmc.jmcs</groupId>
+            <artifactId>jmcs</artifactId>
+            <version>TRUNK</version>
+        </dependency>
 
         <dependency>
             <groupId>fr.jmmc.jmal</groupId>
