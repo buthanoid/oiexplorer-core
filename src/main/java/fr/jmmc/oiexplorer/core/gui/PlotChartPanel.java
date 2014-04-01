@@ -2268,7 +2268,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         // DEBUG (TODO KILL ASAP):
-        if (true) {
+        if (false) {
             switch (event.getType()) {
                 case ChartProgressEvent.DRAWING_STARTED:
                     this.chartDrawStartTime = System.nanoTime();
