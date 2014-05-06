@@ -3,8 +3,11 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
+import fr.jmmc.jmcs.data.app.ApplicationDescription;
+import fr.jmmc.jmcs.data.preference.CommonPreferences;
 import fr.jmmc.jmcs.gui.component.StatusBar;
 import fr.jmmc.jmcs.service.RecentFilesManager;
+import fr.jmmc.jmcs.util.FileUtils;
 import fr.jmmc.jmcs.util.jaxb.JAXBFactory;
 import fr.jmmc.jmcs.util.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.util.jaxb.XmlBindException;
@@ -26,6 +29,8 @@ import fr.nom.tam.fits.FitsException;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
@@ -134,9 +139,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         final long startTime = System.nanoTime();
 
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
-        
+
         OIDataCollectionFileProcessor.onLoad(loadedUserCollection);
-        
+
         loadOIDataCollection(loadedUserCollection, checker);
 
         // after loadOIDataCollection as it calls reset():
@@ -158,13 +163,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         final long startTime = System.nanoTime();
 
         final OiDataCollection savedUserCollection = getUserCollection();
-        
+
         OIDataCollectionFileProcessor.onSave(savedUserCollection);
 
         // TODO: may also save OIFits file copies into zip archive (xml + OIFits files) ??
-
         JAXBUtils.saveObject(file, savedUserCollection, this.jf);
-                
+
         setOiFitsCollectionFile(file);
 
         logger.info("saveOIFitsCollection: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
@@ -205,10 +209,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         // TODO: check missing files !
-
         // TODO what about user plot definitions ...
         // add them but should be check for consistency related to loaded files (errors can occur while loading):
-
         // then add SubsetDefinition:
         for (SubsetDefinition subsetDefinition : oiDataCollection.getSubsetDefinitions()) {
             // fix OIDataFile reference:
@@ -225,7 +227,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         // TODO: check subset and plot definition references in Plot ?
-
         // then add Plot:
         for (Plot plot : oiDataCollection.getPlots()) {
             this.addPlotRef(plot);
@@ -246,14 +247,28 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     public void loadOIFitsFile(final String fileLocation, final OIFitsChecker checker) throws IOException {
         //@todo test if file has already been loaded before going further ??        
 
-        StatusBar.show("loading file: " + fileLocation);
-
         try {
-            // The file must be one oidata file
-            final OIFitsFile oifitsFile = OIFitsLoader.loadOIFits(checker, fileLocation);
+            OIFitsFile oifitsFile = null;
+
+            // retrieve oifits if remote or use local one
+            if (FileUtils.isRemote(fileLocation)) {
+                // TODO associate one preference for file storage and provide its GUI instead of next hardcoded value
+                String parentPath = CommonPreferences.getInstance().getPreference(CommonPreferences.FILE_STORAGE_LOCATION)
+                        + File.separator
+                        + ApplicationDescription.getInstance().getProgramName();
+                
+                File localCopy = FileUtils.retrieveRemoteFile(fileLocation, parentPath);
+                oifitsFile = OIFitsLoader.loadOIFits(checker, localCopy.getAbsolutePath());
+                oifitsFile.setSourceURI(new URI(fileLocation));
+
+                StatusBar.show("loading file: " + fileLocation + " ( local copy: " + localCopy.getAbsolutePath() + ") ");
+            } else {
+                oifitsFile = OIFitsLoader.loadOIFits(checker, fileLocation);
+
+                StatusBar.show("loading file: " + fileLocation);
+            }
 
             addOIFitsFile(oifitsFile);
-
             logger.info("file loaded : '{}'", oifitsFile.getAbsoluteFilePath());
 
         } catch (MalformedURLException mue) {
@@ -262,6 +277,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             throw new IOException("Could not load the file : " + fileLocation, ioe);
         } catch (FitsException fe) {
             throw new IOException("Could not load the file : " + fileLocation, fe);
+        } catch (URISyntaxException use) {
+            throw new IOException("Could not load the file : " + fileLocation, use);
         }
     }
 
@@ -301,7 +318,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
         fireOIFitsCollectionChanged();
     }
-    
+
     /**
      * Remove all OIDataFiles
      */
@@ -331,7 +348,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
                 // TODO: make it unique !!
                 dataFile.setId(id);
-                
+
                 dataFile.setName(oiFitsFile.getName());
 
                 dataFile.setFile(oiFitsFile.getAbsoluteFilePath());
@@ -474,7 +491,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     public SubsetDefinition getCurrentSubsetDefinitionRef() {
         SubsetDefinition subsetDefinition = getSubsetDefinitionRef(CURRENT_SUBSET_DEFINITION);
         if (subsetDefinition == null) {
-            subsetDefinition = new SubsetDefinition();            
+            subsetDefinition = new SubsetDefinition();
             subsetDefinition.setId(CURRENT_SUBSET_DEFINITION);
 
             addSubsetDefinitionRef(subsetDefinition);
@@ -923,12 +940,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             logger.debug("removePlot: {}", id);
         }
         Plot p = Identifiable.removeIdentifiable(id, getPlotList());
-        if ( p != null) {            
+        if (p != null) {
             // try to cleanup associated elements
             // TODO check if some element are shared when available
             // See also ObservationSetting.checkReferences()
             removePlotDefinition(p.getPlotDefinition().getId());
-            removeSubsetDefinition(p.getSubsetDefinition().getId());            
+            removeSubsetDefinition(p.getSubsetDefinition().getId());
             firePlotListChanged();
             return true;
         }
@@ -1359,7 +1376,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 getCurrentPlotRef();
 
                 // CASCADE EVENTS:
-
                 // SubsetDefinition:
                 for (SubsetDefinition subsetDefinition : getSubsetDefinitionList()) {
                     // force fireSubsetChanged, update plot reference and firePlotChanged:
