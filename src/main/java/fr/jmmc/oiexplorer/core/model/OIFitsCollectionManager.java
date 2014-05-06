@@ -248,7 +248,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         //@todo test if file has already been loaded before going further ??        
 
         try {
-            OIFitsFile oifitsFile = null;
+            final OIFitsFile oifitsFile;
 
             // retrieve oifits if remote or use local one
             if (FileUtils.isRemote(fileLocation)) {
@@ -256,7 +256,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 String parentPath = CommonPreferences.getInstance().getPreference(CommonPreferences.FILE_STORAGE_LOCATION)
                         + File.separator
                         + ApplicationDescription.getInstance().getProgramName();
-                
+
                 File localCopy = FileUtils.retrieveRemoteFile(fileLocation, parentPath);
                 oifitsFile = OIFitsLoader.loadOIFits(checker, localCopy.getAbsolutePath());
                 oifitsFile.setSourceURI(new URI(fileLocation));
