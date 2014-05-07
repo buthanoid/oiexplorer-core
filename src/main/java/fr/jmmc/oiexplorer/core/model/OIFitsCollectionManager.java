@@ -3,8 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
-import fr.jmmc.jmcs.data.app.ApplicationDescription;
-import fr.jmmc.jmcs.data.preference.CommonPreferences;
+import fr.jmmc.jmcs.data.preference.SessionSettingsPreferences;
 import fr.jmmc.jmcs.gui.component.StatusBar;
 import fr.jmmc.jmcs.service.RecentFilesManager;
 import fr.jmmc.jmcs.util.FileUtils;
@@ -252,16 +251,15 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
             // retrieve oifits if remote or use local one
             if (FileUtils.isRemote(fileLocation)) {
-                // TODO associate one preference for file storage and provide its GUI instead of next hardcoded value
-                String parentPath = CommonPreferences.getInstance().getPreference(CommonPreferences.FILE_STORAGE_LOCATION)
-                        + File.separator
-                        + ApplicationDescription.getInstance().getProgramName();
+                // TODO let the user customize the application file storage preference:
+                final String parentPath = SessionSettingsPreferences.getApplicationFileStorage();
 
-                File localCopy = FileUtils.retrieveRemoteFile(fileLocation, parentPath);
+                final File localCopy = FileUtils.retrieveRemoteFile(fileLocation, parentPath);
+                
                 oifitsFile = OIFitsLoader.loadOIFits(checker, localCopy.getAbsolutePath());
                 oifitsFile.setSourceURI(new URI(fileLocation));
 
-                StatusBar.show("loading file: " + fileLocation + " ( local copy: " + localCopy.getAbsolutePath() + ") ");
+                StatusBar.show("loading file: " + fileLocation + " ( local copy: " + localCopy.getAbsolutePath() + " )");
             } else {
                 oifitsFile = OIFitsLoader.loadOIFits(checker, fileLocation);
 
