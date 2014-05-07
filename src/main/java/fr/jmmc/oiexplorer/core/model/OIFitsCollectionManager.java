@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
+import fr.jmmc.jmcs.data.MimeType;
 import fr.jmmc.jmcs.data.preference.SessionSettingsPreferences;
 import fr.jmmc.jmcs.gui.component.StatusBar;
 import fr.jmmc.jmcs.service.RecentFilesManager;
@@ -254,7 +255,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 // TODO let the user customize the application file storage preference:
                 final String parentPath = SessionSettingsPreferences.getApplicationFileStorage();
 
-                final File localCopy = FileUtils.retrieveRemoteFile(fileLocation, parentPath);
+                final File localCopy = FileUtils.retrieveRemoteFile(fileLocation, parentPath, MimeType.OIFITS);
                 
                 oifitsFile = OIFitsLoader.loadOIFits(checker, localCopy.getAbsolutePath());
                 oifitsFile.setSourceURI(new URI(fileLocation));
