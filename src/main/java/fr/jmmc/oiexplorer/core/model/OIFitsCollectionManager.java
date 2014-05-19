@@ -255,6 +255,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 // TODO let the user customize the application file storage preference:
                 final String parentPath = SessionSettingsPreferences.getApplicationFileStorage();
 
+                // TODO: perform download asynchronously (background cancellable task & timeout)
+                // to avoid blocking the Swing GUI if slow transfer or timeout (no network or bad proxy):
                 final File localCopy = FileUtils.retrieveRemoteFile(fileLocation, parentPath, MimeType.OIFITS);
                 
                 oifitsFile = OIFitsLoader.loadOIFits(checker, localCopy.getAbsolutePath());
