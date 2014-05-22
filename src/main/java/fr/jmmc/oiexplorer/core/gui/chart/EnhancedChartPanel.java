@@ -3,11 +3,13 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
+import fr.jmmc.jmcs.util.IntrospectionUtils;
 import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.lang.reflect.Field;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.ChartPanel;
@@ -31,6 +33,8 @@ public class EnhancedChartPanel extends ChartPanel {
     private static final Logger logger = LoggerFactory.getLogger(EnhancedChartPanel.class.getName());
     /** flag to debug paint operations */
     public static final boolean DEBUG_PAINT = false;
+    /** ChartPanel.mouseWheelHandler Field */
+    private static final Field mwhField = getMouseWheelHandlerField();
 
     /* members */
     /** flag to redirect zoom action */
@@ -71,10 +75,10 @@ public class EnhancedChartPanel extends ChartPanel {
      * @since 1.0.13
      */
     public EnhancedChartPanel(final JFreeChart chart, final int width, final int height,
-            final int minimumDrawWidth, final int minimumDrawHeight, final int maximumDrawWidth,
-            final int maximumDrawHeight, final boolean useBuffer, final boolean properties,
-            final boolean copy, boolean save, final boolean print, final boolean zoom,
-            final boolean tooltips) {
+                              final int minimumDrawWidth, final int minimumDrawHeight, final int maximumDrawWidth,
+                              final int maximumDrawHeight, final boolean useBuffer, final boolean properties,
+                              final boolean copy, boolean save, final boolean print, final boolean zoom,
+                              final boolean tooltips) {
         super(chart, width, height, minimumDrawWidth, minimumDrawHeight, maximumDrawWidth, maximumDrawHeight,
                 useBuffer, properties, copy, save, print, zoom, tooltips);
     }
@@ -100,6 +104,49 @@ public class EnhancedChartPanel extends ChartPanel {
             logger.warn("Paint[{}] chart time = {} ms.", getRefreshBuffer(), 1e-6d * (System.nanoTime() - startTime));
         }
     }
+
+    /**
+     * Enables or disables mouse wheel support for the panel.
+     * Note that this method does nothing when running JFreeChart on JRE 1.3.1,
+     * because that older version of the Java runtime does not support
+     * mouse wheel events.
+     * 
+     * LBO: FIX leaking ChartPanel.mouseWheelHandler value
+     *
+     * @param flag  a boolean.
+     *
+     * @since 1.0.13
+     */
+    @Override
+    public void setMouseWheelEnabled(boolean flag) {
+        super.setMouseWheelEnabled(flag);
+
+        if (!flag) {
+            /* FIX leaking ChartPanel.mouseWheelHandler value */
+            if (mwhField != null) {
+                try {
+                    mwhField.set(this, null);
+                } catch (IllegalAccessException iae) {
+                    logger.info("unable to set ChartPanel.mouseWheelHandler to null", iae);
+                } catch (IllegalArgumentException iae) {
+                    logger.info("unable to set ChartPanel.mouseWheelHandler to null", iae);
+                }
+            }
+        }
+    }
+
+    private static Field getMouseWheelHandlerField() {
+        final Field field = IntrospectionUtils.getField(ChartPanel.class, "mouseWheelHandler");
+        if (field != null) {
+            try {
+                field.setAccessible(true);
+            } catch (SecurityException se) {
+                logger.info("unable to call Field.setAccessible() for ChartPanel.mouseWheelHandler", se);
+            }
+        }
+        return field;
+    }
+
 
     /* MouseListener implementation */
     /**
