@@ -127,9 +127,9 @@ public class EnhancedChartPanel extends ChartPanel {
                 try {
                     mwhField.set(this, null);
                 } catch (IllegalAccessException iae) {
-                    logger.info("unable to set ChartPanel.mouseWheelHandler to null", iae);
+                    logger.error("unable to set ChartPanel.mouseWheelHandler to null", iae);
                 } catch (IllegalArgumentException iae) {
-                    logger.info("unable to set ChartPanel.mouseWheelHandler to null", iae);
+                    logger.error("unable to set ChartPanel.mouseWheelHandler to null", iae);
                 }
             }
         }
@@ -141,7 +141,7 @@ public class EnhancedChartPanel extends ChartPanel {
             try {
                 field.setAccessible(true);
             } catch (SecurityException se) {
-                logger.info("unable to call Field.setAccessible() for ChartPanel.mouseWheelHandler", se);
+                logger.error("unable to call Field.setAccessible() for ChartPanel.mouseWheelHandler", se);
             }
         }
         return field;
