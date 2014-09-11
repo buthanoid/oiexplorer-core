@@ -88,9 +88,9 @@ public class ChartUtils {
     /** custom chart theme */
     public final static StandardChartTheme CHART_THEME;
     /** The default panel width. */
-    public static final int DEFAULT_WIDTH = 600;
+    public static final int DEFAULT_WIDTH = 400;
     /** The default panel height. */
-    public static final int DEFAULT_HEIGHT = 400;
+    public static final int DEFAULT_HEIGHT = 300;
     /** The default limit below which chart scaling kicks in. */
     public static final int DEFAULT_MINIMUM_DRAW_WIDTH = 300;
     /** The default limit below which chart scaling kicks in. */
