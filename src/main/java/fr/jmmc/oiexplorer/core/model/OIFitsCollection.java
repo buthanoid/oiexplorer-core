@@ -10,7 +10,6 @@ import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -24,8 +23,8 @@ public final class OIFitsCollection implements ToStringable {
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(OIFitsCollection.class);
     /* members */
-    /** OIFits file collection ordered by insertion order */
-    private final Map<String, OIFitsFile> oiFitsCollection = new LinkedHashMap<String, OIFitsFile>();
+    /** OIFits file collection keyed by absolute file path */
+    private final Map<String, OIFitsFile> oiFitsCollection = new HashMap<String, OIFitsFile>();
     /** cached OIFitsFile structure per TargetUID */
     private final Map<TargetUID, OIFitsFile> oiFitsPerTarget = new HashMap<TargetUID, OIFitsFile>();
 
@@ -154,7 +153,6 @@ public final class OIFitsCollection implements ToStringable {
                 final TargetUID target = new TargetUID(entry.getKey());
 
                 // TODO: Cross Match on target RA/DEC because names ...
-
                 OIFitsFile oiFitsTarget = oiFitsPerTarget.get(target);
                 if (oiFitsTarget == null) {
                     oiFitsTarget = new OIFitsFile();
