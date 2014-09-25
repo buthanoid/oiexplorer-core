@@ -185,7 +185,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws IOException if a fits file can not be loaded
      */
     public void loadOIFitsFiles(final File[] files, final OIFitsChecker checker) throws IOException {
-
         // fire OIFitsCollectionChanged:
         for (File file : files) {
             loadOIFitsFile(file.getAbsolutePath(), checker);
@@ -199,7 +198,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws IOException if a fits file can not be loaded
      */
     private void loadOIDataCollection(final OiDataCollection oiDataCollection, final OIFitsChecker checker) throws IOException {
-
         // first reset:
         reset();
 
@@ -258,7 +256,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 // TODO: perform download asynchronously (background cancellable task & timeout)
                 // to avoid blocking the Swing GUI if slow transfer or timeout (no network or bad proxy):
                 final File localCopy = FileUtils.retrieveRemoteFile(fileLocation, parentPath, MimeType.OIFITS);
-                
+
                 oifitsFile = OIFitsLoader.loadOIFits(checker, localCopy.getAbsolutePath());
                 oifitsFile.setSourceURI(new URI(fileLocation));
 
@@ -272,8 +270,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             addOIFitsFile(oifitsFile);
             logger.info("file loaded : '{}'", oifitsFile.getAbsoluteFilePath());
 
-        } catch (MalformedURLException mue) {
-            throw new IOException("Could not load the file : " + fileLocation, mue);
         } catch (IOException ioe) {
             throw new IOException("Could not load the file : " + fileLocation, ioe);
         } catch (FitsException fe) {
