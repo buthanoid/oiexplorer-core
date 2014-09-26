@@ -6,6 +6,8 @@ package fr.jmmc.oiexplorer.core.gui.chart;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.event.AxisChangeEvent;
 import org.jfree.data.Range;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This customized symbol axis uses bounds to limits its expansion (zoom out).
@@ -18,6 +20,10 @@ public final class BoundedLogAxis extends LogarithmicAxis {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
+    /** Class logger */
+    private static final Logger logger = LoggerFactory.getLogger(BoundedLogAxis.class.getName());
+    /** largest log window to avoid excessive ranges */
+    private static final Range extrema = new Range(1e-15, 1e15);
 
     /* members */
     /** axis bounds */
@@ -60,7 +66,17 @@ public final class BoundedLogAxis extends LogarithmicAxis {
      * @param bounds axis bounds or null
      */
     public void setBounds(final Range bounds) {
-        this.bounds = bounds;
+        // Fix bounds within extrema values:
+        if ((bounds.getLowerBound() >= extrema.getLowerBound()) && (bounds.getUpperBound() <= extrema.getUpperBound())) {
+            this.bounds = bounds;
+        } else {
+            final double min = Math.max(extrema.getLowerBound(), bounds.getLowerBound());
+            final double max = Math.min(extrema.getUpperBound(), bounds.getUpperBound());
+
+            this.bounds = (min < max) ? new Range(min, max) : new Range(min, min * 10.);
+
+            logger.info("BoundedLogAxis: fix extrema for bounds {} : {}", bounds, this.bounds);
+        }
     }
 
     /**
@@ -91,7 +107,6 @@ public final class BoundedLogAxis extends LogarithmicAxis {
              at org.jfree.chart.ChartPanel.restoreAutoBounds(ChartPanel.java:2390)
              at org.jfree.chart.ChartPanel.mouseReleased(ChartPanel.java:2044)
              */
-
             // Use the axis bounds to redefine the ranges (reset zoom)
             setRange(this.bounds, false, notify);
 
@@ -116,12 +131,11 @@ public final class BoundedLogAxis extends LogarithmicAxis {
      */
     @Override
     public void setRange(final Range range, final boolean turnOffAutoRange,
-            final boolean notify) {
+                         final boolean notify) {
 
         Range newRange = range;
 
         // check if range is within bounds :
-
         if (this.bounds != null) {
             final double lower = this.bounds.getLowerBound();
             final double upper = this.bounds.getUpperBound();
