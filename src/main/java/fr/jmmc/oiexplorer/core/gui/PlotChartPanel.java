@@ -241,7 +241,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // TODO: keep values from dataset ONLY: 
         // - arrName, insName, dateObs (keywords) = OK
         // - baselines or configurations (rows) = KO ... IF HAS DATA (filtered)
-
         if (isHasData()) {
 
             final Set<String> distinct = new LinkedHashSet<String>();
@@ -413,7 +412,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         this.add(this.chartPanel, BorderLayout.CENTER);
 
         // Create sub plots (TODO externalize):
-
         this.xyPlotPlot1 = createScientificScatterPlot(null, "", usePlotCrossHairSupport);
 
         this.aJMMCPlot1 = ChartUtils.createJMMCAnnotation(Constants.JMMC_ANNOTATION);
@@ -602,7 +600,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         logger.debug("mouseSelected: rectangle {}", selection);
 
         // TODO: determine which plot to use ?
-
         // find data points:
         final List<Point2D> points = findDataPoints(selection);
 
@@ -625,7 +622,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         if (dataset != null) {
 
             // TODO: move such code elsewhere : ChartUtils or XYDataSetUtils ?
-
             final long startTime = System.nanoTime();
 
             double minDistance = Double.POSITIVE_INFINITY;
@@ -635,7 +631,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             double x, y, dx, dy, distance;
 
             // NOTE: not optimized
-
             // standard case - plain XYDataset
             for (int serie = 0, seriesCount = dataset.getSeriesCount(), item, itemCount; serie < seriesCount; serie++) {
                 itemCount = dataset.getItemCount(serie);
@@ -702,7 +697,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             double x, y;
 
             // NOTE: not optimized
-
             // standard case - plain XYDataset
             for (int serie = 0, seriesCount = dataset.getSeriesCount(), item, itemCount; serie < seriesCount; serie++) {
                 itemCount = dataset.getItemCount(serie);
@@ -832,7 +826,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 // TODO: keep values from dataset ONLY: 
                 // - arrName, insName, dateObs (keywords) = OK
                 // - baselines or configurations (rows) = KO ... IF HAS DATA (filtered)
-
                 final StringBuilder sb = new StringBuilder(32);
 
                 // Add distinct arrNames:
@@ -1180,7 +1173,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             this.plotIndexMapping.put(plotIndex, this.xyPlotPlot1);
         }
 
-
         // reset plot anyway (so free memory):
         resetXYPlot(this.xyPlotPlot2);
 
@@ -1369,7 +1361,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         logger.debug("domainAxis: {} - {}", minX, maxX);
 
         // TODO: keep data info to help user define its own range
-
         // Add margin:
         if (xUseLog) {
             double minTen = Math.floor(Math.log10(minX));
@@ -1595,7 +1586,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final boolean hasErrY = (yData2DErr != null) || (yData1DErr != null);
 
-
         // Get xAxis data:
         final Axis xAxis = plotDef.getXAxis();
         final String xAxisName = xAxis.getName();
@@ -1638,7 +1628,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final boolean hasErrX = (xData2DErr != null) || (xData1DErr != null);
 
-
         final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
         final ColorMapping colorMapping = (plotDef.getColorMapping() != null) ? plotDef.getColorMapping() : ColorMapping.WAVELENGTH_RANGE;
 
@@ -1652,11 +1641,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             logger.debug("nRows - nWaves : {} - {}", nRows, nWaves);
         }
 
-
         // standard columns:
         final short[][] staIndexes = oiData.getStaIndex();
         final short[][] staConfs = oiData.getStaConf();
-
 
         // Use staIndex (baseline or triplet) on each data row ?
         final int nStaIndexes = oiData.getDistinctStaIndexCount();
@@ -1670,7 +1657,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // anyway (color mapping or check sta index):
         final short[][] distinctStaIndexes = oiData.getDistinctStaIndexes();
 
-
         // Use flags on every 2D data ?
         final int nFlagged = oiData.getNFlagged();
         final boolean checkFlaggedData = (nFlagged > 0) && (isXData2D || isYData2D);
@@ -1681,7 +1667,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         final boolean[][] flags = (checkFlaggedData) ? oiData.getFlag() : null;
-
 
         // Use targetId on each data row ?
         final boolean checkTargetId = !oiData.hasSingleTarget();
@@ -1700,7 +1685,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             matchTargetId = -1;
             targetIds = null;
         }
-
 
         // Color mapping:
         final ColorPalette palette = ColorPalette.getDefaultColorPaletteAlpha();
@@ -1763,9 +1747,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             mappingStaIndexes = null;
         }
 
-
         // TODO: use an XYZ dataset to have a color axis (z) and then use linear or custom z conversion to colors.
-
         if (isLogDebug) {
             logger.debug("useWaveLengthColors: {}", (colorMapping == ColorMapping.WAVELENGTH_RANGE));
         }
@@ -1804,7 +1786,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
 
         // try to fill dataset:
-
         // avoid loop on wavelength if no 2D data:
         final int nWaveChannels = (isXData2D || isYData2D) ? nWaves : 1;
 
@@ -1848,12 +1829,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         int nSkipTarget = 0;
         int nSkipFlag = 0;
-        boolean isFlag, isXErrValid, isYErrValid;
+        boolean isFlag, isXErrValid, isYErrValid, useXErrInBounds, useYErrInBounds;
 
         int nData = 0;
 
         // TODO: unroll loops (wave / baseline) ... and avoid repeated checks on rows (targetId, baseline ...)
-
         Color serieColor;
 
         // fast access to NaN value:
@@ -1927,22 +1907,19 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     // TODO: filter data (wavelength, baseline, configuration, time ...)
                     // TODO: support function (min, max, mean) applied to array data (2D)
-
-
                     // Idea: use custom data consumer (2D, 1D, log or not, error or not)
                     // it will reduce the number of if statements => better performance and simpler code
                     // such data stream could also perform conversion on the fly
                     // and maybe handle symetry (u, -u) (v, -v) ...
-
                     // Process Y value:
                     y = (isYData2D) ? yData2D[i][j] : yData1D[i];
 
-                    if (yUseLog && y < 0d) {
-                        // keep only positive data:
+                    if (yUseLog && (y <= 0d)) {
+                        // keep only strictly positive data:
                         y = NaN;
                     }
 
-                    if (!Double.isNaN(y)) {
+                    if (NumberUtils.isFinite(y)) {
                         // convert y value:
                         if (doConvertY) {
                             y = initialXConverter.evaluate(y);
@@ -1954,12 +1931,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         // Process X value:
                         x = (isXData2D) ? xData2D[i][j] : xData1D[i];
 
-                        if (xUseLog && x < 0d) {
+                        if (xUseLog && (x <= 0d)) {
                             // keep only positive data:
                             x = NaN;
                         }
 
-                        if (!Double.isNaN(x)) {
+                        if (NumberUtils.isFinite(x)) {
                             // convert x value:
                             if (doConvertX) {
                                 x = initialXConverter.evaluate(x);
@@ -1972,21 +1949,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             yErr = (hasErrY) ? ((isYData2D) ? yData2DErr[i][j] : yData1DErr[i]) : NaN;
                             xErr = (hasErrX) ? ((isXData2D) ? xData2DErr[i][j] : xData1DErr[i]) : NaN;
 
-                            isXErrValid = isYErrValid = true;
-
                             // Define Y data:
-                            if (Double.isNaN(yErr)) {
+                            isYErrValid = true;
+                            useYErrInBounds = false;
+
+                            if (!NumberUtils.isFinite(yErr)) {
                                 yValue[idx] = y;
                                 yLower[idx] = NaN;
                                 yUpper[idx] = NaN;
-
-                                // update Y boundaries:
-                                if (y < minY) {
-                                    minY = y;
-                                }
-                                if (y > maxY) {
-                                    maxY = y;
-                                }
                             } else {
                                 hasDataErrorY = true;
 
@@ -1999,47 +1969,49 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                     if (doScaleY) {
                                         yErr = yConverter.evaluate(yErr);
                                     }
+                                    useYErrInBounds = true;
                                 } else {
                                     yErr = Double.POSITIVE_INFINITY;
                                     isYErrValid = false;
                                 }
 
-                                // useLog: check if y - err < 0:
                                 yValue[idx] = y;
-                                yLower[idx] = (yUseLog && (y - yErr) < 0d) ? Double.MIN_VALUE : (y - yErr);
+                                yLower[idx] = y - yErr;
                                 yUpper[idx] = y + yErr;
 
-                                if (isYErrValid) {
-                                    // update Y boundaries including error:
-                                    if (yLower[idx] < minY) {
-                                        minY = yLower[idx];
-                                    }
-                                    if (yUpper[idx] > maxY) {
-                                        maxY = yUpper[idx];
-                                    }
-                                } else {
-                                    if (y < minY) {
-                                        minY = y;
-                                    }
-                                    if (y > maxY) {
-                                        maxY = y;
-                                    }
+                                // useLog: check if (y - err) <= 0:
+                                if (yUseLog && (yLower[idx] <= 0d)) {
+                                    yLower[idx] = Double.MIN_VALUE;
+                                    useYErrInBounds = false;
+                                }
+                            }
+
+                            // update Y boundaries:
+                            if (useYErrInBounds) {
+                                // update Y boundaries including error:
+                                if (yLower[idx] < minY) {
+                                    minY = yLower[idx];
+                                }
+                                if (yUpper[idx] > maxY) {
+                                    maxY = yUpper[idx];
+                                }
+                            } else {
+                                if (y < minY) {
+                                    minY = y;
+                                }
+                                if (y > maxY) {
+                                    maxY = y;
                                 }
                             }
 
                             // Define X data:
-                            if (Double.isNaN(xErr)) {
+                            isXErrValid = true;
+                            useXErrInBounds = false;
+
+                            if (!NumberUtils.isFinite(xErr)) {
                                 xValue[idx] = x;
                                 xLower[idx] = NaN;
                                 xUpper[idx] = NaN;
-
-                                // update X boundaries:
-                                if (x < minX) {
-                                    minX = x;
-                                }
-                                if (x > maxX) {
-                                    maxX = x;
-                                }
                             } else {
                                 hasDataErrorX = true;
 
@@ -2052,37 +2024,43 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                     if (doScaleX) {
                                         xErr = xConverter.evaluate(xErr);
                                     }
+                                    useXErrInBounds = true;
                                 } else {
                                     xErr = Double.POSITIVE_INFINITY;
                                     isXErrValid = false;
                                 }
 
                                 xValue[idx] = x;
-                                xLower[idx] = (xUseLog && (x - xErr) < 0d) ? Double.MIN_VALUE : (x - xErr);
+                                xLower[idx] = x - xErr;
                                 xUpper[idx] = x + xErr;
 
-                                if (isXErrValid) {
-                                    // update X boundaries including error:
-                                    if (xLower[idx] < minX) {
-                                        minX = xLower[idx];
-                                    }
-                                    if (xUpper[idx] > maxX) {
-                                        maxX = xUpper[idx];
-                                    }
-                                } else {
-                                    if (x < minX) {
-                                        minX = x;
-                                    }
-                                    if (x > maxX) {
-                                        maxX = x;
-                                    }
+                                // useLog: check if (x - err) <= 0:
+                                if (xUseLog && (xLower[idx] <= 0d)) {
+                                    xLower[idx] = Double.MIN_VALUE;
+                                    useXErrInBounds = false;
                                 }
                             }
 
+                            // update X boundaries:
+                            if (useXErrInBounds) {
+                                // update X boundaries including error:
+                                if (xLower[idx] < minX) {
+                                    minX = xLower[idx];
+                                }
+                                if (xUpper[idx] > maxX) {
+                                    maxX = xUpper[idx];
+                                }
+                            } else {
+                                if (x < minX) {
+                                    minX = x;
+                                }
+                                if (x > maxX) {
+                                    maxX = x;
+                                }
+                            }
 
                             // TODO: adjust renderer settings per Serie (color, shape, shape size, outline ....) !
                             // ~ new custom axis (color, size, shape) 
-
                             // Define item shape:
                             // invalid shape if flagged or invalid error value
                             itemShapes[idx] = getPointShape(isYErrValid && isXErrValid && !isFlag);
@@ -2127,9 +2105,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     dataset.addSeries(serieKey, new double[][]{xValue, xLower, xUpper, yValue, yLower, yUpper});
 
                     // TODO: adjust renderer settings per Serie (color, shape ...) per series and item at higher level using dataset fields
-
                     // Use special fields into dataset to encode color mapping (color value as double ?)
-
                     // use colormapping enum:
                     switch (colorMapping) {
                         case WAVELENGTH_RANGE:
@@ -2640,4 +2616,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         return ConverterFactory.CONVERTER_MEGA_LAMBDA.equals(xAxis.getConverter())
                 && ConverterFactory.CONVERTER_MEGA_LAMBDA.equals(yAxis.getConverter());
     }
+
+    public static boolean isFinite(double d) {
+        return Math.abs(d) <= Double.MAX_VALUE;
+    }
+
 }
