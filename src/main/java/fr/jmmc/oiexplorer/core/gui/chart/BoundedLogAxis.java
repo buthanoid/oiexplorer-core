@@ -3,7 +3,6 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
-import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.event.AxisChangeEvent;
 import org.jfree.data.Range;
 import org.slf4j.Logger;
@@ -16,7 +15,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author bourgesl
  */
-public final class BoundedLogAxis extends LogarithmicAxis {
+public final class BoundedLogAxis extends EnhancedLogarithmicAxis {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -38,6 +37,10 @@ public final class BoundedLogAxis extends LogarithmicAxis {
         super(label);
         setAutoRange(false, false);
         setTickLabelInsets(ChartUtils.TICK_LABEL_INSETS);
+        setMinorTickMarksVisible(false);
+
+        // use custom units :
+        setStandardTickUnits(ChartUtils.createScientificTickUnits());
     }
 
     /**
