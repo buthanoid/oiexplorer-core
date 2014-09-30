@@ -19,6 +19,7 @@ import fr.jmmc.oiexplorer.core.gui.chart.ChartUtils;
 import fr.jmmc.oiexplorer.core.gui.chart.ColorPalette;
 import fr.jmmc.oiexplorer.core.gui.chart.CombinedCrosshairOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.EnhancedChartMouseListener;
+import fr.jmmc.oiexplorer.core.gui.chart.EnhancedCombinedDomainXYPlot;
 import fr.jmmc.oiexplorer.core.gui.chart.FastXYErrorRenderer;
 import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions;
 import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
@@ -375,7 +376,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final boolean useSelectionSupport = false; // TODO: enable selection ASAP (TODO sub plot support)
 
         // create chart and add listener :
-        this.combinedXYPlot = new CombinedDomainXYPlot(ChartUtils.createAxis(""));
+        this.combinedXYPlot = new EnhancedCombinedDomainXYPlot(ChartUtils.createAxis(""));
         this.combinedXYPlot.setGap(10.0D);
         this.combinedXYPlot.setOrientation(PlotOrientation.VERTICAL);
 
@@ -1133,9 +1134,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     if (yUseLog) {
                         final BoundedLogAxis logAxis = new BoundedLogAxis("log " + label);
-                        logAxis.setExpTickLabelsFlag(true);
-                        logAxis.setAutoRangeNextLogFlag(true);
-
                         logAxis.setBounds(new Range(minY, maxY));
                         logAxis.setRange(minY, maxY);
 
@@ -1314,9 +1312,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     if (yUseLog) {
                         final BoundedLogAxis logAxis = new BoundedLogAxis("log " + label);
-                        logAxis.setExpTickLabelsFlag(true);
-                        logAxis.setAutoRangeNextLogFlag(true);
-
                         logAxis.setBounds(new Range(minY, maxY));
                         logAxis.setRange(minY, maxY);
 
@@ -1448,11 +1443,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         if (xUseLog) {
             final BoundedLogAxis logAxis = new BoundedLogAxis("log " + label);
-            logAxis.setExpTickLabelsFlag(true);
-            logAxis.setAutoRangeNextLogFlag(true);
-
-            logger.debug("logAxis domain: [{} - {}]", minX, maxX);
-
             logAxis.setBounds(new Range(minX, maxX));
             logAxis.setRange(minX, maxX);
 
