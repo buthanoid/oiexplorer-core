@@ -255,7 +255,7 @@ public class AxisEditor extends javax.swing.JPanel {
             if (notify) {
                 // reset converter and log scale:
                 axisToEdit.setConverter(ConverterFactory.getInstance().getDefaultByColumn(columnName));
-                axisToEdit.setLogScale(false);
+                axisToEdit.setLogScale(logScaleCheckBox.isSelected());
                 // force refresh plot definition names:
                 forceRefreshPlotDefNames = true;
             }
