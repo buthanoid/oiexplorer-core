@@ -6,6 +6,8 @@ package fr.jmmc.oiexplorer.core.model;
 import fr.jmmc.jmcs.data.MimeType;
 import fr.jmmc.jmcs.data.preference.SessionSettingsPreferences;
 import fr.jmmc.jmcs.gui.component.StatusBar;
+import fr.jmmc.jmcs.gui.task.HttpTaskSwingWorker;
+import fr.jmmc.jmcs.gui.task.TaskSwingWorkerExecutor;
 import fr.jmmc.jmcs.service.RecentFilesManager;
 import fr.jmmc.jmcs.util.FileUtils;
 import fr.jmmc.jmcs.util.jaxb.JAXBFactory;
@@ -13,6 +15,7 @@ import fr.jmmc.jmcs.util.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.util.jaxb.XmlBindException;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.jmcs.util.StringUtils;
+import fr.jmmc.oiexplorer.core.gui.OIExplorerTaskRegistry;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
@@ -28,15 +31,17 @@ import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.nom.tam.fits.FitsException;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO: remove StatusBar / MessagePane (UI)
 /**
  * Handle the oifits files collection.
  * @author mella, bourgesl
@@ -131,23 +136,53 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * Load the OIFits collection at given URL
      * @param file OIFits explorer collection file file to load
      * @param checker optional OIFits checker instance (may be null)
+     * @param listener progress listener
      * @throws IOException if an I/O exception occurred
      * @throws IllegalStateException if an unexpected exception occurred
      * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
      */
-    public void loadOIFitsCollection(final File file, final OIFitsChecker checker) throws IOException, IllegalStateException, XmlBindException {
-        final long startTime = System.nanoTime();
+    public void loadOIFitsCollection(final File file, final OIFitsChecker checker,
+                                     final LoadOIFitsListener listener) throws IOException, IllegalStateException, XmlBindException {
 
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
 
         OIDataCollectionFileProcessor.onLoad(loadedUserCollection);
 
-        loadOIDataCollection(loadedUserCollection, checker);
+        loadOIDataCollection(file, loadedUserCollection, checker, listener);
+    }
+
+    private void postLoadOIFitsCollection(final File file, final OiDataCollection oiDataCollection, final OIFitsChecker checker) {
+
+        // TODO: check missing files !
+        // TODO what about user plot definitions ...
+        // add them but should be check for consistency related to loaded files (errors can occur while loading):
+        // then add SubsetDefinition:
+        for (SubsetDefinition subsetDefinition : oiDataCollection.getSubsetDefinitions()) {
+            // fix OIDataFile reference:
+            for (TableUID tableUID : subsetDefinition.getTables()) {
+                tableUID.setFile(getOIDataFile(tableUID.getFile().getId()));
+                // if missing, remove ?
+            }
+            addSubsetDefinitionRef(subsetDefinition);
+        }
+
+        // then add PlotDefinition:
+        for (PlotDefinition plotDefinition : oiDataCollection.getPlotDefinitions()) {
+            addPlotDefinitionRef(plotDefinition);
+        }
+
+        // TODO: check subset and plot definition references in Plot ?
+        // then add Plot:
+        for (Plot plot : oiDataCollection.getPlots()) {
+            this.addPlotRef(plot);
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("subsetDefinitions {}", getSubsetDefinitionList());
+        }
 
         // after loadOIDataCollection as it calls reset():
         setOiFitsCollectionFile(file);
-
-        logger.info("loadOIFitsCollection: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
 
         // add given file to Open recent menu
         RecentFilesManager.addFile(file);
@@ -178,60 +213,156 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
-     * Load the given OI Fits Files with the given checker component
+     * Load OIFits files from the loaded OIDataCollection file using an async LoadOIFits task
+     * @param file loaded OIFits explorer collection file
+     * @param oiDataCollection OiDataCollection to look for
+     * @param checker to report validation information
+     * @param listener progress listener
+     */
+    private void loadOIDataCollection(final File file, final OiDataCollection oiDataCollection, final OIFitsChecker checker,
+                                      final LoadOIFitsListener listener) {
+
+        final List<OIDataFile> oidataFiles = oiDataCollection.getFiles();
+        final List<String> fileLocations = new ArrayList<String>(oidataFiles.size());
+        for (OIDataFile oidataFile : oidataFiles) {
+            fileLocations.add(oidataFile.getFile());
+        }
+
+        new LoadOIFitsFilesSwingWorker(fileLocations, checker, listener) {
+            /**
+             * Refresh GUI invoked by the Swing Event Dispatcher Thread (Swing EDT)
+             * Called by @see #done()
+             * @param oifitsFiles computed data
+             */
+            @Override
+            public void refreshUI(final List<OIFitsFile> oifitsFiles) {
+                // first reset:
+                reset();
+
+                // add OIFits files to collection = fire OIFitsCollectionChanged:
+                super.refreshUI(oifitsFiles);
+
+                postLoadOIFitsCollection(file, oiDataCollection, checker);
+
+                listener.done(false);
+            }
+
+            @Override
+            public void refreshNoData(final boolean cancelled) {
+                listener.done(cancelled);
+            }
+
+        }.executeTask();
+    }
+
+    /**
+     * Load the given OI Fits Files with the given checker component using an async LoadOIFits task
      * and add it to the OIFits collection
      * @param files files to load
      * @param checker checker component
-     * @throws IOException if a fits file can not be loaded
+     * @param listener progress listener
      */
-    public void loadOIFitsFiles(final File[] files, final OIFitsChecker checker) throws IOException {
-        // fire OIFitsCollectionChanged:
-        for (File file : files) {
-            loadOIFitsFile(file.getAbsolutePath(), checker);
+    public void loadOIFitsFiles(final File[] files, final OIFitsChecker checker, final LoadOIFitsListener listener) {
+        if (files != null) {
+            final List<String> fileLocations = new ArrayList<String>(files.length);
+            for (File file : files) {
+                fileLocations.add(file.getAbsolutePath());
+            }
+
+            new LoadOIFitsFilesSwingWorker(fileLocations, checker, listener) {
+                /**
+                 * Refresh GUI invoked by the Swing Event Dispatcher Thread (Swing EDT)
+                 * Called by @see #done()
+                 * @param oifitsFiles computed data
+                 */
+                @Override
+                public void refreshUI(final List<OIFitsFile> oifitsFiles) {
+                    // add OIFits files to collection = fire OIFitsCollectionChanged:
+                    super.refreshUI(oifitsFiles);
+
+                    listener.done(false);
+                }
+
+                @Override
+                public void refreshNoData(final boolean cancelled) {
+                    listener.done(cancelled);
+                }
+
+            }.executeTask();
         }
     }
 
     /**
-     * Load OIDataCollection files (TODO: plot def to be handled)
-     * @param oiDataCollection OiDataCollection to look for
-     * @param checker to report validation information
-     * @throws IOException if a fits file can not be loaded
+     * Cancel any running LoadOIFits task
      */
-    private void loadOIDataCollection(final OiDataCollection oiDataCollection, final OIFitsChecker checker) throws IOException {
-        // first reset:
-        reset();
+    public static void cancelTaskLoadOIFits() {
+        // cancel any running task:
+        TaskSwingWorkerExecutor.cancelTask(OIExplorerTaskRegistry.TASK_LOAD_OIFITS);
+    }
 
-        // fire OIFitsCollectionChanged:
-        for (OIDataFile oidataFile : oiDataCollection.getFiles()) {
-            loadOIFitsFile(oidataFile.getFile(), checker);
+    /**
+     * TaskSwingWorker child class to download and load OIFits files in background
+     * @author bourgesl
+     */
+    class LoadOIFitsFilesSwingWorker extends HttpTaskSwingWorker<List<OIFitsFile>> {
+
+        private final List<String> fileLocations;
+        private final OIFitsChecker checker;
+
+        LoadOIFitsFilesSwingWorker(final List<String> fileLocations, final OIFitsChecker checker,
+                                   final LoadOIFitsListener listener) {
+            super(OIExplorerTaskRegistry.TASK_LOAD_OIFITS);
+            this.fileLocations = fileLocations;
+            this.checker = checker;
+            this.addPropertyChangeListener(listener);
         }
 
-        // TODO: check missing files !
-        // TODO what about user plot definitions ...
-        // add them but should be check for consistency related to loaded files (errors can occur while loading):
-        // then add SubsetDefinition:
-        for (SubsetDefinition subsetDefinition : oiDataCollection.getSubsetDefinitions()) {
-            // fix OIDataFile reference:
-            for (TableUID tableUID : subsetDefinition.getTables()) {
-                tableUID.setFile(getOIDataFile(tableUID.getFile().getId()));
-                // if missing, remove ?
+        @Override
+        public List<OIFitsFile> computeInBackground() {
+            final int size = fileLocations.size();
+
+            final List<OIFitsFile> oiFitsFiles = new ArrayList<OIFitsFile>(size);
+
+            final long startTime = System.nanoTime();
+
+            for (int i = 0; i < size; i++) {
+                // fast interrupt :
+                if (Thread.currentThread().isInterrupted()) {
+                    // Update status bar:
+                    StatusBar.show("Loading file(s) operation cancelled.");
+                    return null;
+                }
+
+                final String fileLocation = fileLocations.get(i);
+                try {
+                    oiFitsFiles.add(loadOIFits(fileLocation, checker));
+                } catch (IOException ioe) {
+                    logger.info("Error reading file: {}", fileLocation, ioe.getCause());
+                    // Append to checker report:
+                    checker.severe("Could not load the file : " + fileLocation);
+                    // Update status bar:
+                    StatusBar.show("Could not load the file : " + fileLocation);
+                }
+                // publish progress:
+                setProgress(Math.round((100f * i) / size));
             }
-            addSubsetDefinitionRef(subsetDefinition);
+
+            logger.info("loadOIFitsFiles: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+
+            return oiFitsFiles;
         }
 
-        // then add PlotDefinition:
-        for (PlotDefinition plotDefinition : oiDataCollection.getPlotDefinitions()) {
-            addPlotDefinitionRef(plotDefinition);
-        }
-
-        // TODO: check subset and plot definition references in Plot ?
-        // then add Plot:
-        for (Plot plot : oiDataCollection.getPlots()) {
-            this.addPlotRef(plot);
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("subsetDefinitions {}", getSubsetDefinitionList());
+        /**
+         * Refresh GUI invoked by the Swing Event Dispatcher Thread (Swing EDT)
+         * Called by @see #done()
+         * @param oifitsFiles computed data
+         */
+        @Override
+        public void refreshUI(final List<OIFitsFile> oifitsFiles) {
+            for (OIFitsFile oifitsFile : oifitsFiles) {
+                // fire OIFitsCollectionChanged:
+                addOIFitsFile(oifitsFile);
+            }
         }
     }
 
@@ -243,33 +374,53 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws IOException if a fits file can not be loaded
      */
     public void loadOIFitsFile(final String fileLocation, final OIFitsChecker checker) throws IOException {
+        cancelTaskLoadOIFits();
+        addOIFitsFile(loadOIFits(fileLocation, checker));
+    }
+
+    /**
+     * (Download) and load the given OI Fits File with the given checker component
+     * @param fileLocation absolute File Path or remote URL
+     * @param checker checker component
+     * @return loaded OIFits File
+     * @throws IOException if a fits file can not be loaded
+     */
+    private static OIFitsFile loadOIFits(final String fileLocation, final OIFitsChecker checker) throws IOException {
         //@todo test if file has already been loaded before going further ??        
 
+        final OIFitsFile oifitsFile;
         try {
-            final OIFitsFile oifitsFile;
-
             // retrieve oifits if remote or use local one
             if (FileUtils.isRemote(fileLocation)) {
                 // TODO let the user customize the application file storage preference:
                 final String parentPath = SessionSettingsPreferences.getApplicationFileStorage();
 
-                // TODO: perform download asynchronously (background cancellable task & timeout)
-                // to avoid blocking the Swing GUI if slow transfer or timeout (no network or bad proxy):
+                // TODO: remove StatusBar !
+                StatusBar.show("downloading file: " + fileLocation + " ...");
+
                 final File localCopy = FileUtils.retrieveRemoteFile(fileLocation, parentPath, MimeType.OIFITS);
 
-                oifitsFile = OIFitsLoader.loadOIFits(checker, localCopy.getAbsolutePath());
-                oifitsFile.setSourceURI(new URI(fileLocation));
+                if (localCopy != null) {
+                    // TODO: remove StatusBar !
+                    StatusBar.show("loading file: " + fileLocation + " ( local copy: " + localCopy.getAbsolutePath() + " )");
 
-                StatusBar.show("loading file: " + fileLocation + " ( local copy: " + localCopy.getAbsolutePath() + " )");
+                    oifitsFile = OIFitsLoader.loadOIFits(checker, localCopy.getAbsolutePath());
+                    oifitsFile.setSourceURI(new URI(fileLocation));
+
+                    logger.info("file loaded : '{}'", oifitsFile.getAbsoluteFilePath());
+
+                } else {
+                    // download failed:
+                    oifitsFile = null;
+                }
             } else {
-                oifitsFile = OIFitsLoader.loadOIFits(checker, fileLocation);
-
+                // TODO: remove StatusBar !
                 StatusBar.show("loading file: " + fileLocation);
+
+                oifitsFile = OIFitsLoader.loadOIFits(checker, fileLocation);
             }
-
-            addOIFitsFile(oifitsFile);
-            logger.info("file loaded : '{}'", oifitsFile.getAbsoluteFilePath());
-
+        } catch (AuthenticationException ae) {
+            throw new IOException("Could not load the file : " + fileLocation, ae);
         } catch (IOException ioe) {
             throw new IOException("Could not load the file : " + fileLocation, ioe);
         } catch (FitsException fe) {
@@ -277,6 +428,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         } catch (URISyntaxException use) {
             throw new IOException("Could not load the file : " + fileLocation, use);
         }
+
+        if (oifitsFile == null) {
+            throw new IOException("Could not load the file : " + fileLocation);
+        }
+        return oifitsFile;
     }
 
     /**
@@ -308,6 +464,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * Reset the OIFits file collection
      */
     public void reset() {
+        cancelTaskLoadOIFits();
+
         userCollection = new OiDataCollection();
         oiFitsCollection = new OIFitsCollection();
 
