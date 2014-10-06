@@ -325,17 +325,19 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
             final long startTime = System.nanoTime();
 
+            int n = 0;
             for (int i = 0; i < size; i++) {
                 // fast interrupt :
                 if (Thread.currentThread().isInterrupted()) {
                     // Update status bar:
-                    StatusBar.show("Loading file(s) operation cancelled.");
+                    StatusBar.show("Loading file(s) cancelled.");
                     return null;
                 }
 
                 final String fileLocation = fileLocations.get(i);
                 try {
                     oiFitsFiles.add(loadOIFits(fileLocation, checker));
+                    n++;
                 } catch (IOException ioe) {
                     logger.info("Error reading file: {}", fileLocation, ioe.getCause());
                     // Append to checker report:
@@ -349,6 +351,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
             logger.info("loadOIFitsFiles: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
 
+            // Update status bar:
+            StatusBar.show(n + " loaded file(s).");
+            
             return oiFitsFiles;
         }
 
@@ -395,9 +400,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 // TODO let the user customize the application file storage preference:
                 final String parentPath = SessionSettingsPreferences.getApplicationFileStorage();
 
-                // TODO: remove StatusBar !
-                StatusBar.show("downloading file: " + fileLocation + " ...");
-
                 final File localCopy = FileUtils.retrieveRemoteFile(fileLocation, parentPath, MimeType.OIFITS);
 
                 if (localCopy != null) {
@@ -406,9 +408,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
                     oifitsFile = OIFitsLoader.loadOIFits(checker, localCopy.getAbsolutePath());
                     oifitsFile.setSourceURI(new URI(fileLocation));
-
-                    logger.info("file loaded : '{}'", oifitsFile.getAbsoluteFilePath());
-
                 } else {
                     // download failed:
                     oifitsFile = null;
