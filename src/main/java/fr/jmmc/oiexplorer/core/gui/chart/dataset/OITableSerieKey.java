@@ -28,7 +28,14 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
 
     @Override
     public int compareTo(final OITableSerieKey o) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        int res = Integer.compare(tableIndex, o.getTableIndex());
+        if (res == 0) {
+            res = Integer.compare(baseline, o.getBaseline());
+            if (res == 0) {
+                res = Integer.compare(waveLength, o.getWaveLength());
+            }
+        }
+        return res;
     }
 
     @Override
