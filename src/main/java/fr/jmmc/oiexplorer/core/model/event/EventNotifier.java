@@ -272,14 +272,13 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
 
         do {
             // multiple pass until all listener fired:
-            for (int i = 0, size = this.listeners.size(); i < size; i++) {
+            for (int i = 0; i < this.listeners.size(); i++) {
                 ref = this.listeners.get(i);
                 listener = ref.get();
 
                 if (listener == null) {
                     // remove empty reference (GC):
                     this.listeners.remove(i);
-                    size--;
                     i--;
                 } else if (!firedListeners.contains(listener)) {
 
