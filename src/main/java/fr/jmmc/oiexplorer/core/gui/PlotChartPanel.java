@@ -355,7 +355,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     @Override
     public void prepareExport(final DocumentOptions options) {
-        options.setDefaults();
+        options.setNormalDefaults();
     }
 
     /**

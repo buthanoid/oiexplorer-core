@@ -87,10 +87,18 @@ public abstract class DocumentOptions {
     /**
      * Set default options: DocumentSize: Normal, Orientation: Landscape, 1 page
     */
-    public final void setDefaults() {
-        setDocumentSize(DocumentSize.NORMAL);
-        setOrientation(Orientation.Landscape);
-        setNumberOfPages(1);        
+    public final void setNormalDefaults() {
+        setDocumentSize(DocumentSize.NORMAL)
+                .setOrientation(Orientation.Landscape)
+                .setNumberOfPages(1);        
+    }
+    /**
+     * Set default options: DocumentSize: Normal, Orientation: Landscape, 1 page
+    */
+    public final void setSmallDefaults() {
+        setDocumentSize(DocumentSize.SMALL)
+                .setOrientation(Orientation.Landscape)
+                .setNumberOfPages(1);        
     }
 
     /** Return the mime type

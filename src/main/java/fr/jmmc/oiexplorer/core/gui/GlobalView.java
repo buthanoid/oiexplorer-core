@@ -148,7 +148,7 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
      */
     @Override
     public void prepareExport(final DocumentOptions options) {
-        options.setDefaults();
+        options.setNormalDefaults();
     }
 
     /**
