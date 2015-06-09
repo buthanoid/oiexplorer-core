@@ -148,9 +148,7 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
      */
     @Override
     public void prepareExport(final DocumentOptions options) {
-        options.setDocumentSize(DocumentSize.NORMAL)
-                .setOrientation(Orientation.Landscape)
-                .setNumberOfPages(1);
+        options.setDefaults();
     }
 
     /**

@@ -355,9 +355,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     @Override
     public void prepareExport(final DocumentOptions options) {
-        options.setDocumentSize(DocumentSize.NORMAL)
-                .setOrientation(Orientation.Landscape)
-                .setNumberOfPages(1);
+        options.setDefaults();
     }
 
     /**
@@ -2108,7 +2106,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
 
                     // TODO: add oiTable, i (row), j (nWave) in dataset:
-                    serieKey = new OITableSerieKey(tableIndex, k, j);
+                    serieKey = new OITableSerieKey(tableIndex, k, j); // baselines & wavelengths
 
                     // Avoid any key conflict:
                     dataset.addSeries(serieKey, new double[][]{xValue, xLower, xUpper, yValue, yLower, yUpper});
