@@ -1,7 +1,7 @@
 /*******************************************************************************
  * JMMC project ( http://www.jmmc.fr ) - Copyright (C) CNRS.
  ******************************************************************************/
-package fr.jmmc.oiexplorer.core.gui.chart;
+package fr.jmmc.oiexplorer.core.export;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -11,10 +11,9 @@ import com.lowagie.text.pdf.FontMapper;
 import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
+import fr.jmmc.jmcs.data.MimeType;
 import fr.jmmc.jmcs.data.app.ApplicationDescription;
 import fr.jmmc.jmcs.util.FileUtils;
-import fr.jmmc.oiexplorer.core.gui.PDFExportable;
-import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions.Orientation;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.io.BufferedOutputStream;
@@ -22,19 +21,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import org.jfree.chart.JFreeChart;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jfree.ui.Drawable;
 
 /**
  * This class is dedicated to export charts as PDF documents
  * @author bourgesl
  */
-public final class PDFUtils {
+public final class PDFWriter extends Writer {
 
-    /** Class logger */
-    private static final Logger logger = LoggerFactory.getLogger(PDFUtils.class.getName());
-    /** 
+    /**
      * Force text rendering to use java rendering as Shapes.
      * This is a workaround to get Unicode greek characters rendered properly.
      * Embedding fonts in the PDF may depend on the Java/OS font configuration ...
@@ -42,15 +37,15 @@ public final class PDFUtils {
     public final static boolean RENDER_TEXT_AS_SHAPES = true;
 
     /**
-     * Private Constructor
+     * protected Constructor
      */
-    private PDFUtils() {
+    PDFWriter() {
         // no-op
     }
 
     /**
      * Save the given chart as a PDF document in the given file
-     * @param file PDF file to create
+     * @param pdfFile PDF file to create
      * @param exportable exportable component
      * @param options PDF options
      *
@@ -59,8 +54,12 @@ public final class PDFUtils {
      *                   be created, or cannot be opened for any other reason
      * @throws IllegalStateException if a PDF document exception occurred
      */
-    public static void savePDF(final File file, final PDFExportable exportable, final PDFOptions options)
+    @Override
+    public void write(final File pdfFile, final DocumentExportable exportable, final DocumentOptions options)
             throws IOException, IllegalStateException {
+
+        // Fix file extension:
+        final File file = MimeType.PDF.checkFileExtension(pdfFile);
 
         final long start = System.nanoTime();
 
@@ -74,7 +73,7 @@ public final class PDFUtils {
             FileUtils.closeStream(bo);
 
             if (logger.isInfoEnabled()) {
-                logger.info("saveChartAsPDF[{}] : duration = {} ms.", file, 1e-6d * (System.nanoTime() - start));
+                logger.info("write[{}] : duration = {} ms.", file, 1e-6d * (System.nanoTime() - start));
             }
         }
     }
@@ -84,35 +83,19 @@ public final class PDFUtils {
      * @param outputStream output stream
      * @param exportable exportable component
      * @param options PDF options
-     * 
+     *
      * @throws IllegalStateException if a PDF document exception occurred
      */
     private static void writeChartAsPDF(final OutputStream outputStream,
-                                        final PDFExportable exportable, final PDFOptions options) throws IllegalStateException {
+            final DocumentExportable exportable, final DocumentOptions options) throws IllegalStateException {
 
         Graphics2D g2 = null;
 
         // adjust document size (A4, A3, A2) and orientation according to the options :
-        final Rectangle documentPage;
-        switch (options.getPageSize()) {
-            case A2:
-                documentPage = com.lowagie.text.PageSize.A2;
-                break;
-            case A3:
-                documentPage = com.lowagie.text.PageSize.A3;
-                break;
-            default:
-            case A4:
-                documentPage = com.lowagie.text.PageSize.A4;
-                break;
-        }
+        final Rectangle2D.Float documentPage = options.adjustDocumentSize();
 
-        final Document document;
-        if (Orientation.Landscape == options.getOrientation()) {
-            document = new Document(documentPage.rotate());
-        } else {
-            document = new Document(documentPage);
-        }
+        final Document document = new Document(new Rectangle(documentPage.x,
+                documentPage.y, documentPage.width, documentPage.height));
 
         final Rectangle pdfRectangle = document.getPageSize();
 
@@ -126,7 +109,6 @@ public final class PDFUtils {
          In fact, the default measurement system roughly corresponds to the various definitions of the typographic
          unit of measurement known as the point. There are 72 points in 1 inch (2.54 cm).
          */
-
         // margin = 1 cm :
         final float marginCM = 0.5f;
         // in points :
@@ -142,14 +124,16 @@ public final class PDFUtils {
 
             definePDFProperties(document);
 
+            PdfTemplate pdfTemplate;
+            Drawable[] drawables;
+
             final PdfContentByte pdfContentByte = writer.getDirectContent();
 
             for (int pageIndex = 1, numberOfPages = options.getNumberOfPages(); pageIndex <= numberOfPages; pageIndex++) {
                 // new page:
                 document.newPage();
 
-                // TODO: avoid using template ??
-                final PdfTemplate pdfTemplate = pdfContentByte.createTemplate(width, height);
+                pdfTemplate = pdfContentByte.createTemplate(width, height);
 
                 if (RENDER_TEXT_AS_SHAPES) {
                     // text rendered as shapes so the file is bigger but correct
@@ -159,12 +143,10 @@ public final class PDFUtils {
                     g2 = pdfTemplate.createGraphics(innerWidth, innerHeight, getFontMapper());
                 }
 
-                final Rectangle2D.Float drawArea = new Rectangle2D.Float(0F, 0F, innerWidth, innerHeight);
+                // Get Drawables:
+                drawables = exportable.preparePage(pageIndex);
 
-                // Get Chart:
-                final JFreeChart chart = exportable.prepareChart(pageIndex);
-                // draw chart:
-                chart.draw(g2, drawArea);
+                draw(drawables, g2, innerWidth, innerHeight);
 
                 pdfContentByte.addTemplate(pdfTemplate, margin, margin);
 
@@ -200,7 +182,6 @@ public final class PDFUtils {
         // ChartFontMapper (test) substitutes SansSerif fonts (plain and bold) by DejaVu fonts which supports both unicode and greek characters
         // However, fonts must be distributed (GPL) and many problems can happen...
     /* return new ChartFontMapper(); */
-
         // default font mapper uses Helvetica (Cp1252) which DOES NOT SUPPORT UNICODE CHARACTERS:
         return new DefaultFontMapper();
     }

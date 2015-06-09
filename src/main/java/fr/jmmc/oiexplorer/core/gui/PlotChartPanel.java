@@ -9,9 +9,13 @@ import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.jmcs.util.SpecialChars;
 import fr.jmmc.jmcs.util.StringUtils;
+import fr.jmmc.oiexplorer.core.export.DocumentExportable;
+import fr.jmmc.oiexplorer.core.export.DocumentOptions;
+import fr.jmmc.oiexplorer.core.export.DocumentSize;
+import fr.jmmc.oiexplorer.core.export.Orientation;
 import fr.jmmc.oiexplorer.core.function.Converter;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
-import fr.jmmc.oiexplorer.core.gui.action.ExportPDFAction;
+import fr.jmmc.oiexplorer.core.gui.action.ExportDocumentAction;
 import fr.jmmc.oiexplorer.core.gui.chart.BoundedLogAxis;
 import fr.jmmc.oiexplorer.core.gui.chart.BoundedNumberAxis;
 import fr.jmmc.oiexplorer.core.gui.chart.ChartMouseSelectionListener;
@@ -21,7 +25,6 @@ import fr.jmmc.oiexplorer.core.gui.chart.CombinedCrosshairOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.EnhancedChartMouseListener;
 import fr.jmmc.oiexplorer.core.gui.chart.EnhancedCombinedDomainXYPlot;
 import fr.jmmc.oiexplorer.core.gui.chart.FastXYErrorRenderer;
-import fr.jmmc.oiexplorer.core.gui.chart.PDFOptions;
 import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
@@ -74,17 +77,18 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.AbstractRenderer;
 import org.jfree.data.Range;
 import org.jfree.data.xy.XYDataset;
+import org.jfree.ui.Drawable;
 import org.jfree.ui.Layer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * This panel provides the chart panel representing one OIFitsExplorer plot instance (using its subset and plot definition)
- * 
+ *
  * @author bourgesl
  */
 public final class PlotChartPanel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-                                                                        PDFExportable, OIFitsCollectionManagerEventListener {
+        DocumentExportable, OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -221,25 +225,29 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }// </editor-fold>//GEN-END:initComponents
 
     /**
-     * Export the chart component as a PDF document
+     * Export the chart component as aF document
      */
     @Override
-    public void performPDFAction() {
+    public void performAction(final ExportDocumentAction action) {
         // if no OIFits data, discard action:
-        if (getOiFitsSubset() != null && isHasData()) {
-            ExportPDFAction.exportPDF(this);
+        if (canExportPlotFile()) {
+            action.process(this);
         }
     }
 
+    public boolean canExportPlotFile() {
+        return (getOiFitsSubset() != null && isHasData());
+    }
+
     /**
-     * Return the PDF default file name
+     * Return the default file name
      * [Vis2_<TARGET>_<INSTRUMENT>_<CONFIGURATION>_<DATE>]
-     * @return PDF default file name
+     * @return default file name
      */
     @Override
-    public String getPDFDefaultFileName() {
+    public String getDefaultFileName(final String fileExtension) {
 
-        // TODO: keep values from dataset ONLY: 
+        // TODO: keep values from dataset ONLY:
         // - arrName, insName, dateObs (keywords) = OK
         // - baselines or configurations (rows) = KO ... IF HAS DATA (filtered)
         if (isHasData()) {
@@ -333,7 +341,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 toString(distinct, sb, "_", "_", 3, "MULTI_DATE");
             }
 
-            sb.append('.').append(PDF_EXT);
+            sb.append('.').append(fileExtension);
 
             return sb.toString();
         }
@@ -341,29 +349,32 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     /**
-     * Prepare the chart(s) before exporting them as a PDF document:
-     * Performs layout and return PDF options
-     * @return PDF options
+     * Prepare the page layout before doing the export:
+     * Performs layout and modifies the given options
+     * @param options document options used to prepare the document
      */
-    public PDFOptions preparePDFExport() {
-        return PDFOptions.PDF_A3_LANDSCAPE;
+    @Override
+    public void prepareExport(final DocumentOptions options) {
+        options.setDocumentSize(DocumentSize.NORMAL)
+                .setOrientation(Orientation.Landscape)
+                .setNumberOfPages(1);
     }
 
     /**
-     * Return the chart to export on the given page index
+     * Return the page to export given its page index
      * @param pageIndex page index (1..n)
-     * @return chart
+     * @return Drawable array to export on this page
      */
     @Override
-    public JFreeChart prepareChart(final int pageIndex) {
-        return this.chart;
+    public Drawable[] preparePage(final int pageIndex) {
+        return new Drawable[]{this.chart};
     }
 
     /**
-     * Callback indicating the chart was processed by the PDF engine
+     * Callback indicating the document is done to reset the component's state
      */
     @Override
-    public void postPDFExport() {
+    public void postExport() {
         // no-op
     }
 
@@ -436,9 +447,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         resetPlot();
     }
 
+    /**
+     *
+     * @return
+     */
+    public JFreeChart getChart() {
+        return this.chart;
+    }
+
     private static Crosshair createCrosshair() {
         final Crosshair crosshair = new Crosshair(Double.NaN);
-        crosshair.setPaint(Color.BLUE);
+        // crosshair.setPaint(Color.BLUE);
         crosshair.setLabelVisible(true);
         crosshair.setLabelFont(ChartUtils.DEFAULT_TEXT_SMALL_FONT);
         crosshair.setLabelBackgroundPaint(new Color(255, 255, 0, 200));
@@ -774,7 +793,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         this.resetOverlays();
 
-        // remove all sub plots: 
+        // remove all sub plots:
         // Note: use toArray() to avoid concurrentModification exceptions:
         for (Object subPlot : this.combinedXYPlot.getSubplots().toArray()) {
             final XYPlot xyPlot = (XYPlot) subPlot;
@@ -813,7 +832,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             removeAllSubPlots();
 
             // computed data are valid :
-            // TODO: externalize dataset creation using SwingWorker to be able to 
+            // TODO: externalize dataset creation using SwingWorker to be able to
             // - cancel long data processing task
             // - do not block EDT !
             updateChart();
@@ -824,7 +843,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 final Set<String> distinct = new LinkedHashSet<String>();
 
-                // TODO: keep values from dataset ONLY: 
+                // TODO: keep values from dataset ONLY:
                 // - arrName, insName, dateObs (keywords) = OK
                 // - baselines or configurations (rows) = KO ... IF HAS DATA (filtered)
                 final StringBuilder sb = new StringBuilder(32);
@@ -1527,10 +1546,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param info plot information to update
      */
     private void updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
-                            final PlotDefinition plotDef, final int yAxisIndex,
-                            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
-                            final Converter initialXConverter, final Converter initialYConverter,
-                            final PlotInfo info) {
+            final PlotDefinition plotDef, final int yAxisIndex,
+            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
+            final Converter initialXConverter, final Converter initialYConverter,
+            final PlotInfo info) {
 
         final boolean isLogDebug = logger.isDebugEnabled();
 
@@ -2050,7 +2069,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             }
 
                             // TODO: adjust renderer settings per Serie (color, shape, shape size, outline ....) !
-                            // ~ new custom axis (color, size, shape) 
+                            // ~ new custom axis (color, size, shape)
                             // Define item shape:
                             // invalid shape if flagged or invalid error value
                             itemShapes[idx] = getPointShape(isYErrValid && isXErrValid && !isFlag);
@@ -2233,20 +2252,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             }
         }
 
-        // DEBUG (TODO KILL ASAP):
-        if (false) {
-            switch (event.getType()) {
-                case ChartProgressEvent.DRAWING_STARTED:
-                    this.chartDrawStartTime = System.nanoTime();
-                    break;
-                case ChartProgressEvent.DRAWING_FINISHED:
-                    logger.warn("Drawing chart time[{}] = {} ms.", getTargetName(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
-                    this.chartDrawStartTime = 0l;
-                    break;
-                default:
-            }
-        }
-
         // Perform custom operations before/after chart rendering:
         // move JMMC annotations:
         if (this.xyPlotPlot1.getDomainAxis() != null) {
@@ -2287,7 +2292,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
     /**
      * Return true if the plot has data (dataset not empty)
-     * @return true if the plot has data 
+     * @return true if the plot has data
      */
     public boolean isHasData() {
         return !getPlotInfos().isEmpty();
@@ -2559,7 +2564,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     /*
-     * OIFitsCollectionManagerEventListener implementation 
+     * OIFitsCollectionManagerEventListener implementation
      */
     /**
      * Return the optional subject id i.e. related object id that this listener accepts

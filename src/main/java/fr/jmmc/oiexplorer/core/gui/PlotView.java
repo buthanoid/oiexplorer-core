@@ -17,7 +17,8 @@ import org.slf4j.LoggerFactory;
  * Plot view implementation
  * @author mella
  */
-public final class PlotView extends javax.swing.JPanel implements OIFitsCollectionManagerEventListener {
+//FINAL REMOVED
+public class PlotView extends javax.swing.JPanel implements OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -32,8 +33,8 @@ public final class PlotView extends javax.swing.JPanel implements OIFitsCollecti
     /** last version of the subset of the plot */
     private IdentifiableVersion lastSubsetVersion = null;
 
-    /** 
-     * Creates new form PlotView 
+    /**
+     * Creates new form PlotView
      * @param plotId plot identifier
      */
     public PlotView(final String plotId) {
@@ -149,7 +150,7 @@ public final class PlotView extends javax.swing.JPanel implements OIFitsCollecti
     // End of variables declaration//GEN-END:variables
 
     /**
-     * Return the Plot panel (used by PDF export)
+     * Return the Plot panel (used by plotView port)
      * @return Plot panel
      */
     public PlotChartPanel getPlotPanel() {
@@ -165,7 +166,7 @@ public final class PlotView extends javax.swing.JPanel implements OIFitsCollecti
     }
 
     /*
-     * OIFitsCollectionManagerEventListener implementation 
+     * OIFitsCollectionManagerEventListener implementation
      */
     /**
      * Return the optional subject id i.e. related object id that this listener accepts
