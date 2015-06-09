@@ -5,17 +5,12 @@ package fr.jmmc.oiexplorer.core.export;
 
 import fr.jmmc.oiexplorer.core.gui.action.ExportDocumentAction;
 import org.jfree.ui.Drawable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This interface defines a simple method to export a chart as document
  * @author bourgesl
  */
 public interface DocumentExportable {
-
-    /** Class logger */
-    static final Logger logger = LoggerFactory.getLogger(DocumentExportable.class.getName());
 
     /**
      * Export the component as a document using the given action:
