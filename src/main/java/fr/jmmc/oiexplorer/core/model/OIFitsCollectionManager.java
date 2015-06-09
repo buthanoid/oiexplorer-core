@@ -10,11 +10,11 @@ import fr.jmmc.jmcs.gui.task.HttpTaskSwingWorker;
 import fr.jmmc.jmcs.gui.task.TaskSwingWorkerExecutor;
 import fr.jmmc.jmcs.service.RecentFilesManager;
 import fr.jmmc.jmcs.util.FileUtils;
+import fr.jmmc.jmcs.util.ObjectUtils;
+import fr.jmmc.jmcs.util.StringUtils;
 import fr.jmmc.jmcs.util.jaxb.JAXBFactory;
 import fr.jmmc.jmcs.util.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.util.jaxb.XmlBindException;
-import fr.jmmc.jmcs.util.ObjectUtils;
-import fr.jmmc.jmcs.util.StringUtils;
 import fr.jmmc.oiexplorer.core.gui.OIExplorerTaskRegistry;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
@@ -85,7 +85,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         return instance;
     }
 
-    /** 
+    /**
      * Prevent instanciation of singleton.
      * Manager instance should be obtained using getInstance().
      */
@@ -142,7 +142,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker,
-                                     final LoadOIFitsListener listener) throws IOException, IllegalStateException, XmlBindException {
+            final LoadOIFitsListener listener) throws IOException, IllegalStateException, XmlBindException {
 
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
 
@@ -220,7 +220,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param listener progress listener
      */
     private void loadOIDataCollection(final File file, final OiDataCollection oiDataCollection, final OIFitsChecker checker,
-                                      final LoadOIFitsListener listener) {
+            final LoadOIFitsListener listener) {
 
         final List<OIDataFile> oidataFiles = oiDataCollection.getFiles();
         final List<String> fileLocations = new ArrayList<String>(oidataFiles.size());
@@ -310,7 +310,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         private final OIFitsChecker checker;
 
         LoadOIFitsFilesSwingWorker(final List<String> fileLocations, final OIFitsChecker checker,
-                                   final LoadOIFitsListener listener) {
+                final LoadOIFitsListener listener) {
             super(OIExplorerTaskRegistry.TASK_LOAD_OIFITS);
             this.fileLocations = fileLocations;
             this.checker = checker;
@@ -353,7 +353,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
             // Update status bar:
             StatusBar.show(n + " loaded file(s).");
-            
+
             return oiFitsFiles;
         }
 
@@ -391,7 +391,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws IOException if a fits file can not be loaded
      */
     private static OIFitsFile loadOIFits(final String fileLocation, final OIFitsChecker checker) throws IOException {
-        //@todo test if file has already been loaded before going further ??        
+        //@todo test if file has already been loaded before going further ??
 
         final OIFitsFile oifitsFile;
         try {
@@ -495,7 +495,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             // check if already present in collection:
             if (oiFitsCollection.addOIFitsFile(oiFitsFile) == null) {
 
-                // Add new OIDataFile in collection 
+                // Add new OIDataFile in collection
                 final OIDataFile dataFile = new OIDataFile();
 
                 final String id = StringUtils.replaceNonAlphaNumericCharsByUnderscore(oiFitsFile.getName());
@@ -522,7 +522,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
-     * Remove the OIDataFile given its corresponding OIFits structure (filePath matching) 
+     * Remove the OIDataFile given its corresponding OIFits structure (filePath matching)
      * @param oiFitsFile OIFits structure
      * @return removed OIDataFile or null if not found
      */
@@ -546,7 +546,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         return previous;
     }
 
-    /** 
+    /**
      * Protected: Return the OIFits explorer collection structure
      * @return OIFits explorer collection structure
      */
@@ -1307,10 +1307,18 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
+     * Return the READY event notifier
+     * @return READY event notifier
+     */
+    public EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object> getReadyEventNotifier() {
+        return this.oiFitsCollectionManagerEventNotifierMap.get(OIFitsCollectionManagerEventType.READY);
+    }
+
+    /**
      * This fires an COLLECTION_CHANGED event to given registered listener ASYNCHRONOUSLY !
-     * 
+     *
      * Note: this is ONLY useful to initialize new registered listeners properly !
-     * 
+     *
      * @param source event source
      * @param destination destination listener (null means all)
      */
@@ -1333,9 +1341,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /**
      * This fires a SUBSET_LIST_CHANGED event to given registered listener ASYNCHRONOUSLY !
-     * 
+     *
      * Note: this is ONLY useful to initialize new registered listeners properly !
-     * 
+     *
      * @param source event source
      * @param destination destination listener (null means all)
      */
@@ -1358,9 +1366,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /**
      * This fires a PLOT_DEFINITION_LIST_CHANGED event to given registered listener ASYNCHRONOUSLY !
-     * 
+     *
      * Note: this is ONLY useful to initialize new registered listeners properly !
-     * 
+     *
      * @param source event source
      * @param destination destination listener (null means all)
      */
@@ -1383,9 +1391,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     /**
      * This fires a PLOT_LIST_CHANGED event to given registered listener ASYNCHRONOUSLY !
-     * 
+     *
      * Note: this is ONLY useful to initialize new registered listeners properly !
-     * 
+     *
      * @param source event source
      * @param destination destination listener (null means all)
      */
@@ -1465,7 +1473,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     public void firePlotChanged(final Object source, final String plotId, final OIFitsCollectionManagerEventListener destination) {
         if (enableEvents) {
             if (logger.isDebugEnabled()) {
-                logger.debug("firePlotDefinitionChanged [{}] TO {}", plotId, (destination != null) ? destination : "ALL");
+                logger.debug("firePlotChanged [{}] TO {}", plotId, (destination != null) ? destination : "ALL");
             }
             getPlotChangedEventNotifier().queueEvent((source != null) ? source : this,
                     new OIFitsCollectionManagerEvent(OIFitsCollectionManagerEventType.PLOT_CHANGED, plotId), destination);
@@ -1497,8 +1505,23 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
     }
 
+    /**
+     * This fires a READY event to given registered listener ASYNCHRONOUSLY !
+     * @param source event source
+     * @param destination destination listener (null means all)
+     */
+    public void fireReady(final Object source, final OIFitsCollectionManagerEventListener destination) {
+        if (enableEvents) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("fireReadyChanged TO {}", (destination != null) ? destination : "ALL");
+            }
+            getReadyEventNotifier().queueEvent((source != null) ? source : this,
+                    new OIFitsCollectionManagerEvent(OIFitsCollectionManagerEventType.READY, null), destination);
+        }
+    }
+
     /*
-     * OIFitsCollectionManagerEventListener implementation 
+     * OIFitsCollectionManagerEventListener implementation
      */
     /**
      * Return the optional subject id i.e. related object id that this listener accepts

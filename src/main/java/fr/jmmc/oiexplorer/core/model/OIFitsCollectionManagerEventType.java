@@ -23,5 +23,7 @@ public enum OIFitsCollectionManagerEventType {
     /** plot changed (last as SUBSET_CHANGED and PLOT_DEFINITION_CHANGED fire PLOT_CHANGED) */
     PLOT_CHANGED,
     /** active plot changed (ie. user is working/looking on a new plot) */
-    ACTIVE_PLOT_CHANGED
+    ACTIVE_PLOT_CHANGED,
+    /** last event type = ready */
+    READY
 }
