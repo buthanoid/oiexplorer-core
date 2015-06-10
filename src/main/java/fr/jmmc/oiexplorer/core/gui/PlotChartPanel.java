@@ -11,8 +11,6 @@ import fr.jmmc.jmcs.util.SpecialChars;
 import fr.jmmc.jmcs.util.StringUtils;
 import fr.jmmc.oiexplorer.core.export.DocumentExportable;
 import fr.jmmc.oiexplorer.core.export.DocumentOptions;
-import fr.jmmc.oiexplorer.core.export.DocumentSize;
-import fr.jmmc.oiexplorer.core.export.Orientation;
 import fr.jmmc.oiexplorer.core.function.Converter;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.gui.action.ExportDocumentAction;

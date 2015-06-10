@@ -7,8 +7,6 @@ package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.oiexplorer.core.export.DocumentExportable;
 import fr.jmmc.oiexplorer.core.export.DocumentOptions;
-import fr.jmmc.oiexplorer.core.export.DocumentSize;
-import fr.jmmc.oiexplorer.core.export.Orientation;
 import fr.jmmc.oiexplorer.core.gui.action.ExportDocumentAction;
 import fr.jmmc.oiexplorer.core.gui.chart.ChartUtils;
 import fr.jmmc.oiexplorer.core.util.Constants;
@@ -82,7 +80,7 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
         }
     }
 
-    public void refreshJPanel() {
+    private void refreshJPanel() {
         final int nCharts = chartPanelList.size();
 
         this.removeAll();
@@ -109,14 +107,9 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        panel1 = new java.awt.Panel();
-        jColorChooser1 = new javax.swing.JColorChooser();
-
         setLayout(new java.awt.GridLayout(0, 2));
     }// </editor-fold>//GEN-END:initComponents
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JColorChooser jColorChooser1;
-    private java.awt.Panel panel1;
     // End of variables declaration//GEN-END:variables
 
     /**
