@@ -18,10 +18,24 @@ public class UserExprEditor extends javax.swing.JPanel {
     /* members */
     /** OIFitsCollectionManager singleton */
     private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    /** PlotDefinitionEditor to notify in case of modification */
+    private final PlotDefinitionEditor parentToNotify;
 
-    /** Creates new form UserExprEditor */
-    public UserExprEditor() {
+    /** 
+     * Creates new form UserExprEditor 
+     * @param parent PlotDefinitionEditor to be notified of changes.
+     */
+    public UserExprEditor(final PlotDefinitionEditor parent) {
         initComponents();
+        parentToNotify = parent;
+    }
+
+    /** 
+     * Creates new form AxisEditor.
+     * This empty constructor leave here for Netbeans GUI builder
+     */
+    public UserExprEditor() {
+        this(null);
     }
 
     /** This method is called from within the constructor to
@@ -39,8 +53,8 @@ public class UserExprEditor extends javax.swing.JPanel {
         jLabel2 = new javax.swing.JLabel();
         jTextFieldName = new javax.swing.JTextField();
         jPanelButtons = new javax.swing.JPanel();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        jButtonUpdate = new javax.swing.JButton();
+        jButtonRemove = new javax.swing.JButton();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -74,21 +88,21 @@ public class UserExprEditor extends javax.swing.JPanel {
 
         jPanelButtons.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 10, 0));
 
-        jButton1.setText("update");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        jButtonUpdate.setText("update");
+        jButtonUpdate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                jButtonUpdateActionPerformed(evt);
             }
         });
-        jPanelButtons.add(jButton1);
+        jPanelButtons.add(jButtonUpdate);
 
-        jButton2.setText("remove");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        jButtonRemove.setText("remove");
+        jButtonRemove.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                jButtonRemoveActionPerformed(evt);
             }
         });
-        jPanelButtons.add(jButton2);
+        jPanelButtons.add(jButtonRemove);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -99,17 +113,25 @@ public class UserExprEditor extends javax.swing.JPanel {
         add(jPanelButtons, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void jButtonUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonUpdateActionPerformed
         ocm.updateExprColumnInOIFitsCollection(jTextFieldName.getText(), jTextExpression.getText());
-    }//GEN-LAST:event_jButton1ActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        if (parentToNotify != null) {
+            ocm.firePlotChanged(this, parentToNotify.getPlotId(), parentToNotify);
+        }
+    }//GEN-LAST:event_jButtonUpdateActionPerformed
+
+    private void jButtonRemoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonRemoveActionPerformed
         ocm.removeExprColumnInOIFitsCollection(jTextFieldName.getText());
-    }//GEN-LAST:event_jButton2ActionPerformed
+
+        if (parentToNotify != null) {
+            ocm.firePlotChanged(this, parentToNotify.getPlotId(), parentToNotify);
+        }
+    }//GEN-LAST:event_jButtonRemoveActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
+    private javax.swing.JButton jButtonRemove;
+    private javax.swing.JButton jButtonUpdate;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanelButtons;

@@ -55,9 +55,7 @@ public class AxisEditor extends javax.swing.JPanel {
      * This empty constructor leave here for Netbeans GUI builder
      */
     public AxisEditor() {
-        initComponents();
-        parentToNotify = null;
-        nameComboBoxModel = null;
+        this(null);
     }
 
     /** Helper that return the value of given Boolean an false it the given value is null

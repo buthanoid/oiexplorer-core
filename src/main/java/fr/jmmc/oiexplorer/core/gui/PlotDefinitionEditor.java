@@ -109,7 +109,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         xAxisEditor = new AxisEditor(this);
         xAxisPanel.add(xAxisEditor);
 
-        exprEditor = new UserExprEditor();
+        exprEditor = new UserExprEditor(this);
         exprEditor.setVisible(false);
 
         this.jPanelOtherEditors.add(exprEditor, BorderLayout.CENTER);
@@ -476,7 +476,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = 8;
+        gridBagConstraints.gridwidth = 9;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 0, 0);
         add(extendedPanel, gridBagConstraints);
@@ -500,7 +500,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.gridwidth = 8;
+        gridBagConstraints.gridwidth = 9;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         add(jPanelOtherEditors, gridBagConstraints);
 
@@ -744,6 +744,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         }
     }
 
+    public String getPlotId() {
+        return plotId;
+    }
+    
     /**
      * Define the plot identifier and reset plot
      * @param plotId plot identifier or null to reset state
