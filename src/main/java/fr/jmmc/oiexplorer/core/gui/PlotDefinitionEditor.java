@@ -41,9 +41,18 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private static final long serialVersionUID = 1;
     /** Logger */
     private final static Logger logger = LoggerFactory.getLogger(PlotDefinitionEditor.class);
-
+    /** flag to enable / disable the expression editor */
+    private static boolean enableExpressionEditor = true;
     /** Define the max number of plots */
     private final static int MAX_Y_AXES = 2;
+
+    /**
+     * Define the flag to enable / disable the expression editor
+     * @param flag true to enable / false to disable the expression editor
+     */
+    public static void setEnableExpressionEditor(final boolean flag) {
+        enableExpressionEditor = flag;
+    }
 
     /* members */
     /** OIFitsCollectionManager singleton */
@@ -64,7 +73,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     /** xAxisEditor */
     private AxisEditor xAxisEditor;
     /* expression editor */
-    private UserExprEditor exprEditor;
+    private ExpressionEditor expressionEditor = null;
 
     /** Creates new form PlotDefinitionEditor */
     public PlotDefinitionEditor() {
@@ -109,10 +118,14 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         xAxisEditor = new AxisEditor(this);
         xAxisPanel.add(xAxisEditor);
 
-        exprEditor = new UserExprEditor(this);
-        exprEditor.setVisible(false);
+        if (enableExpressionEditor) {
+            expressionEditor = new ExpressionEditor(this);
+            expressionEditor.setVisible(false);
 
-        this.jPanelOtherEditors.add(exprEditor, BorderLayout.CENTER);
+            this.jPanelOtherEditors.add(expressionEditor, BorderLayout.CENTER);
+        } else {
+            jToggleButtonExprEditor.setVisible(false);
+        }
     }
 
     private void resetForm() {
@@ -611,7 +624,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }//GEN-LAST:event_refreshButtonActionPerformed
 
     private void jToggleButtonExprEditorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButtonExprEditorActionPerformed
-        exprEditor.setVisible(jToggleButtonExprEditor.isSelected());
+        if (enableExpressionEditor) {
+            expressionEditor.setVisible(jToggleButtonExprEditor.isSelected());
+        }
     }//GEN-LAST:event_jToggleButtonExprEditorActionPerformed
 
     /**
