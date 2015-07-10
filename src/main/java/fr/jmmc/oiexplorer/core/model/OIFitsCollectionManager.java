@@ -5,6 +5,7 @@ package fr.jmmc.oiexplorer.core.model;
 
 import fr.jmmc.jmcs.data.MimeType;
 import fr.jmmc.jmcs.data.preference.SessionSettingsPreferences;
+import fr.jmmc.jmcs.gui.component.MessagePane;
 import fr.jmmc.jmcs.gui.component.StatusBar;
 import fr.jmmc.jmcs.gui.task.HttpTaskSwingWorker;
 import fr.jmmc.jmcs.gui.task.TaskSwingWorkerExecutor;
@@ -28,6 +29,9 @@ import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
+import fr.jmmc.oitools.model.OIT3;
+import fr.jmmc.oitools.model.OIVis;
+import fr.jmmc.oitools.model.OIVis2;
 import fr.nom.tam.fits.FitsException;
 import java.io.File;
 import java.io.IOException;
@@ -35,8 +39,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -561,6 +567,207 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     public OIFitsCollection getOIFitsCollection() {
         return oiFitsCollection;
+    }
+
+    /* --- Expression interpretation on the OIFitsCollection ----------- */
+    /**
+     * Make the creation or modification of a column given its name and expression
+     * @param name name of the column
+     * @param expression expression of the column
+     */
+    public void updateExprColumnInOIFitsCollection(final String name, final String expression) {
+        modifyExprColumnInOIFitsCollection(name, expression, false);
+    }
+
+    /**
+     * Remove the column given its name.
+     * @param name name of the column
+     */
+    public void removeExprColumnInOIFitsCollection(final String name) {
+        modifyExprColumnInOIFitsCollection(name, null, true);
+    }
+
+    /**
+     * Update or remove the column given its name.
+     * Note: for updates, it will verify the expression
+     * and perform computation on all tables present in all OIFitsCollections
+     * @param name name of the column
+     * @param expression expression of the column
+     * @param remove true to remove the column; false to update the column
+     */
+    private void modifyExprColumnInOIFitsCollection(final String name, final String expression,
+            final boolean remove) {
+
+        logger.debug("modifyExprColumnInOIFitsCollection: {}", name);
+
+        final boolean[] working = new boolean[3];
+
+        if (!remove) {
+            // Check expression:
+            int n = 0;
+            int nBad = 0;
+            int nOk = 0;
+
+            OIVis vis = null;
+            OIVis2 vis2 = null;
+            OIT3 t3 = null;
+
+            final String[] messages = new String[3];
+
+            for (OIFitsFile oiFitsFile : oiFitsCollection.getOiFitsPerTarget().values()) {
+                logger.debug("oiFitsFile: {}", oiFitsFile);
+
+                if (vis == null) {
+                    // cherche une table OI_VIS
+                    if (oiFitsFile.hasOiVis()) {
+                        vis = oiFitsFile.getOiVis()[0];
+                        n++;
+
+                        try {
+                            vis.checkExpression(name, expression);
+                            working[0] = true;
+                            nOk++;
+                        } catch (IllegalStateException ise) {
+                            // fatal error:
+                            throw ise;
+                        } catch (RuntimeException re) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("exception OI_VIS: {}", re.getMessage(), re);
+                            }
+                            messages[0] = re.getMessage();
+                            nBad++;
+                        }
+                    }
+                }
+                if (vis2 == null) {
+                    // cherche une table OI_VIS2
+                    if (oiFitsFile.hasOiVis2()) {
+                        vis2 = oiFitsFile.getOiVis2()[0];
+                        n++;
+
+                        try {
+                            vis2.checkExpression(name, expression);
+                            working[1] = true;
+                            nOk++;
+                        } catch (IllegalStateException ise) {
+                            // fatal error:
+                            throw ise;
+                        } catch (RuntimeException re) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("exception OI_VIS2: {}", re.getMessage(), re);
+                            }
+                            messages[1] = re.getMessage();
+                            nBad++;
+                        }
+                    }
+                }
+                if (t3 == null) {
+                    // cherche une table OI_T3
+                    if (oiFitsFile.hasOiT3()) {
+                        t3 = oiFitsFile.getOiT3()[0];
+                        n++;
+
+                        try {
+                            t3.checkExpression(name, expression);
+                            working[2] = true;
+                            nOk++;
+                        } catch (IllegalStateException ise) {
+                            // fatal error:
+                            throw ise;
+                        } catch (RuntimeException re) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("exception OI_T3: {}", re.getMessage(), re);
+                            }
+                            messages[2] = re.getMessage();
+                            nBad++;
+                        }
+                    }
+                }
+                if (n == 3) {
+                    break;
+                }
+            }
+
+            // Bilan des courses:
+            if (nBad != 0 && nOk == 0) {
+
+                final Map<String, List<Integer>> mapError = new HashMap< String, List<Integer>>(8);
+
+                for (int i = 0; i < 3; i++) {
+                    if (messages[i] != null) {
+                        final List<Integer> indices;
+                        if (mapError.containsKey(messages[i])) {
+                            indices = mapError.get(messages[i]);
+                        } else {
+                            indices = new ArrayList<Integer>(3);
+                            mapError.put(messages[i], indices);
+                        }
+                        indices.add(i);
+                    }
+                }
+
+                final StringBuilder sb = new StringBuilder(256);
+                sb.append("Unable to evaluate the expression: '").append(expression);
+                sb.append("'\n\n");
+
+                if (mapError.size() == 1) {
+                    sb.append(mapError.keySet().iterator().next());
+                } else {
+                    for (Map.Entry<String, List<Integer>> entry : mapError.entrySet()) {
+                        sb.append(entry.getKey());
+                        sb.append(" in table : ");
+                        for (Integer j : entry.getValue()) {
+                            switch (j) {
+                                case 0:
+                                    sb.append(" OIVIS ");
+                                    break;
+                                case 1:
+                                    sb.append(" OIVIS2 ");
+                                    break;
+                                case 2:
+                                    sb.append(" OIT3 ");
+                                    break;
+                                default:
+                                    break;
+                            }
+                            sb.append(" \n");
+                        }
+                    }
+                }
+                sb.append("\n");
+
+                MessagePane.showErrorMessage(sb.toString());
+                return;
+            }
+        }
+
+        final long startTime = System.nanoTime();
+
+        for (OIFitsFile oiFitsFile : oiFitsCollection.getOiFitsPerTarget().values()) {
+            logger.debug("oiFitsFile: {}", oiFitsFile);
+
+            for (OIData oiData : oiFitsFile.getOiDataList()) {
+                logger.debug("oiData: {}", oiData);
+
+                if (remove) {
+                    oiData.removeExpressionColumn(name);
+                } else {
+                    // only compute expression on working tables:
+                    if ((working[0] && oiData instanceof OIVis)
+                            || (working[1] && oiData instanceof OIVis2)
+                            || (working[2] && oiData instanceof OIT3)) {
+                        oiData.updateExpressionColumn(name, expression);
+                    }
+                }
+            }
+        }
+
+        if (!remove) {
+            logger.info("updateExprColumnInOIFitsCollection[{}] computation time = {} ms.",
+                    expression, 1e-6d * (System.nanoTime() - startTime));
+        }
+
+        logger.debug("modifyExprColumnInOIFitsCollection: done.");
     }
 
     /* --- file handling ------------------------------------- */

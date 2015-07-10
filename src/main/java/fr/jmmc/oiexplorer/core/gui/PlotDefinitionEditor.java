@@ -15,6 +15,7 @@ import fr.jmmc.oiexplorer.core.model.plot.ColorMapping;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.util.ColorMappingListCellRenderer;
 import fr.jmmc.oitools.model.OIFitsFile;
+import java.awt.BorderLayout;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,9 +30,9 @@ import org.slf4j.LoggerFactory;
 /**
  * This Panel allow to select columns of data to be plotted.
  * After being created and inserted in a GUI, it becomes plotDefinition editor of a dedicated plotDefinition using setPlotDefId().
- * It can also be editor for the plotDefinition of a particular Plot using setPlotId(). In the Plot case, 
+ * It can also be editor for the plotDefinition of a particular Plot using setPlotId(). In the Plot case,
  * the subset is also watched to find available columns to plot.
- * 
+ *
  * @author mella
  */
 public final class PlotDefinitionEditor extends javax.swing.JPanel implements OIFitsCollectionManagerEventListener {
@@ -40,6 +41,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private static final long serialVersionUID = 1;
     /** Logger */
     private final static Logger logger = LoggerFactory.getLogger(PlotDefinitionEditor.class);
+
+    /** Define the max number of plots */
+    private final static int MAX_Y_AXES = 2;
 
     /* members */
     /** OIFitsCollectionManager singleton */
@@ -59,8 +63,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private boolean notify;
     /** xAxisEditor */
     private AxisEditor xAxisEditor;
-    /** Define the max number of plots */
-    private final static int MAX_Y_AXES = 2;
+    /* expression editor */
+    private UserExprEditor exprEditor;
 
     /** Creates new form PlotDefinitionEditor */
     public PlotDefinitionEditor() {
@@ -104,6 +108,11 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         // TODO check if it has to be done by the netbeans GUI builder ?
         xAxisEditor = new AxisEditor(this);
         xAxisPanel.add(xAxisEditor);
+
+        exprEditor = new UserExprEditor();
+        exprEditor.setVisible(false);
+
+        this.jPanelOtherEditors.add(exprEditor, BorderLayout.CENTER);
     }
 
     private void resetForm() {
@@ -111,7 +120,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
         // TODO: is it necessary to use notify flag here ?
         try {
-            // Leave programatic changes on widgets ignored to prevent model changes 
+            // Leave programatic changes on widgets ignored to prevent model changes
             notify = false;
 
             // Clear all content
@@ -139,7 +148,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             resetForm();
         } else {
             try {
-                // Leave programatic changes on widgets ignored to prevent model changes 
+                // Leave programatic changes on widgets ignored to prevent model changes
                 notify = false;
 
                 // Add column present in associated subset if any
@@ -173,7 +182,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
                 xAxisEditor.setAxis((Axis) plotDef.getXAxis().clone(), xAxisChoices);
 
-                // fill with associated plotdefinition            
+                // fill with associated plotdefinition
                 if (logger.isDebugEnabled()) {
                     logger.debug("refreshForm : yaxes to add : {}", plotDef.getYAxes());
                 }
@@ -205,7 +214,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }
 
     private void checkYAxisActionButtons() {
-        // disable buttons to limit number of yAxes 
+        // disable buttons to limit number of yAxes
         addYAxisButton.setEnabled(yAxes.size() < MAX_Y_AXES);
         delYAxisButton.setEnabled(yAxes.size() > 1);
     }
@@ -295,6 +304,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         xAxisPanel = new javax.swing.JPanel();
         yAxesPanel = new javax.swing.JPanel();
         refreshButton = new javax.swing.JButton();
+        jPanelOtherEditors = new javax.swing.JPanel();
+        jToggleButtonExprEditor = new javax.swing.JToggleButton();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -484,6 +495,25 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         add(refreshButton, gridBagConstraints);
+
+        jPanelOtherEditors.setLayout(new java.awt.BorderLayout());
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 8;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        add(jPanelOtherEditors, gridBagConstraints);
+
+        jToggleButtonExprEditor.setText("expr editor");
+        jToggleButtonExprEditor.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButtonExprEditorActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 8;
+        gridBagConstraints.gridy = 0;
+        add(jToggleButtonExprEditor, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void addYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addYAxisButtonActionPerformed
@@ -565,7 +595,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         plotDefCopy.copyValues(PlotDefinitionFactory.getInstance().getDefault(presetPlotDefId));
 
         // TODO: clear name and description fields ?
-
         // keep color mapping:
         plotDefCopy.setColorMapping(colorMapping);
 
@@ -581,6 +610,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         ocm.updatePlotDefinition(this, plotDefCopy);
     }//GEN-LAST:event_refreshButtonActionPerformed
 
+    private void jToggleButtonExprEditorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButtonExprEditorActionPerformed
+        exprEditor.setVisible(jToggleButtonExprEditor.isSelected());
+    }//GEN-LAST:event_jToggleButtonExprEditorActionPerformed
+
     /**
      * Return colorMapping Value stored by associated combobox.
      * @return the colorMapping Value stored by associated combobox.
@@ -589,7 +622,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         return (ColorMapping) colorMappingComboBox.getSelectedItem();
     }
 
-    /** 
+    /**
      * Create a new widget to edit given Axis.
      * @param yAxis axis to be edited by new yAxisEditor
      */
@@ -608,7 +641,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         revalidate();
     }
 
-    /** Synchronize management for the addition of a given combo and update GUI. 
+    /** Synchronize management for the addition of a given combo and update GUI.
      * @param yAxis yAxis of editor to remove
      */
     private void delYEditor(final Axis yAxis) {
@@ -625,18 +658,18 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
     }
 
-    /** 
-     * Update current plotDefinition 
-     * and request a plotDefinitionUpdate to the OIFitsCollectionManager.    
+    /**
+     * Update current plotDefinition
+     * and request a plotDefinitionUpdate to the OIFitsCollectionManager.
      */
     void updateModel() {
         updateModel(false);
     }
 
-    /** 
-     * Update current plotDefinition 
+    /**
+     * Update current plotDefinition
      * and request a plotDefinitionUpdate to the OIFitsCollectionManager.
-     * 
+     *
      * @param forceRefreshPlotDefNames true to refresh plotDefinition names
      */
     void updateModel(final boolean forceRefreshPlotDefNames) {
@@ -651,7 +684,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 final List<Axis> yAxesCopy = plotDefCopy.getYAxes();
                 yAxesCopy.clear();
                 // We may also compute the yAxes Collection calling getAxis on the editor list
-                // This may reduce references nightmare 
+                // This may reduce references nightmare
                 yAxesCopy.addAll(yAxes.keySet());
             }
 
@@ -679,6 +712,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private javax.swing.JCheckBox drawLinesCheckBox;
     private javax.swing.JPanel extendedPanel;
     private javax.swing.JCheckBox flaggedDataCheckBox;
+    private javax.swing.JPanel jPanelOtherEditors;
+    private javax.swing.JToggleButton jToggleButtonExprEditor;
     private javax.swing.JLabel plotDefLabel;
     private javax.swing.JComboBox plotDefinitionComboBox;
     private javax.swing.JLabel plotDefinitionName;
@@ -789,7 +824,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }
 
     /*
-     * OIFitsCollectionManagerEventListener implementation 
+     * OIFitsCollectionManagerEventListener implementation
      */
     /**
      * Return the optional subject id i.e. related object id that this listener accepts
