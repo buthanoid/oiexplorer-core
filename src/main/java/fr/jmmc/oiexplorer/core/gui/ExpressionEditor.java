@@ -8,10 +8,10 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
 
 /**
- *
+ * This class provides an expression editor (column name + expression)
  * @author grosje
  */
-public class UserExprEditor extends javax.swing.JPanel {
+public class ExpressionEditor extends javax.swing.JPanel {
 
     private static final long serialVersionUID = 1L;
 
@@ -25,7 +25,7 @@ public class UserExprEditor extends javax.swing.JPanel {
      * Creates new form UserExprEditor 
      * @param parent PlotDefinitionEditor to be notified of changes.
      */
-    public UserExprEditor(final PlotDefinitionEditor parent) {
+    public ExpressionEditor(final PlotDefinitionEditor parent) {
         initComponents();
         parentToNotify = parent;
     }
@@ -34,7 +34,7 @@ public class UserExprEditor extends javax.swing.JPanel {
      * Creates new form AxisEditor.
      * This empty constructor leave here for Netbeans GUI builder
      */
-    public UserExprEditor() {
+    public ExpressionEditor() {
         this(null);
     }
 
