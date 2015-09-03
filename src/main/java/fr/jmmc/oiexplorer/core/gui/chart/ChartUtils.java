@@ -65,6 +65,8 @@ public class ChartUtils {
     public static final Font DEFAULT_TITLE_FONT = getFont(14, Font.BOLD);
     /** The default font for titles. */
     public static final Font DEFAULT_FONT = getFont(12);
+    /** The default font for medium texxts. */
+    public static final Font DEFAULT_FONT_MEDIUM = getFont(10);
     /** The default font for small texts */
     public static final Font DEFAULT_TEXT_SMALL_FONT = getFont(9);
     /** The default small font for annotation texts */
