@@ -283,9 +283,11 @@ public class Identifiable
      * @return identifiable instance or null if the identifier was not found
      */
     public static <K extends Identifiable> K getIdentifiable(final String id, final java.util.List<K> list) {
-        for (K identifiable : list) {
-            if (id.equals(identifiable.getId())) {
-                return identifiable;
+        if (id != null) {
+            for (K identifiable : list) {
+                if (id.equals(identifiable.getId())) {
+                    return identifiable;
+                }
             }
         }
         return null;
