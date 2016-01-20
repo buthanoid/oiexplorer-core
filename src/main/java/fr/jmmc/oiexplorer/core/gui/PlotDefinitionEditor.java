@@ -44,7 +44,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     /** flag to enable / disable the expression editor */
     private static boolean enableExpressionEditor = true;
     /** Define the max number of plots */
-    private final static int MAX_Y_AXES = 2;
+    private final static int MAX_Y_AXES = 10;
 
     /**
      * Define the flag to enable / disable the expression editor
