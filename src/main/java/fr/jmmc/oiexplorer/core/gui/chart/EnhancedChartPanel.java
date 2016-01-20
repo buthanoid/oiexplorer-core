@@ -335,7 +335,7 @@ public class EnhancedChartPanel extends ChartPanel {
     public void zoom(final Rectangle2D selection) {
         if (this.redirectZoomEvent) {
             logger.debug("zoom: redirect zoom event: {}", selection);
-            this.mouseRectangularSelectionEventListener.mouseSelected(selection);
+            this.mouseRectangularSelectionEventListener.mouseSelected(null, selection);
         } else {
             super.zoom(selection);
         }

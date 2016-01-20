@@ -86,8 +86,8 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
     private int chartBufferHeight;
     /** The width of the chart buffer. */
     private int chartBufferWidth;
-    /** the selected rectangle region */
-    private Rectangle2D rectSelArea;
+    /** the selected rectangle region in a plot or subplot */
+    private SelectedSubPlotArea selectedArea;
     /* selected data points */
     private List<Point2D> points = null;
     /* cache of x axis range to detect axis changes */
@@ -114,7 +114,7 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
      * Reset the selection state
      */
     public void reset() {
-        this.rectSelArea = null;
+        this.selectedArea = null;
         this.points = null;
         this.refreshBuffer = true;
         this.xAxisRange = null;
@@ -154,15 +154,20 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
 
             if (!this.refreshBuffer) {
                 // check if axis ranges changed (zoom):
-                final JFreeChart chart = chartPanel.getChart();
-                final XYPlot plot = chart.getXYPlot();
+                this.refreshBuffer = true;
+                
+                if (false) {
+                    // TODO: use selected area
+                    final JFreeChart chart = chartPanel.getChart();
+                    final XYPlot plot = chart.getXYPlot();
 
-                final ValueAxis xAxis = plot.getDomainAxis();
-                final ValueAxis yAxis = plot.getRangeAxis();
+                    final ValueAxis xAxis = plot.getDomainAxis();
+                    final ValueAxis yAxis = plot.getRangeAxis();
 
-                if ((xAxisRange != null && !xAxisRange.equals(xAxis.getRange())) || (yAxisRange != null && !yAxisRange.equals(yAxis.getRange()))) {
-                    logger.warn("Refresh: axis range changed");
-                    this.refreshBuffer = true;
+                    if ((xAxisRange != null && !xAxisRange.equals(xAxis.getRange())) || (yAxisRange != null && !yAxisRange.equals(yAxis.getRange()))) {
+                        logger.warn("Refresh: axis range changed");
+                        this.refreshBuffer = true;
+                    }
                 }
             }
 
@@ -237,24 +242,23 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
         Range yRange = null;
 
         // paint selection rectangle:
-        if (this.rectSelArea != null) {
+        if (this.selectedArea != null) {
             final Rectangle2D dataArea = chartPanel.getScreenDataArea();
             g2.clip(dataArea);
 
-            final JFreeChart chart = chartPanel.getChart();
-            final XYPlot plot = chart.getXYPlot();
-
+            final XYPlot plot = this.selectedArea.plot;
             final ValueAxis xAxis = plot.getDomainAxis();
             final ValueAxis yAxis = plot.getRangeAxis();
+            Rectangle2D rectSelArea = this.selectedArea.rectSelArea;
 
             final RectangleEdge xAxisEdge = plot.getDomainAxisEdge();
             final RectangleEdge yAxisEdge = plot.getRangeAxisEdge();
 
-            final double x1 = xAxis.valueToJava2D(this.rectSelArea.getX(), dataArea, xAxisEdge);
-            final double y1 = yAxis.valueToJava2D(this.rectSelArea.getY(), dataArea, yAxisEdge);
+            final double x1 = xAxis.valueToJava2D(rectSelArea.getX(), dataArea, xAxisEdge);
+            final double y1 = yAxis.valueToJava2D(rectSelArea.getY(), dataArea, yAxisEdge);
 
-            final double x2 = xAxis.valueToJava2D(this.rectSelArea.getMaxX(), dataArea, xAxisEdge);
-            final double y2 = yAxis.valueToJava2D(this.rectSelArea.getMaxY(), dataArea, yAxisEdge);
+            final double x2 = xAxis.valueToJava2D(rectSelArea.getMaxX(), dataArea, xAxisEdge);
+            final double y2 = yAxis.valueToJava2D(rectSelArea.getMaxY(), dataArea, yAxisEdge);
 
             g2.draw(new Rectangle2D.Double(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)));
 
@@ -266,9 +270,7 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
             final Rectangle2D dataArea = chartPanel.getScreenDataArea();
             g2.clip(dataArea);
 
-            final JFreeChart chart = chartPanel.getChart();
-            final XYPlot plot = chart.getXYPlot();
-
+            final XYPlot plot = this.selectedArea.plot;
             final ValueAxis xAxis = plot.getDomainAxis();
             final ValueAxis yAxis = plot.getRangeAxis();
 
@@ -385,14 +387,14 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
      * Handle rectangular selection event
      * Not implemented
      *
+     * @param nullPlot null given.
      * @param selection the selected region.
      */
     @Override
-    public void mouseSelected(final Rectangle2D selection) {
+    public void mouseSelected(final XYPlot nullPlot, final Rectangle2D selection) {
         logger.warn("mouseSelected: rectangle {}", selection);
 
         // TODO: move such conversion into EnhancedChartPanel directly !
-
         final Point2D pointOrigin = this.chartPanel.translateScreenToJava2D(new Point((int) selection.getX(), (int) selection.getY()));
 
         XYPlot plot = this.chartPanel.getChart().getXYPlot();
@@ -460,9 +462,9 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
         logger.warn("Selected data rectangle ({}, {}) to ({}, {})",
                 dataSelection.getX(), dataSelection.getY(), dataSelection.getMaxX(), dataSelection.getMaxY());
 
-        setRectSelArea(selection);
+        setRectSelArea(plot, selection);
 
-        this.mouseRectangularSelectionEventListener.mouseSelected(dataSelection);
+        this.mouseRectangularSelectionEventListener.mouseSelected(plot, dataSelection);
 
         // force repaint to hide zoom rectangle:
         this.fireOverlayChanged();
@@ -476,13 +478,18 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
         this.points = points;
     }
 
-    public void setRectSelArea(Rectangle2D rectSelArea) {
-        this.rectSelArea = rectSelArea;
+    public void setRectSelArea(final XYPlot plot, Rectangle2D rectSelArea) {
+        this.selectedArea = new SelectedSubPlotArea(plot, rectSelArea);
     }
 
-    private class SelectedArea {
+    private class SelectedSubPlotArea {
 
-        private int subPLotIndex = -1;
-        private Rectangle2D rectSelArea;
+        XYPlot plot;
+        Rectangle2D rectSelArea;
+
+        SelectedSubPlotArea(final XYPlot plot, Rectangle2D rectSelArea) {
+            this.plot = plot;
+            this.rectSelArea = rectSelArea;
+        }
     }
 }
