@@ -591,12 +591,14 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * Update or remove the column given its name.
      * Note: for updates, it will verify the expression
      * and perform computation on all tables present in all OIFitsCollections
-     * @param name name of the column
+     * @param userName name of the column
      * @param expression expression of the column
      * @param remove true to remove the column; false to update the column
      */
-    private void modifyExprColumnInOIFitsCollection(final String name, final String expression,
+    private void modifyExprColumnInOIFitsCollection(final String userName, final String expression,
             final boolean remove) {
+        
+        final String name = "[" + userName + "]";
 
         logger.debug("modifyExprColumnInOIFitsCollection: {}", name);
 
