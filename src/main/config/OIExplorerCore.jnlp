@@ -12,13 +12,15 @@
     </security>
     <resources>
         <!-- MANUALLY EDITED - Should be generated with maven ASAP ! -->
-        
+
         <!-- Module code -->
         <jar href="jar/oiexplorer-core-TRUNK.jar"/>
         <jar href="jar/oitools-TRUNK.jar"/>
 
 
         <!-- Libraries -->
+        <!-- JEL (oitools) -->
+        <jar href="@SHARED@/JEL-2.0.2.jar" />
 
         <!-- JFreeChart -->
         <jar href="@SHARED@/jfreechart-1.0.13.jar" />
