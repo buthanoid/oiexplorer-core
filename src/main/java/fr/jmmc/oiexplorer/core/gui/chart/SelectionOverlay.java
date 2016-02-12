@@ -354,7 +354,7 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
                     this.chartPanel.restoreZoomEvent();
                     break;
                 case SELECT_POLYGON:
-                    this.chartPanel.restoreMouseEvents();
+//                    this.chartPanel.restoreMouseEvents();
                     break;
             }
 

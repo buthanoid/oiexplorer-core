@@ -5,6 +5,7 @@ package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ImageUtils;
+import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.jmcs.util.SpecialChars;
@@ -58,6 +59,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
@@ -99,7 +101,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(PlotChartPanel.class.getName());
     /** data margin in percents (5%) */
-    private final static double MARGIN_PERCENTS = 5d / 100d;
+    private final static double MARGIN_PERCENTS = 5.0 / 100.0;
+    /** data margin in percents (20%) */
+    private final static double VIEW_MARGIN_PERCENTS = 20.0 / 100.0;
     /** double formatter for wave lengths */
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
     private static final Shape shapePointValid;
@@ -163,6 +167,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private JFreeChart chart;
     /** combined xy plot sharing domain axis */
     private CombinedDomainXYPlot combinedXYPlot;
+    /** unmodifiable subplot list from the combined xy plot */
+    private List combinedXYPlotList;
     /** mapping between xy plot and subplot index */
     private Map<XYPlot, Integer> plotMapping = new IdentityHashMap<XYPlot, Integer>();
     /** mapping between subplot index and xy plot (reverse) */
@@ -177,6 +183,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private List<XYPlot> xyPlotList = new ArrayList<XYPlot>();
     /** JMMC annotation */
     private final List<XYTextAnnotation> aJMMCPlots = new ArrayList<XYTextAnnotation>();
+    /** last mouse event */
+    private ChartMouseEvent lastChartMouseEvent = null;
 
     /**
      * Constructor
@@ -209,15 +217,101 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
 
         jLabelNoData = new javax.swing.JLabel();
+        jPanelInfos = new javax.swing.JPanel();
+        jLabelInfos = new javax.swing.JLabel();
+        jLabelPoints = new javax.swing.JLabel();
+        jSeparator1 = new javax.swing.JSeparator();
+        jLabelDataRange = new javax.swing.JLabel();
+        jSeparator2 = new javax.swing.JSeparator();
+        jLabelDataErrRange = new javax.swing.JLabel();
+        jSeparator3 = new javax.swing.JSeparator();
+        jLabelMouse = new javax.swing.JLabel();
 
         setBackground(new java.awt.Color(255, 255, 255));
+        setCursor(new java.awt.Cursor(java.awt.Cursor.CROSSHAIR_CURSOR));
         setLayout(new java.awt.BorderLayout());
 
         jLabelNoData.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabelNoData.setText("No data to plot.");
         add(jLabelNoData, java.awt.BorderLayout.PAGE_START);
+
+        jPanelInfos.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        jPanelInfos.setLayout(new java.awt.GridBagLayout());
+
+        jLabelInfos.setText("Infos:");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelInfos.add(jLabelInfos, gridBagConstraints);
+
+        jLabelPoints.setText("points");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelInfos.add(jLabelPoints, gridBagConstraints);
+
+        jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelInfos.add(jSeparator1, gridBagConstraints);
+
+        jLabelDataRange.setText("data");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 0.4;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelInfos.add(jLabelDataRange, gridBagConstraints);
+
+        jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelInfos.add(jSeparator2, gridBagConstraints);
+
+        jLabelDataErrRange.setText("data+error");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 0.4;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelInfos.add(jLabelDataErrRange, gridBagConstraints);
+
+        jSeparator3.setOrientation(javax.swing.SwingConstants.VERTICAL);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelInfos.add(jSeparator3, gridBagConstraints);
+
+        jLabelMouse.setText("[mouse]");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 7;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 0.05;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelInfos.add(jLabelMouse, gridBagConstraints);
+
+        add(jPanelInfos, java.awt.BorderLayout.PAGE_END);
     }// </editor-fold>//GEN-END:initComponents
 
     /**
@@ -387,6 +481,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         configureCrosshair(this.combinedXYPlot, usePlotCrossHairSupport);
 
+        // get read-only subplot list:
+        this.combinedXYPlotList = this.combinedXYPlot.getSubplots();
+
         this.chart = ChartUtils.createChart(null, this.combinedXYPlot, true);
         this.chart.addProgressListener(this);
         this.chartPanel = ChartUtils.createChartPanel(this.chart, false);
@@ -514,7 +611,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     @Override
     public boolean support(final int eventType) {
-        return (eventType == EnhancedChartMouseListener.EVENT_CLICKED);
+        return true;
     }
 
     /**
@@ -597,10 +694,64 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     @Override
     public void chartMouseMoved(final ChartMouseEvent chartMouseEvent) {
-        // enable this to move crosshair when the mouse is over the plot:
-        if (false) {
-            chartMouseClicked(chartMouseEvent);
+        this.lastChartMouseEvent = chartMouseEvent;
+        
+        double domainValue = Double.NaN;
+        double rangeValue = Double.NaN;
+        int subplotIndex = -1;
+
+        final int i = chartMouseEvent.getTrigger().getX();
+        final int j = chartMouseEvent.getTrigger().getY();
+
+        if (this.chartPanel.getScreenDataArea().contains(i, j)) {
+            final Point2D point2D = this.chartPanel.translateScreenToJava2D(new Point(i, j));
+
+            final PlotRenderingInfo plotInfo = this.chartPanel.getChartRenderingInfo().getPlotInfo();
+
+            subplotIndex = plotInfo.getSubplotIndex(point2D);
+            if (subplotIndex != -1) {
+                // data area for sub plot:
+                final Rectangle2D dataArea = plotInfo.getSubplotInfo(subplotIndex).getDataArea();
+
+                final Integer plotIndex = NumberUtils.valueOf(subplotIndex + 1);
+
+                final XYPlot xyPlot = this.plotIndexMapping.get(plotIndex);
+                if (xyPlot != null) {
+                    final ValueAxis domainAxis = xyPlot.getDomainAxis();
+                    domainValue = domainAxis.java2DToValue(point2D.getX(), dataArea, xyPlot.getDomainAxisEdge());
+
+                    final ValueAxis rangeAxis = xyPlot.getRangeAxis();
+                    rangeValue = rangeAxis.java2DToValue(point2D.getY(), dataArea, xyPlot.getRangeAxisEdge());
+
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Mouse coordinates are (" + i + ", " + j + "), in data space = (" + domainValue + ", " + rangeValue + ")");
+                    }
+                }
+            }
         }
+
+        String infoMouse = "";
+        String infoPoints = "";
+        String infoDataRange = "";
+        String infoDataErrRange = "";
+
+        if (subplotIndex != -1) {
+            final PlotInfo info = getPlotInfos().get(subplotIndex);
+            infoMouse = String.format("[%.3f, %.3f]", domainValue, rangeValue);
+            infoPoints = String.format("%d / %d points", info.nDisplayedPoints, info.nDataPoints);
+            infoDataRange = String.format("Data: X[%.3f, %.3f] Y[%.3f, %.3f]",
+                    info.xAxisInfo.dataRange.getLowerBound(), info.xAxisInfo.dataRange.getUpperBound(),
+                    info.yAxisInfo.dataRange.getLowerBound(), info.yAxisInfo.dataRange.getUpperBound()
+            );
+            infoDataErrRange = String.format("Data+Err: X[%.3f, %.3f] Y[%.3f, %.3f]",
+                    info.xAxisInfo.dataErrRange.getLowerBound(), info.xAxisInfo.dataErrRange.getUpperBound(),
+                    info.yAxisInfo.dataErrRange.getLowerBound(), info.yAxisInfo.dataErrRange.getUpperBound()
+            );
+        }
+        this.jLabelMouse.setText(infoMouse);
+        this.jLabelPoints.setText(infoPoints);
+        this.jLabelDataRange.setText(infoDataRange);
+        this.jLabelDataErrRange.setText(infoDataErrRange);
     }
 
     /**
@@ -793,7 +944,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // remove all sub plots:
         // Note: use toArray() to avoid concurrentModification exceptions:
-        for (Object subPlot : this.combinedXYPlot.getSubplots().toArray()) {
+        for (Object subPlot : this.combinedXYPlotList.toArray()) {
             final XYPlot xyPlot = (XYPlot) subPlot;
             this.combinedXYPlot.remove(xyPlot);
 
@@ -985,6 +1136,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final OIFitsFile oiFitsSubset = getOiFitsSubset();
         final PlotDefinition plotDef = getPlotDefinition();
+        
+        final Axis xAxis = plotDef.getXAxis();
 
         // Get distinct station indexes from OIFits subset (not filtered):
         final List<String> distinctStaIndexNames = new ArrayList<String>(getDistinctStaNames(oiFitsSubset.getOiDataList(), new LinkedHashSet<String>()));
@@ -1000,7 +1153,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         ColumnMeta xMeta = null;
         BoundedNumberAxis axis;
-        Range viewRange;
+        Range viewBounds, viewRange;
 
         // Global converter (symmetry)
         Converter xConverter = null, yConverter = null;
@@ -1027,15 +1180,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // Loop on Y axes:
         for (int i = 0; i < nYaxes; i++) {
-            final XYPlot xyPlot = this.xyPlotList.get(i);
             final Axis yAxis = plotDef.getYAxes().get(i);
-            
-            boolean showPlot = false;
+            final XYPlot xyPlot = this.xyPlotList.get(i);
 
-            if (oiFitsSubset.getNbOiTables() != 0) {
+            boolean showPlot = false;
+            final PlotInfo info;
+
+            if (oiFitsSubset.getNbOiTables() == 0) {
+                info = null;
+            } else {
                 final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>();
 
-                final PlotInfo info = new PlotInfo();
+                info = new PlotInfo();
                 info.distinctStaIndexNames = distinctStaIndexNames;
                 info.distinctStaConfNames = distinctStaConfNames;
                 info.waveLengthRange = waveLengthRange;
@@ -1043,7 +1199,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 int tableIndex = 0;
 
                 // Use symmetry for spatial frequencies:
-                if (useSymmetry(plotDef.getXAxis(), yAxis)) {
+                if (useSymmetry(xAxis, yAxis)) {
                     xConverter = yConverter = ConverterFactory.getInstance().getDefault(ConverterFactory.CONVERTER_REFLECT);
 
                     for (OIData oiData : oiFitsSubset.getOiDataList()) {
@@ -1063,15 +1219,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 }
 
                 if (info.hasPlotData) {
-                    showPlot = true;
-
                     if (logger.isDebugEnabled()) {
-                        logger.debug("xyPlotPlot[{}]: nData = {}", i, info.nData);
+                        logger.debug("xyPlotPlot[{}]: nData = {}", i, info.nDataPoints);
                         logger.debug("xyPlotPlot[{}]: nbSeries = {}", i, dataset.getSeriesCount());
                     }
 
-                    // add plot info:
-                    getPlotInfos().add(info);
+                    showPlot = true;
 
                     // update X axis information:
                     if (xMeta == null && info.xAxisInfo.columnMeta != null) {
@@ -1081,8 +1234,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
 
                     // update X range:
-                    minX = Math.min(minX, info.xAxisInfo.dataRange.getLowerBound());
-                    maxX = Math.max(maxX, info.xAxisInfo.dataRange.getUpperBound());
+                    minX = Math.min(minX, info.xAxisInfo.dataErrRange.getLowerBound());
+                    maxX = Math.max(maxX, info.xAxisInfo.dataErrRange.getUpperBound());
 
                     boolean yUseLog = false;
                     String yUnit = null;
@@ -1096,25 +1249,30 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
 
                     // get Y range:
-                    double minY = info.yAxisInfo.dataRange.getLowerBound();
-                    double maxY = info.yAxisInfo.dataRange.getUpperBound();
+                    double bminY = info.yAxisInfo.dataErrRange.getLowerBound();
+                    double bmaxY = info.yAxisInfo.dataErrRange.getUpperBound();
 
-                    logger.debug("rangeAxis: {} - {}", minY, maxY);
+                    double vminY, vmaxY;
+
+                    logger.debug("rangeAxis: {} - {}", bminY, bmaxY);
 
                     // Add margin:
                     if (yUseLog) {
-                        double minTen = Math.floor(Math.log10(minY));
-                        double maxTen = Math.ceil(Math.log10(maxY));
+                        double minTen = Math.floor(Math.log10(bminY));
+                        double maxTen = Math.ceil(Math.log10(bmaxY));
 
                         if (maxTen == minTen) {
                             minTen -= MARGIN_PERCENTS;
                         }
 
-                        minY = Math.pow(10d, minTen); // lower power of ten
-                        maxY = Math.pow(10d, maxTen); // upper power of ten
+                        vminY = bminY = Math.pow(10d, minTen); // lower power of ten
+                        vmaxY = bmaxY = Math.pow(10d, maxTen); // upper power of ten
                     } else {
                         boolean fixMin = false;
                         boolean fixMax = false;
+
+                        vminY = Double.NaN;
+                        vmaxY = Double.NaN;
 
                         // use column meta's default range:
                         if (yMeta != null && yMeta.getDataRange() != null) {
@@ -1122,47 +1280,87 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                             if (!Double.isNaN(dataRange.getMin())) {
                                 fixMin = true;
-                                minY = Math.min(minY, dataRange.getMin());
+                                vminY = dataRange.getMin();
+                                bminY = Math.min(bminY, vminY);
                             }
 
                             if (!Double.isNaN(dataRange.getMax())) {
                                 fixMax = true;
-                                maxY = Math.max(maxY, dataRange.getMax());
+                                vmaxY = dataRange.getMax();
+                                bmaxY = Math.max(bmaxY, vmaxY);
                             }
                         }
 
                         // use y-axis's include zero flag:
                         if (yAxis.isIncludeZero()) {
-                            if (minY > 0d) {
+                            if (bminY > 0d) {
                                 fixMin = true;
-                                minY = 0d;
-                            } else if (maxY < 0d) {
+                                bminY = 0d;
+                            } else if (bmaxY < 0d) {
                                 fixMax = true;
-                                maxY = 0d;
+                                bmaxY = 0d;
                             }
+                        }
+
+                        // adjust view y-axis:
+                        if (Double.isNaN(vminY)) {
+                            vminY = bminY;
+                        }
+                        if (Double.isNaN(vmaxY)) {
+                            vmaxY = bmaxY;
                         }
 
                         // adjust y-axis margins:
-                        final double marginY = (maxY - minY) * MARGIN_PERCENTS;
+                        double marginY = (bmaxY - bminY) * MARGIN_PERCENTS;
                         if (marginY > 0d) {
                             if (!fixMin) {
-                                minY -= marginY;
+                                bminY -= marginY;
                             }
                             if (!fixMax) {
-                                maxY += marginY;
+                                bmaxY += marginY;
                             }
                         } else {
-                            minY -= Math.abs(minY) * MARGIN_PERCENTS;
-                            maxY += Math.abs(maxY) * MARGIN_PERCENTS;
+                            bminY -= Math.abs(bminY) * MARGIN_PERCENTS;
+                            bmaxY += Math.abs(bmaxY) * MARGIN_PERCENTS;
                         }
-                        if (maxY == minY) {
-                            maxY = minY + 1d;
+                        if (bmaxY == bminY) {
+                            bmaxY = bminY + 1d;
                         }
-                    }
-                    logger.debug("fixed rangeAxis: {} - {}", minY, maxY);
 
-                    // update view range:
-                    viewRange = new Range(minY, maxY);
+                        // adjust view y-axis margins:
+                        marginY = (vmaxY - vminY) * VIEW_MARGIN_PERCENTS;
+                        if (marginY > 0d) {
+                            if (!fixMin || vminY >= bminY) {
+                                vminY -= marginY;
+                            }
+                            if (!fixMax || vmaxY <= bmaxY) {
+                                vmaxY += marginY;
+                            }
+                        } else {
+                            vminY -= Math.abs(vminY) * VIEW_MARGIN_PERCENTS;
+                            vmaxY += Math.abs(vmaxY) * VIEW_MARGIN_PERCENTS;
+                        }
+                        if (vmaxY == vminY) {
+                            vmaxY = vminY + 1d;
+                        }
+                        // ensure bound range > view range:
+                        bminY = Math.min(bminY, vminY);
+                        bmaxY = Math.max(bmaxY, vmaxY);
+                    } // not log
+
+                    logger.info("fixed data rangeAxis: {} - {}", bminY, bmaxY);
+                    logger.info("fixed view rangeAxis: {} - {}", vminY, vmaxY);
+
+                    // update view bounds & range:
+                    viewBounds = new Range(bminY, bmaxY);
+                    info.yAxisInfo.viewBounds = viewBounds;
+                    
+                    // TODO: hack to use fixed axis range:
+                    if (yAxis.getRange() != null) {
+                        viewRange = new Range(yAxis.getRange().getMin(), yAxis.getRange().getMax());
+                    } else {
+                        viewRange = new Range(vminY, vmaxY);
+                    }
                     info.yAxisInfo.viewRange = viewRange;
 
                     // Update Y axis:
@@ -1171,8 +1369,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
                     if (xyPlot.getRangeAxis() instanceof BoundedNumberAxis) {
                         axis = (BoundedNumberAxis) xyPlot.getRangeAxis();
-                        axis.setBounds(viewRange);
-                        axis.setRange(minY, maxY);
+                        axis.setBounds(viewBounds);
+                        axis.setInitial(viewRange);
+                        axis.setRange(viewRange);
                     }
 
                     // update Y axis Label:
@@ -1189,11 +1388,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     if (yUseLog) {
                         final BoundedLogAxis logAxis = new BoundedLogAxis("log " + label);
-                        logAxis.setBounds(viewRange);
-                        logAxis.setRange(minY, maxY);
+                        logAxis.setBounds(viewBounds);
+                        logAxis.setInitial(viewRange);
+                        logAxis.setRange(viewRange);
 
                         xyPlot.setRangeAxis(logAxis);
                     }
+
                     // tick color :
                     xyPlot.getRangeAxis().setTickMarkPaint(Color.BLACK);
 
@@ -1223,6 +1424,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 final Integer plotIndex = NumberUtils.valueOf(++nShowPlot);
                 this.plotMapping.put(xyPlot, plotIndex);
                 this.plotIndexMapping.put(plotIndex, xyPlot);
+
+                // add plot info:
+                getPlotInfos().add(info);
             }
 
         } // loop on y axes
@@ -1264,7 +1468,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 }
             }
             // use x-axis's include zero flag:
-            if (plotDef.getXAxis().isIncludeZero()) {
+            if (xAxis.isIncludeZero()) {
                 if (minX > 0d) {
                     fixMin = true;
                     minX = 0d;
@@ -1294,8 +1498,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         logger.debug("fixed domainAxis: {} - {}", minX, maxX);
 
         // update view range:
-        viewRange = new Range(minX, maxX);
+        // update view bounds & range:
+        viewBounds = new Range(minX, maxX);
+        
+        // TODO: hack to use fixed axis range:
+        if (xAxis.getRange() != null) {
+            viewRange = new Range(xAxis.getRange().getMin(), xAxis.getRange().getMax());
+        } else {
+            viewRange = viewBounds; // TODO: adjust initial
+        }
+
         for (PlotInfo info : getPlotInfos()) {
+            info.xAxisInfo.viewBounds = viewBounds;
             info.xAxisInfo.viewRange = viewRange;
         }
 
@@ -1304,8 +1518,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
         if (this.combinedXYPlot.getDomainAxis() instanceof BoundedNumberAxis) {
             axis = (BoundedNumberAxis) this.combinedXYPlot.getDomainAxis();
-            axis.setBounds(viewRange);
-            axis.setRange(minX, maxX);
+            axis.setBounds(viewBounds);
+            axis.setInitial(viewRange);
+            axis.setRange(viewRange);
         }
 
         // update X axis Label:
@@ -1322,8 +1537,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         if (xUseLog) {
             final BoundedLogAxis logAxis = new BoundedLogAxis("log " + label);
-            logAxis.setBounds(viewRange);
-            logAxis.setRange(minX, maxX);
+            logAxis.setBounds(viewBounds);
+            logAxis.setInitial(viewRange);
+            logAxis.setRange(viewRange);
 
             this.combinedXYPlot.setDomainAxis(logAxis);
         }
@@ -1498,6 +1714,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final boolean hasErrX = (xData2DErr != null) || (xData1DErr != null);
 
         final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
+
         final ColorMapping colorMapping = (plotDef.getColorMapping() != null) ? plotDef.getColorMapping() : ColorMapping.WAVELENGTH_RANGE;
 
         // serie count:
@@ -1679,8 +1896,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // x and y data ranges:
         double minX = Double.POSITIVE_INFINITY;
         double maxX = Double.NEGATIVE_INFINITY;
+        double minXe = Double.POSITIVE_INFINITY;
+        double maxXe = Double.NEGATIVE_INFINITY;
         double minY = Double.POSITIVE_INFINITY;
         double maxY = Double.NEGATIVE_INFINITY;
+        double minYe = Double.POSITIVE_INFINITY;
+        double maxYe = Double.NEGATIVE_INFINITY;
 
         double[] xValue, xLower, xUpper, yValue, yLower, yUpper;
         Shape[] itemShapes;
@@ -1858,19 +2079,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             // update Y boundaries:
                             if (useYErrInBounds) {
                                 // update Y boundaries including error:
-                                if (yLower[idx] < minY) {
-                                    minY = yLower[idx];
+                                if (yLower[idx] < minYe) {
+                                    minYe = yLower[idx];
                                 }
-                                if (yUpper[idx] > maxY) {
-                                    maxY = yUpper[idx];
+                                if (yUpper[idx] > maxYe) {
+                                    maxYe = yUpper[idx];
                                 }
-                            } else {
-                                if (y < minY) {
-                                    minY = y;
-                                }
-                                if (y > maxY) {
-                                    maxY = y;
-                                }
+                            }
+                            if (y < minY) {
+                                minY = y;
+                            }
+                            if (y > maxY) {
+                                maxY = y;
                             }
 
                             // Define X data:
@@ -1913,19 +2133,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             // update X boundaries:
                             if (useXErrInBounds) {
                                 // update X boundaries including error:
-                                if (xLower[idx] < minX) {
-                                    minX = xLower[idx];
+                                if (xLower[idx] < minXe) {
+                                    minXe = xLower[idx];
                                 }
-                                if (xUpper[idx] > maxX) {
-                                    maxX = xUpper[idx];
+                                if (xUpper[idx] > maxXe) {
+                                    maxXe = xUpper[idx];
                                 }
-                            } else {
-                                if (x < minX) {
-                                    minX = x;
-                                }
-                                if (x > maxX) {
-                                    maxX = x;
-                                }
+                            }
+                            if (x < minX) {
+                                minX = x;
+                            }
+                            if (x > maxX) {
+                                maxX = x;
                             }
 
                             // TODO: adjust renderer settings per Serie (color, shape, shape size, outline ....) !
@@ -2031,7 +2250,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // update plot information (should be consistent between calls):
         info.hasPlotData = true;
-        info.nData += nData;
+        info.nDataPoints += nData;
         info.hasDataFlag |= hasDataFlag; // logical OR
         info.yAxisIndex = yAxisIndex;
         // add given table:
@@ -2044,6 +2263,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             maxX = Math.max(maxX, axisInfo.dataRange.getUpperBound());
         }
         axisInfo.dataRange = new Range(minX, maxX);
+        // Ensure Xe range is at least X range:
+        minXe = Math.min(minXe, minX);
+        maxXe = Math.max(maxXe, maxX);
+        if (axisInfo.dataErrRange != null) {
+            // combine Xe ranges:
+            minXe = Math.min(minXe, axisInfo.dataErrRange.getLowerBound());
+            maxXe = Math.max(maxXe, axisInfo.dataErrRange.getUpperBound());
+        }
+        axisInfo.dataErrRange = new Range(minXe, maxXe);
         axisInfo.columnMeta = xMeta;
         axisInfo.unit = (doScaleX) ? xConverter.getUnit() : null;
         axisInfo.useLog = xUseLog;
@@ -2056,6 +2284,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             maxY = Math.max(maxY, axisInfo.dataRange.getUpperBound());
         }
         axisInfo.dataRange = new Range(minY, maxY);
+        // Ensure Ye range is at least Y range:
+        minYe = Math.min(minYe, minY);
+        maxYe = Math.max(maxYe, maxY);
+        if (axisInfo.dataErrRange != null) {
+            // combine Xe ranges:
+            minYe = Math.min(minYe, axisInfo.dataErrRange.getLowerBound());
+            maxYe = Math.max(maxYe, axisInfo.dataErrRange.getUpperBound());
+        }
+        axisInfo.dataErrRange = new Range(minYe, maxYe);
         axisInfo.columnMeta = yMeta;
         axisInfo.unit = (doScaleY) ? yConverter.getUnit() : null;
         axisInfo.useLog = yUseLog;
@@ -2088,7 +2325,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         return output;
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel jLabelDataErrRange;
+    private javax.swing.JLabel jLabelDataRange;
+    private javax.swing.JLabel jLabelInfos;
+    private javax.swing.JLabel jLabelMouse;
     private javax.swing.JLabel jLabelNoData;
+    private javax.swing.JLabel jLabelPoints;
+    private javax.swing.JPanel jPanelInfos;
+    private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JSeparator jSeparator2;
+    private javax.swing.JSeparator jSeparator3;
     // End of variables declaration//GEN-END:variables
     /** drawing started time value */
     private long chartDrawStartTime = 0l;
@@ -2112,15 +2358,84 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             }
         }
 
-        // Perform custom operations before/after chart rendering:
-        // move JMMC annotations:
-        for (int i = 0, len = this.xyPlotList.size(); i < len; i++) {
-            final XYPlot xyPlot = this.xyPlotList.get(i);
+        if (event.getType() == ChartProgressEvent.DRAWING_STARTED) {
+            // Perform custom operations before chart rendering:
 
-            if (xyPlot.getDomainAxis() != null) {
-                final XYTextAnnotation aJMMC = this.aJMMCPlots.get(i);
-                aJMMC.setX(xyPlot.getDomainAxis().getUpperBound());
-                aJMMC.setY(xyPlot.getRangeAxis().getLowerBound());
+            // Get shared domain axis:
+            final ValueAxis xAxis = this.combinedXYPlot.getDomainAxis();
+            final Range xRange = xAxis.getRange();
+
+            boolean negX = false;
+            boolean posX = false;
+
+            for (PlotInfo info : getPlotInfos()) {
+                final int plotIndex = info.yAxisIndex;
+                final XYPlot xyPlot = xyPlotList.get(plotIndex);
+
+                if (xyPlot != null) {
+                    final ValueAxis yAxis = xyPlot.getRangeAxis();
+                    final Range yRange = yAxis.getRange();
+
+                    // move JMMC annotations:
+                    final XYTextAnnotation aJMMC = this.aJMMCPlots.get(plotIndex);
+                    aJMMC.setX(xRange.getUpperBound());
+                    aJMMC.setY(yRange.getLowerBound());
+
+                    // Add marks indicating that the current axis is smaller than the data range:
+                    Range dataRange = info.xAxisInfo.dataRange;
+                    if (dataRange != null) {
+                        if (xRange.getLowerBound() > dataRange.getLowerBound()) {
+                            negX = true;
+                        }
+                        if (xRange.getUpperBound() < dataRange.getUpperBound()) {
+                            posX = true;
+                        }
+                    }
+
+                    boolean negY = false;
+                    boolean posY = false;
+
+                    dataRange = info.yAxisInfo.dataRange;
+                    if (dataRange != null) {
+                        if (yRange.getLowerBound() > dataRange.getLowerBound()) {
+                            negY = true;
+                        }
+                        if (yRange.getUpperBound() < dataRange.getUpperBound()) {
+                            posY = true;
+                        }
+                    }
+
+                    if (negY || posY) {
+                        ChartUtils.setAxisDecorations(yAxis, ChartColor.DARK_RED, negY, posY);
+                    } else {
+                        ChartUtils.setAxisDecorations(yAxis, Color.BLACK, false, false);
+                    }
+                }
+            }
+
+            if (negX || posX) {
+                ChartUtils.setAxisDecorations(xAxis, ChartColor.DARK_RED, negX, posX);
+            } else {
+                ChartUtils.setAxisDecorations(xAxis, Color.BLACK, false, false);
+            }
+        } else {
+            // Collect rendered item count:
+            for (PlotInfo info : getPlotInfos()) {
+                final int plotIndex = info.yAxisIndex;
+                final XYPlot xyPlot = xyPlotList.get(plotIndex);
+
+                if (xyPlot != null) {
+                    final FastXYErrorRenderer renderer = (FastXYErrorRenderer) xyPlot.getRenderer();
+                    info.nDisplayedPoints = renderer.getRenderedItemCount();
+                }
+            }
+            if (lastChartMouseEvent != null) {
+                SwingUtils.invokeLaterEDT(new Runnable() {
+                    @Override
+                    public void run() {
+                        chartMouseMoved(lastChartMouseEvent);
+                    }
+                });
             }
         }
     }
@@ -2305,6 +2620,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         if (n != 0) {
             // remove separator at the end:
             sb.setLength(sb.length() - separator.length());
+
         }
     }
 
@@ -2365,6 +2681,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             return null;
         }
         return getPlot().getSubsetDefinition().getTarget().getTarget();
+
     }
 
     /**
@@ -2375,7 +2692,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         /** flag indicating that this table has data to plot */
         boolean hasPlotData = false;
         /** total number of data points */
-        int nData = 0;
+        int nDataPoints = 0;
+        /** total number of rendered points */
+        int nDisplayedPoints = 0;
         /** flag indicating that the dataset contains flagged data */
         boolean hasDataFlag = false;
         /** y axis index in plot definition */
@@ -2410,9 +2729,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         /** colum meta data */
         ColumnMeta columnMeta = null;
+        /** data + error range  */
+        Range dataErrRange = null;
         /** data range */
         Range dataRange = null;
-        /** view range (with margin) */
+        /** view bounds (with margin) */
+        Range viewBounds = null;
+        /** view range */
         Range viewRange = null;
         /** converter unit */
         String unit = null;
