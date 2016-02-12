@@ -104,6 +104,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private void postInit() {
         // start with compact form
         detailledToggleButtonActionPerformed(null);
+        
+        // disable 'Draw lines':
+        this.drawLinesCheckBox.setVisible(false);
 
         colorMappingComboBox.setRenderer(ColorMappingListCellRenderer.getListCellRenderer());
 
@@ -286,6 +289,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         if (oiFitsFile.hasOiT3()) {
             oiFitsFile.getOiT3()[0].getNumericalColumnsNames(columns);
         }
+        if (oiFitsFile.hasOiSpectrum()) {
+            oiFitsFile.getOiSpectrum()[0].getNumericalColumnsNames(columns);
+        }
 
         return columns;
     }
@@ -406,6 +412,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         add(detailledToggleButton, gridBagConstraints);
 
         drawLinesCheckBox.setText("Draw lines");
+        drawLinesCheckBox.setEnabled(false);
         drawLinesCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 drawLinesCheckBoxActionPerformed(evt);
@@ -449,7 +456,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_END;
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         extendedPanel.add(addYAxisButton, gridBagConstraints);
 
@@ -465,7 +472,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_END;
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         extendedPanel.add(delYAxisButton, gridBagConstraints);
 
