@@ -16,15 +16,17 @@ import org.slf4j.LoggerFactory;
  *
  * @author bourgesl
  */
-public class BoundedNumberAxis extends NumberAxis {
+public final class BoundedNumberAxis extends NumberAxis {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(BoundedNumberAxis.class.getName());
     /* members */
-    /** axis bounds */
+    /** axis bounds (largest range) */
     private Range bounds = null;
+    /** axis initial range */
+    private Range initial = null;
 
     /**
      * Constructs a number axis, using default values where necessary.
@@ -37,6 +39,11 @@ public class BoundedNumberAxis extends NumberAxis {
         super(label);
         setAutoRange(false, false);
         setTickLabelInsets(ChartUtils.TICK_LABEL_INSETS);
+
+        setUpArrow(ChartUtils.ARROW_UP);
+        setDownArrow(ChartUtils.ARROW_DOWN);
+        setLeftArrow(ChartUtils.ARROW_LEFT);
+        setRightArrow(ChartUtils.ARROW_RIGHT);
     }
 
     /**
@@ -56,7 +63,7 @@ public class BoundedNumberAxis extends NumberAxis {
      * Return the axis bounds
      * @return axis bounds or null if undefined
      */
-    public final Range getBounds() {
+    public Range getBounds() {
         return this.bounds;
     }
 
@@ -64,15 +71,32 @@ public class BoundedNumberAxis extends NumberAxis {
      * Define the axis bounds
      * @param bounds axis bounds or null
      */
-    public final void setBounds(final Range bounds) {
+    public void setBounds(final Range bounds) {
         this.bounds = bounds;
+        setInitial(bounds);
+    }
+
+    /**
+     * Return the initial range
+     * @return initial range or null if undefined
+     */
+    public Range getInitial() {
+        return initial;
+    }
+
+    /**
+     * Define the initial range
+     * @param initial initial range or null
+     */
+    public void setInitial(final Range initial) {
+        this.initial = initial;
     }
 
     /**
      * Sets the auto range attribute.  If the <code>notify</code> flag is set,
      * an {@link AxisChangeEvent} is sent to registered listeners.
      *
-     * HACK : log an error message because autoRange must not be used with bounded axis
+     * HACK : log a message and setRange(bounds) to reset the zoom
      *
      * @param auto  the flag.
      * @param notify  notify listeners?
@@ -82,7 +106,24 @@ public class BoundedNumberAxis extends NumberAxis {
     @Override
     protected void setAutoRange(final boolean auto, final boolean notify) {
         if (auto) {
-            logger.warn("AutoRange must not be used: ", new Throwable());
+            // autoRange must stay disabled.
+
+            // This is called by JFreeChart to reset the zoom:
+            /*
+             at fr.jmmc.aspro.gui.chart.BoundedDateAxis.setAutoRange(BoundedDateAxis.java:93)
+             at org.jfree.chart.axis.ValueAxis.setAutoRange(ValueAxis.java:975)
+             at org.jfree.chart.axis.ValueAxis.resizeRange(ValueAxis.java:1563)
+             at org.jfree.chart.axis.ValueAxis.resizeRange(ValueAxis.java:1539)
+             at org.jfree.chart.plot.XYPlot.zoomRangeAxes(XYPlot.java:5158)
+             at org.jfree.chart.plot.XYPlot.zoomRangeAxes(XYPlot.java:5123)
+             at org.jfree.chart.ChartPanel.restoreAutoRangeBounds(ChartPanel.java:2430)
+             at org.jfree.chart.ChartPanel.restoreAutoBounds(ChartPanel.java:2391)
+             at org.jfree.chart.ChartPanel.mouseReleased(ChartPanel.java:2044)
+             */
+            if (this.getInitial() != null) {
+                // Use the initial range to redefine the ranges (reset zoom)
+                setRange(this.getInitial(), false, notify);
+            }
             return;
         }
 
@@ -103,13 +144,12 @@ public class BoundedNumberAxis extends NumberAxis {
      *                notified.
      */
     @Override
-    public final void setRange(final Range range, final boolean turnOffAutoRange,
-            final boolean notify) {
+    public void setRange(final Range range, final boolean turnOffAutoRange,
+                         final boolean notify) {
 
         Range newRange = range;
 
         // check if range is within bounds :
-
         if (this.bounds != null) {
             final double lower = this.bounds.getLowerBound();
             final double upper = this.bounds.getUpperBound();

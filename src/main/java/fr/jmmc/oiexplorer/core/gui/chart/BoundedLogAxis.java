@@ -25,11 +25,15 @@ public final class BoundedLogAxis extends EnhancedLogarithmicAxis {
     private static final Range extrema = new Range(1e-15, 1e15);
 
     /* members */
-    /** axis bounds */
+    /** axis bounds (largest range) */
     private Range bounds = null;
+    /** axis initial range */
+    private Range initial = null;
 
     /**
      * Constructs a number axis, using default values where necessary.
+     *
+     * Changes the default tick label insets
      *
      * @param label  the axis label (<code>null</code> permitted).
      */
@@ -41,6 +45,11 @@ public final class BoundedLogAxis extends EnhancedLogarithmicAxis {
 
         // use custom units :
         setStandardTickUnits(ChartUtils.createScientificTickUnits());
+        
+        setUpArrow(ChartUtils.ARROW_UP);
+        setDownArrow(ChartUtils.ARROW_DOWN);
+        setLeftArrow(ChartUtils.ARROW_LEFT);
+        setRightArrow(ChartUtils.ARROW_RIGHT);
     }
 
     /**
@@ -80,6 +89,23 @@ public final class BoundedLogAxis extends EnhancedLogarithmicAxis {
 
             logger.info("BoundedLogAxis: fix extrema for bounds {} : {}", bounds, this.bounds);
         }
+        setInitial(bounds);
+    }
+
+    /**
+     * Return the initial range
+     * @return initial range or null if undefined
+     */
+    public Range getInitial() {
+        return initial;
+    }
+
+    /**
+     * Define the initial range
+     * @param initial initial range or null
+     */
+    public void setInitial(final Range initial) {
+        this.initial = initial;
     }
 
     /**
@@ -110,9 +136,10 @@ public final class BoundedLogAxis extends EnhancedLogarithmicAxis {
              at org.jfree.chart.ChartPanel.restoreAutoBounds(ChartPanel.java:2390)
              at org.jfree.chart.ChartPanel.mouseReleased(ChartPanel.java:2044)
              */
-            // Use the axis bounds to redefine the ranges (reset zoom)
-            setRange(this.bounds, false, notify);
-
+            if (this.getInitial() != null) {
+                // Use the initial range to redefine the ranges (reset zoom)
+                setRange(this.getInitial(), false, notify);
+            }
             return;
         }
 
