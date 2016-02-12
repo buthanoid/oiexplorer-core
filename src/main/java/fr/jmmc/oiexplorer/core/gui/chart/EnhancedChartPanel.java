@@ -43,8 +43,6 @@ public class EnhancedChartPanel extends ChartPanel {
     private ChartMouseSelectionListener mouseRectangularSelectionEventListener = null;
     /** flag to redirect mouse events */
     private boolean redirectMouseEvents = false;
-    /** special EnhancedChartMouseListener which handles redirected mouse events */
-    private EnhancedChartMouseListener redirectedMouseEventListener = null;
 
     /**
      * Constructs an enhanced JFreeChart panel.
@@ -281,6 +279,9 @@ public class EnhancedChartPanel extends ChartPanel {
     @Override
     public final void mouseDragged(final MouseEvent event) {
         super.mouseDragged(event);
+        
+        // force firing a mouse move:
+        mouseMoved(event);
     }
 
     /**
@@ -365,20 +366,6 @@ public class EnhancedChartPanel extends ChartPanel {
         if (this.redirectZoomEvent) {
             this.redirectZoomEvent = false;
             this.mouseRectangularSelectionEventListener = null;
-        }
-    }
-
-    public final void redirectMouseEventsTo(final EnhancedChartMouseListener redirectedMouseEventListener) {
-        if (!this.redirectMouseEvents && redirectedMouseEventListener != null) {
-            this.redirectMouseEvents = true;
-            this.redirectedMouseEventListener = redirectedMouseEventListener;
-        }
-    }
-
-    public final void restoreMouseEvents() {
-        if (this.redirectMouseEvents) {
-            this.redirectMouseEvents = false;
-            this.redirectedMouseEventListener = null;
         }
     }
 }
