@@ -91,6 +91,8 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
     private final FastItemShapesList itemShapesList;
     /** The paint list. */
     private final FastPaintList paintList;
+    /** number of visible items */
+    private transient int renderedItemCount = 0;
 
     /**
      * Creates a new renderer with both lines and shapes visible.
@@ -509,6 +511,10 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         state.g2AT = g2.getTransform();
         state.xAxisLocation = plot.getDomainAxisEdge();
         state.yAxisLocation = plot.getRangeAxisEdge();
+        
+        // TODO: move it into state but no way to get it from ChartRenderingInfo ...
+        
+        this.renderedItemCount = 0;
 
         return state;
     }
@@ -735,7 +741,6 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
                                          ValueAxis rangeAxis,
                                          Rectangle2D dataArea) {
 
-
         RectangleEdge xAxisLocation = plot.getDomainAxisEdge();
         RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
 
@@ -849,6 +854,9 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
                 return;
             }
         }
+        
+        // Item is rendered:
+        this.renderedItemCount++;
 
         // Perform translation:
         if (orientation == PlotOrientation.HORIZONTAL) {
@@ -895,7 +903,6 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
             }
 
             // LBO: disable updateCrosshairValues
-
             // add an entity for the item, but only if it falls within the data area...
             if (entities != null && isPointInRect(dataArea, xx, yy)) {
                 // Note: entities are disabled for performance !
@@ -1201,6 +1208,15 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
             fireChangeEvent();
         }
     }
+
+    /**
+     * Return the number of visible items
+     * @return number of visible items
+     */
+    public int getRenderedItemCount() {
+        return renderedItemCount;
+    }
+
     /** line half width to compute stroked line shape used by tooltips */
     private static double lineHalfWidth = 4.0;
     /** temporary line vector */
