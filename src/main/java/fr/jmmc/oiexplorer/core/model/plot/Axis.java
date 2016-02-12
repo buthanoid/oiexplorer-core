@@ -25,7 +25,6 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
  *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="logScale" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
  *         &lt;element name="includeZero" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
- *         &lt;element name="plotError" type="{http://www.w3.org/2001/XMLSchema}boolean" minOccurs="0"/>
  *         &lt;element name="range" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Range" minOccurs="0"/>
  *         &lt;element name="converter" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
  *       &lt;/sequence>
@@ -41,7 +40,6 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
     "name",
     "logScale",
     "includeZero",
-    "plotError",
     "range",
     "converter"
 })
@@ -53,7 +51,6 @@ public class Axis
     protected String name;
     protected boolean logScale;
     protected boolean includeZero;
-    protected Boolean plotError;
     protected Range range;
     protected String converter;
 
@@ -111,30 +108,6 @@ public class Axis
      */
     public void setIncludeZero(boolean value) {
         this.includeZero = value;
-    }
-
-    /**
-     * Gets the value of the plotError property.
-     * 
-     * @return
-     *     possible object is
-     *     {@link Boolean }
-     *     
-     */
-    public Boolean isPlotError() {
-        return plotError;
-    }
-
-    /**
-     * Sets the value of the plotError property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link Boolean }
-     *     
-     */
-    public void setPlotError(Boolean value) {
-        this.plotError = value;
     }
 
     /**
@@ -202,7 +175,6 @@ public class Axis
         this.name = axis.getName();
         this.logScale = axis.isLogScale();
         this.includeZero = axis.isIncludeZero();
-        this.plotError = axis.isPlotError();
         this.converter = axis.getConverter();
 
         // deep copy range:
@@ -231,9 +203,6 @@ public class Axis
         if (this.includeZero != other.includeZero) {
             return false;
         }
-        if (this.plotError != other.plotError && (this.plotError == null || !this.plotError.equals(other.plotError))) {
-            return false;
-        }
         if (this.range != other.range && (this.range == null || !this.range.equals(other.range))) {
             return false;
         }
@@ -255,9 +224,6 @@ public class Axis
         if (full) {
             sb.append(", logScale=").append(this.logScale);
             sb.append(", includeZero=").append(this.includeZero);
-            if (this.plotError != null) {
-                sb.append(", plotError=").append(this.plotError);
-            }
             if (this.range != null) {
                 sb.append(", range=");
                 this.range.toString(sb, full);
