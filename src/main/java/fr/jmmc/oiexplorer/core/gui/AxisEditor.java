@@ -10,7 +10,6 @@ import fr.jmmc.oiexplorer.core.model.plot.Range;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JComponent;
-import javax.swing.SpinnerNumberModel;
 
 /**
  * Axis editor widget.
@@ -44,7 +43,7 @@ public class AxisEditor extends javax.swing.JPanel {
         nameComboBox.setModel(nameComboBoxModel);
 
         // hidden until request and valid code to get a correct behaviour
-        final JComponent[] components = new JComponent[]{plotErrorCheckBox, rangeCheckBox, minSpinner, maxSpinner, includeZeroCheckBox};
+        final JComponent[] components = new JComponent[]{includeZeroCheckBox, jRadioAuto, jRadioFixed, jFieldMin, jFieldMax};
         for (JComponent c : components) {
             c.setVisible(c.isEnabled());
         }
@@ -56,18 +55,6 @@ public class AxisEditor extends javax.swing.JPanel {
      */
     public AxisEditor() {
         this(null);
-    }
-
-    /** Helper that return the value of given Boolean an false it the given value is null
-     * @param b Boolean object to read
-     * @return value of given object or false if given object is null
-     * */
-    private boolean getData(final Boolean b) {
-        if (b == null) {
-            return false;
-        } else {
-            return b.booleanValue();
-        }
     }
 
     /** Initialize widgets according to given axis 
@@ -89,20 +76,43 @@ public class AxisEditor extends javax.swing.JPanel {
 
             includeZeroCheckBox.setSelected(axis.isIncludeZero());
             logScaleCheckBox.setSelected(axis.isLogScale());
-            plotErrorCheckBox.setSelected(getData(axis.isPlotError()));
 
-            Range range = axis.getRange();
-            if (range == null) {
-                //no range
-                rangeCheckBox.setSelected(false);
-            } else {
-                rangeCheckBox.setSelected(true);
-                minSpinner.setValue(range.getMin());
-                maxSpinner.setValue(range.getMax());
-            }
+            updateRangeEditor(axis.getRange(), (axis.getRange() != null));
         } finally {
             notify = true;
         }
+    }
+
+    private void updateRangeEditor(final Range range, final boolean auto) {
+        if (auto || (range == null)) {
+            jFieldMin.setValue(null);
+            jFieldMax.setValue(null);
+        } else {
+            jFieldMin.setValue(range.getMin());
+            jFieldMax.setValue(range.getMax());
+        }
+        jRadioAuto.setSelected(auto);
+        jFieldMin.setEnabled(!auto);
+        jFieldMax.setEnabled(!auto);
+    }
+
+    private Range getFieldRange() {
+        Object minValue = this.jFieldMin.getValue();
+        Object maxValue = this.jFieldMax.getValue();
+        if ((minValue instanceof Double) && (maxValue instanceof Double)) {
+            final double min = ((Double) minValue).doubleValue();
+            final double max = ((Double) maxValue).doubleValue();
+
+            if ((min < max)
+                    && !Double.isNaN(min) && !Double.isInfinite(min)
+                    && !Double.isNaN(max) && !Double.isInfinite(max)) {
+                final Range range = new Range();
+                range.setMin(min);
+                range.setMax(max);
+                return range;
+            }
+        }
+        return null;
     }
 
     /** 
@@ -111,22 +121,6 @@ public class AxisEditor extends javax.swing.JPanel {
      */
     public Axis getAxis() {
         return axisToEdit;
-    }
-
-    /** 
-     * Get min range from spinner
-     * @return the minimum value of spinner
-     */
-    private double getMinRange() {
-        return ((SpinnerNumberModel) minSpinner.getModel()).getNumber().doubleValue();
-    }
-
-    /** 
-     * Get max range from spinner
-     * @return the maximum value of spinner
-     */
-    private double getMaxRange() {
-        return ((SpinnerNumberModel) maxSpinner.getModel()).getNumber().doubleValue();
     }
 
     /** This method is called from within the constructor to
@@ -139,13 +133,15 @@ public class AxisEditor extends javax.swing.JPanel {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
+        buttonGroupBounds = new javax.swing.ButtonGroup();
         nameComboBox = new javax.swing.JComboBox();
-        plotErrorCheckBox = new javax.swing.JCheckBox();
         logScaleCheckBox = new javax.swing.JCheckBox();
         includeZeroCheckBox = new javax.swing.JCheckBox();
-        rangeCheckBox = new javax.swing.JCheckBox();
-        minSpinner = new javax.swing.JSpinner();
-        maxSpinner = new javax.swing.JSpinner();
+        jPanelBounds = new javax.swing.JPanel();
+        jRadioAuto = new javax.swing.JRadioButton();
+        jRadioFixed = new javax.swing.JRadioButton();
+        jFieldMin = new javax.swing.JFormattedTextField();
+        jFieldMax = new javax.swing.JFormattedTextField();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -158,23 +154,10 @@ public class AxisEditor extends javax.swing.JPanel {
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.gridwidth = 4;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 2, 0);
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(nameComboBox, gridBagConstraints);
-
-        plotErrorCheckBox.setText("error");
-        plotErrorCheckBox.setEnabled(false);
-        plotErrorCheckBox.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                AxisEditor.this.actionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 5;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 2;
-        add(plotErrorCheckBox, gridBagConstraints);
 
         logScaleCheckBox.setText("log");
         logScaleCheckBox.addActionListener(new java.awt.event.ActionListener() {
@@ -187,53 +170,67 @@ public class AxisEditor extends javax.swing.JPanel {
         gridBagConstraints.gridy = 0;
         add(logScaleCheckBox, gridBagConstraints);
 
-        includeZeroCheckBox.setText("include 0");
-        includeZeroCheckBox.setEnabled(false);
+        includeZeroCheckBox.setText("inc. 0");
         includeZeroCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridy = 0;
         add(includeZeroCheckBox, gridBagConstraints);
 
-        rangeCheckBox.setText("min/max");
-        rangeCheckBox.setEnabled(false);
-        rangeCheckBox.addActionListener(new java.awt.event.ActionListener() {
+        jPanelBounds.setLayout(new java.awt.GridBagLayout());
+
+        buttonGroupBounds.add(jRadioAuto);
+        jRadioAuto.setSelected(true);
+        jRadioAuto.setText("auto");
+        jRadioAuto.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AxisEditor.this.actionPerformed(evt);
+            }
+        });
+        jPanelBounds.add(jRadioAuto, new java.awt.GridBagConstraints());
+
+        buttonGroupBounds.add(jRadioFixed);
+        jRadioFixed.setText("fixed");
+        jRadioFixed.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AxisEditor.this.actionPerformed(evt);
+            }
+        });
+        jPanelBounds.add(jRadioFixed, new java.awt.GridBagConstraints());
+
+        jFieldMin.setColumns(10);
+        jFieldMin.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("###0.###"))));
+        jFieldMin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 1;
-        add(rangeCheckBox, gridBagConstraints);
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 2);
+        jPanelBounds.add(jFieldMin, gridBagConstraints);
 
-        minSpinner.setModel(new javax.swing.SpinnerNumberModel(Double.valueOf(0.0d), null, null, Double.valueOf(1.0d)));
-        minSpinner.setEnabled(false);
-        minSpinner.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                AxisEditor.this.stateChanged(evt);
+        jFieldMax.setColumns(10);
+        jFieldMax.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("###0.###"))));
+        jFieldMax.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AxisEditor.this.actionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 4;
-        gridBagConstraints.gridy = 1;
-        add(minSpinner, gridBagConstraints);
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        jPanelBounds.add(jFieldMax, gridBagConstraints);
 
-        maxSpinner.setModel(new javax.swing.SpinnerNumberModel(Double.valueOf(0.0d), null, null, Double.valueOf(1.0d)));
-        maxSpinner.setEnabled(false);
-        maxSpinner.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                AxisEditor.this.stateChanged(evt);
-            }
-        });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 5;
-        gridBagConstraints.gridy = 1;
-        add(maxSpinner, gridBagConstraints);
+        gridBagConstraints.gridx = 7;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
+        add(jPanelBounds, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void actionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_actionPerformed
@@ -243,8 +240,6 @@ public class AxisEditor extends javax.swing.JPanel {
             axisToEdit.setIncludeZero(includeZeroCheckBox.isSelected());
         } else if (evt.getSource() == logScaleCheckBox) {
             axisToEdit.setLogScale(logScaleCheckBox.isSelected());
-        } else if (evt.getSource() == plotErrorCheckBox) {
-            axisToEdit.setPlotError(plotErrorCheckBox.isSelected());
         } else if (evt.getSource() == nameComboBox) {
             final String columnName = (String) nameComboBox.getSelectedItem();
             axisToEdit.setName(columnName);
@@ -257,15 +252,15 @@ public class AxisEditor extends javax.swing.JPanel {
                 // force refresh plot definition names:
                 forceRefreshPlotDefNames = true;
             }
-        } else if (evt.getSource() == rangeCheckBox) {
-            if (rangeCheckBox.isSelected()) {
-                axisToEdit.setRange(null);
-            } else {
-                final Range r = new Range();
-                r.setMin(getMinRange());
-                r.setMax(getMaxRange());
-                axisToEdit.setRange(r);
-            }
+        } else if (evt.getSource() == jRadioAuto) {
+            axisToEdit.setRange(null);
+            updateRangeEditor(axisToEdit.getRange(), true);
+        } else if (evt.getSource() == jRadioFixed) {
+            updateRangeEditor(axisToEdit.getRange(), false);
+        } else if (evt.getSource() == jFieldMin) {
+            axisToEdit.setRange(getFieldRange());
+        } else if (evt.getSource() == jFieldMax) {
+            axisToEdit.setRange(getFieldRange());
         } else {
             throw new IllegalStateException("TODO handling of event from " + evt.getSource());
         }
@@ -275,33 +270,15 @@ public class AxisEditor extends javax.swing.JPanel {
         }
     }//GEN-LAST:event_actionPerformed
 
-    private void stateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_stateChanged
-        // get (or create) axis range
-        Range r = axisToEdit.getRange();
-        if (r == null) {
-            r = new Range();
-            axisToEdit.setRange(r);
-        }
-
-        // apply change onto the model
-        if (evt.getSource() == minSpinner) {
-            r.setMin(getMinRange());
-        } else if (evt.getSource() == maxSpinner) {
-            r.setMax(getMaxRange());
-        }
-
-        // notify change
-        if (notify) {
-            parentToNotify.updateModel();
-        }
-    }//GEN-LAST:event_stateChanged
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.ButtonGroup buttonGroupBounds;
     private javax.swing.JCheckBox includeZeroCheckBox;
+    private javax.swing.JFormattedTextField jFieldMax;
+    private javax.swing.JFormattedTextField jFieldMin;
+    private javax.swing.JPanel jPanelBounds;
+    private javax.swing.JRadioButton jRadioAuto;
+    private javax.swing.JRadioButton jRadioFixed;
     private javax.swing.JCheckBox logScaleCheckBox;
-    private javax.swing.JSpinner maxSpinner;
-    private javax.swing.JSpinner minSpinner;
     private javax.swing.JComboBox nameComboBox;
-    private javax.swing.JCheckBox plotErrorCheckBox;
-    private javax.swing.JCheckBox rangeCheckBox;
     // End of variables declaration//GEN-END:variables
 }
