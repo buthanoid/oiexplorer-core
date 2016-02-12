@@ -12,6 +12,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Paint;
+import java.awt.Polygon;
 import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.Rectangle2D;
@@ -31,6 +32,7 @@ import org.jfree.chart.axis.DateTickUnitType;
 import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.axis.TickUnitSource;
 import org.jfree.chart.axis.TickUnits;
+import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.PlotOrientation;
@@ -101,7 +103,16 @@ public class ChartUtils {
     public static final int DEFAULT_MAXIMUM_DRAW_WIDTH = 2560;
     /** The default limit above which chart scaling kicks in. */
     public static final int DEFAULT_MAXIMUM_DRAW_HEIGHT = 2048;
-
+    // Arrows:
+    /** The shape used for an up arrow. */
+    public static final Shape ARROW_UP;
+    /** The shape used for a down arrow. */
+    public static final Shape ARROW_DOWN;
+    /** The shape used for a left arrow. */
+    public static final Shape ARROW_LEFT;
+    /** The shape used for a right arrow. */
+    public static final Shape ARROW_RIGHT;
+    
     /**
      * Forbidden constructor
      */
@@ -162,6 +173,34 @@ public class ChartUtils {
         } catch (Exception e) {
             logger.warn("Unable to disable JFreeChart Log:", e);
         }
+        
+        int t = -45;
+        final int s = 5;
+        Polygon p;
+        p = new Polygon();
+        p.addPoint(t + 0,  0);
+        p.addPoint(t + -s, s);
+        p.addPoint(t + s,  s);
+        ARROW_UP = p;
+
+        p = new Polygon();
+        p.addPoint(t + 0,  0);
+        p.addPoint(t + -s, -s);
+        p.addPoint(t + s,  -s);
+        ARROW_DOWN = p;
+
+        t = 30;
+        p = new Polygon();
+        p.addPoint(0,  t + 0);
+        p.addPoint(-s, t + -s);
+        p.addPoint(-s, t + s);
+        ARROW_RIGHT = p;
+
+        p = new Polygon();
+        p.addPoint(0, t + 0);
+        p.addPoint(s, t + -s);
+        p.addPoint(s, t + s);
+        ARROW_LEFT = p;        
     }
 
     /**
@@ -492,8 +531,7 @@ public class ChartUtils {
      */
     public static BoundedNumberAxis createAxis(final String label) {
         // Axes are bounded to avoid zooming out where there is no data :
-
-        final BoundedNumberAxis axis = new AutoBoundedNumberAxis(label);
+        final BoundedNumberAxis axis = new BoundedNumberAxis(label);
         axis.setAutoRangeIncludesZero(false);
 
         // use custom units :
@@ -501,6 +539,20 @@ public class ChartUtils {
 
         return axis;
     }
+    
+    public static void setAxisDecorations(final ValueAxis axis, final Color color,
+                                          final boolean showNegativeArrow, final boolean showPositiveArrow) {
+        if (axis.getAxisLinePaint() != color) {
+            axis.setAxisLinePaint(color);
+        }
+        if (axis.isNegativeArrowVisible() != showNegativeArrow) {
+            axis.setNegativeArrowVisible(showNegativeArrow);
+        }
+        if (axis.isPositiveArrowVisible() != showPositiveArrow) {
+            axis.setPositiveArrowVisible(showPositiveArrow);
+        }
+    }
+            
 
     /**
      * Creates a new chart with the given title and plot.  The
