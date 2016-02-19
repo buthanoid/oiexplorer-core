@@ -62,11 +62,11 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link TableUID }
+     * Create an instance of {@link View }
      * 
      */
-    public TableUID createTableUID() {
-        return new TableUID();
+    public View createView() {
+        return new View();
     }
 
     /**
@@ -78,11 +78,11 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link View }
+     * Create an instance of {@link TableUID }
      * 
      */
-    public View createView() {
-        return new View();
+    public TableUID createTableUID() {
+        return new TableUID();
     }
 
     /**

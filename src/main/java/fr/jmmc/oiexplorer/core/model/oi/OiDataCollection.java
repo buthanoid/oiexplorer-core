@@ -22,19 +22,19 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="OIDataCollection">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;element name="schemaVersion" type="{http://www.w3.org/2001/XMLSchema}float"/>
- *         &lt;element name="file" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}OIDataFile" maxOccurs="unbounded"/>
- *         &lt;element name="subsetDefinition" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}SubsetDefinition" maxOccurs="unbounded" minOccurs="0"/>
- *         &lt;element name="plotDefinition" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}PlotDefinition" maxOccurs="unbounded" minOccurs="0"/>
- *         &lt;element name="plot" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}Plot" maxOccurs="unbounded" minOccurs="0"/>
- *       &lt;/sequence>
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="OIDataCollection"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="schemaVersion" type="{http://www.w3.org/2001/XMLSchema}float"/&gt;
+ *         &lt;element name="file" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}OIDataFile" maxOccurs="unbounded"/&gt;
+ *         &lt;element name="subsetDefinition" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}SubsetDefinition" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="plotDefinition" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}PlotDefinition" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="plot" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}Plot" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *       &lt;/sequence&gt;
+ *     &lt;/restriction&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 

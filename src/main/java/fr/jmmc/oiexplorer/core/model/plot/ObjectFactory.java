@@ -46,19 +46,19 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link Range }
-     * 
-     */
-    public Range createRange() {
-        return new Range();
-    }
-
-    /**
      * Create an instance of {@link Axis }
      * 
      */
     public Axis createAxis() {
         return new Axis();
+    }
+
+    /**
+     * Create an instance of {@link Range }
+     * 
+     */
+    public Range createRange() {
+        return new Range();
     }
 
 }

@@ -121,7 +121,7 @@
             <xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1">
                 <xsd:annotation>
                     <xsd:documentation>
-                        Label of column to associate on the plot axis.
+                        Column associated to this axis
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
@@ -129,7 +129,7 @@
             <xsd:element name="logScale" type="xsd:boolean">
                 <xsd:annotation>
                     <xsd:documentation>
-                        Use logarithm scale on the plot axis.
+                        Use logarithm scale on this axis
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
@@ -137,12 +137,26 @@
             <xsd:element name="includeZero" type="xsd:boolean">
                 <xsd:annotation>
                     <xsd:documentation>
-                        Request to display the zero of plot axis (may be overidden by range).
+                        Include the zero value on this axis
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
 
+            <xsd:element name="rangeMode" type="AxisRangeMode">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Define the axis range mode among (Auto, Default, Custom) to determine the axis bounds
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+
+
             <xsd:element name="range" type="Range" minOccurs="0" maxOccurs="1">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Custom range used in plots.
+                    </xsd:documentation>
+                </xsd:annotation>
             </xsd:element>
 
             <!-- TODO enum fonction -->
@@ -209,6 +223,38 @@
             <xsd:enumeration value="ObservationDate">
                 <xsd:annotation>
                     <xsd:documentation>'ObservationDate' indicates to use the observation date (DATE_OBS)</xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+
+
+
+    <!-- AxisRangeMode -->
+    <xsd:simpleType name="AxisRangeMode">
+        <xsd:annotation>
+            <xsd:documentation>
+                Possible values for the axis range mode :
+                - Auto
+                - Default
+                - Range
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="Auto">
+                <xsd:annotation>
+                    <xsd:documentation>'Auto' indicates to determine automatically the axis bounds according to the data range</xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="Default">
+                <xsd:annotation>
+                    <xsd:documentation>'Default' indicates to use the default column range if defined else the 'Auto' mode</xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="Range">
+                <xsd:annotation>
+                    <xsd:documentation>'Range' indicates to use the custom range if valid else the 'Default' mode</xsd:documentation>
                 </xsd:annotation>
             </xsd:enumeration>
         </xsd:restriction>

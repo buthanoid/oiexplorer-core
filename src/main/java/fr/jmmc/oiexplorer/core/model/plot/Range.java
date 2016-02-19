@@ -17,16 +17,16 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="Range">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;element name="min" type="{http://www.w3.org/2001/XMLSchema}double"/>
- *         &lt;element name="max" type="{http://www.w3.org/2001/XMLSchema}double"/>
- *       &lt;/sequence>
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="Range"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="min" type="{http://www.w3.org/2001/XMLSchema}double"/&gt;
+ *         &lt;element name="max" type="{http://www.w3.org/2001/XMLSchema}double"/&gt;
+ *       &lt;/sequence&gt;
+ *     &lt;/restriction&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 

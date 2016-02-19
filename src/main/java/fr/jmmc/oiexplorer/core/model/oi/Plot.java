@@ -20,15 +20,15 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="Plot">
- *   &lt;complexContent>
- *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}View">
- *       &lt;sequence>
- *         &lt;element name="plotDefinition" type="{http://www.w3.org/2001/XMLSchema}IDREF"/>
- *       &lt;/sequence>
- *     &lt;/extension>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="Plot"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}View"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="plotDefinition" type="{http://www.w3.org/2001/XMLSchema}IDREF"/&gt;
+ *       &lt;/sequence&gt;
+ *     &lt;/extension&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 

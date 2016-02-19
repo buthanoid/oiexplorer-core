@@ -4,6 +4,7 @@ package fr.jmmc.oiexplorer.core.model.plot;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import fr.jmmc.oiexplorer.core.model.OIBase;
 
@@ -18,19 +19,20 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="Axis">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="logScale" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
- *         &lt;element name="includeZero" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
- *         &lt;element name="range" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Range" minOccurs="0"/>
- *         &lt;element name="converter" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
- *       &lt;/sequence>
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="Axis"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/&gt;
+ *         &lt;element name="logScale" type="{http://www.w3.org/2001/XMLSchema}boolean"/&gt;
+ *         &lt;element name="includeZero" type="{http://www.w3.org/2001/XMLSchema}boolean"/&gt;
+ *         &lt;element name="rangeMode" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}AxisRangeMode"/&gt;
+ *         &lt;element name="range" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Range" minOccurs="0"/&gt;
+ *         &lt;element name="converter" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/&gt;
+ *       &lt;/sequence&gt;
+ *     &lt;/restriction&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 
@@ -40,6 +42,7 @@ import fr.jmmc.oiexplorer.core.model.OIBase;
     "name",
     "logScale",
     "includeZero",
+    "rangeMode",
     "range",
     "converter"
 })
@@ -51,6 +54,9 @@ public class Axis
     protected String name;
     protected boolean logScale;
     protected boolean includeZero;
+    @XmlElement(required = true)
+    @XmlSchemaType(name = "string")
+    protected AxisRangeMode rangeMode;
     protected Range range;
     protected String converter;
 
@@ -111,6 +117,30 @@ public class Axis
     }
 
     /**
+     * Gets the value of the rangeMode property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link AxisRangeMode }
+     *     
+     */
+    public AxisRangeMode getRangeMode() {
+        return rangeMode;
+    }
+
+    /**
+     * Sets the value of the rangeMode property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link AxisRangeMode }
+     *     
+     */
+    public void setRangeMode(AxisRangeMode value) {
+        this.rangeMode = value;
+    }
+
+    /**
      * Gets the value of the range property.
      * 
      * @return
@@ -159,6 +189,18 @@ public class Axis
     }
     
 //--simple--preserve
+    
+    /**
+    * Return the axis range mode or AxisRangeMode.DEFAULT
+    * @return axis range mode or AxisRangeMode.DEFAULT
+    */
+    public AxisRangeMode getRangeModeOrDefault() {
+        if (this.rangeMode == null) {
+            this.rangeMode = AxisRangeMode.DEFAULT;
+        }
+        return rangeMode;
+    }
+    
     /**
      * Perform a deep-copy of the given other instance into this instance
      * 
@@ -175,6 +217,7 @@ public class Axis
         this.name = axis.getName();
         this.logScale = axis.isLogScale();
         this.includeZero = axis.isIncludeZero();
+        this.rangeMode = axis.getRangeMode();
         this.converter = axis.getConverter();
 
         // deep copy range:
@@ -203,7 +246,10 @@ public class Axis
         if (this.includeZero != other.includeZero) {
             return false;
         }
-        if (this.range != other.range && (this.range == null || !this.range.equals(other.range))) {
+        if ((this.rangeMode == null) ? (other.rangeMode != null) : !this.rangeMode.equals(other.rangeMode)) {
+            return false;
+        }
+        if ((this.range == null) ? (other.range != null) : !this.range.equals(other.range)) {
             return false;
         }
         if ((this.converter == null) ? (other.converter != null) : !this.converter.equals(other.converter)) {
@@ -224,6 +270,7 @@ public class Axis
         if (full) {
             sb.append(", logScale=").append(this.logScale);
             sb.append(", includeZero=").append(this.includeZero);
+            sb.append(", rangeMode=").append(this.rangeMode);
             if (this.range != null) {
                 sb.append(", range=");
                 this.range.toString(sb, full);

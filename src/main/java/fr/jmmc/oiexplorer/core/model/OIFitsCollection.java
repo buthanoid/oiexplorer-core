@@ -148,6 +148,8 @@ public final class OIFitsCollection implements ToStringable {
 
         for (OIFitsFile oiFitsFile : oiFitsCollection.values()) {
 
+            // Note: per OIFits, multiple target ids may have the same target name !
+            // take care !
             for (Map.Entry<String, List<OIData>> entry : oiFitsFile.getOiDataPerTarget().entrySet()) {
 
                 final TargetUID target = new TargetUID(entry.getKey());

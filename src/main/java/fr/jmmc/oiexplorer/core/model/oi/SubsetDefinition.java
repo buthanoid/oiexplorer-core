@@ -19,17 +19,17 @@ import javax.xml.bind.annotation.XmlType;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="SubsetDefinition">
- *   &lt;complexContent>
- *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-base/0.1}Identifiable">
- *       &lt;sequence>
- *         &lt;element name="target" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TargetUID"/>
- *         &lt;element name="table" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TableUID" maxOccurs="unbounded" minOccurs="0"/>
- *         &lt;element name="filter" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/>
- *       &lt;/sequence>
- *     &lt;/extension>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="SubsetDefinition"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-base/0.1}Identifiable"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="target" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TargetUID"/&gt;
+ *         &lt;element name="table" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TableUID" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="filter" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *       &lt;/sequence&gt;
+ *     &lt;/extension&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 

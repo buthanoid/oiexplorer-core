@@ -6,6 +6,7 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 
@@ -20,19 +21,19 @@ import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="PlotDefinition">
- *   &lt;complexContent>
- *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-base/0.1}Identifiable">
- *       &lt;sequence>
- *         &lt;element name="skipFlaggedData" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
- *         &lt;element name="drawLine" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
- *         &lt;element name="colorMapping" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}ColorMapping"/>
- *         &lt;element name="xAxis" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Axis"/>
- *         &lt;element name="yAxes" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Axis" maxOccurs="unbounded"/>
- *       &lt;/sequence>
- *     &lt;/extension>
- *   &lt;/complexContent>
- * &lt;/complexType>
+ * &lt;complexType name="PlotDefinition"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-base/0.1}Identifiable"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="skipFlaggedData" type="{http://www.w3.org/2001/XMLSchema}boolean"/&gt;
+ *         &lt;element name="drawLine" type="{http://www.w3.org/2001/XMLSchema}boolean"/&gt;
+ *         &lt;element name="colorMapping" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}ColorMapping"/&gt;
+ *         &lt;element name="xAxis" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Axis"/&gt;
+ *         &lt;element name="yAxes" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Axis" maxOccurs="unbounded"/&gt;
+ *       &lt;/sequence&gt;
+ *     &lt;/extension&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
  * </pre>
  * 
  * 
@@ -52,6 +53,7 @@ public class PlotDefinition
     protected boolean skipFlaggedData;
     protected boolean drawLine;
     @XmlElement(required = true)
+    @XmlSchemaType(name = "string")
     protected ColorMapping colorMapping;
     @XmlElement(required = true)
     protected Axis xAxis;

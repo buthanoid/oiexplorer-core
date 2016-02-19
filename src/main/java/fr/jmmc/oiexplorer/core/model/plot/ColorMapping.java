@@ -12,14 +12,14 @@ import javax.xml.bind.annotation.XmlType;
  * <p>The following schema fragment specifies the expected content contained within this class.
  * <p>
  * <pre>
- * &lt;simpleType name="ColorMapping">
- *   &lt;restriction base="{http://www.w3.org/2001/XMLSchema}string">
- *     &lt;enumeration value="WavelengthRange"/>
- *     &lt;enumeration value="StationIndex"/>
- *     &lt;enumeration value="Configuration"/>
- *     &lt;enumeration value="ObservationDate"/>
- *   &lt;/restriction>
- * &lt;/simpleType>
+ * &lt;simpleType name="ColorMapping"&gt;
+ *   &lt;restriction base="{http://www.w3.org/2001/XMLSchema}string"&gt;
+ *     &lt;enumeration value="WavelengthRange"/&gt;
+ *     &lt;enumeration value="StationIndex"/&gt;
+ *     &lt;enumeration value="Configuration"/&gt;
+ *     &lt;enumeration value="ObservationDate"/&gt;
+ *   &lt;/restriction&gt;
+ * &lt;/simpleType&gt;
  * </pre>
  * 
  */
