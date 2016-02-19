@@ -566,7 +566,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
     private void detailledToggleButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_detailledToggleButtonActionPerformed
         extendedPanel.setVisible(detailledToggleButton.isSelected());
-        drawLinesCheckBox.setVisible(detailledToggleButton.isSelected());
+        // disable 'Draw lines':
+//        drawLinesCheckBox.setVisible(detailledToggleButton.isSelected());
         revalidate();
     }//GEN-LAST:event_detailledToggleButtonActionPerformed
 
