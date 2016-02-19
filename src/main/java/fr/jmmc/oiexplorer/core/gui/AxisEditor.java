@@ -95,8 +95,8 @@ public class AxisEditor extends javax.swing.JPanel {
             jFieldMin.setValue(null);
             jFieldMax.setValue(null);
         } else {
-            jFieldMin.setValue(range.getMin());
-            jFieldMax.setValue(range.getMax());
+            jFieldMin.setValue(isFinite(range.getMin()) ? range.getMin() : null);
+            jFieldMax.setValue(isFinite(range.getMax()) ? range.getMax() : null);
         }
         switch (mode) {
             case AUTO:
@@ -130,8 +130,8 @@ public class AxisEditor extends javax.swing.JPanel {
             max = ((Double) value).doubleValue();
         }
 
-        final boolean minFinite = !(Double.isNaN(min) || Double.isInfinite(min));
-        final boolean maxFinite = !(Double.isNaN(max) || Double.isInfinite(max));
+        final boolean minFinite = isFinite(min);
+        final boolean maxFinite = isFinite(max);
 
         if ((minFinite && maxFinite && (min < max))
                 || (minFinite && !maxFinite)
@@ -315,16 +315,14 @@ public class AxisEditor extends javax.swing.JPanel {
             updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
         } else if (evt.getSource() == jFieldMin) {
             final Range r = getFieldRange();
-            if (r != null) {
-                axisToEdit.setRange(r);
-            } else {
+            axisToEdit.setRange(r);
+            if (r == null) {
                 jFieldMin.requestFocus();
             }
         } else if (evt.getSource() == jFieldMax) {
             final Range r = getFieldRange();
-            if (r != null) {
-                axisToEdit.setRange(r);
-            } else {
+            axisToEdit.setRange(r);
+            if (r == null) {
                 jFieldMax.requestFocus();
             }
         } else {
@@ -380,5 +378,9 @@ public class AxisEditor extends javax.swing.JPanel {
 
         numberFieldFormatter = nf;
         return nf;
+    }
+    
+    private static boolean isFinite(final double value) {
+        return !(Double.isNaN(value) || Double.isInfinite(value));
     }
 }
