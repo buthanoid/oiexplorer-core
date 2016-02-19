@@ -45,11 +45,6 @@ public final class BoundedLogAxis extends EnhancedLogarithmicAxis {
 
         // use custom units :
         setStandardTickUnits(ChartUtils.createScientificTickUnits());
-        
-        setUpArrow(ChartUtils.ARROW_UP);
-        setDownArrow(ChartUtils.ARROW_DOWN);
-        setLeftArrow(ChartUtils.ARROW_LEFT);
-        setRightArrow(ChartUtils.ARROW_RIGHT);
     }
 
     /**

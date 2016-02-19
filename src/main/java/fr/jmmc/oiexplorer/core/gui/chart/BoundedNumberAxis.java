@@ -39,11 +39,6 @@ public final class BoundedNumberAxis extends NumberAxis {
         super(label);
         setAutoRange(false, false);
         setTickLabelInsets(ChartUtils.TICK_LABEL_INSETS);
-
-        setUpArrow(ChartUtils.ARROW_UP);
-        setDownArrow(ChartUtils.ARROW_DOWN);
-        setLeftArrow(ChartUtils.ARROW_LEFT);
-        setRightArrow(ChartUtils.ARROW_RIGHT);
     }
 
     /**

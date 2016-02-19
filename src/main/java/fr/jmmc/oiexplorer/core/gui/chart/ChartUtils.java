@@ -105,14 +105,14 @@ public class ChartUtils {
     public static final int DEFAULT_MAXIMUM_DRAW_HEIGHT = 2048;
     // Arrows:
     /** The shape used for an up arrow. */
-    public static final Shape ARROW_UP;
+    private static final Shape ARROW_UP;
     /** The shape used for a down arrow. */
-    public static final Shape ARROW_DOWN;
+    private static final Shape ARROW_DOWN;
     /** The shape used for a left arrow. */
-    public static final Shape ARROW_LEFT;
+    private static final Shape ARROW_LEFT;
     /** The shape used for a right arrow. */
-    public static final Shape ARROW_RIGHT;
-    
+    private static final Shape ARROW_RIGHT;
+
     /**
      * Forbidden constructor
      */
@@ -151,10 +151,14 @@ public class ChartUtils {
             CHART_THEME.setItemLabelPaint(Color.BLACK);
 
             // use 'SansSerif' fonts:
-            CHART_THEME.setExtraLargeFont(getFont(20, Font.BOLD)); /* new Font("Tahoma", Font.BOLD, 20) */
-            CHART_THEME.setLargeFont(DEFAULT_TITLE_FONT); /* new Font("Tahoma", Font.BOLD, 14); */
-            CHART_THEME.setRegularFont(DEFAULT_FONT); /* new Font("Tahoma", Font.PLAIN, 12); */
-            CHART_THEME.setSmallFont(DEFAULT_TEXT_SMALL_FONT); /* new Font("Tahoma", Font.PLAIN, 10) */
+            CHART_THEME.setExtraLargeFont(getFont(20, Font.BOLD));
+            /* new Font("Tahoma", Font.BOLD, 20) */
+            CHART_THEME.setLargeFont(DEFAULT_TITLE_FONT);
+            /* new Font("Tahoma", Font.BOLD, 14); */
+            CHART_THEME.setRegularFont(DEFAULT_FONT);
+            /* new Font("Tahoma", Font.PLAIN, 12); */
+            CHART_THEME.setSmallFont(DEFAULT_TEXT_SMALL_FONT);
+            /* new Font("Tahoma", Font.PLAIN, 10) */
 
         } else {
             throw new IllegalStateException("Unsupported chart theme : " + ChartFactory.getChartTheme());
@@ -173,25 +177,25 @@ public class ChartUtils {
         } catch (Exception e) {
             logger.warn("Unable to disable JFreeChart Log:", e);
         }
-        
+
         int t = -45;
         final int s = 5;
         Polygon p;
         p = new Polygon();
-        p.addPoint(t + 0,  0);
+        p.addPoint(t + 0, 0);
         p.addPoint(t + -s, s);
-        p.addPoint(t + s,  s);
+        p.addPoint(t + s, s);
         ARROW_UP = p;
 
         p = new Polygon();
-        p.addPoint(t + 0,  0);
+        p.addPoint(t + 0, 0);
         p.addPoint(t + -s, -s);
-        p.addPoint(t + s,  -s);
+        p.addPoint(t + s, -s);
         ARROW_DOWN = p;
 
         t = 30;
         p = new Polygon();
-        p.addPoint(0,  t + 0);
+        p.addPoint(0, t + 0);
         p.addPoint(-s, t + -s);
         p.addPoint(-s, t + s);
         ARROW_RIGHT = p;
@@ -200,7 +204,7 @@ public class ChartUtils {
         p.addPoint(0, t + 0);
         p.addPoint(s, t + -s);
         p.addPoint(s, t + s);
-        ARROW_LEFT = p;        
+        ARROW_LEFT = p;
     }
 
     /**
@@ -320,7 +324,6 @@ public class ChartUtils {
             width = TextUtilities.getTextBounds(text, g2d, fm).getWidth();
 
 //      logger.info("width     : {}", width);
-
             size--;
 
         } while (width > maxWidth && size >= minFontSize);
@@ -363,7 +366,6 @@ public class ChartUtils {
             height = TextUtilities.getTextBounds(text, g2d, fm).getHeight();
 
 //      logger.info("height     : {}", height);
-
             size--;
 
         } while (height > maxHeight && size >= minFontSize);
@@ -449,7 +451,6 @@ public class ChartUtils {
         }
 
         // Axes are bounded to avoid zooming out where there is no data :
-
         final BoundedNumberAxis xAxis = createAxis(xAxisLabel);
         final BoundedNumberAxis yAxis = createAxis(yAxisLabel);
 
@@ -504,7 +505,6 @@ public class ChartUtils {
         }
 
         // Axes are bounded to avoid zooming out where there is no data :
-
         final BoundedNumberAxis xAxis = createAxis(xAxisLabel);
         final BoundedNumberAxis yAxis = createAxis(yAxisLabel);
 
@@ -539,7 +539,22 @@ public class ChartUtils {
 
         return axis;
     }
-    
+
+    public static void defineAxisArrows(final ValueAxis axis) {
+        if (axis.getUpArrow() != ChartUtils.ARROW_UP) {
+            axis.setUpArrow(ChartUtils.ARROW_UP);
+        }
+        if (axis.getDownArrow() != ChartUtils.ARROW_DOWN) {
+            axis.setDownArrow(ChartUtils.ARROW_DOWN);
+        }
+        if (axis.getLeftArrow() != ChartUtils.ARROW_LEFT) {
+            axis.setLeftArrow(ChartUtils.ARROW_LEFT);
+        }
+        if (axis.getRightArrow() != ChartUtils.ARROW_RIGHT) {
+            axis.setRightArrow(ChartUtils.ARROW_RIGHT);
+        }
+    }
+
     public static void setAxisDecorations(final ValueAxis axis, final Color color,
                                           final boolean showNegativeArrow, final boolean showPositiveArrow) {
         if (axis.getAxisLinePaint() != color) {
@@ -552,7 +567,6 @@ public class ChartUtils {
             axis.setPositiveArrowVisible(showPositiveArrow);
         }
     }
-            
 
     /**
      * Creates a new chart with the given title and plot.  The
