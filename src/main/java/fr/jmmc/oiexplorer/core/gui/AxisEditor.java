@@ -6,10 +6,15 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmcs.gui.component.GenericListModel;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
+import fr.jmmc.oiexplorer.core.model.plot.AxisRangeMode;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
+import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JComponent;
+import javax.swing.JFormattedTextField;
+import javax.swing.text.NumberFormatter;
 
 /**
  * Axis editor widget.
@@ -43,7 +48,9 @@ public class AxisEditor extends javax.swing.JPanel {
         nameComboBox.setModel(nameComboBoxModel);
 
         // hidden until request and valid code to get a correct behaviour
-        final JComponent[] components = new JComponent[]{includeZeroCheckBox, jRadioAuto, jRadioFixed, jFieldMin, jFieldMax};
+        final JComponent[] components = new JComponent[]{
+            includeZeroCheckBox, jRadioModeAuto, jRadioModeDefault, jRadioModeFixed, jFieldMin, jFieldMax
+        };
         for (JComponent c : components) {
             c.setVisible(c.isEnabled());
         }
@@ -77,40 +84,64 @@ public class AxisEditor extends javax.swing.JPanel {
             includeZeroCheckBox.setSelected(axis.isIncludeZero());
             logScaleCheckBox.setSelected(axis.isLogScale());
 
-            updateRangeEditor(axis.getRange(), (axis.getRange() != null));
+            updateRangeEditor(axis.getRange(), axis.getRangeModeOrDefault());
         } finally {
             notify = true;
         }
     }
 
-    private void updateRangeEditor(final Range range, final boolean auto) {
-        if (auto || (range == null)) {
+    private void updateRangeEditor(final Range range, final AxisRangeMode mode) {
+        if (range == null) {
             jFieldMin.setValue(null);
             jFieldMax.setValue(null);
         } else {
             jFieldMin.setValue(range.getMin());
             jFieldMax.setValue(range.getMax());
         }
-        jRadioAuto.setSelected(auto);
-        jFieldMin.setEnabled(!auto);
-        jFieldMax.setEnabled(!auto);
+        switch (mode) {
+            case AUTO:
+                jRadioModeAuto.setSelected(true);
+                break;
+            default:
+            case DEFAULT:
+                jRadioModeDefault.setSelected(true);
+                break;
+            case RANGE:
+                jRadioModeFixed.setSelected(true);
+                break;
+        }
+        final boolean enable = (mode == AxisRangeMode.RANGE);
+        jFieldMin.setEnabled(enable);
+        jFieldMax.setEnabled(enable);
     }
 
     private Range getFieldRange() {
-        Object minValue = this.jFieldMin.getValue();
-        Object maxValue = this.jFieldMax.getValue();
-        if ((minValue instanceof Double) && (maxValue instanceof Double)) {
-            final double min = ((Double) minValue).doubleValue();
-            final double max = ((Double) maxValue).doubleValue();
+        double min = Double.NaN;
+        double max = Double.NaN;
 
-            if ((min < max)
-                    && !Double.isNaN(min) && !Double.isInfinite(min)
-                    && !Double.isNaN(max) && !Double.isInfinite(max)) {
-                final Range range = new Range();
-                range.setMin(min);
-                range.setMax(max);
-                return range;
-            }
+        Object value = this.jFieldMin.getValue();
+
+        if (value instanceof Double) {
+            min = ((Double) value).doubleValue();
+        }
+
+        value = this.jFieldMax.getValue();
+        if (value instanceof Double) {
+            max = ((Double) value).doubleValue();
+        }
+
+        final boolean minFinite = !(Double.isNaN(min) || Double.isInfinite(min));
+        final boolean maxFinite = !(Double.isNaN(max) || Double.isInfinite(max));
+
+        if ((minFinite && maxFinite && (min < max))
+                || (minFinite && !maxFinite)
+                || (!minFinite && maxFinite)) {
+
+            final Range range = new Range();
+            range.setMin(min);
+            range.setMax(max);
+
+            return range;
         }
         return null;
     }
@@ -133,15 +164,16 @@ public class AxisEditor extends javax.swing.JPanel {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        buttonGroupBounds = new javax.swing.ButtonGroup();
+        buttonGroupRangeModes = new javax.swing.ButtonGroup();
         nameComboBox = new javax.swing.JComboBox();
         logScaleCheckBox = new javax.swing.JCheckBox();
         includeZeroCheckBox = new javax.swing.JCheckBox();
         jPanelBounds = new javax.swing.JPanel();
-        jRadioAuto = new javax.swing.JRadioButton();
-        jRadioFixed = new javax.swing.JRadioButton();
-        jFieldMin = new javax.swing.JFormattedTextField();
-        jFieldMax = new javax.swing.JFormattedTextField();
+        jRadioModeAuto = new javax.swing.JRadioButton();
+        jRadioModeDefault = new javax.swing.JRadioButton();
+        jRadioModeFixed = new javax.swing.JRadioButton();
+        jFieldMin = new JFormattedTextField(getNumberFieldFormatter());
+        jFieldMax = new JFormattedTextField(getNumberFieldFormatter());
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -183,45 +215,65 @@ public class AxisEditor extends javax.swing.JPanel {
 
         jPanelBounds.setLayout(new java.awt.GridBagLayout());
 
-        buttonGroupBounds.add(jRadioAuto);
-        jRadioAuto.setSelected(true);
-        jRadioAuto.setText("auto");
-        jRadioAuto.addActionListener(new java.awt.event.ActionListener() {
+        buttonGroupRangeModes.add(jRadioModeAuto);
+        jRadioModeAuto.setText("auto");
+        jRadioModeAuto.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
             }
         });
-        jPanelBounds.add(jRadioAuto, new java.awt.GridBagConstraints());
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        jPanelBounds.add(jRadioModeAuto, gridBagConstraints);
 
-        buttonGroupBounds.add(jRadioFixed);
-        jRadioFixed.setText("fixed");
-        jRadioFixed.addActionListener(new java.awt.event.ActionListener() {
+        buttonGroupRangeModes.add(jRadioModeDefault);
+        jRadioModeDefault.setSelected(true);
+        jRadioModeDefault.setText("default");
+        jRadioModeDefault.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
             }
         });
-        jPanelBounds.add(jRadioFixed, new java.awt.GridBagConstraints());
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        jPanelBounds.add(jRadioModeDefault, gridBagConstraints);
+
+        buttonGroupRangeModes.add(jRadioModeFixed);
+        jRadioModeFixed.setText("fixed");
+        jRadioModeFixed.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AxisEditor.this.actionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        jPanelBounds.add(jRadioModeFixed, gridBagConstraints);
 
         jFieldMin.setColumns(10);
-        jFieldMin.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("###0.###"))));
         jFieldMin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 2);
         jPanelBounds.add(jFieldMin, gridBagConstraints);
 
         jFieldMax.setColumns(10);
-        jFieldMax.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("###0.###"))));
         jFieldMax.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         jPanelBounds.add(jFieldMax, gridBagConstraints);
 
@@ -252,17 +304,31 @@ public class AxisEditor extends javax.swing.JPanel {
                 // force refresh plot definition names:
                 forceRefreshPlotDefNames = true;
             }
-        } else if (evt.getSource() == jRadioAuto) {
-            axisToEdit.setRange(null);
-            updateRangeEditor(axisToEdit.getRange(), true);
-        } else if (evt.getSource() == jRadioFixed) {
-            updateRangeEditor(axisToEdit.getRange(), false);
+        } else if (evt.getSource() == jRadioModeAuto) {
+            axisToEdit.setRangeMode(AxisRangeMode.AUTO);
+            updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
+        } else if (evt.getSource() == jRadioModeDefault) {
+            axisToEdit.setRangeMode(AxisRangeMode.DEFAULT);
+            updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
+        } else if (evt.getSource() == jRadioModeFixed) {
+            axisToEdit.setRangeMode(AxisRangeMode.RANGE);
+            updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
         } else if (evt.getSource() == jFieldMin) {
-            axisToEdit.setRange(getFieldRange());
+            final Range r = getFieldRange();
+            if (r != null) {
+                axisToEdit.setRange(r);
+            } else {
+                jFieldMin.requestFocus();
+            }
         } else if (evt.getSource() == jFieldMax) {
-            axisToEdit.setRange(getFieldRange());
+            final Range r = getFieldRange();
+            if (r != null) {
+                axisToEdit.setRange(r);
+            } else {
+                jFieldMax.requestFocus();
+            }
         } else {
-            throw new IllegalStateException("TODO handling of event from " + evt.getSource());
+            throw new IllegalStateException("TODO: handle event from " + evt.getSource());
         }
 
         if (notify) {
@@ -271,14 +337,48 @@ public class AxisEditor extends javax.swing.JPanel {
     }//GEN-LAST:event_actionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.ButtonGroup buttonGroupBounds;
+    private javax.swing.ButtonGroup buttonGroupRangeModes;
     private javax.swing.JCheckBox includeZeroCheckBox;
     private javax.swing.JFormattedTextField jFieldMax;
     private javax.swing.JFormattedTextField jFieldMin;
     private javax.swing.JPanel jPanelBounds;
-    private javax.swing.JRadioButton jRadioAuto;
-    private javax.swing.JRadioButton jRadioFixed;
+    private javax.swing.JRadioButton jRadioModeAuto;
+    private javax.swing.JRadioButton jRadioModeDefault;
+    private javax.swing.JRadioButton jRadioModeFixed;
     private javax.swing.JCheckBox logScaleCheckBox;
     private javax.swing.JComboBox nameComboBox;
     // End of variables declaration//GEN-END:variables
+
+    /** custom number field formatter */
+    private static NumberFormatter numberFieldFormatter = null;
+
+    /**
+     * Return the custom double formatter that accepts null values
+     * @return number formatter
+     */
+    private static NumberFormatter getNumberFieldFormatter() {
+        if (numberFieldFormatter != null) {
+            return numberFieldFormatter;
+        }
+        final NumberFormatter nf = new NumberFormatter(new DecimalFormat("####.####")) {
+            /** default serial UID for Serializable interface */
+            private static final long serialVersionUID = 1;
+
+            /**
+             * Hack to allow empty string
+             */
+            @Override
+            public Object stringToValue(final String text) throws ParseException {
+                if (text == null || text.length() == 0) {
+                    return null;
+                }
+                return super.stringToValue(text);
+            }
+        };
+        nf.setValueClass(Double.class);
+        nf.setCommitsOnValidEdit(false);
+
+        numberFieldFormatter = nf;
+        return nf;
+    }
 }
