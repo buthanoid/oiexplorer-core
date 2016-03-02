@@ -340,7 +340,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // - arrName, insName, dateObs (keywords) = OK
         // - baselines or configurations (rows) = KO ... IF HAS DATA (filtered)
         if (isHasData()) {
-
             final Set<String> distinct = new LinkedHashSet<String>();
 
             final StringBuilder sb = new StringBuilder(32);
@@ -695,35 +694,39 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     public void chartMouseMoved(final ChartMouseEvent chartMouseEvent) {
         this.lastChartMouseEvent = chartMouseEvent;
 
+        int subplotIndex = -1;
         double domainValue = Double.NaN;
         double rangeValue = Double.NaN;
-        int subplotIndex = -1;
+        
+        // Ensure PlotInfos are defined (non empty plot):
+        // may happen when called by chartProgress(lastChartMouseEvent) (EDT later)
+        if (isHasData()) {
+            final int i = chartMouseEvent.getTrigger().getX();
+            final int j = chartMouseEvent.getTrigger().getY();
 
-        final int i = chartMouseEvent.getTrigger().getX();
-        final int j = chartMouseEvent.getTrigger().getY();
+            if (this.chartPanel.getScreenDataArea().contains(i, j)) {
+                final Point2D point2D = this.chartPanel.translateScreenToJava2D(new Point(i, j));
 
-        if (this.chartPanel.getScreenDataArea().contains(i, j)) {
-            final Point2D point2D = this.chartPanel.translateScreenToJava2D(new Point(i, j));
+                final PlotRenderingInfo plotInfo = this.chartPanel.getChartRenderingInfo().getPlotInfo();
 
-            final PlotRenderingInfo plotInfo = this.chartPanel.getChartRenderingInfo().getPlotInfo();
+                subplotIndex = plotInfo.getSubplotIndex(point2D);
+                if (subplotIndex != -1) {
+                    // data area for sub plot:
+                    final Rectangle2D dataArea = plotInfo.getSubplotInfo(subplotIndex).getDataArea();
 
-            subplotIndex = plotInfo.getSubplotIndex(point2D);
-            if (subplotIndex != -1) {
-                // data area for sub plot:
-                final Rectangle2D dataArea = plotInfo.getSubplotInfo(subplotIndex).getDataArea();
+                    final Integer plotIndex = NumberUtils.valueOf(subplotIndex + 1);
 
-                final Integer plotIndex = NumberUtils.valueOf(subplotIndex + 1);
+                    final XYPlot xyPlot = this.plotIndexMapping.get(plotIndex);
+                    if (xyPlot != null) {
+                        final ValueAxis domainAxis = xyPlot.getDomainAxis();
+                        domainValue = domainAxis.java2DToValue(point2D.getX(), dataArea, xyPlot.getDomainAxisEdge());
 
-                final XYPlot xyPlot = this.plotIndexMapping.get(plotIndex);
-                if (xyPlot != null) {
-                    final ValueAxis domainAxis = xyPlot.getDomainAxis();
-                    domainValue = domainAxis.java2DToValue(point2D.getX(), dataArea, xyPlot.getDomainAxisEdge());
+                        final ValueAxis rangeAxis = xyPlot.getRangeAxis();
+                        rangeValue = rangeAxis.java2DToValue(point2D.getY(), dataArea, xyPlot.getRangeAxisEdge());
 
-                    final ValueAxis rangeAxis = xyPlot.getRangeAxis();
-                    rangeValue = rangeAxis.java2DToValue(point2D.getY(), dataArea, xyPlot.getRangeAxisEdge());
-
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Mouse coordinates are (" + i + ", " + j + "), in data space = (" + domainValue + ", " + rangeValue + ")");
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Mouse coordinates are (" + i + ", " + j + "), in data space = (" + domainValue + ", " + rangeValue + ")");
+                        }
                     }
                 }
             }
@@ -733,7 +736,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         String infoPoints = "";
         String infoDataRange = "";
         String infoDataErrRange = "";
-
+        
         if (subplotIndex != -1) {
             final PlotInfo info = getPlotInfos().get(subplotIndex);
             infoMouse = String.format("[%.3f, %.3f]", domainValue, rangeValue);
@@ -1442,7 +1445,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             double maxTen = Math.ceil(Math.log10(bmax));
 
             if (maxTen == minTen) {
-                minTen -= MARGIN_PERCENTS;
+                minTen -= 1;
             }
 
             bmin = Math.pow(10.0, minTen); // lower power of ten
@@ -1453,12 +1456,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             maxTen = Math.ceil(Math.log10(vmax) * 2.0);
 
             if (maxTen == minTen) {
-                minTen -= MARGIN_PERCENTS;
+                minTen -= 1;
             }
 
             vmin = Math.pow(10.0, 0.5 * minTen); // lower power of ten
             vmax = Math.pow(10.0, 0.5 * maxTen); // upper power of ten
-
+            
         } else {
             boolean fix_bmin = false;
             boolean fix_bmax = false;
