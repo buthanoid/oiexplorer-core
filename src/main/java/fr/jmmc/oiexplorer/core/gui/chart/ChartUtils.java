@@ -837,6 +837,8 @@ public class ChartUtils {
         final XYTextAnnotation jmmcAnnotation = createXYTextAnnotation(text, 0, 0);
         jmmcAnnotation.setTextAnchor(TextAnchor.BOTTOM_RIGHT);
         jmmcAnnotation.setPaint(Color.DARK_GRAY);
+        // disable event notification:
+        jmmcAnnotation.setNotify(false);
 
         return jmmcAnnotation;
     }
