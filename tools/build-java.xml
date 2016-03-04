@@ -13,18 +13,18 @@
 
     <!--
         Get build properties (general).
-       	Should only contain the location of the JMCS module where JAXB libraries can be found.
+        Should only contain the location of the JMCS module where JAXB libraries can be found.
     -->
     <property file="build.properties" />
 
 
-  <!-- define folder properties -->
-  <property name="root" location=".."/>
+    <!-- define folder properties -->
+    <property name="root" location=".."/>
 
-  <!-- JAXB library must be present in the jmcs module nearby -->
-  <property name="jaxb.version" value="2.2.11"/>
-  <property name="jaxb.libs" location="${jmcs.path}/tools/xjc"/>
-  <property name="mvn.libs" location="${root}/target/runtime-libs/"/>
+    <!-- JAXB library must be present in the jmcs module nearby -->
+    <property name="jaxb.version" value="2.2.11"/>
+    <property name="jaxb.libs" location="${jmcs.path}/tools/xjc"/>
+    <property name="mvn.libs" location="${root}/target/runtime-libs/"/>
 
 
     <!-- src folder -->
@@ -91,6 +91,14 @@
 
         <xjc destdir="${sources}"
              schema="${resources}/fr/jmmc/oiexplorer/core/model/OIExplorerModel.xsd" />
+
+        <!--
+        remove several @XmlSchemaType in JAXB 2.2.11:
+        - @XmlSchemaType(name = "string") by '' (bad enum)
+        -->
+        <replace summary="true" dir="${sources}/fr/jmmc/oiexplorer/core/model/plot/" includes="*.java" value="">
+            <replacetoken>@XmlSchemaType(name = "string")</replacetoken>
+        </replace>
 
     </target>
 

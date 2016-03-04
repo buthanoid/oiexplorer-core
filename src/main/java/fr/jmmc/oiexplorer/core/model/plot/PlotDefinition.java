@@ -53,7 +53,7 @@ public class PlotDefinition
     protected boolean skipFlaggedData;
     protected boolean drawLine;
     @XmlElement(required = true)
-    @XmlSchemaType(name = "string")
+    
     protected ColorMapping colorMapping;
     @XmlElement(required = true)
     protected Axis xAxis;

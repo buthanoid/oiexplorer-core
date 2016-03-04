@@ -55,7 +55,7 @@ public class Axis
     protected boolean logScale;
     protected boolean includeZero;
     @XmlElement(required = true)
-    @XmlSchemaType(name = "string")
+    
     protected AxisRangeMode rangeMode;
     protected Range range;
     protected String converter;
