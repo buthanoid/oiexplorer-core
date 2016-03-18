@@ -4,10 +4,8 @@
 package fr.jmmc.oiexplorer.core.gui.chart;
 
 import fr.jmmc.jmcs.util.ImageUtils;
-import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Composite;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
@@ -15,7 +13,6 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Paint;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.Transparency;
@@ -155,7 +152,7 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
             if (!this.refreshBuffer) {
                 // check if axis ranges changed (zoom):
                 this.refreshBuffer = true;
-                
+
                 if (false) {
                     // TODO: use selected area
                     final JFreeChart chart = chartPanel.getChart();
@@ -180,19 +177,9 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
 
                 final Graphics2D bufferG2 = (Graphics2D) this.chartBuffer.getGraphics();
 
-                final Composite savedComposite = bufferG2.getComposite();
-                final Color savedColor = bufferG2.getColor();
-
-                final Rectangle r = new Rectangle(0, 0, this.chartBufferWidth, this.chartBufferHeight);
-
                 // Make all filled pixels transparent
-                bufferG2.setComposite(AlphaComposite.Src);
-                bufferG2.setColor(new Color(0, 0, 0, 0));
-                bufferG2.fill(r);
-
-                // restore state:
-                bufferG2.setComposite(savedComposite);
-                bufferG2.setColor(savedColor);
+                bufferG2.setBackground(new Color(0, 0, 0, 0));
+                bufferG2.clearRect(0, 0, this.chartBufferWidth, this.chartBufferHeight);
 
                 // draw on bufferG2
                 draw(bufferG2, chartPanel);
@@ -209,7 +196,7 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
             logger.debug("Paint chart time = {} ms.", 1e-6d * (System.nanoTime() - startTime));
         }
         if (EnhancedChartPanel.DEBUG_PAINT) {
-            logger.warn("Paint[{}] chart time = {} ms.", doPaint, 1e-6d * (System.nanoTime() - startTime));
+            logger.info("Paint[{}] chart time = {} ms.", doPaint, 1e-6d * (System.nanoTime() - startTime));
         }
     }
 
@@ -228,11 +215,11 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
         g2.setPaint((this.mode == ToolMode.SELECT_RECTANGLE) ? Color.RED : Color.GRAY);
         g2.draw(this.rectSelRect);
         g2.drawImage(imgSelRect.getImage(), (int) (this.rectSelRect.getX() + 0.5d * margin), (int) (this.rectSelRect.getY() + 0.5d * margin), null);
-
+        /*
         g2.setPaint((this.mode == ToolMode.SELECT_POLYGON) ? Color.RED : Color.GRAY);
         g2.draw(this.rectSelPolygon);
         g2.drawImage(imgSelPolygon.getImage(), (int) (this.rectSelPolygon.getX() + 0.5d * margin), (int) (this.rectSelPolygon.getY() + 0.5d * margin), null);
-
+         */
         // orange 50% transparent
         g2.setPaint(new Color(255, 200, 0, 128));
 
@@ -243,52 +230,66 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
 
         // paint selection rectangle:
         if (this.selectedArea != null) {
-            final Rectangle2D dataArea = chartPanel.getScreenDataArea();
-            g2.clip(dataArea);
+            final XYPlot selectedPlot = this.selectedArea.plot;
 
-            final XYPlot plot = this.selectedArea.plot;
-            final ValueAxis xAxis = plot.getDomainAxis();
-            final ValueAxis yAxis = plot.getRangeAxis();
-            Rectangle2D rectSelArea = this.selectedArea.rectSelArea;
+            // Get current data area for the plot:
+            Rectangle2D dataArea = null;
 
-            final RectangleEdge xAxisEdge = plot.getDomainAxisEdge();
-            final RectangleEdge yAxisEdge = plot.getRangeAxisEdge();
+            final PlotRenderingInfo plotInfo = chartPanel.getChartRenderingInfo().getPlotInfo();
+            if (plotInfo.getSubplotCount() > 0) {
+                // subplot mode
+                final List subPlots = getSubPlots(chartPanel.getChart().getXYPlot());
+                if (subPlots != null) {
+                    final int subPlotIndex = subPlots.indexOf(selectedPlot);
+                    if (subPlotIndex != -1) {
+                        final PlotRenderingInfo subPlotInfo = plotInfo.getSubplotInfo(subPlotIndex);
+                        dataArea = subPlotInfo.getDataArea();
+                    }
+                }
+            } else {
+                dataArea = plotInfo.getDataArea();
+            }
 
-            final double x1 = xAxis.valueToJava2D(rectSelArea.getX(), dataArea, xAxisEdge);
-            final double y1 = yAxis.valueToJava2D(rectSelArea.getY(), dataArea, yAxisEdge);
+            if (dataArea != null) {
+                g2.clip(dataArea);
 
-            final double x2 = xAxis.valueToJava2D(rectSelArea.getMaxX(), dataArea, xAxisEdge);
-            final double y2 = yAxis.valueToJava2D(rectSelArea.getMaxY(), dataArea, yAxisEdge);
+                final ValueAxis xAxis = selectedPlot.getDomainAxis();
+                final ValueAxis yAxis = selectedPlot.getRangeAxis();
 
-            g2.draw(new Rectangle2D.Double(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)));
+                final RectangleEdge xAxisEdge = selectedPlot.getDomainAxisEdge();
+                final RectangleEdge yAxisEdge = selectedPlot.getRangeAxisEdge();
 
-            g2.setClip(savedClip);
-        }
+                final Rectangle2D rectSelArea = this.selectedArea.rectSelArea;
 
-        // paint selected points:
-        if (isPoints()) {
-            final Rectangle2D dataArea = chartPanel.getScreenDataArea();
-            g2.clip(dataArea);
+                final double x1 = xAxis.valueToJava2D(rectSelArea.getX(), dataArea, xAxisEdge);
+                final double y1 = yAxis.valueToJava2D(rectSelArea.getY(), dataArea, yAxisEdge);
 
-            final XYPlot plot = this.selectedArea.plot;
-            final ValueAxis xAxis = plot.getDomainAxis();
-            final ValueAxis yAxis = plot.getRangeAxis();
+                final double x2 = xAxis.valueToJava2D(rectSelArea.getMaxX(), dataArea, xAxisEdge);
+                final double y2 = yAxis.valueToJava2D(rectSelArea.getMaxY(), dataArea, yAxisEdge);
 
-            xRange = xAxis.getRange();
-            yRange = yAxis.getRange();
+                final Rectangle2D.Double selArea = new Rectangle2D.Double(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
 
-            final RectangleEdge xAxisEdge = plot.getDomainAxisEdge();
-            final RectangleEdge yAxisEdge = plot.getRangeAxisEdge();
+                // selected area overlaps the view area:
+                if (dataArea.intersects(selArea)) {
+                    g2.draw(selArea);
 
-            final double half = 3d;
-            final double width = 2d * half;
+                    // paint selected points:
+                    if (isPoints()) {
+                        xRange = xAxis.getRange();
+                        yRange = yAxis.getRange();
 
-            double x, y;
-            for (Point2D point : this.points) {
-                x = xAxis.valueToJava2D(point.getX(), dataArea, xAxisEdge);
-                y = yAxis.valueToJava2D(point.getY(), dataArea, yAxisEdge);
+                        final double half = 3d;
+                        final double width = half + half;
 
-                g2.draw(new Rectangle2D.Double(x - half, y - half, width, width));
+                        double x, y;
+                        for (Point2D point : this.points) {
+                            x = xAxis.valueToJava2D(point.getX(), dataArea, xAxisEdge);
+                            y = yAxis.valueToJava2D(point.getY(), dataArea, yAxisEdge);
+
+                            g2.draw(new Rectangle2D.Double(x - half, y - half, width, width));
+                        }
+                    }
+                }
             }
         }
 
@@ -333,29 +334,34 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
         final int i = chartMouseEvent.getTrigger().getX();
         final int j = chartMouseEvent.getTrigger().getY();
 
-        logger.warn("chartMouseClicked: mouse coordinates ({}, {})", i, j);
+        logger.debug("chartMouseClicked: mouse coordinates ({}, {})", i, j);
 
         final ToolMode newMode;
         if (this.rectZoom.contains(i, j)) {
             newMode = ToolMode.ZOOM;
         } else if (this.rectSelRect.contains(i, j)) {
             newMode = ToolMode.SELECT_RECTANGLE;
+            /*            
         } else if (this.rectSelPolygon.contains(i, j)) {
             newMode = ToolMode.SELECT_POLYGON;
+             */
         } else {
             newMode = null;
         }
         if (newMode != null && this.mode != newMode) {
-            logger.warn("chartMouseClicked: mode changed: {}", newMode);
+            logger.info("chartMouseClicked: mode changed: {}", newMode);
 
             // restore state:
             switch (this.mode) {
                 case SELECT_RECTANGLE:
                     this.chartPanel.restoreZoomEvent();
                     break;
+                /*                    
                 case SELECT_POLYGON:
-//                    this.chartPanel.restoreMouseEvents();
+                    this.chartPanel.restoreZoomEvent();
                     break;
+                 */
+                default:
             }
 
             this.mode = newMode;
@@ -365,6 +371,7 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
                 case SELECT_RECTANGLE:
                     this.chartPanel.redirectZoomEventTo(this);
                     break;
+                default:
             }
 
             // mode changed, force repaint:
@@ -378,7 +385,7 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
      */
     @Override
     public void chartMouseMoved(final ChartMouseEvent chartMouseEvent) {
-        if (true) {
+        if (false) {
             chartMouseClicked(chartMouseEvent);
         }
     }
@@ -392,10 +399,10 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
      */
     @Override
     public void mouseSelected(final XYPlot nullPlot, final Rectangle2D selection) {
-        logger.warn("mouseSelected: rectangle {}", selection);
+        logger.debug("mouseSelected: rectangle {}", selection);
 
-        // TODO: move such conversion into EnhancedChartPanel directly !
-        final Point2D pointOrigin = this.chartPanel.translateScreenToJava2D(new Point((int) selection.getX(), (int) selection.getY()));
+        final Point2D pointOrigin = this.chartPanel.translateScreenToJava2D(
+                new Point((int) selection.getMinX(), (int) selection.getMinY()));
 
         XYPlot plot = this.chartPanel.getChart().getXYPlot();
 
@@ -404,21 +411,13 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
         final PlotRenderingInfo plotInfo = chartPanel.getChartRenderingInfo().getPlotInfo();
         if (plotInfo.getSubplotCount() > 0) {
             // subplot mode
-            final List subPlots;
-            if (plot instanceof CombinedDomainXYPlot) {
-                subPlots = ((CombinedDomainXYPlot) plot).getSubplots();
-            } else if (plot instanceof CombinedRangeXYPlot) {
-                subPlots = ((CombinedRangeXYPlot) plot).getSubplots();
-            } else {
-                System.out.println("Unsupported combined plot: " + plot);
-                subPlots = null;
-            }
-
+            final List subPlots = getSubPlots(plot);
             if (subPlots != null) {
+                // mimics getSubplotIndex(point):
                 for (int i = 0, len = subPlots.size(); i < len; i++) {
                     final XYPlot subPlot = (XYPlot) subPlots.get(i);
 
-                    final Rectangle2D plotDataArea = chartPanel.scale(plotInfo.getSubplotInfo(i).getDataArea());
+                    final Rectangle2D plotDataArea = plotInfo.getSubplotInfo(i).getDataArea();
 
                     if (plotDataArea.contains(pointOrigin)) {
                         dataArea = plotDataArea;
@@ -426,48 +425,58 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
                         break;
                     }
                 }
-                if (dataArea == null) {
-                    System.out.println("Point not found in subplots");
-                    return;
-                }
             }
-
         } else {
-            dataArea = this.chartPanel.getChartRenderingInfo().getPlotInfo().getDataArea();
+            dataArea = plotInfo.getDataArea();
         }
 
-        final ValueAxis xAxis = plot.getDomainAxis();
-        final ValueAxis yAxis = plot.getRangeAxis();
+        if (dataArea != null) {
+            final ValueAxis xAxis = plot.getDomainAxis();
+            final ValueAxis yAxis = plot.getRangeAxis();
 
-        final RectangleEdge xAxisEdge = plot.getDomainAxisEdge();
-        final RectangleEdge yAxisEdge = plot.getRangeAxisEdge();
+            final RectangleEdge xAxisEdge = plot.getDomainAxisEdge();
+            final RectangleEdge yAxisEdge = plot.getRangeAxisEdge();
 
-        final double xOrigin = xAxis.java2DToValue(pointOrigin.getX(), dataArea, xAxisEdge);
-        final double yOrigin = yAxis.java2DToValue(pointOrigin.getY(), dataArea, yAxisEdge);
+            final double xOrigin = xAxis.java2DToValue(pointOrigin.getX(), dataArea, xAxisEdge);
+            final double yOrigin = yAxis.java2DToValue(pointOrigin.getY(), dataArea, yAxisEdge);
 
-        final Point2D pointEnd = this.chartPanel.translateScreenToJava2D(new Point((int) (selection.getX() + selection.getWidth()), (int) (selection.getY() + selection.getHeight())));
+            final Point2D pointEnd = this.chartPanel.translateScreenToJava2D(
+                    new Point((int) (selection.getMaxX() + 0.5), (int) (selection.getMaxY() + 0.5)));
 
-        final double xEnd = xAxis.java2DToValue(pointEnd.getX(), dataArea, xAxisEdge);
-        final double yEnd = yAxis.java2DToValue(pointEnd.getY(), dataArea, yAxisEdge);
+            final double xEnd = xAxis.java2DToValue(pointEnd.getX(), dataArea, xAxisEdge);
+            final double yEnd = yAxis.java2DToValue(pointEnd.getY(), dataArea, yAxisEdge);
 
-        // fix orientation:
-        final double x1 = Math.min(xOrigin, xEnd);
-        final double x2 = Math.max(xOrigin, xEnd);
+            // fix orientation:
+            final double x1 = Math.min(xOrigin, xEnd);
+            final double x2 = Math.max(xOrigin, xEnd);
 
-        final double y1 = Math.min(yOrigin, yEnd);
-        final double y2 = Math.max(yOrigin, yEnd);
+            final double y1 = Math.min(yOrigin, yEnd);
+            final double y2 = Math.max(yOrigin, yEnd);
 
-        final Rectangle2D dataSelection = new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1);
+            final Rectangle2D dataSelection = new Rectangle2D.Double(x1, y1, x2 - x1, y2 - y1);
 
-        logger.warn("Selected data rectangle ({}, {}) to ({}, {})",
-                dataSelection.getX(), dataSelection.getY(), dataSelection.getMaxX(), dataSelection.getMaxY());
+            logger.info("Selected data rectangle ({}, {}) to ({}, {})",
+                    dataSelection.getX(), dataSelection.getY(), dataSelection.getMaxX(), dataSelection.getMaxY());
 
-        setRectSelArea(plot, selection);
+            this.selectedArea = new SelectedSubPlotArea(plot, dataSelection);
 
-        this.mouseRectangularSelectionEventListener.mouseSelected(plot, dataSelection);
-
+            this.mouseRectangularSelectionEventListener.mouseSelected(plot, dataSelection);
+        }
         // force repaint to hide zoom rectangle:
         this.fireOverlayChanged();
+    }
+
+    private static List getSubPlots(final XYPlot plot) {
+        final List subPlots;
+        if (plot instanceof CombinedDomainXYPlot) {
+            subPlots = ((CombinedDomainXYPlot) plot).getSubplots();
+        } else if (plot instanceof CombinedRangeXYPlot) {
+            subPlots = ((CombinedRangeXYPlot) plot).getSubplots();
+        } else {
+            System.out.println("Unsupported combined plot: " + plot);
+            subPlots = null;
+        }
+        return subPlots;
     }
 
     public boolean isPoints() {
@@ -478,13 +487,10 @@ public final class SelectionOverlay extends AbstractOverlay implements Overlay, 
         this.points = points;
     }
 
-    public void setRectSelArea(final XYPlot plot, Rectangle2D rectSelArea) {
-        this.selectedArea = new SelectedSubPlotArea(plot, rectSelArea);
-    }
-
-    private class SelectedSubPlotArea {
+    private static final class SelectedSubPlotArea {
 
         XYPlot plot;
+        // rectangle in data-space
         Rectangle2D rectSelArea;
 
         SelectedSubPlotArea(final XYPlot plot, Rectangle2D rectSelArea) {
