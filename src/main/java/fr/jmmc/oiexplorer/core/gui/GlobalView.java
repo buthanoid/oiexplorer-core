@@ -72,7 +72,6 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
         for (int i = 0; i < chartPanelList.size(); i++) {
             ChartPanel chartPanel = chartPanelList.get(i);
             if (chart == chartPanel.getChart()) {
-                // remove(chartPanel):
                 chartPanelList.remove(i);
                 refreshJPanel();
                 break;

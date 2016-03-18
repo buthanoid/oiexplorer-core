@@ -408,8 +408,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
 
         } else {
             // replace an existing series:
-            this.seriesList.remove(seriesIndex);
-            this.seriesList.add(seriesIndex, data);
+            this.seriesList.set(seriesIndex, data);
         }
         notifyListeners(new DatasetChangeEvent(this, this));
     }
