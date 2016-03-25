@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.event.PlotChangeEvent;
+import org.jfree.chart.event.PlotChangeListener;
 import org.jfree.ui.Drawable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +47,10 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
 
         // Build GUI
         initComponents();
+    }
 
-        // Finish init
-        postInit();
+    public int getChartCount() {
+        return chartPanelList.size();
     }
 
     public void addChart(JFreeChart chart) {
@@ -90,12 +93,6 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
         for (int i = 0; i < nCharts; i++) {
             this.add(chartPanelList.get(i));
         }
-    }
-
-    /**
-     * This method is useful to set the models and specific features of initialized swing components :
-     */
-    private void postInit() {
     }
 
     /**
@@ -164,7 +161,6 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
      */
     @Override
     public void postExport() {
-
+        // no-op
     }
-
 }
