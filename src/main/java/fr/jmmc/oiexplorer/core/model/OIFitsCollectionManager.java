@@ -73,7 +73,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     private final JAXBFactory jf;
     /** flag to enable/disable firing events during startup (before calling start) */
     private boolean enableEvents = false;
-    /** OIFits explorer collection structure */
+    /** OIFits explorer collection structure (session) */
     private OiDataCollection userCollection = null;
     /** associated file to the OIFits explorer collection */
     private File oiFitsCollectionFile = null;

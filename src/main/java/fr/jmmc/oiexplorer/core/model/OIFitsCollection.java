@@ -146,6 +146,9 @@ public final class OIFitsCollection implements ToStringable {
         // reset OIFits structure per TargetUID:
         oiFitsPerTarget.clear();
 
+        // This can be replaced by an OIFits merger / filter that creates a new consistent OIFitsFile structure
+        // from criteria (target / insname ...)
+        
         for (OIFitsFile oiFitsFile : oiFitsCollection.values()) {
 
             // Note: per OIFits, multiple target ids may have the same target name !
