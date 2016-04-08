@@ -6,12 +6,14 @@ package fr.jmmc.oiexplorer.core.model;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.jmcs.util.ToStringable;
 import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
+import fr.jmmc.oitools.model.Granule;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,8 @@ public final class OIFitsCollection implements ToStringable {
     private final Map<String, OIFitsFile> oiFitsCollection = new HashMap<String, OIFitsFile>();
     /** cached OIFitsFile structure per TargetUID */
     private final Map<TargetUID, OIFitsFile> oiFitsPerTarget = new HashMap<TargetUID, OIFitsFile>();
+    /** Set of OIData tables keyed by Granule */
+    private final Map<Granule, OIFitsFile> oiFitsPerGranule = new HashMap<Granule, OIFitsFile>();
 
     /**
      * Protected constructor
@@ -42,6 +46,8 @@ public final class OIFitsCollection implements ToStringable {
         oiFitsCollection.clear();
         // clear OIFits structure per TargetUID:
         oiFitsPerTarget.clear();
+        // clear granules:
+        oiFitsPerGranule.clear();
     }
 
     public boolean isEmpty() {
@@ -145,10 +151,11 @@ public final class OIFitsCollection implements ToStringable {
     public void analyzeCollection() {
         // reset OIFits structure per TargetUID:
         oiFitsPerTarget.clear();
+        // clear granules:
+        oiFitsPerGranule.clear();
 
         // This can be replaced by an OIFits merger / filter that creates a new consistent OIFitsFile structure
         // from criteria (target / insname ...)
-        
         for (OIFitsFile oiFitsFile : oiFitsCollection.values()) {
 
             // Note: per OIFits, multiple target ids may have the same target name !
@@ -169,6 +176,25 @@ public final class OIFitsCollection implements ToStringable {
                     oiFitsTarget.addOiTable(data);
                 }
             }
+
+            // Granules:
+            for (Map.Entry<Granule, Set<OIData>> entry : oiFitsFile.getOiDataPerGranule().entrySet()) {
+
+                // TODO: clone granule (deeply) and generate granule IDS ?
+                final Granule g = entry.getKey();
+
+                // TODO: Cross Match on target RA/DEC because names ...
+                OIFitsFile oiFitsGranule = oiFitsPerGranule.get(g);
+                if (oiFitsGranule == null) {
+                    oiFitsGranule = new OIFitsFile();
+
+                    oiFitsPerGranule.put(g, oiFitsGranule);
+                }
+
+                for (OIData data : entry.getValue()) {
+                    oiFitsGranule.addOiTable(data);
+                }
+            }
         }
 
         if (logger.isDebugEnabled()) {
@@ -177,6 +203,11 @@ public final class OIFitsCollection implements ToStringable {
             for (Map.Entry<TargetUID, OIFitsFile> entry : oiFitsPerTarget.entrySet()) {
                 logger.debug("{} : {}", entry.getKey(), entry.getValue().getOiDataList());
             }
+        }
+        logger.info("analyzeCollection:");
+
+        for (Map.Entry<Granule, OIFitsFile> entry : oiFitsPerGranule.entrySet()) {
+            logger.info("{} : {}", entry.getKey(), entry.getValue().getOiDataList());
         }
     }
 
@@ -194,6 +225,8 @@ public final class OIFitsCollection implements ToStringable {
      * @return list of OIData tables corresponding to the given target (name) or null if missing
      */
     public OIFitsFile getOiFits(final TargetUID target) {
+
+        // TODO: create an OIFits dynamically from filters (target...)
         return getOiFitsPerTarget().get(target);
     }
 }
