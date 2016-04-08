@@ -77,7 +77,7 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
      * Update panel with the given OITable structure
      * @param oiTable OITable structure
      */
-    public void updateOIFits(final OITable oiTable) {
+    private void updateOIFits(final OITable oiTable) {
         String xmlDesc = null;
 
         if (oiTable != null) {
@@ -102,7 +102,7 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
      * Update document with the given xml representation of an OIFits file or OITable
      * @param xmlDesc xml representation of an OIFits file or OITable
      */
-    public void update(final String xmlDesc) {
+    private void update(final String xmlDesc) {
         String document = "";
 
         if (xmlDesc != null) {
