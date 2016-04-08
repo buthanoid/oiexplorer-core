@@ -1096,7 +1096,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             this.chart.setNotify(true);
         }
 
-        logger.info("plot : duration = {} ms.", 1e-6d * (System.nanoTime() - start));
+        logger.info("updatePlot: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
     }
 
     /**
