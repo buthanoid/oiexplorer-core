@@ -204,11 +204,6 @@ public final class OIFitsCollection implements ToStringable {
                 logger.debug("{} : {}", entry.getKey(), entry.getValue().getOiDataList());
             }
         }
-        logger.info("analyzeCollection:");
-
-        for (Map.Entry<Granule, OIFitsFile> entry : oiFitsPerGranule.entrySet()) {
-            logger.info("{} : {}", entry.getKey(), entry.getValue().getOiDataList());
-        }
     }
 
     /** 
