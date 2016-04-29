@@ -7,8 +7,11 @@ import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.jmcs.util.ToStringable;
 import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
 import fr.jmmc.oitools.model.Granule;
+import fr.jmmc.oitools.model.InstrumentMode;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
+import fr.jmmc.oitools.model.OIWavelength;
+import fr.jmmc.oitools.model.Target;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,12 +27,16 @@ public final class OIFitsCollection implements ToStringable {
 
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(OIFitsCollection.class);
+    /** instrument mode manager */
+    private final static InstrumentModeManager imm = InstrumentModeManager.getInstance();
+    /** Target manager */
+    private final static TargetManager tm = TargetManager.getInstance();
     /* members */
     /** OIFits file collection keyed by absolute file path */
     private final Map<String, OIFitsFile> oiFitsCollection = new HashMap<String, OIFitsFile>();
-    /** cached OIFitsFile structure per TargetUID */
+    /** fake OIFitsFile structure per TargetUID */
     private final Map<TargetUID, OIFitsFile> oiFitsPerTarget = new HashMap<TargetUID, OIFitsFile>();
-    /** Set of OIData tables keyed by Granule */
+    /** fake OIFitsFile structure (to gather OIData) keyed by global Granule */
     private final Map<Granule, OIFitsFile> oiFitsPerGranule = new HashMap<Granule, OIFitsFile>();
 
     /**
@@ -44,10 +51,22 @@ public final class OIFitsCollection implements ToStringable {
      */
     public void clear() {
         oiFitsCollection.clear();
+
+        clearCache();
+    }
+
+    /**
+     * Clear the cached meta-data
+     */
+    public void clearCache() {
         // clear OIFits structure per TargetUID:
         oiFitsPerTarget.clear();
         // clear granules:
         oiFitsPerGranule.clear();
+        // clear insMode mappings:
+        imm.clear();
+        // clear Target mappings:
+        tm.clear();
     }
 
     public boolean isEmpty() {
@@ -149,10 +168,23 @@ public final class OIFitsCollection implements ToStringable {
      * Analyze the complete OIFits collection to provide OIFits structure per unique target (name)
      */
     public void analyzeCollection() {
-        // reset OIFits structure per TargetUID:
-        oiFitsPerTarget.clear();
-        // clear granules:
-        oiFitsPerGranule.clear();
+        clearCache();
+
+        // analyze instrument modes & targets:
+        for (OIFitsFile oiFitsFile : oiFitsCollection.values()) {
+            for (OIWavelength oiTable : oiFitsFile.getOiWavelengths()) {
+                imm.register(oiTable.getInstrumentMode());
+            }
+
+            if (oiFitsFile.hasOiTarget()) {
+                for (Target target : oiFitsFile.getOiTarget().getTargetObjToTargetId().keySet()) {
+                    tm.register(target);
+                }
+            }
+        }
+
+        imm.dump();
+        tm.dump();
 
         // This can be replaced by an OIFits merger / filter that creates a new consistent OIFitsFile structure
         // from criteria (target / insname ...)
@@ -178,17 +210,28 @@ public final class OIFitsCollection implements ToStringable {
             }
 
             // Granules:
+            // reused Granule:
+            Granule gg = new Granule();
+
             for (Map.Entry<Granule, Set<OIData>> entry : oiFitsFile.getOiDataPerGranule().entrySet()) {
 
-                // TODO: clone granule (deeply) and generate granule IDS ?
+                // Relations between global Granule and OIFits Granules ?
                 final Granule g = entry.getKey();
 
-                // TODO: Cross Match on target RA/DEC because names ...
-                OIFitsFile oiFitsGranule = oiFitsPerGranule.get(g);
+                // create global granule with matching global target & instrument mode:
+                final Target globalTarget = tm.getGlobal(g.getTarget());
+                final InstrumentMode globalInsMode = imm.getGlobal(g.getInsMode());
+                
+                gg.set(globalTarget, globalInsMode, g.getNight());
+                
+                // TODO: keep mapping between global granule and OIFits Granules ?
+
+                OIFitsFile oiFitsGranule = oiFitsPerGranule.get(gg);
                 if (oiFitsGranule == null) {
                     oiFitsGranule = new OIFitsFile();
 
-                    oiFitsPerGranule.put(g, oiFitsGranule);
+                    oiFitsPerGranule.put(gg, oiFitsGranule);
+                    gg = new Granule();
                 }
 
                 for (OIData data : entry.getValue()) {
@@ -203,6 +246,7 @@ public final class OIFitsCollection implements ToStringable {
             for (Map.Entry<TargetUID, OIFitsFile> entry : oiFitsPerTarget.entrySet()) {
                 logger.debug("{} : {}", entry.getKey(), entry.getValue().getOiDataList());
             }
+            logger.debug("Granules: {}", oiFitsPerGranule.keySet());
         }
     }
 
@@ -212,6 +256,14 @@ public final class OIFitsCollection implements ToStringable {
      */
     public Map<TargetUID, OIFitsFile> getOiFitsPerTarget() {
         return oiFitsPerTarget;
+    }
+
+    /** 
+     * Return the OIFitsFile structure per Granule found in loaded files.
+     * @return OIFitsFile structure per Granule
+     */
+    public Map<Granule, OIFitsFile> getOiFitsPerGranule() {
+        return oiFitsPerGranule;
     }
 
     /**
