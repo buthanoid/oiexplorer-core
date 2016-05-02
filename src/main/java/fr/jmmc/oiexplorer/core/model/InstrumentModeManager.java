@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
+import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oitools.model.InstrumentMode;
 import java.util.Arrays;
 import java.util.List;
@@ -38,7 +39,7 @@ public final class InstrumentModeManager extends AbstractMapper<InstrumentMode> 
 
     @Override
     protected boolean match(final InstrumentMode src, final InstrumentMode other) {
-        int cmp = Integer.compare(src.getNbChannels(), other.getNbChannels());
+        int cmp = NumberUtils.compare(src.getNbChannels(), other.getNbChannels());
         if (cmp != 0) {
             return false;
         }

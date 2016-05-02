@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model.util;
 
+import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oitools.model.Granule;
 import fr.jmmc.oitools.model.Granule.GranuleField;
 import fr.jmmc.oitools.model.InstrumentMode;
@@ -43,7 +44,7 @@ public final class GranuleComparator implements Comparator<Granule> {
                 return cmp;
             }
             // nb channels
-            cmp = Integer.compare(i1.getNbChannels(), i2.getNbChannels());
+            cmp = NumberUtils.compare(i1.getNbChannels(), i2.getNbChannels());
             if (cmp != 0) {
                 return cmp;
             }

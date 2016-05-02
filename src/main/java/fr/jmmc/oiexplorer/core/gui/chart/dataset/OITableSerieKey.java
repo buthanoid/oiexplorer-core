@@ -3,6 +3,8 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart.dataset;
 
+import fr.jmmc.jmcs.util.NumberUtils;
+
 /**
  *
  * @author bourgesl
@@ -28,11 +30,11 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
 
     @Override
     public int compareTo(final OITableSerieKey o) {
-        int res = compare(tableIndex, o.getTableIndex());
+        int res = NumberUtils.compare(tableIndex, o.getTableIndex());
         if (res == 0) {
-            res = compare(baseline, o.getBaseline());
+            res = NumberUtils.compare(baseline, o.getBaseline());
             if (res == 0) {
-                res = compare(waveLength, o.getWaveLength());
+                res = NumberUtils.compare(waveLength, o.getWaveLength());
             }
         }
         return res;
@@ -85,23 +87,4 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
         return "#" + tableIndex + " B" + baseline + " W" + waveLength;
     }
 
-    /**
-     * From OpenJDK7 Integer class:
-     *
-     * Compares two {@code int} values numerically.
-     * The value returned is identical to what would be returned by:
-     * <pre>
-     *    Integer.valueOf(x).compareTo(Integer.valueOf(y))
-     * </pre>
-     *
-     * @param  x the first {@code int} to compare
-     * @param  y the second {@code int} to compare
-     * @return the value {@code 0} if {@code x == y};
-     *         a value less than {@code 0} if {@code x < y}; and
-     *         a value greater than {@code 0} if {@code x > y}
-     * @since 1.7
-     */
-    static int compare(final int x, final int y) {
-        return (x < y) ? -1 : ((x == y) ? 0 : 1);
-    }
 }
