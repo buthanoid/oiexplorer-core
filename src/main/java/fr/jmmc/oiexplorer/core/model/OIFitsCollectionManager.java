@@ -149,12 +149,27 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker,
             final LoadOIFitsListener listener) throws IOException, IllegalStateException, XmlBindException {
+        loadOIFitsCollection(file, checker, listener, false);
+    }
+
+    /**
+     * Load the OIFits collection at given URL or onl the include OIFits file references.
+     * @param file OIFits explorer collection file file to load
+     * @param checker optional OIFits checker instance (may be null)
+     * @param listener progress listener
+     * @param appendOIFitsFilesOnly load only OIFits and skip plot+subset if true, else reset and load whole collection content
+     * @throws IOException if an I/O exception occurred
+     * @throws IllegalStateException if an unexpected exception occurred
+     * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
+     */
+    public void loadOIFitsCollection(final File file, final OIFitsChecker checker,
+            final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) throws IOException, IllegalStateException, XmlBindException {
 
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
 
         OIDataCollectionFileProcessor.onLoad(loadedUserCollection);
 
-        loadOIDataCollection(file, loadedUserCollection, checker, listener);
+        loadOIDataCollection(file, loadedUserCollection, checker, listener, appendOIFitsFilesOnly);
     }
 
     private void postLoadOIFitsCollection(final File file, final OiDataCollection oiDataCollection, final OIFitsChecker checker) {
@@ -224,9 +239,10 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param oiDataCollection OiDataCollection to look for
      * @param checker to report validation information
      * @param listener progress listener
+     * @param appendOIFitsFilesOnly load only OIFits and skip plot+subset if true, else reset and load whole collection content
      */
     private void loadOIDataCollection(final File file, final OiDataCollection oiDataCollection, final OIFitsChecker checker,
-            final LoadOIFitsListener listener) {
+            final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) {
 
         final List<OIDataFile> oidataFiles = oiDataCollection.getFiles();
         final List<String> fileLocations = new ArrayList<String>(oidataFiles.size());
@@ -242,13 +258,17 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
              */
             @Override
             public void refreshUI(final List<OIFitsFile> oifitsFiles) {
-                // first reset:
-                reset();
+                // first reset if this we do not add files only:
+                if (!appendOIFitsFilesOnly) {
+                    reset();
+                }
 
                 // add OIFits files to collection = fire OIFitsCollectionChanged:
                 super.refreshUI(oifitsFiles);
 
-                postLoadOIFitsCollection(file, oiDataCollection, checker);
+                if (!appendOIFitsFilesOnly) {
+                    postLoadOIFitsCollection(file, oiDataCollection, checker);
+                }
 
                 listener.done(false);
             }
@@ -597,7 +617,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     private void modifyExprColumnInOIFitsCollection(final String userName, final String expression,
             final boolean remove) {
-        
+
         final String name = "[" + userName + "]";
 
         logger.debug("modifyExprColumnInOIFitsCollection: {}", name);
