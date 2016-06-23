@@ -88,22 +88,24 @@ public abstract class AbstractMapper<K> {
         List<String> results = null;
 
         final List<K> locals = getLocals(global);
-        final int len = locals.size();
+        if (locals != null) {
+            final int len = locals.size();
 
-        if (len > 1) {
-            final Set<String> aliases = new HashSet<String>();
-            final String main = getName(global);
-            // always put global name:
-            aliases.add(main);
-            for (int j = 0; j < len; j++) {
-                aliases.add(getName(locals.get(j)));
-            }
-            // remove global name:
-            aliases.remove(main);
+            if (len > 1) {
+                final Set<String> aliases = new HashSet<String>();
+                final String main = getName(global);
+                // always put global name:
+                aliases.add(main);
+                for (int j = 0; j < len; j++) {
+                    aliases.add(getName(locals.get(j)));
+                }
+                // remove global name:
+                aliases.remove(main);
 
-            if (aliases.size() > 1) {
-                results = new ArrayList<String>(aliases);
-                Collections.sort(results);
+                if (aliases.size() > 1) {
+                    results = new ArrayList<String>(aliases);
+                    Collections.sort(results);
+                }
             }
         }
         return results;
