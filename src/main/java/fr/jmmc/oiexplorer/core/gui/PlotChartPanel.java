@@ -1841,8 +1841,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final Color[] mappingWaveLengthColors;
 
         if (colorMapping == ColorMapping.WAVELENGTH_RANGE) {
-            final float[] effWaveRange = oiData.getEffWaveRange();
-
+            float[] effWaveRange = oiData.getEffWaveRange();
+            if (effWaveRange == null) {
+                effWaveRange = new float[]{Float.NaN, Float.NaN};
+            }
+            
             // scale and offset between [0;1]:
             final float scale = (float) ((effWaveRange[1] - effWaveRange[0]) / info.waveLengthRange.getLength());
             final float offset = (float) ((effWaveRange[0] - info.waveLengthRange.getLowerBound()) / info.waveLengthRange.getLength());
@@ -2581,17 +2584,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             effWaveRange = oiData.getEffWaveRange();
 
             if (effWaveRange != null) {
-
                 if (Float.isNaN(range[0]) || range[0] > effWaveRange[0]) {
                     range[0] = effWaveRange[0];
                 }
-
                 if (Float.isNaN(range[1]) || range[1] < effWaveRange[1]) {
                     range[1] = effWaveRange[1];
                 }
             }
         }
-
         return new Range(range[0], range[1]);
     }
 
