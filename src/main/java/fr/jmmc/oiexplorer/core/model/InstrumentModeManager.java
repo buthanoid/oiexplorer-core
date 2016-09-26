@@ -39,22 +39,19 @@ public final class InstrumentModeManager extends AbstractMapper<InstrumentMode> 
 
     @Override
     protected boolean match(final InstrumentMode src, final InstrumentMode other) {
-        int cmp = NumberUtils.compare(src.getNbChannels(), other.getNbChannels());
-        if (cmp != 0) {
+        if (NumberUtils.compare(src.getNbChannels(), other.getNbChannels()) != 0) {
             return false;
         }
-        // precision ?
-        cmp = Float.compare(src.getLambdaMin(), other.getLambdaMin());
-        if (cmp != 0) {
+        
+        // precision = 1e-10 ie 3 digits in nm:
+        if (!NumberUtils.equals(src.getLambdaMin(), other.getLambdaMin(), 1e-10f)) {
             return false;
         }
-        cmp = Float.compare(src.getLambdaMax(), other.getLambdaMax());
-        if (cmp != 0) {
+        if (!NumberUtils.equals(src.getLambdaMax(), other.getLambdaMax(), 1e-10f)) {
             return false;
         }
-        cmp = Float.compare(src.getResPower(), other.getResPower());
-
-        return (cmp == 0);
+        // precision = +/- 0.5:
+        return (NumberUtils.equals(src.getLambdaMax(), other.getLambdaMax(), 5e-1f));
     }
 
     @Override
