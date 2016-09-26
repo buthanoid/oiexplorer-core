@@ -1372,7 +1372,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         this.combinedXYPlot.getDomainAxis().setTickMarkPaint(Color.BLACK);
 
         // define custom legend:
-        final ColorPalette palette = ColorPalette.getDefaultColorPaletteAlpha();
+        final ColorPalette palette = ColorPalette.getColorPaletteAlpha();
 
         LegendItemCollection legendCollection = new LegendItemCollection();
 
@@ -1773,7 +1773,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         // Color mapping:
-        final ColorPalette palette = ColorPalette.getDefaultColorPaletteAlpha();
+        final ColorPalette palette = ColorPalette.getColorPaletteAlpha();
 
         // Station configurations:
         // Use staConf (configuration) on each data row ?

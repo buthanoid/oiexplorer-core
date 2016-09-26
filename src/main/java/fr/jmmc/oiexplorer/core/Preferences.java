@@ -6,6 +6,9 @@ package fr.jmmc.oiexplorer.core;
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ColorScale;
 import fr.jmmc.jmcs.data.preference.PreferencesException;
+import fr.jmmc.oiexplorer.core.gui.chart.ColorPalette;
+import java.util.Observable;
+import java.util.Observer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,15 +19,18 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
 
     /** default image LUT */
     public final static String DEFAULT_IMAGE_LUT = ColorModels.COLOR_MODEL_ASPRO_ISOPHOT;
+    /** default color palette */
+    public final static String DEFAULT_COLOR_PALETTE = ColorPalette.DEFAULT_COLOR_PALETTE_NAME;
 
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(Preferences.class.getName());
     /* Preferences */
- /* TODO: adjust preference key values depending on the application ? */
     /** Preference : LUT table to use for the object model image in the UV Coverage plot */
     public final static String MODEL_IMAGE_LUT = "model.image.lut";
     /** Preference : Color scaling method to use for the object model image in the UV Coverage plot */
     public final static String MODEL_IMAGE_SCALE = "model.image.scale";
+    /** Preference : Color palette to use in the charts / plots */
+    public final static String CHART_PALETTE = "chart.palette";
 
     /**
      * Creates a new Preferences object.
@@ -36,8 +42,15 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
      */
     protected Preferences(final boolean notify) {
         super(notify);
-    }    
-    
+    }
+
+    protected void addColorPaletteObserver() {
+        final Observer observer = new ColorPaletteObserver();
+        addObserver(observer);
+        // notify:
+        observer.update(this, null);
+    }
+
     /**
      * Define the default properties used to reset default preferences.
      *
@@ -50,6 +63,8 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
         // Default color scale and LUT:
         setDefaultPreference(MODEL_IMAGE_LUT, DEFAULT_IMAGE_LUT);
         setDefaultPreference(MODEL_IMAGE_SCALE, ColorScale.LINEAR.toString());
+        // Color palette:
+        setDefaultPreference(CHART_PALETTE, DEFAULT_COLOR_PALETTE);
     }
 
     /**
@@ -65,5 +80,16 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
             logger.debug("ignored invalid value: {}", value);
         }
         return ColorScale.LINEAR;
+    }
+
+    private final class ColorPaletteObserver implements Observer {
+
+        @Override
+        public void update(Observable o, Object arg) {
+            logger.debug("ColorPaletteObserver notified");
+
+            ColorPalette.setColorPalettes(getPreference(CHART_PALETTE));
+        }
+
     }
 }

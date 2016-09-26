@@ -112,6 +112,8 @@ public class ChartUtils {
     private static final Shape ARROW_LEFT;
     /** The shape used for a right arrow. */
     private static final Shape ARROW_RIGHT;
+    /* default Legend Shape (rectangle) */
+    private static final Shape LEGEND_SHAPE = new Rectangle2D.Double(-3.0, -5.0, 6.0, 10.0);
 
     /**
      * Forbidden constructor
@@ -664,14 +666,7 @@ public class ChartUtils {
      * @return A legend item for the series.
      */
     public static LegendItem createLegendItem(final String label, final Paint paint) {
-
-        final Shape shape = new Rectangle2D.Double(-3.0, -5.0, 6.0, 10.0);
-
-        final LegendItem item;
-
-        item = new LegendItem(label, null, null, null, shape, paint);
-
-        return item;
+        return new LegendItem(label, null, null, null, LEGEND_SHAPE, paint);
     }
 
     /**
