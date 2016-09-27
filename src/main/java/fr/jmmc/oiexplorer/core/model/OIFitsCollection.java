@@ -172,10 +172,12 @@ public final class OIFitsCollection implements ToStringable {
 
         // analyze instrument modes & targets:
         for (OIFitsFile oiFitsFile : oiFitsCollection.values()) {
+            imm.register(InstrumentMode.UNDEFINED);
             for (OIWavelength oiTable : oiFitsFile.getOiWavelengths()) {
                 imm.register(oiTable.getInstrumentMode());
             }
 
+            tm.register(Target.UNDEFINED);
             if (oiFitsFile.hasOiTarget()) {
                 for (Target target : oiFitsFile.getOiTarget().getTargetObjToTargetId().keySet()) {
                     tm.register(target);
@@ -221,11 +223,10 @@ public final class OIFitsCollection implements ToStringable {
                 // create global granule with matching global target & instrument mode:
                 final Target globalTarget = tm.getGlobal(g.getTarget());
                 final InstrumentMode globalInsMode = imm.getGlobal(g.getInsMode());
-                
-                gg.set(globalTarget, globalInsMode, g.getNight());
-                
-                // TODO: keep mapping between global granule and OIFits Granules ?
 
+                gg.set(globalTarget, globalInsMode, g.getNight());
+
+                // TODO: keep mapping between global granule and OIFits Granules ?
                 OIFitsFile oiFitsGranule = oiFitsPerGranule.get(gg);
                 if (oiFitsGranule == null) {
                     oiFitsGranule = new OIFitsFile();
