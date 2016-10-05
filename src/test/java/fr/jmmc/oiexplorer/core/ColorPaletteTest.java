@@ -238,6 +238,9 @@ public class ColorPaletteTest {
             otherPalette = ColorPalette.load("/fr/jmmc/oiexplorer/core/resource/palette/ColorPalette_Kelly.pal");
             savePalette("ColorPalette_Kelly", otherPalette.getColors());
 
+            otherPalette = ColorPalette.load("/fr/jmmc/oiexplorer/core/resource/palette/ColorPalette_gilles.pal");
+            savePalette("ColorPalette_gilles", otherPalette.getColors());
+            
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }

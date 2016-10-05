@@ -59,6 +59,7 @@ public class ColorPalette {
     private final static String[] PAL_FILES = {
         "ColorPalette_Armytage.pal",
         "ColorPalette_Kelly.pal",
+        "ColorPalette_gilles.pal",
         "ColorPalette_fixed.pal",
         "ColorPalette_initial.pal"
     };
