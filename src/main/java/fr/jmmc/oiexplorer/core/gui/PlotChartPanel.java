@@ -27,6 +27,7 @@ import fr.jmmc.oiexplorer.core.gui.chart.FastXYErrorRenderer;
 import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
+import fr.jmmc.oiexplorer.core.gui.selection.DataPoint;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEvent;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventListener;
@@ -54,7 +55,10 @@ import java.awt.image.IndexColorModel;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -105,6 +109,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private final static double MARGIN_PERCENTS = 5.0 / 100.0;
     /** double formatter for wave lengths */
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
+    /* custom comparator for baselines and configurations */
+    private final static Comparator<String> STA_CMP = new Comparator<String>() {
+        @Override
+        public int compare(final String s1, final String s2) {
+            int cmp = NumberUtils.compare(s1.length(), s2.length());
+            if (cmp == 0) {
+                cmp = s1.compareTo(s2);
+            }
+            return cmp;
+        }
+    };
+    /* shared point shaped */
     private static final Shape shapePointValid;
     private static final Shape shapePointInvalid;
 
@@ -656,7 +672,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             final double yRatio = dataArea.getHeight() / Math.abs(rangeAxis.getUpperBound() - rangeAxis.getLowerBound());
 
             // find matching data ie. closest data point according to its screen distance to the mouse clicked point:
-            Point2D dataPoint = findDataPoint(xyPlot, domainValue, rangeValue, xRatio, yRatio);
+            final DataPoint dataPoint = findDataPoint(xyPlot, domainValue, rangeValue, xRatio, yRatio);
 
             List<Crosshair> xCrosshairs = this.crosshairOverlay.getDomainCrosshairs(plotIndex);
             if (xCrosshairs.size() == 1) {
@@ -697,7 +713,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         int subplotIndex = -1;
         double domainValue = Double.NaN;
         double rangeValue = Double.NaN;
-        
+
         // Ensure PlotInfos are defined (non empty plot):
         // may happen when called by chartProgress(lastChartMouseEvent) (EDT later)
         if (isHasData()) {
@@ -736,7 +752,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         String infoPoints = "";
         String infoDataRange = "";
         String infoDataErrRange = "";
-        
+
         if (subplotIndex != -1) {
             final PlotInfo info = getPlotInfos().get(subplotIndex);
             infoMouse = String.format("[%.3f, %.3f]", domainValue, rangeValue);
@@ -774,6 +790,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         this.selectionOverlay.setPoints(points);
     }
 
+    @SuppressWarnings("unchecked")
+    private static FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> getDataset(final XYPlot xyPlot) {
+        return (FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>) xyPlot.getDataset();
+    }
+
     /**
      * Find data point closest in FIRST dataset to the given coordinates X / Y
      * @param xyPlot xy plot to get its dataset
@@ -783,8 +804,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param yRatio pixels per data on range axis
      * @return found Point2D (data coordinates) or Point2D(NaN, NaN)
      */
-    private static Point2D findDataPoint(final XYPlot xyPlot, final double anchorX, final double anchorY, final double xRatio, final double yRatio) {
-        final XYDataset dataset = xyPlot.getDataset();
+    private static DataPoint findDataPoint(final XYPlot xyPlot, final double anchorX, final double anchorY, final double xRatio, final double yRatio) {
+        final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = getDataset(xyPlot);
 
         if (dataset != null) {
 
@@ -801,6 +822,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             // standard case - plain XYDataset
             for (int serie = 0, seriesCount = dataset.getSeriesCount(), item, itemCount; serie < seriesCount; serie++) {
                 itemCount = dataset.getItemCount(serie);
+                
                 for (item = 0; item < itemCount; item++) {
                     x = dataset.getXValue(serie, item);
                     y = dataset.getYValue(serie, item);
@@ -833,13 +855,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     logger.debug("Matching item [serie = " + matchSerie + ", item = " + matchItem + "] : (" + matchX + ", " + matchY + ")");
                 }
 
-                return new Point2D.Double(matchX, matchY);
+                // TODO: fix logs
+                logger.warn("Matching item [serie = " + matchSerie + ", item = " + matchItem + "] : (" + matchX + ", " + matchY + ")");
+                logger.warn("SeriesKey = {}", dataset.getSeriesKey(matchSerie));
+
+                return new DataPoint(matchX, matchY);
             }
         }
 
         logger.debug("No Matching item.");
 
-        return new Point2D.Double(Double.NaN, Double.NaN);
+        return DataPoint.UNDEFINED;
     }
 
     /**
@@ -1035,7 +1061,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     toString(distinct, sb, " ", " / ", 3, "MULTI INSTRUMENT");
                 }
 
-                sb.append(" ");
+                sb.append(' ');
 
                 // Add wavelength ranges:
                 distinct.clear();
@@ -1142,10 +1168,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final Axis xAxis = plotDef.getXAxis();
 
         // Get distinct station indexes from OIFits subset (not filtered):
-        final List<String> distinctStaIndexNames = new ArrayList<String>(getDistinctStaNames(oiFitsSubset.getOiDataList(), new LinkedHashSet<String>()));
+        final List<String> distinctStaIndexNames = getDistinctStaNames(oiFitsSubset.getOiDataList());
 
         // Get distinct station configuration from OIFits subset (not filtered):
-        final List<String> distinctStaConfNames = new ArrayList<String>(getDistinctStaConfs(oiFitsSubset.getOiDataList(), new LinkedHashSet<String>()));
+        final List<String> distinctStaConfNames = getDistinctStaConfs(oiFitsSubset.getOiDataList());
 
         final Range waveLengthRange = getWaveLengthRange(oiFitsSubset.getOiDataList());
 
@@ -1268,7 +1294,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         }
                         xyPlot.getRangeAxis().setLabel(label);
                     }
-                    
+
                     // adjust arrows:
                     ChartUtils.defineAxisArrows(xyPlot.getRangeAxis());
                     // tick color:
@@ -1365,7 +1391,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             }
             this.combinedXYPlot.getDomainAxis().setLabel(label);
         }
-                    
+
         // adjust arrows:
         ChartUtils.defineAxisArrows(this.combinedXYPlot.getDomainAxis());
         // tick color:
@@ -1378,16 +1404,19 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         if (ColorMapping.STATION_INDEX == plotDef.getColorMapping()) {
             // merge all used staIndex names:
-            final Set<String> distinctUsedStaIndexNames = new LinkedHashSet<String>();
+            final Set<String> distinctUsedStaIndexNames = new HashSet<String>(32);
 
             for (PlotInfo info : getPlotInfos()) {
                 distinctUsedStaIndexNames.addAll(info.usedStaIndexNames);
             }
-
+            
+            // Order by used color:
             int n = 0;
-            for (String staIndexName : distinctUsedStaIndexNames) {
-                legendCollection.add(ChartUtils.createLegendItem(staIndexName, palette.getColor(n)));
-
+            for (String staIndexName : distinctStaIndexNames) {
+                // is used ?
+                if (distinctUsedStaIndexNames.contains(staIndexName)) {
+                    legendCollection.add(ChartUtils.createLegendItem(staIndexName, palette.getColor(n)));
+                }
                 n++;
             }
         } else if (ColorMapping.CONFIGURATION == plotDef.getColorMapping()) {
@@ -1399,10 +1428,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 distinctUsedStaConfNames.addAll(info.usedStaConfNames);
             }
 
+            // Order by used color:
             int n = 0;
-            for (String staConfName : distinctUsedStaConfNames) {
-                legendCollection.add(ChartUtils.createLegendItem(staConfName, palette.getColor(n)));
-
+            for (String staConfName : distinctStaConfNames) {
+                // is used ?
+                if (distinctUsedStaConfNames.contains(staConfName)) {
+                    legendCollection.add(ChartUtils.createLegendItem(staConfName, palette.getColor(n)));
+                }
                 n++;
             }
         }
@@ -1461,7 +1493,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             vmin = Math.pow(10.0, 0.5 * minTen); // lower power of ten
             vmax = Math.pow(10.0, 0.5 * maxTen); // upper power of ten
-            
+
         } else {
             boolean fix_bmin = false;
             boolean fix_bmax = false;
@@ -1845,7 +1877,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             if (effWaveRange == null) {
                 effWaveRange = new float[]{Float.NaN, Float.NaN};
             }
-            
+
             // scale and offset between [0;1]:
             final float scale = (float) ((effWaveRange[1] - effWaveRange[0]) / info.waveLengthRange.getLength());
             final float offset = (float) ((effWaveRange[0] - info.waveLengthRange.getLowerBound()) / info.waveLengthRange.getLength());
@@ -1971,7 +2003,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     if (checkStaIndex) {
                         // note: sta indexes are compared using pointer comparison:
                         if (currentStaIndex != staIndexes[i]) {
-                            // data row does not coorespond to current baseline so skip it:
+                            // data row does not correspond to current baseline so skip it:
                             continue;
                         }
                     }
@@ -2189,9 +2221,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         itemShapes = extract(itemShapes, idx);
                     }
 
-                    // TODO: add oiTable, i (row), j (nWave) in dataset:
-                    serieKey = new OITableSerieKey(tableIndex, k, j); // baselines & wavelengths
+                    // update series index before adding serie:
+                    seriesCount = dataset.getSeriesCount();
 
+                    serieKey = new OITableSerieKey(tableIndex, oiData, k, j); // baselines (k) & wave channels (j)
+
+                    // TODO: i (row), j (nWave) in dataset:
+                    
                     // Avoid any key conflict:
                     dataset.addSeries(serieKey, new double[][]{xValue, xLower, xUpper, yValue, yLower, yUpper});
 
@@ -2217,9 +2253,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     // define shape per item in serie:
                     renderer.setItemShapes(seriesCount, itemShapes);
-
-                    // increase series count:
-                    seriesCount++;
 
                     // Add staIndex into used station indexes anyway:
                     if (currentStaIndex != null) {
@@ -2247,8 +2280,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             if (nSkipTarget != 0) {
                 logger.debug("Nb SkipTarget: {}", nSkipTarget);
             }
-
-            logger.debug("nSeries {} vs {}", seriesCount, dataset.getSeriesCount());
         }
 
         // update plot information (should be consistent between calls):
@@ -2506,43 +2537,49 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     /**
-     * Return the unique staNames values from given OIData tables
+     * Return the unique staNames values (sorted by name) from given OIData tables
      * @param oiDataList OIData tables
-     * @param set set instance to use
      * @return given set instance
      */
-    private static Set<String> getDistinctStaNames(final List<OIData> oiDataList, final Set<String> set) {
+    private static List<String> getDistinctStaNames(final List<OIData> oiDataList) {
+        Set<String> set = new HashSet<String>(32);
+        
         String staNames;
         for (OIData oiData : oiDataList) {
             for (short[] staIndexes : oiData.getDistinctStaIndex()) {
                 staNames = oiData.getStaNames(staIndexes);
-
-                logger.debug("staNames : {}", staNames);
-
                 set.add(staNames);
             }
         }
-        return set;
+        // Sort by name (consistent naming & colors):
+        final List<String> sortedList = new ArrayList<String>(set);
+        Collections.sort(sortedList, STA_CMP);
+        
+        logger.debug("getDistinctStaNames : {}", sortedList);
+        return sortedList;
     }
 
     /**
      * Return the unique staConfs values from given OIData tables
      * @param oiDataList OIData tables
-     * @param set set instance to use
      * @return given set instance
      */
-    private static Set<String> getDistinctStaConfs(final List<OIData> oiDataList, final Set<String> set) {
+    private static List<String> getDistinctStaConfs(final List<OIData> oiDataList) {
+        Set<String> set = new HashSet<String>(32);
+        
         String staNames;
         for (OIData oiData : oiDataList) {
             for (short[] staConf : oiData.getDistinctStaConf()) {
                 staNames = oiData.getStaNames(staConf);
-
-                logger.debug("staConf : {}", staNames);
-
                 set.add(staNames);
             }
         }
-        return set;
+        // Sort by name (consistent naming & colors):
+        final List<String> sortedList = new ArrayList<String>(set);
+        Collections.sort(sortedList, STA_CMP);
+        
+        logger.debug("getDistinctStaConfs : {}", sortedList);
+        return sortedList;
     }
 
     /**
@@ -2551,7 +2588,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param set set instance to use
      */
     private static void getDistinctWaveLengthRange(final List<OIData> oiDataList, final Set<String> set) {
-        final StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder(20);
 
         String wlenRange;
         float[] effWaveRange;
@@ -2559,8 +2596,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             effWaveRange = oiData.getEffWaveRange();
 
             if (effWaveRange != null) {
-                sb.append("[").append(df4.format(1e6f * effWaveRange[0])).append(" ").append(SpecialChars.UNIT_MICRO_METER);
-                sb.append(" - ").append(df4.format(1e6f * effWaveRange[1])).append(" ").append(SpecialChars.UNIT_MICRO_METER).append("]");
+                sb.append('[').append(df4.format(1e6f * effWaveRange[0])).append(' ').append(SpecialChars.UNIT_MICRO_METER);
+                sb.append(" - ").append(df4.format(1e6f * effWaveRange[1])).append(' ').append(SpecialChars.UNIT_MICRO_METER).append(']');
 
                 wlenRange = sb.toString();
                 sb.setLength(0);
