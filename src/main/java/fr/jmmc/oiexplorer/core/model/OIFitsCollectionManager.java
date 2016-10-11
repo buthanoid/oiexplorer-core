@@ -65,7 +65,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     /** Current key for View */
     public final static String CURRENT_VIEW = "VIEW_0";
     /** Singleton pattern */
-    private final static OIFitsCollectionManager instance = new OIFitsCollectionManager();
+    private final static OIFitsCollectionManager INSTANCE = new OIFitsCollectionManager();
     /** Plot Definition factory singleton */
     private final static PlotDefinitionFactory plotDefFactory = PlotDefinitionFactory.getInstance();
     /* members */
@@ -88,7 +88,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @return singleton instance
      */
     public static OIFitsCollectionManager getInstance() {
-        return instance;
+        return INSTANCE;
     }
 
     /**
