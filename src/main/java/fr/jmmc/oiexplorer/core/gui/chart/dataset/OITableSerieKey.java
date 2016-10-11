@@ -4,6 +4,7 @@
 package fr.jmmc.oiexplorer.core.gui.chart.dataset;
 
 import fr.jmmc.jmcs.util.NumberUtils;
+import fr.jmmc.oitools.model.OIData;
 
 /**
  *
@@ -15,26 +16,29 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
     private static final long serialVersionUID = 1;
 
     /* member */
-    /* table index */
+    /* generated table index (ensure key uniqueness) */
     private final int tableIndex;
-    /* baseline index */
-    private final int baseline;
-    /* waveLength index */
-    private final int waveLength;
+    /* origin of the data */
+    private final OIData oiData;
+    /* StaIndex index */
+    private final int staIdxIndex;
+    /* waveLength index (0..n) */
+    private final int waveLengthIndex;
 
-    public OITableSerieKey(final int tableIndex, final int baseline, final int waveLength) {
+    public OITableSerieKey(final int tableIndex, final OIData oiData, final int staIdxIndex, final int waveLengthIndex) {
         this.tableIndex = tableIndex;
-        this.baseline = baseline;
-        this.waveLength = waveLength;
+        this.oiData = oiData;
+        this.staIdxIndex = staIdxIndex;
+        this.waveLengthIndex = waveLengthIndex;
     }
 
     @Override
     public int compareTo(final OITableSerieKey o) {
         int res = NumberUtils.compare(tableIndex, o.getTableIndex());
         if (res == 0) {
-            res = NumberUtils.compare(baseline, o.getBaseline());
+            res = NumberUtils.compare(staIdxIndex, o.getStaIdxIndex());
             if (res == 0) {
-                res = NumberUtils.compare(waveLength, o.getWaveLength());
+                res = NumberUtils.compare(waveLengthIndex, o.getWaveLengthIndex());
             }
         }
         return res;
@@ -44,8 +48,8 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
     public int hashCode() {
         int hash = 7;
         hash = 13 * hash + this.tableIndex;
-        hash = 31 * hash + this.baseline;
-        hash = 67 * hash + this.waveLength;
+        hash = 31 * hash + this.staIdxIndex;
+        hash = 67 * hash + this.waveLengthIndex;
         return hash;
     }
 
@@ -61,10 +65,10 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
         if (this.tableIndex != other.getTableIndex()) {
             return false;
         }
-        if (this.baseline != other.getBaseline()) {
+        if (this.staIdxIndex != other.getStaIdxIndex()) {
             return false;
         }
-        if (this.waveLength != other.getWaveLength()) {
+        if (this.waveLengthIndex != other.getWaveLengthIndex()) {
             return false;
         }
         return true;
@@ -74,17 +78,41 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
         return tableIndex;
     }
 
-    public int getBaseline() {
-        return baseline;
+    public OIData getOiData() {
+        return oiData;
     }
 
-    public int getWaveLength() {
-        return waveLength;
+    public int getStaIdxIndex() {
+        return staIdxIndex;
+    }
+
+    public int getWaveLengthIndex() {
+        return waveLengthIndex;
     }
 
     @Override
     public String toString() {
-        return "#" + tableIndex + " B" + baseline + " W" + waveLength;
+        return "#" + tableIndex + " B" + staIdxIndex + " W" + waveLengthIndex 
+                + " oidata: " + oiData 
+                + " staNames: " + getStaName()
+                + " wavelength: " + getWaveLength();
+    }
+    
+    public String getStaName() {
+                // anyway (color mapping or check sta index):
+        final short[][] distinctStaIndexes = oiData.getDistinctStaIndexes();
+
+        final short[] currentStaIndex = distinctStaIndexes[staIdxIndex];
+        
+        return oiData.getStaNames(currentStaIndex); // cached
     }
 
+    
+    public double getWaveLength() {
+        // suppose nWaves != 0:
+        final double[] effWaves = oiData.getOiWavelength().getEffWaveAsDouble();
+        
+        return effWaves[waveLengthIndex];
+    }
+    
 }
