@@ -18,12 +18,12 @@ public final class MJDConverter {
     /** MJD starting at 1-JAN-2000 00:00 UT */
     public final static double MJD2000 = 51544.5d;
 
-    public static String mjdToString(final int mjd) {
-        return jdToString(mjd + MJD_REF, false);
+    public static StringBuilder mjdToString(final int mjd, final StringBuilder sb) {
+        return jdToString(mjd + MJD_REF, sb, false);
     }
 
     // From JSkyCalc#GenericCalDat.calFromJD()
-    public static String jdToString(final double jd, final boolean time) {
+    public static StringBuilder jdToString(final double jd, final StringBuilder sb, final boolean time) {
         /* sets the calendar date using the current values of jd -- can
          be either a local or UT date */
 
@@ -82,7 +82,6 @@ public final class MJDConverter {
             }
         }
 
-        final StringBuilder sb = new StringBuilder(20);
         // date as "yyyy/mm/dd"
         sb.append(year).append('/');
         if (month < 10) {
@@ -98,7 +97,7 @@ public final class MJDConverter {
             sb.append(' ');
             ALX.toHMS(sb, timeofday * DEG_IN_HOUR);
         }
-        return sb.toString();
+        return sb;
     }
 
     private MJDConverter() {
@@ -106,10 +105,14 @@ public final class MJDConverter {
     }
 
     public static void main(String[] args) {
-        System.out.println("MJD:");
-        System.out.println("MJD0: " + mjdToString(0));
+        final StringBuilder sb = new StringBuilder();
 
-        System.out.println("MJD2000: " + mjdToString((int) MJD2000));
+        sb.append("MJD0: ");
+        mjdToString(0, sb).append('\n');
 
+        sb.append("MJD2000: ");
+        mjdToString((int) MJD2000, sb).append('\n');
+
+        System.out.println(sb.toString());
     }
 }
