@@ -7,6 +7,7 @@ import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oitools.model.Granule;
 import fr.jmmc.oitools.model.Granule.GranuleField;
 import fr.jmmc.oitools.model.InstrumentMode;
+import fr.jmmc.oitools.model.NightId;
 import fr.jmmc.oitools.model.Target;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -27,7 +28,7 @@ public final class GranuleComparator implements Comparator<Granule> {
             )
     );
 
-    public static final Comparator<Target> cmpTarget = new Comparator<Target>() {
+    public static final Comparator<Target> CMP_TARGET = new Comparator<Target>() {
         @Override
         public int compare(final Target t1, final Target t2) {
             // Just name
@@ -35,7 +36,7 @@ public final class GranuleComparator implements Comparator<Granule> {
         }
     };
 
-    public static final Comparator<InstrumentMode> cmpInsMode = new Comparator<InstrumentMode>() {
+    public static final Comparator<InstrumentMode> CMP_INS_MODE = new Comparator<InstrumentMode>() {
         @Override
         public int compare(final InstrumentMode i1, final InstrumentMode i2) {
             // name
@@ -55,10 +56,10 @@ public final class GranuleComparator implements Comparator<Granule> {
     };
 
     @SuppressWarnings("unchecked")
-    public static final Comparator<Comparable> cmpComparable = new Comparator<Comparable>() {
+    public static final Comparator<NightId> CMP_NIGHT = new Comparator<NightId>() {
         @Override
-        public int compare(Comparable c1, Comparable c2) {
-            return c1.compareTo(c2);
+        public int compare(NightId n1, NightId n2) {
+            return NumberUtils.compare(n1.getNightId(), n2.getNightId());
         }
     };
 
@@ -108,11 +109,11 @@ public final class GranuleComparator implements Comparator<Granule> {
     public Comparator getComparator(GranuleField field) {
         switch (field) {
             case TARGET:
-                return cmpTarget;
+                return CMP_TARGET;
             case INS_MODE:
-                return cmpInsMode;
+                return CMP_INS_MODE;
             case NIGHT:
-                return cmpComparable;
+                return CMP_NIGHT;
             default:
                 return null;
         }
