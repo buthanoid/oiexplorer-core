@@ -70,6 +70,12 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
         return seriesCount;
     }
 
+    private void checkIndex(final int series) {
+        if (series < 0 || series >= seriesCount) {
+            throw new IllegalArgumentException("Series index out of bounds");
+        }
+    }
+
     /**
      * Returns the key for a series.
      *
@@ -83,10 +89,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      */
     @Override
     public Comparable<V> getSeriesKey(final int series) {
-        // Optimized code (use int):
-        if (series < 0 || series >= seriesCount) {
-            throw new IllegalArgumentException("Series index out of bounds");
-        }
+        checkIndex(series);
         return this.keysIndexes.get(NumberUtils.valueOf(series));
     }
 
@@ -103,10 +106,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      */
     @Override
     public int getItemCount(final int series) {
-        // Optimized code (use int):
-        if (series < 0 || series >= seriesCount) {
-            throw new IllegalArgumentException("Series index out of bounds");
-        }
+        checkIndex(series);
         final double[][] seriesData = this.seriesList.get(series);
         return seriesData[0].length;
     }
@@ -147,26 +147,6 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
     }
 
     /**
-     * Returns the y-value for an item within a series.
-     *
-     * @param series  the series index (in the range <code>0</code> to
-     *     <code>getSeriesCount() - 1</code>).
-     * @param item  the item index (in the range <code>0</code> to
-     *     <code>getItemCount(series)</code>).
-     *
-     * @return The y-value.
-     *
-     * @throws ArrayIndexOutOfBoundsException if <code>series</code> is not
-     *     within the specified range.
-     * @see #getY(int, int)
-     */
-    @Override
-    public double getYValue(final int series, final int item) {
-        final double[][] seriesData = this.seriesList.get(series);
-        return seriesData[3][item];
-    }
-
-    /**
      * Returns the starting x-value for an item within a series.
      *
      * @param series  the series index (in the range <code>0</code> to
@@ -204,6 +184,26 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
     public double getEndXValue(final int series, final int item) {
         final double[][] seriesData = this.seriesList.get(series);
         return seriesData[2][item];
+    }
+
+    /**
+     * Returns the y-value for an item within a series.
+     *
+     * @param series  the series index (in the range <code>0</code> to
+     *     <code>getSeriesCount() - 1</code>).
+     * @param item  the item index (in the range <code>0</code> to
+     *     <code>getItemCount(series)</code>).
+     *
+     * @return The y-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if <code>series</code> is not
+     *     within the specified range.
+     * @see #getY(int, int)
+     */
+    @Override
+    public double getYValue(final int series, final int item) {
+        final double[][] seriesData = this.seriesList.get(series);
+        return seriesData[3][item];
     }
 
     /**
@@ -387,8 +387,10 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
             throw new IllegalArgumentException("The 'data' array must have length == 6.");
         }
         final int length = data[0].length;
-        if (length != data[1].length || length != data[2].length
-                || length != data[3].length || length != data[4].length
+        if (length != data[1].length
+                || length != data[2].length
+                || length != data[3].length
+                || length != data[4].length
                 || length != data[5].length) {
             throw new IllegalArgumentException("The 'data' array must contain two arrays with equal length.");
         }
@@ -405,7 +407,6 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
 
             // update series count:
             this.seriesCount++;
-
         } else {
             // replace an existing series:
             this.seriesList.set(seriesIndex, data);
