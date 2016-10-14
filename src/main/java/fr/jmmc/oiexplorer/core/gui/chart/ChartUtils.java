@@ -78,9 +78,9 @@ public class ChartUtils {
     /** thin draw stroke */
     public static final BasicStroke THIN_STROKE = new BasicStroke(0.5f);
     /** larger draw stroke */
-    public static final BasicStroke LARGE_STROKE = new BasicStroke(1.25f);
+    public static final BasicStroke LARGE_STROKE = new BasicStroke(2.0f);
     /** larger draw stroke */
-    public static final BasicStroke VERY_LARGE_STROKE = new BasicStroke(2.0f);
+    public static final BasicStroke VERY_LARGE_STROKE = new BasicStroke(3.0f);
     /** dotted stroke */
     public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 4.0f, new float[]{4.0f}, 0.0f);
     /** zero insets */
