@@ -7,7 +7,7 @@ package fr.jmmc.oiexplorer.core.gui.selection;
  *
  * @author bourgesl
  */
-public final class DataPoint {
+public class DataPoint {
     
     public static final DataPoint UNDEFINED = new DataPoint(Double.NaN, Double.NaN);
 
@@ -20,11 +20,11 @@ public final class DataPoint {
         this.y = y;
     }
 
-    public double getX() {
+    public final double getX() {
         return x;
     }
 
-    public double getY() {
+    public final double getY() {
         return y;
     }
 

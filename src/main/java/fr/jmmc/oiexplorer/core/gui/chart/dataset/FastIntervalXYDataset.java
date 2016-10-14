@@ -27,15 +27,21 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
     /** number of series */
     private int seriesCount = 0;
     /** Storage for the series keys */
-    private HashMap<K, Integer> seriesKeys;
+    private final HashMap<K, Integer> seriesKeys;
     /** Storage for the indexes of series keys */
-    private HashMap<Integer, K> keysIndexes;
+    private final HashMap<Integer, K> keysIndexes;
     /**
-     * Storage for the series in the dataset.  We use a list because the
+     * Storage for the series's double values in the dataset.  We use a list because the
      * order of the series is significant.  This list must be kept in sync
      * with the seriesKeys list.
      */
-    private ArrayList<double[][]> seriesList;
+    private final ArrayList<int[][]> seriesIntDataList;
+    /**
+     * Storage for the series's double values in the dataset.  We use a list because the
+     * order of the series is significant.  This list must be kept in sync
+     * with the seriesKeys list.
+     */
+    private final ArrayList<double[][]> seriesDblDataList;
 
     /**
      * Creates a new <code>FastIntervalXYDataset</code> instance, initially
@@ -44,7 +50,8 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
     public FastIntervalXYDataset() {
         this.seriesKeys = new HashMap<K, Integer>(INITIAL_CAPACITY);
         this.keysIndexes = new HashMap<Integer, K>(INITIAL_CAPACITY);
-        this.seriesList = new ArrayList<double[][]>(INITIAL_CAPACITY);
+        this.seriesIntDataList = new ArrayList<int[][]>(INITIAL_CAPACITY);
+        this.seriesDblDataList = new ArrayList<double[][]>(INITIAL_CAPACITY);
     }
 
     /**
@@ -56,7 +63,8 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      */
     public void ensureCapacity(final int minCapacity) {
         // no way to ensure capacity in map (see HashMap.resize package visible)
-        this.seriesList.ensureCapacity(minCapacity);
+        this.seriesIntDataList.ensureCapacity(minCapacity);
+        this.seriesDblDataList.ensureCapacity(minCapacity);
     }
 
     /**
@@ -107,7 +115,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
     @Override
     public int getItemCount(final int series) {
         checkIndex(series);
-        final double[][] seriesData = this.seriesList.get(series);
+        final double[][] seriesData = this.seriesDblDataList.get(series);
         return seriesData[0].length;
     }
 
@@ -142,7 +150,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      */
     @Override
     public double getXValue(final int series, final int item) {
-        final double[][] seriesData = this.seriesList.get(series);
+        final double[][] seriesData = this.seriesDblDataList.get(series);
         return seriesData[0][item];
     }
 
@@ -162,7 +170,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      */
     @Override
     public double getStartXValue(final int series, final int item) {
-        final double[][] seriesData = this.seriesList.get(series);
+        final double[][] seriesData = this.seriesDblDataList.get(series);
         return seriesData[1][item];
     }
 
@@ -182,7 +190,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      */
     @Override
     public double getEndXValue(final int series, final int item) {
-        final double[][] seriesData = this.seriesList.get(series);
+        final double[][] seriesData = this.seriesDblDataList.get(series);
         return seriesData[2][item];
     }
 
@@ -202,7 +210,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      */
     @Override
     public double getYValue(final int series, final int item) {
-        final double[][] seriesData = this.seriesList.get(series);
+        final double[][] seriesData = this.seriesDblDataList.get(series);
         return seriesData[3][item];
     }
 
@@ -222,7 +230,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      */
     @Override
     public double getStartYValue(final int series, final int item) {
-        final double[][] seriesData = this.seriesList.get(series);
+        final double[][] seriesData = this.seriesDblDataList.get(series);
         return seriesData[4][item];
     }
 
@@ -242,7 +250,7 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
      */
     @Override
     public double getEndYValue(final int series, final int item) {
-        final double[][] seriesData = this.seriesList.get(series);
+        final double[][] seriesData = this.seriesDblDataList.get(series);
         return seriesData[5][item];
     }
 
@@ -366,39 +374,61 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
 //        return Double.valueOf(getYValue(series, item));
     }
 
+    public int getDataRow(final int series, final int item) {
+        final int[][] seriesData = this.seriesIntDataList.get(series);
+        return seriesData[0][item];
+    }
+
+    public int getDataCol(final int series, final int item) {
+        final int[][] seriesData = this.seriesIntDataList.get(series);
+        return seriesData[1][item];
+    }
+
     /**
      * Adds a series or if a series with the same key already exists replaces
      * the data for that series, then sends a {@link DatasetChangeEvent} to
      * all registered listeners.
      *
      * @param seriesKey  the series key (<code>null</code> not permitted).
-     * @param data  the data (must be an array with length 6, containing six
-     *     arrays of equal length, the first containing the x-values and the
-     *     second containing the y-values).
+     * @param dataInt  the integer data (must be an array with length 2, containing two
+     *     arrays of equal length, containing the row and column indices
+     * @param dataDbl  the double data (must be an array with length 6, containing six
+     *     arrays of equal length, containing x, xLow, xUp, y, yLow, yUp
      */
-    public void addSeries(final K seriesKey, final double[][] data) {
+    public void addSeries(final K seriesKey, final int[][] dataInt, final double[][] dataDbl) {
         if (seriesKey == null) {
             throw new IllegalArgumentException("The 'seriesKey' cannot be null.");
         }
-        if (data == null) {
+        if (dataDbl == null) {
             throw new IllegalArgumentException("The 'data' is null.");
         }
-        if (data.length != 6) {
-            throw new IllegalArgumentException("The 'data' array must have length == 6.");
+        if (dataInt.length != 2) {
+            throw new IllegalArgumentException("The 'dataInt' array must have length == 2.");
         }
-        final int length = data[0].length;
-        if (length != data[1].length
-                || length != data[2].length
-                || length != data[3].length
-                || length != data[4].length
-                || length != data[5].length) {
-            throw new IllegalArgumentException("The 'data' array must contain two arrays with equal length.");
+        if (dataDbl.length != 6) {
+            throw new IllegalArgumentException("The 'dataDbl' array must have length == 6.");
+        }
+        int length = dataInt[0].length;
+        if (length != dataInt[1].length) {
+            throw new IllegalArgumentException("The 'dataInt' array must contain two arrays with equal length.");
+        }
+        length = dataDbl[0].length;
+        if (length != dataDbl[1].length
+                || length != dataDbl[2].length
+                || length != dataDbl[3].length
+                || length != dataDbl[4].length
+                || length != dataDbl[5].length) {
+            throw new IllegalArgumentException("The 'dataDbl' array must contain two arrays with equal length.");
+        }
+        if (length != dataInt[0].length) {
+            throw new IllegalArgumentException("The 'dataInt' and 'dataDbl' arrays must have equal length.");
         }
 
         final int seriesIndex = indexOf(seriesKey);
         if (seriesIndex == -1) {
             // add a new series:
-            this.seriesList.add(data);
+            this.seriesIntDataList.add(dataInt);
+            this.seriesDblDataList.add(dataDbl);
 
             // cache serie index into maps:
             final Integer seriesIdx = NumberUtils.valueOf(this.seriesCount);
@@ -409,7 +439,8 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
             this.seriesCount++;
         } else {
             // replace an existing series:
-            this.seriesList.set(seriesIndex, data);
+            this.seriesIntDataList.set(seriesIndex, dataInt);
+            this.seriesDblDataList.set(seriesIndex, dataDbl);
         }
         notifyListeners(new DatasetChangeEvent(this, this));
     }
@@ -442,9 +473,10 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
         if (!this.seriesKeys.equals(that.seriesKeys)) {
             return false;
         }
+        // TODO: compare int[][]
         for (int i = 0, len = this.seriesCount; i < len; i++) {
-            double[][] d1 = this.seriesList.get(i);
-            double[][] d2 = (double[][]) that.seriesList.get(i);
+            double[][] d1 = this.seriesDblDataList.get(i);
+            double[][] d2 = (double[][]) that.seriesDblDataList.get(i);
             double[] d1x = d1[0];
             double[] d2x = d2[0];
             if (!Arrays.equals(d1x, d2x)) {
@@ -488,7 +520,8 @@ public final class FastIntervalXYDataset<K extends Comparable<V>, V> extends Abs
     public int hashCode() {
         int result;
         result = this.seriesKeys.hashCode();
-        result = 29 * result + this.seriesList.hashCode();
+        result = 13 * result + this.seriesIntDataList.hashCode();
+        result = 29 * result + this.seriesDblDataList.hashCode();
         return result;
     }
 

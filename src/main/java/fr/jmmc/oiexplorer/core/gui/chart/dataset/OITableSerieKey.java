@@ -4,7 +4,7 @@
 package fr.jmmc.oiexplorer.core.gui.chart.dataset;
 
 import fr.jmmc.jmcs.util.NumberUtils;
-import fr.jmmc.oitools.model.OIData;
+import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 
 /**
  *
@@ -16,29 +16,33 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
     private static final long serialVersionUID = 1;
 
     /* member */
-    /* generated table index (ensure key uniqueness) */
+ /* generated table index (ensure key uniqueness) */
     private final int tableIndex;
-    /* origin of the data */
-    private final OIData oiData;
+    /* origin of the data (OIData + col) */
+    private final DataPointer ptr;
     /* StaIndex index */
     private final int staIdxIndex;
-    /* waveLength index (0..n) */
-    private final int waveLengthIndex;
+    /* keys used for global series attributes */
+    private final String staIndexName;
+    private final String staConfName;
 
-    public OITableSerieKey(final int tableIndex, final OIData oiData, final int staIdxIndex, final int waveLengthIndex) {
+    public OITableSerieKey(final int tableIndex, final DataPointer ptr, final int staIdxIndex, final int waveLengthIndex,
+                           final String staIndexName, final String staConfName) {
         this.tableIndex = tableIndex;
-        this.oiData = oiData;
+        this.ptr = ptr;
         this.staIdxIndex = staIdxIndex;
-        this.waveLengthIndex = waveLengthIndex;
+
+        this.staIndexName = staIndexName;
+        this.staConfName = staConfName;
     }
 
     @Override
-    public int compareTo(final OITableSerieKey o) {
-        int res = NumberUtils.compare(tableIndex, o.getTableIndex());
+    public int compareTo(final OITableSerieKey key) {
+        int res = NumberUtils.compare(tableIndex, key.getTableIndex());
         if (res == 0) {
-            res = NumberUtils.compare(staIdxIndex, o.getStaIdxIndex());
+            res = NumberUtils.compare(staIdxIndex, key.getStaIdxIndex());
             if (res == 0) {
-                res = NumberUtils.compare(waveLengthIndex, o.getWaveLengthIndex());
+                res = NumberUtils.compare(getWaveLengthIndex(), key.getWaveLengthIndex());
             }
         }
         return res;
@@ -49,7 +53,7 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
         int hash = 7;
         hash = 13 * hash + this.tableIndex;
         hash = 31 * hash + this.staIdxIndex;
-        hash = 67 * hash + this.waveLengthIndex;
+        hash = 67 * hash + this.getWaveLengthIndex();
         return hash;
     }
 
@@ -68,7 +72,7 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
         if (this.staIdxIndex != other.getStaIdxIndex()) {
             return false;
         }
-        if (this.waveLengthIndex != other.getWaveLengthIndex()) {
+        if (this.getWaveLengthIndex() != other.getWaveLengthIndex()) {
             return false;
         }
         return true;
@@ -78,8 +82,8 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
         return tableIndex;
     }
 
-    public OIData getOiData() {
-        return oiData;
+    public DataPointer getDataPointer() {
+        return ptr;
     }
 
     public int getStaIdxIndex() {
@@ -87,32 +91,23 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
     }
 
     public int getWaveLengthIndex() {
-        return waveLengthIndex;
+        return ptr.getCol();
     }
 
     @Override
     public String toString() {
-        return "#" + tableIndex + " B" + staIdxIndex + " W" + waveLengthIndex 
-                + " oidata: " + oiData 
-                + " staNames: " + getStaName()
-                + " wavelength: " + getWaveLength();
-    }
-    
-    public String getStaName() {
-                // anyway (color mapping or check sta index):
-        final short[][] distinctStaIndexes = oiData.getDistinctStaIndexes();
-
-        final short[] currentStaIndex = distinctStaIndexes[staIdxIndex];
-        
-        return oiData.getStaNames(currentStaIndex); // cached
+        return "#" + tableIndex + " B" + staIdxIndex + " W" + getWaveLengthIndex()
+                + " pointer: " + ptr
+                + " staIndexName: " + getStaIndexName()
+                + " staConfName: " + getStaConfName();
     }
 
-    
-    public double getWaveLength() {
-        // suppose nWaves != 0:
-        final double[] effWaves = oiData.getOiWavelength().getEffWaveAsDouble();
-        
-        return effWaves[waveLengthIndex];
+    public String getStaIndexName() {
+        return staIndexName;
     }
-    
+
+    public String getStaConfName() {
+        return staConfName;
+    }
+
 }
