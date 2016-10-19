@@ -246,7 +246,7 @@ public class CombinedCrosshairOverlay extends AbstractOverlay implements Overlay
 
                     final Rectangle2D dataArea = chartPanel.scale(plotInfo.getSubplotInfo(i).getDataArea());
 
-                    paintPlotCrosshair(g2, dataArea, subPlot, NumberUtils.valueOf(i + 1));
+                    paintPlotCrosshair(g2, dataArea, subPlot, NumberUtils.valueOf(i));
 
                     // restore clip:
                     g2.setClip(savedClip);
