@@ -17,6 +17,7 @@ import fr.jmmc.jmcs.util.SpecialChars;
 import fr.jmmc.oiexplorer.core.Preferences;
 import fr.jmmc.oiexplorer.core.export.DocumentExportable;
 import fr.jmmc.oiexplorer.core.export.DocumentOptions;
+import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.gui.action.ExportDocumentAction;
 import fr.jmmc.oiexplorer.core.gui.chart.ChartUtils;
 import fr.jmmc.oiexplorer.core.gui.chart.ColorModelPaintScale;
@@ -657,7 +658,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
             if (!Double.isNaN(lFitsImage.getWaveLength())) {
                 infoBlock.add(new TextTitle("\nModel " + SpecialChars.LAMBDA_LOWER + ":", ChartUtils.DEFAULT_FONT));
-                infoBlock.add(new TextTitle(NumberUtils.trimTo3Digits(1e6d * lFitsImage.getWaveLength()) + " " + SpecialChars.UNIT_MICRO_METER, ChartUtils.DEFAULT_FONT));
+                infoBlock.add(new TextTitle(NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(lFitsImage.getWaveLength())) + ' ' + ConverterFactory.CONVERTER_MICRO_METER.getUnit(), ChartUtils.DEFAULT_FONT));
             }
 
             infoTitle = new CompositeTitle(infoBlock);
