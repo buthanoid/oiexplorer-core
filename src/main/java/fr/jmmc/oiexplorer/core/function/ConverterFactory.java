@@ -22,13 +22,20 @@ public final class ConverterFactory {
 
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(PlotDefinitionFactory.class.getName());
+    /* converter instances */
+    /** Mega Lambda converter to convert spatial frequencies */
+    public final static Converter CONVERTER_MEGA_LAMBDA = new ScalingConverter(1e-6d, SpecialChars.UNIT_MEGA_LAMBDA);
+    /** meter to micro meter converter to convert wave lengths */
+    public final static Converter CONVERTER_MICRO_METER = new ScalingConverter(1e6d, SpecialChars.UNIT_MICRO_METER);
+    /** Reflection converter (opposite sign) */
+    public final static Converter CONVERTER_REFLECT = new ReflectConverter();
     /* converter keys */
     /** Mega Lambda converter to convert spatial frequencies */
-    public final static String CONVERTER_MEGA_LAMBDA = "MEGA_LAMBDA";
+    public final static String KEY_MEGA_LAMBDA = "MEGA_LAMBDA";
     /** meter to micro meter converter to convert wave lengths */
-    public final static String CONVERTER_MICRO_METER = "MICRO_METER";
+    public final static String KEY_MICRO_METER = "MICRO_METER";
     /** Reflection converter (opposite sign) */
-    public final static String CONVERTER_REFLECT = "REFLECT";
+    public final static String KEY_REFLECT = "REFLECT";
     /** Factory instance */
     private static volatile ConverterFactory instance = null;
 
@@ -63,19 +70,19 @@ public final class ConverterFactory {
      */
     private void initializeDefaults() throws IllegalStateException {
         // create converters:
-        converters.put(CONVERTER_REFLECT, new ReflectConverter());
-        converters.put(CONVERTER_MEGA_LAMBDA, new ScalingConverter(1e-6d, SpecialChars.UNIT_MEGA_LAMBDA));
-        converters.put(CONVERTER_MICRO_METER, new ScalingConverter(1e6d, SpecialChars.UNIT_MICRO_METER));
+        converters.put(KEY_REFLECT, CONVERTER_REFLECT);
+        converters.put(KEY_MEGA_LAMBDA, CONVERTER_MEGA_LAMBDA);
+        converters.put(KEY_MICRO_METER, CONVERTER_MICRO_METER);
 
         // associate converters to columns by default:
-        converterByColumns.put(OIFitsConstants.COLUMN_EFF_WAVE, CONVERTER_MICRO_METER);
-        converterByColumns.put(OIFitsConstants.COLUMN_SPATIAL_FREQ, CONVERTER_MEGA_LAMBDA);
-        converterByColumns.put(OIFitsConstants.COLUMN_UCOORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
-        converterByColumns.put(OIFitsConstants.COLUMN_VCOORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
-        converterByColumns.put(OIFitsConstants.COLUMN_U1COORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
-        converterByColumns.put(OIFitsConstants.COLUMN_V1COORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
-        converterByColumns.put(OIFitsConstants.COLUMN_U2COORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
-        converterByColumns.put(OIFitsConstants.COLUMN_V2COORD_SPATIAL, CONVERTER_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_EFF_WAVE, KEY_MICRO_METER);
+        converterByColumns.put(OIFitsConstants.COLUMN_SPATIAL_FREQ, KEY_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_UCOORD_SPATIAL, KEY_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_VCOORD_SPATIAL, KEY_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_U1COORD_SPATIAL, KEY_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_V1COORD_SPATIAL, KEY_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_U2COORD_SPATIAL, KEY_MEGA_LAMBDA);
+        converterByColumns.put(OIFitsConstants.COLUMN_V2COORD_SPATIAL, KEY_MEGA_LAMBDA);
     }
 
     /** 
