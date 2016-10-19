@@ -37,10 +37,12 @@ public class TargetManager extends AbstractMapper<Target> {
         final boolean match = (distance <= SAME_TARGET_DISTANCE);
 
         if (match) {
-            logger.info("match [{} vs {}] = {} arcsec",
-                    src.getTarget(), other.getTarget(),
-                    NumberUtils.trimTo3Digits(distance * ALX.DEG_IN_ARCSEC)
-            );
+            if (logger.isDebugEnabled()) {
+                logger.debug("match [{} vs {}] = {} arcsec",
+                        src.getTarget(), other.getTarget(),
+                        NumberUtils.trimTo3Digits(distance * ALX.DEG_IN_ARCSEC)
+                );
+            }
         }
 
         return match;
