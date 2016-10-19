@@ -15,8 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.event.PlotChangeEvent;
-import org.jfree.chart.event.PlotChangeListener;
+import org.jfree.chart.panel.Overlay;
 import org.jfree.ui.Drawable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,10 +52,10 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
         return chartPanelList.size();
     }
 
-    public void addChart(JFreeChart chart) {
+    public void addChart(final JFreeChart chart, final Overlay overlay) {
         logger.debug("addChart: {}", chart);
 
-        ChartPanel chartPanel = ChartUtils.createChartPanel(chart, false);
+        final ChartPanel chartPanel = ChartUtils.createChartPanel(chart, false);
 
         // zoom options :
         chartPanel.setDomainZoomable(Constants.ENABLE_ZOOM);
@@ -64,6 +63,12 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
 
         // enable mouse wheel:
         chartPanel.setMouseWheelEnabled(true);
+
+        if (overlay != null) {
+            chartPanel.addOverlay(overlay);
+        }
+        // TODO: support mouse listener:
+        // chartPanel.addChartMouseListener(this);
 
         chartPanelList.add(chartPanel);
         refreshJPanel();
@@ -73,7 +78,7 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
         logger.debug("removeChart: {}", chart);
 
         for (int i = 0; i < chartPanelList.size(); i++) {
-            ChartPanel chartPanel = chartPanelList.get(i);
+            final ChartPanel chartPanel = chartPanelList.get(i);
             if (chart == chartPanel.getChart()) {
                 chartPanelList.remove(i);
                 refreshJPanel();
