@@ -63,10 +63,18 @@ public final class SharedSeriesAttributes {
         return this.labelNames.contains(label);
     }
 
+    public void addLabel(final String label) {
+        addLabel(label, null, 0.0);
+    }
+
     public void addLabel(final String label, final double weight) {
         addLabel(label, null, weight);
     }
 
+    public void addLabel(final String label, final String alias) {
+        addLabel(label, alias, 0.0);
+    }
+    
     public void addLabel(final String label, final String alias, final double weight) {
         if (!hasLabel(label)) {
             labelNames.add(label);
