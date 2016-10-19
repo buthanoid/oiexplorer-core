@@ -182,7 +182,7 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
      * @throws IllegalStateException if this method is not called by Swing EDT
      */
     public void queueEvent(final Object source, final K event,
-            final GenericEventListener<? extends GenericEvent<V, O>, V, O> destination) throws IllegalStateException {
+                           final GenericEventListener<? extends GenericEvent<V, O>, V, O> destination) throws IllegalStateException {
 
         // ensure events are fired by Swing EDT:
         if (!SwingUtils.isEDT()) {
@@ -190,7 +190,6 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
         }
 
         // queue this event to avoid concurrency issues and repeated event notifications (thanks to MAP - see hashcode):
-
         // Get previous context:
         EventContext<K, V, O> context = this.eventQueue.get(event);
 
@@ -394,6 +393,8 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
         /* members */
         /** flag indicating that this task is registered in EDT */
         private boolean registeredEDT = false;
+        /** immediate event notifiers (ordered by insertion order) */
+        private final Set<EventNotifier<?, ?, ?>> immediateNotifiers = new LinkedHashSet<EventNotifier<?, ?, ?>>();
         /** queued event notifiers (ordered by insertion order) */
         private final Set<EventNotifier<?, ?, ?>> queuedNotifiers = new LinkedHashSet<EventNotifier<?, ?, ?>>();
         /** callback list */
@@ -415,6 +416,26 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
         void queueEventNotifier(final EventNotifier<?, ?, ?> eventNotifier) {
             queuedNotifiers.add(eventNotifier);
             registerEDT();
+        }
+
+        /**
+         * Executes the given event notifier
+         * @param eventNotifier event notifier to queue
+         */
+        void callEventNotifier(final EventNotifier<?, ?, ?> eventNotifier) {
+            immediateNotifiers.add(eventNotifier);
+
+            if (DEBUG_FIRE_EVENT) {
+                logger.warn("CONTROLLER EXECUTED BY EDT (invokeLater)");
+            }
+            // fire synchronous events:
+            boolean done = false;
+            while (!done) {
+                done = fireImmediateNotifiers();
+            }
+
+            // run callbacks once all queued notifiers / events are fired:
+            runCallbacks();
         }
 
         /**
@@ -465,21 +486,37 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
         }
 
         /**
-         * Fire queued notifiers if possible using EDT (may use interlacing with standard Swing EDT)
+         * Fire immediate notifiers immediately (sync)
+         * @return true if queuedNotifiers is empty i.e. done
+         */
+        private boolean fireImmediateNotifiers() {
+            return fireNotifiers(immediateNotifiers);
+        }
+
+        /**
+         * Fire queued notifiers if possible using EDT (may use interlacing with standard Swing EDT) (async)
          * @return true if queuedNotifiers is empty i.e. done
          */
         private boolean fireQueuedNotifiers() {
+            return fireNotifiers(queuedNotifiers);
+        }
 
-            if (queuedNotifiers.isEmpty()) {
+        /**
+         * Fire queued notifiers if possible using EDT (may use interlacing with standard Swing EDT)
+         * @param notifiers notifier set to use
+         * @return true if queuedNotifiers is empty i.e. done
+         */
+        private boolean fireNotifiers(final Set<EventNotifier<?, ?, ?>> notifiers) {
+            if (notifiers.isEmpty()) {
                 return true;
             }
             if (DEBUG_FIRE_EVENT) {
-                logger.warn("START FIRE {} QUEUED NOTIFIERS", queuedNotifiers.size());
+                logger.warn("START FIRE {} QUEUED NOTIFIERS", notifiers.size());
             }
 
             // process only 1 notifier at a time (loop) to maximize event merges of next events:
             queuedNotifiersCopy.clear();
-            queuedNotifiersCopy.addAll(queuedNotifiers);
+            queuedNotifiersCopy.addAll(notifiers);
 
             if (queuedNotifiersCopy.size() > 1) {
                 Collections.sort(queuedNotifiersCopy);
@@ -494,7 +531,7 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
             queuedNotifiersCopy.clear();
 
             // Remove this event notifier in queued notifiers:
-            queuedNotifiers.remove(eventNotifier);
+            notifiers.remove(eventNotifier);
 
             if (DEBUG_FIRE_EVENT) {
                 logger.warn("FIRE QUEUED NOTIFIER {}", eventNotifier);
@@ -506,7 +543,7 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
                 logger.warn("END FIRE QUEUED NOTIFIER", eventNotifier);
             }
 
-            final boolean done = queuedNotifiers.isEmpty();
+            final boolean done = notifiers.isEmpty();
             if (DEBUG_FIRE_EVENT) {
                 logger.warn("END FIRE QUEUED NOTIFIERS : {}", done);
             }

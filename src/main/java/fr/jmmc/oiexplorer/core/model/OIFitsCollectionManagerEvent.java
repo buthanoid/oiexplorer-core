@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
+import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 import static fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType.PLOT_CHANGED;
 import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
 import fr.jmmc.oiexplorer.core.model.oi.Plot;
@@ -62,6 +63,9 @@ public final class OIFitsCollectionManagerEvent extends GenericEvent<OIFitsColle
                 break;
             case PLOT_CHANGED:
                 value = OIFitsCollectionManager.getInstance().getPlotRef(getSubjectId());
+                break;
+            case SELECTION_CHANGED:
+                value = OIFitsCollectionManager.getInstance().getSelection();
                 break;
             case ACTIVE_PLOT_CHANGED:
                 value = OIFitsCollectionManager.getInstance().getPlotRef(getSubjectId());
@@ -154,6 +158,18 @@ public final class OIFitsCollectionManagerEvent extends GenericEvent<OIFitsColle
     public Plot getPlot() {
         if (getType() == OIFitsCollectionManagerEventType.PLOT_CHANGED) {
             return (Plot) getSubjectValue();
+        }
+        return null;
+    }
+
+    /**
+     * Return the Selection if this event is only SELECTION_CHANGED
+     * @return Selection or null if wrong event type
+     */
+    @SuppressWarnings("unchecked")
+    public DataPointer getSelection() {
+        if (getType() == OIFitsCollectionManagerEventType.SELECTION_CHANGED) {
+            return (DataPointer) getSubjectValue();
         }
         return null;
     }

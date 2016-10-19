@@ -24,6 +24,8 @@ public enum OIFitsCollectionManagerEventType {
     PLOT_CHANGED,
     /** active plot changed (ie. user is working/looking on a new plot) */
     ACTIVE_PLOT_CHANGED,
+    /** selection changed */
+    SELECTION_CHANGED,    
     /** last event type = ready */
     READY
 }

@@ -17,6 +17,7 @@ import fr.jmmc.jmcs.util.jaxb.JAXBFactory;
 import fr.jmmc.jmcs.util.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.util.jaxb.XmlBindException;
 import fr.jmmc.oiexplorer.core.gui.OIExplorerTaskRegistry;
+import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
@@ -79,6 +80,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     private File oiFitsCollectionFile = null;
     /** OIFits collection */
     private OIFitsCollection oiFitsCollection = null;
+    /** data selection */
+    private DataPointer selectedDataPointer = null;
     /* event dispatchers */
     /** OIFitsCollectionManagerEventType event notifier map */
     private final EnumMap<OIFitsCollectionManagerEventType, EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object>> oiFitsCollectionManagerEventNotifierMap;
@@ -148,7 +151,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker,
-            final LoadOIFitsListener listener) throws IOException, IllegalStateException, XmlBindException {
+                                     final LoadOIFitsListener listener) throws IOException, IllegalStateException, XmlBindException {
         loadOIFitsCollection(file, checker, listener, false);
     }
 
@@ -163,7 +166,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker,
-            final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) throws IOException, IllegalStateException, XmlBindException {
+                                     final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) throws IOException, IllegalStateException, XmlBindException {
 
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
 
@@ -242,7 +245,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param appendOIFitsFilesOnly load only OIFits and skip plot+subset if true, else reset and load whole collection content
      */
     private void loadOIDataCollection(final File file, final OiDataCollection oiDataCollection, final OIFitsChecker checker,
-            final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) {
+                                      final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) {
 
         final List<OIDataFile> oidataFiles = oiDataCollection.getFiles();
         final List<String> fileLocations = new ArrayList<String>(oidataFiles.size());
@@ -336,7 +339,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         private final OIFitsChecker checker;
 
         LoadOIFitsFilesSwingWorker(final List<String> fileLocations, final OIFitsChecker checker,
-                final LoadOIFitsListener listener) {
+                                   final LoadOIFitsListener listener) {
             super(OIExplorerTaskRegistry.TASK_LOAD_OIFITS);
             this.fileLocations = fileLocations;
             this.checker = checker;
@@ -493,8 +496,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
         userCollection = new OiDataCollection();
         oiFitsCollection = new OIFitsCollection();
-
-        setOiFitsCollectionFile(null);
+        oiFitsCollectionFile = null;
+        selectedDataPointer = null;
 
         fireOIFitsCollectionChanged();
     }
@@ -616,7 +619,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param remove true to remove the column; false to update the column
      */
     private void modifyExprColumnInOIFitsCollection(final String userName, final String expression,
-            final boolean remove) {
+                                                    final boolean remove) {
 
         final String name = "[" + userName + "]";
 
@@ -1414,6 +1417,33 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         firePlotChanged(source, plot.getId());
     }
 
+    /* --- selection handling --------- ---------------------------- */
+    /**
+     * Define the selection
+     * @param source event source
+     * @param ptr data pointer
+     * @return true if the selection changed
+     */
+    public boolean setSelection(final Object source, final DataPointer ptr) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("setSelection: {}", ptr);
+        }
+
+        if (!ObjectUtils.areEquals(ptr, selectedDataPointer)) {
+            // Maybe leak ?
+            this.selectedDataPointer = ptr;
+
+            // Fire to all listeners:
+            fireSelectionChanged(source, null);
+            return true;
+        }
+        return false;
+    }
+
+    public DataPointer getSelection() {
+        return this.selectedDataPointer;
+    }
+
     // --- EVENTS ----------------------------------------------------------------
     /**
      * Unbind the given listener to ANY event
@@ -1533,6 +1563,14 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     public EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object> getActivePlotChangedEventNotifier() {
         return this.oiFitsCollectionManagerEventNotifierMap.get(OIFitsCollectionManagerEventType.ACTIVE_PLOT_CHANGED);
+    }
+
+    /**
+     * Return the SELECTION_CHANGED event notifier
+     * @return SELECTION_CHANGED event notifier
+     */
+    public EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object> getSelectionChangedEventNotifier() {
+        return this.oiFitsCollectionManagerEventNotifierMap.get(OIFitsCollectionManagerEventType.SELECTION_CHANGED);
     }
 
     /**
@@ -1731,6 +1769,21 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             }
             getActivePlotChangedEventNotifier().queueEvent((source != null) ? source : this,
                     new OIFitsCollectionManagerEvent(OIFitsCollectionManagerEventType.ACTIVE_PLOT_CHANGED, plotId), destination);
+        }
+    }
+
+    /**
+     * This fires a SELECTION_CHANGED event to given registered listener ASYNCHRONOUSLY !
+     * @param source event source
+     * @param destination destination listener (null means all)
+     */
+    public void fireSelectionChanged(final Object source, final OIFitsCollectionManagerEventListener destination) {
+        if (enableEvents) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("fireSelectionChanged TO {}", (destination != null) ? destination : "ALL");
+            }
+            getSelectionChangedEventNotifier().queueEvent((source != null) ? source : this,
+                    new OIFitsCollectionManagerEvent(OIFitsCollectionManagerEventType.SELECTION_CHANGED, null), destination);
         }
     }
 
