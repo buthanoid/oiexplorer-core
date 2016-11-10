@@ -957,8 +957,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                     logger.debug("matching point: serie={} item={}", serie, item);
 
                                     if (++nMatchs > 2) {
-                                        logger.debug("Too much matchs: exit");
-                                        return null;
+                                        logger.debug("Too much matching items !");
+                                        return DataPoint.UNDEFINED;
                                     }
 
                                     matchPlotIndex = this.plotMapping.get(xyPlot).intValue();
@@ -976,6 +976,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 logger.debug("findDataPoint: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
             }
         }
+        // note: if matchPlotIndex = -1 then matchItem = -1 so returns DataPoint.UNDEFINED:
         return createDataPoint((matchPlotIndex != -1) ? getPlotInfos().get(matchPlotIndex) : null, matchDataset, matchSerie, matchItem);
     }
 
@@ -1064,9 +1065,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             return new DataPointInfo(info.xAxisInfo, info.yAxisInfo, matchX, matchY, ptr);
         }
-
         logger.debug("No Matching item.");
-
         return DataPoint.UNDEFINED;
     }
 
