@@ -51,6 +51,7 @@ import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
+import fr.jmmc.oitools.model.OIWavelength;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Point;
@@ -2122,21 +2123,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 // single channel or Undefined range: use black:
                 Arrays.fill(mappingWaveLengthColors, Color.BLACK);
             } else {
-                // scale and offset between [0;1]:
-                final float scale = (float) ((effWaveRange[1] - effWaveRange[0]) / wlRange);
-                final float offset = (float) ((effWaveRange[0] - info.waveLengthRange.getLowerBound()) / wlRange);
-
+                final double lower = info.waveLengthRange.getLowerBound();
                 final int iMaxColor = colorModel.getMapSize() - 1;
 
-                final float factor = (nWaves > 1) ? scale / (nWaves - 1) : scale;
+                final float[] effWaves = oiData.getOiWavelength().getEffWave();
                 float value;
-
+                
                 final float alpha = 0.8f;
                 final int alphaMask = Math.round(255 * alpha) << 24;
 
                 for (int i = 0; i < nWaves; i++) {
                     // invert palette to have (VIOLET - BLUE - GREEN - RED) ie color spectrum:
-                    value = (float) iMaxColor - (factor * i + offset) * iMaxColor;
+                    value = (float)(iMaxColor * (1.0 - ((effWaves[i] - lower) / wlRange)));
 
                     mappingWaveLengthColors[i] = new Color(ImageUtils.getRGB(colorModel, iMaxColor, value, alphaMask), true);
                 }
