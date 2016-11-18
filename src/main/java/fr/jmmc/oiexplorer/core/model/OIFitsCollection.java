@@ -50,6 +50,7 @@ public final class OIFitsCollection implements ToStringable {
      * Clear the OIFits file collection
      */
     public void clear() {
+        // clear all loaded OIFitsFile (in memory):
         oiFitsCollection.clear();
 
         clearCache();
@@ -169,15 +170,17 @@ public final class OIFitsCollection implements ToStringable {
      */
     public void analyzeCollection() {
         clearCache();
+        
+        // Always define mapping for Undefined values:
+        imm.register(InstrumentMode.UNDEFINED);
+        tm.register(Target.UNDEFINED);
 
         // analyze instrument modes & targets:
         for (OIFitsFile oiFitsFile : oiFitsCollection.values()) {
-            imm.register(InstrumentMode.UNDEFINED);
             for (OIWavelength oiTable : oiFitsFile.getOiWavelengths()) {
                 imm.register(oiTable.getInstrumentMode());
             }
 
-            tm.register(Target.UNDEFINED);
             if (oiFitsFile.hasOiTarget()) {
                 for (Target target : oiFitsFile.getOiTarget().getTargetObjToTargetId().keySet()) {
                     tm.register(target);
