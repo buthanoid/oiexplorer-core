@@ -14,7 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Granule comparator based on target name
+ * Granule comparator based on GranuleField values
  * @author bourgesl
  */
 public final class GranuleComparator implements Comparator<Granule> {
