@@ -13,41 +13,44 @@ import java.util.List;
  * @author bourgesl
  */
 public final class InstrumentModeManager extends AbstractMapper<InstrumentMode> {
+
     /** smallest precision on wavelength */
     public final static float LAMBDA_PREC = 1e-10f;
 
     /** Singleton pattern */
-    private final static InstrumentModeManager instance = new InstrumentModeManager();
-    /** cache locals for Undefined InstrumentMode */
-    private final static List<InstrumentMode> UNDEFINED_LOCALS = Arrays.asList(new InstrumentMode[]{InstrumentMode.UNDEFINED});
+    private final static InstrumentModeManager INSTANCE = new InstrumentModeManager();
 
     /**
      * Return the Manager singleton
      * @return singleton instance
      */
     public static InstrumentModeManager getInstance() {
-        return instance;
+        return INSTANCE;
     }
 
     /**
      * Clear the mappings
      */
+    @Override
     public void clear() {
         super.clear();
         // insert mapping for Undefined:
-        globalPerLocal.put(InstrumentMode.UNDEFINED, InstrumentMode.UNDEFINED);
-        localsPerGlobal.put(InstrumentMode.UNDEFINED, UNDEFINED_LOCALS);
+        register(InstrumentMode.UNDEFINED);
     }
 
     @Override
     protected boolean match(final InstrumentMode src, final InstrumentMode other) {
+        if (src == other) {
+            return true;
+        }
+        // Compare all values:
         if (NumberUtils.compare(src.getNbChannels(), other.getNbChannels()) != 0) {
             return false;
         }
 
         // precision = 1/2 channel width ie min(eff_band)/2
         float prec = 0.5f * Math.min(src.getBandMin(), other.getBandMin());
-        
+
         if (Float.isNaN(prec) || prec < LAMBDA_PREC) {
             prec = LAMBDA_PREC;
         }
@@ -59,8 +62,7 @@ public final class InstrumentModeManager extends AbstractMapper<InstrumentMode> 
         if (!NumberUtils.equals(src.getLambdaMax(), other.getLambdaMax(), prec)) {
             return false;
         }
-        // precision = +/- 1:
-        return (NumberUtils.equals(src.getLambdaMax(), other.getLambdaMax(), 1.0));
+        return true;
     }
 
     @Override

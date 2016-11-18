@@ -12,20 +12,30 @@ import fr.jmmc.oitools.model.Target;
  *
  * @author bourgesl
  */
-public class TargetManager extends AbstractMapper<Target> {
+public final class TargetManager extends AbstractMapper<Target> {
 
     /** distance in degrees to consider same targets = 1 arcsecs */
     public final static double SAME_TARGET_DISTANCE = 1d * ALX.ARCSEC_IN_DEGREES;
 
     /** Singleton pattern */
-    private final static TargetManager instance = new TargetManager();
+    private final static TargetManager INSTANCE = new TargetManager();
 
     /**
      * Return the Manager singleton
      * @return singleton instance
      */
     public static TargetManager getInstance() {
-        return instance;
+        return INSTANCE;
+    }
+
+    /**
+     * Clear the mappings
+     */
+    @Override
+    public void clear() {
+        super.clear();
+        // insert mapping for Undefined:
+        register(Target.UNDEFINED);
     }
 
     @Override
