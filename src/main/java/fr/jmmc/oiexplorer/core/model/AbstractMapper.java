@@ -46,6 +46,7 @@ public abstract class AbstractMapper<K> {
         if (logger.isDebugEnabled()) {
             logger.debug("Globals: {}", localsPerGlobal.keySet());
             logger.debug("Locals:  {}", globalPerLocal.keySet());
+            logger.debug("Globals <=> Locals mapping {}", localsPerGlobal);
         }
     }
 
@@ -72,7 +73,11 @@ public abstract class AbstractMapper<K> {
 
             // anyway
             globalPerLocal.put(local, match);
-            locals.add(local);
+
+            // ensure unicity (Undefined for example):
+            if (!containsInstance(locals, local)) {
+                locals.add(local);
+            }
         }
     }
 
@@ -117,4 +122,14 @@ public abstract class AbstractMapper<K> {
 
     protected abstract String getName(final K src);
 
+    private static <K> boolean containsInstance(final List<K> list, final K value) {
+        final int len = list.size();
+        for (int i = 0; i < len; i++) {
+            // identity comparison:
+            if (value == list.get(i)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
