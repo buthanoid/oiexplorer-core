@@ -3,9 +3,9 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.selection;
 
-import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OITarget;
+import fr.jmmc.oitools.model.OIWavelength;
 
 /**
  *
@@ -104,7 +104,10 @@ public final class DataPointer {
 
     public float getWaveLength() {
         if (checkCol()) {
-            return oiData.getOiWavelength().getEffWave()[col];
+            final OIWavelength oiWavelength = oiData.getOiWavelength();
+            if (oiWavelength != null) {
+                return oiWavelength.getEffWave()[col];
+            }
         }
         return Float.NaN;
     }
@@ -124,11 +127,11 @@ public final class DataPointer {
 // Fast access to computed values:    
     public String getTarget() {
         if (checkRow()) {
-            final short targetId = oiData.getTargetId()[row];
-
             final OITarget oiTarget = oiData.getOiTarget();
 
             if (oiTarget != null) {
+                final short targetId = oiData.getTargetId()[row];
+
                 final Integer rowTarget = oiTarget.getRowIndex(Short.valueOf(targetId)); // requires previously OIFits Analyzer call()
                 if (rowTarget != null) {
                     return oiTarget.getTarget()[rowTarget.intValue()];
@@ -141,21 +144,30 @@ public final class DataPointer {
 
     public double getSpatialFreq() {
         if (checkRow() && checkCol()) {
-            return oiData.getSpatialFreq()[row][col];
+            final double[][] spatialFreqs = oiData.getSpatialFreq();
+            if (spatialFreqs != null) {
+                return spatialFreqs[row][col];
+            }
         }
         return Double.NaN;
     }
 
     public double getRadius() {
         if (checkRow()) {
-            return oiData.getRadius()[row];
+            final double[] radiuses = oiData.getRadius();
+            if (radiuses != null) {
+                return radiuses[row];
+            }
         }
         return Double.NaN;
     }
 
     public double getPosAngle() {
         if (checkRow()) {
-            return oiData.getPosAngle()[row];
+            final double[] posAngles = oiData.getPosAngle();
+            if (posAngles != null) {
+                return posAngles[row];
+            }
         }
         return Double.NaN;
     }
