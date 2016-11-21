@@ -27,26 +27,23 @@
                 <xsl:apply-templates select="//oifits/*"/>
             </body>
         </html>
-    </xsl:template> 
-  
-  
-  
-
-    <xsl:template match="filename">
-      
-        <h2>
-            File :
-        </h2>
-    
-        <xsl:value-of select="text()"/>
-    
     </xsl:template>
 
 
 
 
-    <xsl:template match="OI_ARRAY|OI_WAVELENGTH|OI_TARGET|OI_VIS|OI_VIS2|OI_T3">
+    <xsl:template match="filename">
+        <h2>
+            File :
+        </h2>
 
+        <xsl:value-of select="text()"/>
+    </xsl:template>
+
+
+
+
+    <xsl:template match="OI_ARRAY|OI_WAVELENGTH|OI_TARGET|OI_VIS|OI_VIS2|OI_T3|OI_SPECTRUM|OI_FLUX">
         <h2>
             <xsl:value-of select="name()"/>
         </h2>
@@ -54,16 +51,14 @@
         <xsl:apply-templates select="keywords"/>
 
         <xsl:apply-templates select="table"/>
-
     </xsl:template>
 
 
 
 
     <xsl:template match="keywords">
-
         <h3>Keywords</h3>
-    
+
         <table border="1">
             <tr>
                 <th>name</th>
@@ -84,20 +79,17 @@
                 </tr>
             </xsl:for-each>
         </table>
-
     </xsl:template>
 
 
 
 
     <xsl:template match="table">
-
         <h3>Columns</h3>
 
         <table border="1">
             <xsl:copy-of select="tr"/>
         </table>
-
     </xsl:template>
 
 </xsl:stylesheet>
