@@ -51,7 +51,6 @@ import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
-import fr.jmmc.oitools.model.OIWavelength;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Point;
@@ -732,20 +731,31 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 return;
             }
             final PlotInfo info = getPlotInfos().get(subplotIndex);
+            
+            final double px = point2D.getX();
+            final double py = point2D.getY();
 
             final ValueAxis domainAxis = xyPlot.getDomainAxis();
-            final double domainValue = domainAxis.java2DToValue(point2D.getX(), dataArea, xyPlot.getDomainAxisEdge());
+            final double domainValue = domainAxis.java2DToValue(px, dataArea, xyPlot.getDomainAxisEdge());
 
             final ValueAxis rangeAxis = xyPlot.getRangeAxis();
-            final double rangeValue = rangeAxis.java2DToValue(point2D.getY(), dataArea, xyPlot.getRangeAxisEdge());
+            final double rangeValue = rangeAxis.java2DToValue(py, dataArea, xyPlot.getRangeAxisEdge());
 
             if (logger.isDebugEnabled()) {
                 logger.debug("Mouse coordinates are (" + i + ", " + j + "), in data space = (" + domainValue + ", " + rangeValue + ")");
             }
 
-            // aspect ratio:
-            final double xRatio = dataArea.getWidth() / Math.abs(domainAxis.getUpperBound() - domainAxis.getLowerBound());
-            final double yRatio = dataArea.getHeight() / Math.abs(rangeAxis.getUpperBound() - rangeAxis.getLowerBound());
+            // Use local approximation (arround anchor) of the scaling ratios 
+            // providing a good affinity with logarithmic axes:
+            final double xRatio = 2.0 / Math.abs(
+                    domainAxis.java2DToValue(px + 1.0, dataArea, xyPlot.getDomainAxisEdge())
+                            - domainAxis.java2DToValue(px - 1.0, dataArea, xyPlot.getDomainAxisEdge())
+            );
+
+            final double yRatio = 2.0 / Math.abs(
+                    rangeAxis.java2DToValue(py + 1.0, dataArea, xyPlot.getRangeAxisEdge())
+                            - rangeAxis.java2DToValue(py - 1.0, dataArea, xyPlot.getRangeAxisEdge())
+            );
 
             // find matching data ie. closest data point according to its screen distance to the mouse clicked point:
             final DataPoint dataPoint = findDataPoint(info, xyPlot, domainValue, rangeValue, xRatio, yRatio);
@@ -800,11 +810,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     + "<br>"
                     + ((!Float.isNaN(ptr.getWaveLength()))
                     ? "Wavelength: " + df4.format(ConverterFactory.CONVERTER_MICRO_METER.evaluate(ptr.getWaveLength())) + ' ' + ConverterFactory.CONVERTER_MICRO_METER.getUnit()
-                    + " | Spatial Freq: " + df2.format(ConverterFactory.CONVERTER_MEGA_LAMBDA.evaluate(ptr.getSpatialFreq())) + ' ' + ConverterFactory.CONVERTER_MEGA_LAMBDA.getUnit()
-                    + " | "
+                    + ((!Double.isNaN(ptr.getSpatialFreq()))
+                    ? " | Spatial Freq: " + df2.format(ConverterFactory.CONVERTER_MEGA_LAMBDA.evaluate(ptr.getSpatialFreq())) + ' ' + ConverterFactory.CONVERTER_MEGA_LAMBDA.getUnit()
+                    : "") + " | "
                     : "")
-                    + "Radius: " + df2.format(ptr.getRadius()) + ' ' + Units.UNIT_METER.getStandardRepresentation()
+                    + ((!Double.isNaN(ptr.getRadius()))
+                    ? "Radius: " + df2.format(ptr.getRadius()) + ' ' + Units.UNIT_METER.getStandardRepresentation()
                     + " | Pos. angle: " + df2.format(ptr.getPosAngle()) + ' ' + Units.UNIT_DEGREE.getStandardRepresentation()
+                    : "")
                     + ((!Double.isNaN(ptr.getHourAngle()))
                     ? " | Hour angle: " + df2.format(ptr.getHourAngle()) + ' ' + Units.UNIT_HOUR.getStandardRepresentation()
                     : "")
@@ -825,7 +838,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             // find matching data ie. closest data point according to its screen distance to the mouse clicked point:
             final DataPoint dataPoint = findDataPoint(selPtr);
 
-            if (dataPoint != DataPoint.UNDEFINED) {
+            if (dataPoint == DataPoint.UNDEFINED) {
+                resetCrosshairOverlay();
+            } else {
                 updateCrosshairs(dataPoint);
             }
         }
@@ -991,7 +1006,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param yRatio pixels per data on range axis
      * @return found Point2D (data coordinates) or Point2D(NaN, NaN)
      */
-    private static DataPoint findDataPoint(final PlotInfo info, final XYPlot xyPlot, final double anchorX, final double anchorY, final double xRatio, final double yRatio) {
+    private static DataPoint findDataPoint(final PlotInfo info, final XYPlot xyPlot,
+                                           final double anchorX, final double anchorY,
+                                           final double xRatio, final double yRatio) {
         int matchSerie = -1;
         int matchItem = -1;
 
@@ -2128,13 +2145,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 final float[] effWaves = oiData.getOiWavelength().getEffWave();
                 float value;
-                
+
                 final float alpha = 0.8f;
                 final int alphaMask = Math.round(255 * alpha) << 24;
 
                 for (int i = 0; i < nWaves; i++) {
                     // invert palette to have (VIOLET - BLUE - GREEN - RED) ie color spectrum:
-                    value = (float)(iMaxColor * (1.0 - ((effWaves[i] - lower) / wlRange)));
+                    value = (float) (iMaxColor * (1.0 - ((effWaves[i] - lower) / wlRange)));
 
                     mappingWaveLengthColors[i] = new Color(ImageUtils.getRGB(colorModel, iMaxColor, value, alphaMask), true);
                 }
