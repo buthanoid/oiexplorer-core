@@ -106,7 +106,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public final class PlotChartPanel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-                                                                        DocumentExportable, OIFitsCollectionManagerEventListener {
+        DocumentExportable, OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -731,7 +731,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 return;
             }
             final PlotInfo info = getPlotInfos().get(subplotIndex);
-            
+
             final double px = point2D.getX();
             final double py = point2D.getY();
 
@@ -745,16 +745,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 logger.debug("Mouse coordinates are (" + i + ", " + j + "), in data space = (" + domainValue + ", " + rangeValue + ")");
             }
 
-            // Use local approximation (arround anchor) of the scaling ratios 
+            // Use local approximation (arround anchor) of the scaling ratios
             // providing a good affinity with logarithmic axes:
             final double xRatio = 2.0 / Math.abs(
                     domainAxis.java2DToValue(px + 1.0, dataArea, xyPlot.getDomainAxisEdge())
-                            - domainAxis.java2DToValue(px - 1.0, dataArea, xyPlot.getDomainAxisEdge())
+                    - domainAxis.java2DToValue(px - 1.0, dataArea, xyPlot.getDomainAxisEdge())
             );
 
             final double yRatio = 2.0 / Math.abs(
                     rangeAxis.java2DToValue(py + 1.0, dataArea, xyPlot.getRangeAxisEdge())
-                            - rangeAxis.java2DToValue(py - 1.0, dataArea, xyPlot.getRangeAxisEdge())
+                    - rangeAxis.java2DToValue(py - 1.0, dataArea, xyPlot.getRangeAxisEdge())
             );
 
             // find matching data ie. closest data point according to its screen distance to the mouse clicked point:
@@ -1007,8 +1007,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @return found Point2D (data coordinates) or Point2D(NaN, NaN)
      */
     private static DataPoint findDataPoint(final PlotInfo info, final XYPlot xyPlot,
-                                           final double anchorX, final double anchorY,
-                                           final double xRatio, final double yRatio) {
+            final double anchorX, final double anchorY,
+            final double xRatio, final double yRatio) {
         int matchSerie = -1;
         int matchItem = -1;
 
@@ -1063,7 +1063,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @return found DataPoint (data coordinates) or DataPoint.UNDEFINED
      */
     private static DataPoint createDataPoint(final PlotInfo info, final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
-                                             final int matchSerie, final int matchItem) {
+            final int matchSerie, final int matchItem) {
         if (matchItem != -1) {
             final double matchX = dataset.getXValue(matchSerie, matchItem);
             final double matchY = dataset.getYValue(matchSerie, matchItem);
@@ -1089,7 +1089,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
     /**
      * Find data points inside the given Shape (data coordinates)
-     * @param plot 
+     * @param plot
      * @param shape shape to use
      * @return found list of Point2D (data coordinates) or empty list
      */
@@ -1721,15 +1721,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 legendCollection = new LegendItemCollection();
             }
-        } else {
-            // other cases: 
-            /*
+        } else // other cases:
+        /*
             case WAVELENGTH_RANGE:
             // wavelength is default:
             case OBSERVATION_DATE:
             // not implemented still
-             */
-            if (useWaveLengths && waveLengthRange.getLength() > LAMBDA_EPSILON) {
+         */ if (useWaveLengths && waveLengthRange.getLength() > LAMBDA_EPSILON) {
                 final double min = NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(waveLengthRange.getLowerBound()) - 1e-3D); // microns
                 final double max = NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(waveLengthRange.getUpperBound()) + 1e-3D); // microns
 
@@ -1753,7 +1751,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 this.chart.addSubtitle(mapLegend);
             }
-        }
 
         this.combinedXYPlot.setFixedLegendItems(legendCollection);
     }
@@ -1960,10 +1957,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param info plot information to update
      */
     private void updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
-                            final PlotDefinition plotDef, final int yAxisIndex,
-                            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
-                            final Converter initialXConverter, final Converter initialYConverter,
-                            final PlotInfo info) {
+            final PlotDefinition plotDef, final int yAxisIndex,
+            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
+            final Converter initialXConverter, final Converter initialYConverter,
+            final PlotInfo info) {
 
         final boolean isLogDebug = logger.isDebugEnabled();
 
@@ -2022,7 +2019,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             return;
         }
         if (isLogDebug) {
-            logger.debug("xMeta:{}", yMeta);
+            logger.debug("yMeta:{}", yMeta);
         }
 
         final boolean xUseLog = xAxis.isLogScale();
@@ -2300,12 +2297,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     // it will reduce the number of if statements => better performance and simpler code
                     // such data stream could also perform conversion on the fly
                     // and maybe handle symetry (u, -u) (v, -v) ...
-                    // Process Y value:
-                    y = (isYData2D) ? yData2D[i][j] : yData1D[i];
-
-                    if (yUseLog && (y <= 0.0)) {
-                        // keep only strictly positive data:
+                    // Process Y value if not yData is not null:
+                    // TODO: remove next test and put it up and out of this loop
+                    // or avoid faulty case somewhere else : yData is null if user selects optional column name not present in the file
+                    if ((isYData2D) ? yData2D == null : yData1D == null) {
                         y = NaN;
+                    } else {
+                        y = (isYData2D) ? yData2D[i][j] : yData1D[i];
+
+                        if (yUseLog && (y <= 0.0)) {
+                            // keep only strictly positive data:
+                            y = NaN;
+                        }
                     }
 
                     if (NumberUtils.isFinite(y)) {
