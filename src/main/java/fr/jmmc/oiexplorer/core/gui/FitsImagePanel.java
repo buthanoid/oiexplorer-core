@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressListener, ZoomEventListener,
-                                                                  Observer, DocumentExportable, Disposable {
+        Observer, DocumentExportable, Disposable {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1L;
@@ -142,7 +142,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      * @param minDataRange optional minimal range for data
      */
     public FitsImagePanel(final Preferences prefs, final boolean showId, final boolean showOptions,
-                          final float[] minDataRange) {
+            final float[] minDataRange) {
         this.myPreferences = prefs;
         this.showId = showId;
         this.showOptions = showOptions;
@@ -209,11 +209,11 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     }// </editor-fold>//GEN-END:initComponents
 
   private void jComboBoxColorScaleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxColorScaleActionPerformed
-      refreshPlot();
+        refreshPlot();
   }//GEN-LAST:event_jComboBoxColorScaleActionPerformed
 
   private void jComboBoxLUTActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxLUTActionPerformed
-      refreshPlot();
+        refreshPlot();
   }//GEN-LAST:event_jComboBoxLUTActionPerformed
 
     /**
@@ -398,6 +398,14 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     }
 
     /**
+     * Get the plotted fits image
+     * @return the fits image
+     */
+    public FitsImage getFitsImage() {
+        return this.fitsImage;
+    }
+
+    /**
      * Refresh the plot when an UI widget changes.
      * Check the doAutoRefresh flag to avoid unwanted refresh
      */
@@ -457,7 +465,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          * @param colorScale color scaling method
          */
         private ConvertFitsImageSwingWorker(final FitsImagePanel fitsPanel, final FitsImage fitsImage, final float[] minDataRange,
-                                            final IndexColorModel colorModel, final ColorScale colorScale) {
+                final IndexColorModel colorModel, final ColorScale colorScale) {
             // get current observation version :
             super(fitsPanel.task);
             this.fitsPanel = fitsPanel;
@@ -732,7 +740,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      * Compute a sub image for the image given the new area
      * @param imageData computed image data
      * @param imgRect new image area
-     * @return true if the given image rectangle is smaller than rectangle of the reference image 
+     * @return true if the given image rectangle is smaller than rectangle of the reference image
      */
     private boolean computeSubImage(final ImageChartData imageData, final Rectangle2D.Double imgRect) {
         boolean doCrop = false;
@@ -978,11 +986,11 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          * @param colorScale color scaling method
          * @param min minimum value used by color conversion
          * @param max maximum value used by color conversion
-         * @param image java2D image 
+         * @param image java2D image
          */
         ImageChartData(final FitsImage fitsImage, final IndexColorModel colorModel, final ColorScale colorScale,
-                       final float min, final float max,
-                       final BufferedImage image) {
+                final float min, final float max,
+                final BufferedImage image) {
             this.fitsImage = fitsImage;
             this.colorModel = colorModel;
             this.colorScale = colorScale;
