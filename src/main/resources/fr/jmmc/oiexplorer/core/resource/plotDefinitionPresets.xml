@@ -378,4 +378,76 @@
         </yAxes>
     </plotDefinition>
 
+
+
+
+
+    <!-- OImaging -->
+    <!-- plot (Vis2 / Vis2 Model) vs spatial freq -->
+    <plotDefinition>
+        <id>OIMG_DATA_MODEL/SPATIAL_FREQ</id>
+        <name>Data and Model vs. Spatial freq.</name>
+        <skipFlaggedData>true</skipFlaggedData>
+        <drawLine>false</drawLine>
+        <xAxis>
+            <name>SPATIAL_FREQ</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+            <converter>MEGA_LAMBDA</converter>
+        </xAxis>
+        <yAxes>
+            <name>VISAMP</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>NS_MODEL_VISAMP</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>VISPHI</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>NS_MODEL_VISPHI</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+
+        <yAxes>
+            <name>VIS2DATA</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>NS_MODEL_VIS2DATA</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>T3AMP</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>NS_MODEL_T3AMP</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>T3PHI</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>NS_MODEL_T3PHI/name>
+                <logScale>false</logScale>
+                <includeZero>false</includeZero>
+        </yAxes>
+    </plotDefinition>
+
+
+
 </p:plotDefinitions>
