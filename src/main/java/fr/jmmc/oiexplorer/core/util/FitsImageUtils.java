@@ -7,15 +7,12 @@ import fr.jmmc.jmal.image.ImageArrayUtils;
 import fr.jmmc.jmal.image.job.ImageFlipJob;
 import fr.jmmc.jmal.image.job.ImageLowerThresholdJob;
 import fr.jmmc.jmal.image.job.ImageMinMaxJob;
-import fr.jmmc.jmal.image.job.ImageNormalizeJob;
-import fr.jmmc.jmal.image.job.ImageRegionThresholdJob;
 import fr.jmmc.oitools.image.FitsImage;
 import fr.jmmc.oitools.image.FitsImageFile;
 import fr.jmmc.oitools.image.FitsImageHDU;
 import fr.jmmc.oitools.image.FitsImageLoader;
 import fr.nom.tam.fits.FitsException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -244,31 +241,38 @@ public final class FitsImageUtils {
 
             logger.info("Square size = {} x {}", nbRows, nbCols);
         }
+        
+        if (false) {
+            // dec 2016: disabled as this modifies the image data (flip) and increments
+            // the idea was that Aspro2 adopts UV convention (positive increments) so the data are flipped
+            // to accelerate the FFT (less permutations)
+            // To be discussed later !
 
-        // 3 - flip axes to have positive increments (left to right for the column axis and bottom to top for the row axis)
-        // note: flip operation requires image size to be an even number
-        final double incRow = fitsImage.getSignedIncRow();
-        if (incRow < 0d) {
-            // flip row axis:
-            final ImageFlipJob flipJob = new ImageFlipJob(data, nbCols, nbRows, false);
+            // 3 - flip axes to have positive increments (left to right for the column axis and bottom to top for the row axis)
+            // note: flip operation requires image size to be an even number
+            final double incRow = fitsImage.getSignedIncRow();
+            if (incRow < 0d) {
+                // flip row axis:
+                final ImageFlipJob flipJob = new ImageFlipJob(data, nbCols, nbRows, false);
 
-            flipJob.forkAndJoin();
+                flipJob.forkAndJoin();
 
-            logger.info("ImageFlipJob - flipY done");
+                logger.info("ImageFlipJob - flipY done");
 
-            fitsImage.setSignedIncRow(-incRow);
-        }
+                fitsImage.setSignedIncRow(-incRow);
+            }
 
-        final double incCol = fitsImage.getSignedIncCol();
-        if (incCol < 0d) {
-            // flip column axis:
-            final ImageFlipJob flipJob = new ImageFlipJob(data, nbCols, nbRows, true);
+            final double incCol = fitsImage.getSignedIncCol();
+            if (incCol < 0d) {
+                // flip column axis:
+                final ImageFlipJob flipJob = new ImageFlipJob(data, nbCols, nbRows, true);
 
-            flipJob.forkAndJoin();
+                flipJob.forkAndJoin();
 
-            logger.info("ImageFlipJob - flipX done");
+                logger.info("ImageFlipJob - flipX done");
 
-            fitsImage.setSignedIncCol(-incCol);
+                fitsImage.setSignedIncCol(-incCol);
+            }
         }
     }
 
