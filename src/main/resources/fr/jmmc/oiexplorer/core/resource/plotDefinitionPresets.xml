@@ -442,9 +442,9 @@
             <includeZero>false</includeZero>
         </yAxes>
         <yAxes>
-            <name>NS_MODEL_T3PHI/name>
-                <logScale>false</logScale>
-                <includeZero>false</includeZero>
+            <name>NS_MODEL_T3PHI</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
         </yAxes>
     </plotDefinition>
 
