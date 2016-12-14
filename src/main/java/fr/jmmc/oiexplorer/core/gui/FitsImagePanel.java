@@ -541,12 +541,23 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             _logger.info("compute[ImageChartData]: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
 
             final BufferedImage displayedImage;
-            if (fitsImage.isIncColPositive()) {
-                // Flip the image horizontally to have RA orientation = East is towards the left:
-                final AffineTransform tx = AffineTransform.getScaleInstance(-1, 1);
-                tx.translate(-image.getWidth(), 0);
+            if (fitsImage.isIncColPositive() || !fitsImage.isIncRowPositive()) {
+                double sx = 1.0, sy = 1.0;
+                double tx = 0.0, ty = 0.0;
+                if (fitsImage.isIncColPositive()) {
+                    // Flip the image horizontally to have RA orientation = East is towards the left:
+                    sx = -1.0;
+                    tx = -image.getWidth();
+                }
+                if (!fitsImage.isIncRowPositive()) {
+                    // Flip the image vertically to have DEC orientation = North is towards the top:
+                    sx = -1.0;
+                    tx = -image.getHeight();
+                }
+                final AffineTransform at = AffineTransform.getScaleInstance(sx, sy);
+                at.translate(tx, ty);
 
-                final AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BICUBIC);
+                final AffineTransformOp op = new AffineTransformOp(at, AffineTransformOp.TYPE_BICUBIC);
                 displayedImage = op.filter(image, null);
             } else {
                 displayedImage = image;
@@ -686,10 +697,10 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
         // define axis orientation:
         // RA: East is positive at left:
-        this.xyPlot.getDomainAxis().setInverted(lFitsImage.isIncColPositive());
+        this.xyPlot.getDomainAxis().setInverted(true);
 
         // DEC: North is positive at top:
-        this.xyPlot.getRangeAxis().setInverted(!lFitsImage.isIncRowPositive());
+        this.xyPlot.getRangeAxis().setInverted(false);
 
         // update the background image and legend:
         updateImage(imageData);
