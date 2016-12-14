@@ -3,10 +3,10 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
+import fr.jmmc.jmcs.util.ResourceUtils;
 import fr.jmmc.jmcs.util.jaxb.JAXBFactory;
 import fr.jmmc.jmcs.util.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.util.jaxb.XmlBindException;
-import fr.jmmc.jmcs.util.ResourceUtils;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinitions;
 import java.io.IOException;
@@ -27,7 +27,7 @@ public final class PlotDefinitionFactory {
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(PlotDefinitionFactory.class.getName());
     /** default plot */
-    public final static String PLOT_DEFAULT = "VIS2DATA_T3PHI/SPATIAL_FREQ"; // TODO: externalize in presets.xml
+    public static String PLOT_DEFAULT = "VIS2DATA_T3PHI/SPATIAL_FREQ"; // TODO: externalize in presets.xml
     /** Presets Filename */
     private final static String PRESETS_FILENAME = "fr/jmmc/oiexplorer/core/resource/plotDefinitionPresets.xml";
     /** Factory instance */
@@ -37,15 +37,31 @@ public final class PlotDefinitionFactory {
     /** default plot definitions */
     private final Map<String, PlotDefinition> defaults = new LinkedHashMap<String, PlotDefinition>(16);
 
-    /** 
-     * Return the factory singleton instance 
-     * @return factory singleton instance 
+    /**
+     * Return the factory singleton instance
+     * @return factory singleton instance
      */
     public static PlotDefinitionFactory getInstance() {
         if (instance == null) {
             instance = new PlotDefinitionFactory();
         }
         return instance;
+    }
+
+    public static String getPlotDefault() {
+        return PLOT_DEFAULT;
+    }
+
+    /**
+     * Set plot default.
+     * Please call it early : in App.initService() e.g.
+     * @param plotDefault one of the plot id defined in PRESETS_FILENAME
+     */
+    public void setPlotDefault(String plotDefault) {
+        // throw IllegalStateException if the preset does not exist:
+        getDefault(plotDefault);
+
+        PLOT_DEFAULT = plotDefault;
     }
 
     /**
@@ -85,7 +101,7 @@ public final class PlotDefinitionFactory {
         }
     }
 
-    /** 
+    /**
      * Get default presets.
      * @return List of default plotDefinitions
      */
@@ -93,7 +109,7 @@ public final class PlotDefinitionFactory {
         return new ArrayList<String>(defaults.keySet());
     }
 
-    /** 
+    /**
      * Get default presets.
      * @return List of default plotDefinitions
      */
@@ -101,9 +117,9 @@ public final class PlotDefinitionFactory {
         return defaults.values();
     }
 
-    /** 
-     * Get the default preset given to its name. 
-     * @param name name to look for 
+    /**
+     * Get the default preset given to its name.
+     * @param name name to look for
      * @return PlotDefinition associated to given name.
      */
     public PlotDefinition getDefault(final String name) {
