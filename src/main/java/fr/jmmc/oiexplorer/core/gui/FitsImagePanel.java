@@ -29,6 +29,7 @@ import fr.jmmc.oiexplorer.core.gui.chart.ZoomEventListener;
 import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oiexplorer.core.util.FitsImageUtils;
 import fr.jmmc.oitools.image.FitsImage;
+import fr.jmmc.oitools.image.FitsUnit;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.Image;
@@ -49,6 +50,7 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.block.BlockContainer;
 import org.jfree.chart.block.ColumnArrangement;
@@ -70,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressListener, ZoomEventListener,
-        Observer, DocumentExportable, Disposable {
+                                                                  Observer, DocumentExportable, Disposable {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1L;
@@ -110,6 +112,8 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     /* plot data */
     /** last zoom event to check if the zoom area changed */
     private ZoomEvent lastZoomEvent = null;
+    /** last axis unit to define the displayed image area */
+    private FitsUnit lastAxisUnit = null;
     /** chart data */
     private ImageChartData chartData = null;
     /* swing */
@@ -142,7 +146,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      * @param minDataRange optional minimal range for data
      */
     public FitsImagePanel(final Preferences prefs, final boolean showId, final boolean showOptions,
-            final float[] minDataRange) {
+                          final float[] minDataRange) {
         this.myPreferences = prefs;
         this.showId = showId;
         this.showOptions = showOptions;
@@ -209,11 +213,11 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     }// </editor-fold>//GEN-END:initComponents
 
   private void jComboBoxColorScaleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxColorScaleActionPerformed
-        refreshPlot();
+      refreshPlot();
   }//GEN-LAST:event_jComboBoxColorScaleActionPerformed
 
   private void jComboBoxLUTActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxLUTActionPerformed
-        refreshPlot();
+      refreshPlot();
   }//GEN-LAST:event_jComboBoxLUTActionPerformed
 
     /**
@@ -268,7 +272,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      * This method is useful to set the models and specific features of initialized swing components :
      */
     private void postInit() {
-        this.chart = ChartUtils.createSquareXYLineChart("RA - North", "DEC - East", false);
+        this.chart = ChartUtils.createSquareXYLineChart("RA - [North]", "DEC - [East]", false);
         this.chart.setPadding(CHART_PADDING);
 
         this.xyPlot = (SquareXYPlot) this.chart.getPlot();
@@ -465,7 +469,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          * @param colorScale color scaling method
          */
         private ConvertFitsImageSwingWorker(final FitsImagePanel fitsPanel, final FitsImage fitsImage, final float[] minDataRange,
-                final IndexColorModel colorModel, final ColorScale colorScale) {
+                                            final IndexColorModel colorModel, final ColorScale colorScale) {
             // get current observation version :
             super(fitsPanel.task);
             this.fitsPanel = fitsPanel;
@@ -617,6 +621,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         ChartUtils.clearTextSubTitle(this.chart);
 
         this.lastZoomEvent = null;
+        this.lastAxisUnit = null;
         this.chartData = null;
 
         // update the background image :
@@ -659,20 +664,19 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 && Double.isNaN(lFitsImage.getWaveLength()) && lFitsImage.getImageCount() <= 1) {
             infoTitle = null;
         } else {
-
             final BlockContainer infoBlock = new BlockContainer(new ColumnArrangement());
 
             if (lFitsImage.isIncRowDefined() && lFitsImage.isIncColDefined()) {
-                infoBlock.add(new TextTitle("Increment (rad):", ChartUtils.DEFAULT_FONT));
-                infoBlock.add(new TextTitle("RA : " + df.format(lFitsImage.getIncCol()), ChartUtils.DEFAULT_FONT));
-                infoBlock.add(new TextTitle("DEC: " + df.format(lFitsImage.getIncRow()), ChartUtils.DEFAULT_FONT));
+                infoBlock.add(new TextTitle("Increments:", ChartUtils.DEFAULT_FONT));
+                infoBlock.add(new TextTitle("RA: " + FitsImage.getAngleAsString(lFitsImage.getIncCol(), df), ChartUtils.DEFAULT_FONT));
+                infoBlock.add(new TextTitle("DE: " + FitsImage.getAngleAsString(lFitsImage.getIncRow(), df), ChartUtils.DEFAULT_FONT));
 
                 infoBlock.add(new TextTitle("\nFOV:", ChartUtils.DEFAULT_FONT));
                 infoBlock.add(new TextTitle(FitsImage.getAngleAsString(lFitsImage.getMaxAngle(), df3), ChartUtils.DEFAULT_FONT));
             }
 
             if (lFitsImage.getImageCount() > 1) {
-                infoBlock.add(new TextTitle("\nImage :" + lFitsImage.getImageIndex() + '/' + lFitsImage.getImageCount(), ChartUtils.DEFAULT_FONT));
+                infoBlock.add(new TextTitle("\nImage:" + lFitsImage.getImageIndex() + '/' + lFitsImage.getImageCount(), ChartUtils.DEFAULT_FONT));
             }
 
             if (!Double.isNaN(lFitsImage.getWaveLength())) {
@@ -690,17 +694,33 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         // define axis boundaries:
         final Rectangle2D.Double imgRectRef = lFitsImage.getArea();
 
-        this.xyPlot.defineBounds(new Range(imgRectRef.getX(), imgRectRef.getX() + imgRectRef.getWidth()),
-                new Range(imgRectRef.getY(), imgRectRef.getY() + imgRectRef.getHeight()));
+        final FitsUnit axisUnit = FitsUnit.getAngleUnit(Math.min(imgRectRef.width, imgRectRef.height));
+
+        this.xyPlot.defineBounds(
+                new Range(
+                        FitsUnit.ANGLE_RAD.convert(imgRectRef.x, axisUnit),
+                        FitsUnit.ANGLE_RAD.convert(imgRectRef.x + imgRectRef.width, axisUnit)
+                ),
+                new Range(
+                        FitsUnit.ANGLE_RAD.convert(imgRectRef.y, axisUnit),
+                        FitsUnit.ANGLE_RAD.convert(imgRectRef.y + imgRectRef.height, axisUnit)
+                ));
 
         this.xyPlot.restoreAxesBounds();
 
         // define axis orientation:
         // RA: East is positive at left:
-        this.xyPlot.getDomainAxis().setInverted(true);
+        ValueAxis axis = this.xyPlot.getDomainAxis();
+        axis.setLabel("RA (" + axisUnit.getStandardRepresentation() + ") - [North]");
+        axis.setInverted(true);
 
         // DEC: North is positive at top:
-        this.xyPlot.getRangeAxis().setInverted(false);
+        axis = this.xyPlot.getRangeAxis();
+        axis.setLabel("DEC (" + axisUnit.getStandardRepresentation() + ") - [East]");
+        axis.setInverted(false);
+        
+        // memorize the axis unit:
+        this.lastAxisUnit = axisUnit;
 
         // update the background image and legend:
         updateImage(imageData);
@@ -735,11 +755,16 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             this.lastZoomEvent = ze;
 
             if (this.getChartData() != null) {
+                final FitsUnit axisUnit = this.lastAxisUnit;
+                
                 // Update image :
-
                 final Rectangle2D.Double imgRect = new Rectangle2D.Double();
-                imgRect.setFrameFromDiagonal(ze.getDomainLowerBound(), ze.getRangeLowerBound(),
-                        ze.getDomainUpperBound(), ze.getRangeUpperBound());
+                imgRect.setFrameFromDiagonal(
+                    axisUnit.convert(ze.getDomainLowerBound(), FitsUnit.ANGLE_RAD), 
+                    axisUnit.convert(ze.getRangeLowerBound(), FitsUnit.ANGLE_RAD),
+                    axisUnit.convert(ze.getDomainUpperBound(), FitsUnit.ANGLE_RAD), 
+                    axisUnit.convert(ze.getRangeUpperBound(), FitsUnit.ANGLE_RAD)
+                );
 
                 // compute an approximated image from the reference image :
                 computeSubImage(this.getChartData(), imgRect);
@@ -1000,8 +1025,8 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          * @param image java2D image
          */
         ImageChartData(final FitsImage fitsImage, final IndexColorModel colorModel, final ColorScale colorScale,
-                final float min, final float max,
-                final BufferedImage image) {
+                       final float min, final float max,
+                       final BufferedImage image) {
             this.fitsImage = fitsImage;
             this.colorModel = colorModel;
             this.colorScale = colorScale;
