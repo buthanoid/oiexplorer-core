@@ -347,17 +347,11 @@ public class AxisEditor extends javax.swing.JPanel {
     private javax.swing.JComboBox nameComboBox;
     // End of variables declaration//GEN-END:variables
 
-    /** custom number field formatter */
-    private static NumberFormatter numberFieldFormatter = null;
-
     /**
      * Return the custom double formatter that accepts null values
      * @return number formatter
      */
     private static NumberFormatter getNumberFieldFormatter() {
-        if (numberFieldFormatter != null) {
-            return numberFieldFormatter;
-        }
         final NumberFormatter nf = new NumberFormatter(new DecimalFormat("####.####")) {
             /** default serial UID for Serializable interface */
             private static final long serialVersionUID = 1;
@@ -375,8 +369,6 @@ public class AxisEditor extends javax.swing.JPanel {
         };
         nf.setValueClass(Double.class);
         nf.setCommitsOnValidEdit(false);
-
-        numberFieldFormatter = nf;
         return nf;
     }
     
