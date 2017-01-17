@@ -74,10 +74,13 @@ public final class SharedSeriesAttributes {
     public void addLabel(final String label, final String alias) {
         addLabel(label, alias, 0.0);
     }
-    
+
     public void addLabel(final String label, final String alias, final double weight) {
         if (!hasLabel(label)) {
             labelNames.add(label);
+            if (alias != null) {
+                labelNames.add(alias);
+            }
             labels.add(new WeightedLabel(label, alias, weight));
         }
     }
@@ -108,6 +111,20 @@ public final class SharedSeriesAttributes {
         colIdx = c;
     }
 
+    public void addColorAlias(final String label, final String alias) {
+        if (!label.equals(alias)) {
+            final Integer idx = colorMap.get(label);
+            if (idx == null) {
+                if (parent != null) {
+                    parent.addColorAlias(label, alias);
+                }
+            } else {
+                // define alias:
+                colorMap.put(alias, idx);
+            }
+        }
+    }
+
     public Integer getColorIndex(final String label) {
         final Integer idx = colorMap.get(label);
         if (idx == null) {
@@ -116,7 +133,7 @@ public final class SharedSeriesAttributes {
             }
             throw new IllegalStateException("Missing color for label: " + label);
         }
-        return idx.intValue();
+        return idx;
     }
 
     public Color getColor(final String label) {
