@@ -681,7 +681,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
             if (!Double.isNaN(lFitsImage.getWaveLength())) {
                 infoBlock.add(new TextTitle("\nModel " + SpecialChars.LAMBDA_LOWER + ":", ChartUtils.DEFAULT_FONT));
-                infoBlock.add(new TextTitle(NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(lFitsImage.getWaveLength())) + ' ' + ConverterFactory.CONVERTER_MICRO_METER.getUnit(), ChartUtils.DEFAULT_FONT));
+                infoBlock.add(new TextTitle(NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(lFitsImage.getWaveLength())) + " " + ConverterFactory.CONVERTER_MICRO_METER.getUnit(), ChartUtils.DEFAULT_FONT));
             }
 
             infoTitle = new CompositeTitle(infoBlock);
