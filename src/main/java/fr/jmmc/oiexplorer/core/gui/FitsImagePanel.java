@@ -29,6 +29,7 @@ import fr.jmmc.oiexplorer.core.gui.chart.ZoomEventListener;
 import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oiexplorer.core.util.FitsImageUtils;
 import fr.jmmc.oitools.image.FitsImage;
+import fr.jmmc.oitools.image.FitsImageHDU;
 import fr.jmmc.oitools.image.FitsUnit;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -72,7 +73,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressListener, ZoomEventListener,
-                                                                  Observer, DocumentExportable, Disposable {
+        Observer, DocumentExportable, Disposable {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1L;
@@ -146,7 +147,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      * @param minDataRange optional minimal range for data
      */
     public FitsImagePanel(final Preferences prefs, final boolean showId, final boolean showOptions,
-                          final float[] minDataRange) {
+            final float[] minDataRange) {
         this.myPreferences = prefs;
         this.showId = showId;
         this.showOptions = showOptions;
@@ -174,6 +175,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         jComboBoxLUT = new javax.swing.JComboBox();
         jLabelColorScale = new javax.swing.JLabel();
         jComboBoxColorScale = new javax.swing.JComboBox();
+        jButtonDisplayKeywords = new javax.swing.JButton();
 
         setLayout(new java.awt.BorderLayout());
 
@@ -209,16 +211,38 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         gridBagConstraints.insets = new java.awt.Insets(2, 8, 2, 2);
         jPanelOptions.add(jComboBoxColorScale, gridBagConstraints);
 
+        jButtonDisplayKeywords.setText("Display keywords");
+        jButtonDisplayKeywords.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonDisplayKeywordsActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.insets = new java.awt.Insets(0, 10, 0, 0);
+        jPanelOptions.add(jButtonDisplayKeywords, gridBagConstraints);
+
         add(jPanelOptions, java.awt.BorderLayout.PAGE_END);
     }// </editor-fold>//GEN-END:initComponents
 
   private void jComboBoxColorScaleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxColorScaleActionPerformed
-      refreshPlot();
+        refreshPlot();
   }//GEN-LAST:event_jComboBoxColorScaleActionPerformed
 
   private void jComboBoxLUTActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxLUTActionPerformed
-      refreshPlot();
+        refreshPlot();
   }//GEN-LAST:event_jComboBoxLUTActionPerformed
+
+    private void jButtonDisplayKeywordsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDisplayKeywordsActionPerformed
+
+        if (this.fitsImage != null) {
+            FitsImageHDU fitsImageHDU = this.fitsImage.getFitsImageHDU();
+            // note: only possible with one Fits image or one Fits cube (single HDU):
+            final String hduHeader = "ImageHDU#" + fitsImageHDU.getHduIndex() + " has " + fitsImageHDU.getImageCount() + " images.\n\n" + fitsImageHDU.getHeaderCardsAsString("\n");
+            MessagePane.showMessage(hduHeader);
+        } else {
+            MessagePane.showMessage("Sorry, no associated Fits HDU to display.");
+        }
+    }//GEN-LAST:event_jButtonDisplayKeywordsActionPerformed
 
     /**
      * Export the component as a document using the given action:
@@ -469,7 +493,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          * @param colorScale color scaling method
          */
         private ConvertFitsImageSwingWorker(final FitsImagePanel fitsPanel, final FitsImage fitsImage, final float[] minDataRange,
-                                            final IndexColorModel colorModel, final ColorScale colorScale) {
+                final IndexColorModel colorModel, final ColorScale colorScale) {
             // get current observation version :
             super(fitsPanel.task);
             this.fitsPanel = fitsPanel;
@@ -718,7 +742,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         axis = this.xyPlot.getRangeAxis();
         axis.setLabel("DEC (" + axisUnit.getStandardRepresentation() + ") - [East]");
         axis.setInverted(false);
-        
+
         // memorize the axis unit:
         this.lastAxisUnit = axisUnit;
 
@@ -756,14 +780,14 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
             if (this.getChartData() != null) {
                 final FitsUnit axisUnit = this.lastAxisUnit;
-                
+
                 // Update image :
                 final Rectangle2D.Double imgRect = new Rectangle2D.Double();
                 imgRect.setFrameFromDiagonal(
-                    axisUnit.convert(ze.getDomainLowerBound(), FitsUnit.ANGLE_RAD), 
-                    axisUnit.convert(ze.getRangeLowerBound(), FitsUnit.ANGLE_RAD),
-                    axisUnit.convert(ze.getDomainUpperBound(), FitsUnit.ANGLE_RAD), 
-                    axisUnit.convert(ze.getRangeUpperBound(), FitsUnit.ANGLE_RAD)
+                        axisUnit.convert(ze.getDomainLowerBound(), FitsUnit.ANGLE_RAD),
+                        axisUnit.convert(ze.getRangeLowerBound(), FitsUnit.ANGLE_RAD),
+                        axisUnit.convert(ze.getDomainUpperBound(), FitsUnit.ANGLE_RAD),
+                        axisUnit.convert(ze.getRangeUpperBound(), FitsUnit.ANGLE_RAD)
                 );
 
                 // compute an approximated image from the reference image :
@@ -939,6 +963,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         }
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButtonDisplayKeywords;
     private javax.swing.JComboBox jComboBoxColorScale;
     private javax.swing.JComboBox jComboBoxLUT;
     private javax.swing.JLabel jLabelColorScale;
@@ -1025,8 +1050,8 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          * @param image java2D image
          */
         ImageChartData(final FitsImage fitsImage, final IndexColorModel colorModel, final ColorScale colorScale,
-                       final float min, final float max,
-                       final BufferedImage image) {
+                final float min, final float max,
+                final BufferedImage image) {
             this.fitsImage = fitsImage;
             this.colorModel = colorModel;
             this.colorScale = colorScale;
