@@ -26,7 +26,7 @@ public abstract class IconComboBoxRenderer extends DefaultListCellRenderer {
 
     public IconComboBoxRenderer() {
         super();
-        final Dimension dim = new Dimension(380, 24);
+        final Dimension dim = new Dimension(380, 32);
         setMinimumSize(dim);
         setPreferredSize(dim);
     }

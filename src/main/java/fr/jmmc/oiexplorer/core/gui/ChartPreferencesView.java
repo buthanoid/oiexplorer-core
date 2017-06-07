@@ -59,6 +59,7 @@ public class ChartPreferencesView extends javax.swing.JPanel implements Observer
 
         // Custom renderer for LUT:
         this.jComboBoxColorPalette.setRenderer(new IconComboBoxRenderer() {
+            private static final long serialVersionUID = 1L;
             @Override
             protected Image getImage(final String name) {
                 return ColorPalette.getColorPaletteImage(name);
@@ -115,6 +116,7 @@ public class ChartPreferencesView extends javax.swing.JPanel implements Observer
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         gridBagConstraints.weightx = 0.1;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelChart.add(jComboBoxColorPalette, gridBagConstraints);
