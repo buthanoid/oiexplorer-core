@@ -96,13 +96,14 @@ public class ChartUtils {
     /** The default panel height. */
     public static final int DEFAULT_HEIGHT = 300;
     /** The default limit below which chart scaling kicks in. */
-    public static final int DEFAULT_MINIMUM_DRAW_WIDTH = 300;
+    public static final int DEFAULT_MINIMUM_DRAW_WIDTH = 100;
     /** The default limit below which chart scaling kicks in. */
-    public static final int DEFAULT_MINIMUM_DRAW_HEIGHT = 200;
+    public static final int DEFAULT_MINIMUM_DRAW_HEIGHT = 100;
     /** The default limit above which chart scaling kicks in. */
-    public static final int DEFAULT_MAXIMUM_DRAW_WIDTH = 2560;
+    /* 4K reference resolution is 4096 × 3072 pixels */
+    public static final int DEFAULT_MAXIMUM_DRAW_WIDTH = 4096;
     /** The default limit above which chart scaling kicks in. */
-    public static final int DEFAULT_MAXIMUM_DRAW_HEIGHT = 2048;
+    public static final int DEFAULT_MAXIMUM_DRAW_HEIGHT = 3072;
     // Arrows:
     /** The shape used for an up arrow. */
     private static final Shape ARROW_UP;
