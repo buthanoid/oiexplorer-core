@@ -254,8 +254,8 @@ public class ChartUtils {
     public static SquareChartPanel createSquareChartPanel(final JFreeChart chart, final boolean tooltips) {
         final SquareChartPanel panel = new SquareChartPanel(chart,
                 DEFAULT_HEIGHT, DEFAULT_HEIGHT, /* prefered size */
-                DEFAULT_MINIMUM_DRAW_HEIGHT, DEFAULT_MINIMUM_DRAW_HEIGHT, /* minimum size before scaling */
-                DEFAULT_MAXIMUM_DRAW_HEIGHT, DEFAULT_MAXIMUM_DRAW_HEIGHT, /* maximum size before scaling */
+                DEFAULT_MINIMUM_DRAW_WIDTH, DEFAULT_MINIMUM_DRAW_WIDTH, /* minimum size before scaling */
+                DEFAULT_MAXIMUM_DRAW_WIDTH, DEFAULT_MAXIMUM_DRAW_WIDTH, /* maximum size before scaling */
                 true, /* use buffer */
                 false, /* properties */
                 true, /* copy */
