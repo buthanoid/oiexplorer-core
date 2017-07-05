@@ -177,7 +177,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     private static int scale(final int v) {
-        return Math.round(SYMBOL_SCALE * v);
+        return Math.round(ChartUtils.scaleUI(SYMBOL_SCALE * v));
     }
 
     /* members */

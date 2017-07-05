@@ -12,6 +12,7 @@ import fr.jmmc.oiexplorer.core.export.DocumentExportable;
 import fr.jmmc.oiexplorer.core.export.DocumentMode;
 import fr.jmmc.oiexplorer.core.export.DocumentOptions;
 import fr.jmmc.oiexplorer.core.export.Writer;
+import fr.jmmc.oiexplorer.core.gui.chart.ChartUtils;
 import java.io.File;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -155,6 +156,9 @@ public abstract class ExportDocumentAction extends WaitingTaskAction {
             // Set document mode used by prepareExport():
             docOptions.setMode((cmdOptions != null) ? cmdOptions.getMode() : DocumentMode.DEFAULT);
 
+            // Adjust Font scale:
+            adjustChartScaleUI(false);
+            
             // Perform Layout and get options from component:
             exportable.prepareExport(docOptions);
             try {
@@ -179,10 +183,17 @@ public abstract class ExportDocumentAction extends WaitingTaskAction {
             } catch (IOException ioe) {
                 MessagePane.showErrorMessage("Could not write to file : " + file.getAbsolutePath(), ioe);
             } finally {
+                adjustChartScaleUI(true);
+                
                 // post file export: restore Chart state if modified:
                 exportable.postExport();
             }
         }
     }
 
+    private static void adjustChartScaleUI(final boolean doScaleUI) {
+        // TODO: adjust chart settings (scale):
+        // font for texts, size, tick lengths ...
+        ChartUtils.adjustChartScaleUI(doScaleUI);
+    }
 }

@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
+import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.jmcs.util.IntrospectionUtils;
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oiexplorer.core.util.TimeFormat;
@@ -61,6 +62,8 @@ public class ChartUtils {
 
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(ChartUtils.class.getName());
+    /** flag to enable font scaling */
+    public static boolean DO_SCALE_UI = true;
     /** cache for annotation fonts to auto-fit size */
     private final static Map<Integer, Font> cachedFonts = new HashMap<Integer, Font>(32);
     /** The default font for titles. */
@@ -74,15 +77,16 @@ public class ChartUtils {
     /** The default small font for annotation texts */
     public static final Font SMALL_TEXT_ANNOTATION_FONT = getFont(8);
     /** default draw stroke */
-    public static final BasicStroke DEFAULT_STROKE = new BasicStroke(1.0f);
+    public static final BasicStroke DEFAULT_STROKE = createStroke((1.0f));
     /** thin draw stroke */
-    public static final BasicStroke THIN_STROKE = new BasicStroke(0.5f);
+    public static final BasicStroke THIN_STROKE = createStroke((0.5f));
     /** larger draw stroke */
-    public static final BasicStroke LARGE_STROKE = new BasicStroke(2.0f);
+    public static final BasicStroke LARGE_STROKE = createStroke((2.0f));
     /** larger draw stroke */
-    public static final BasicStroke VERY_LARGE_STROKE = new BasicStroke(3.0f);
+    public static final BasicStroke VERY_LARGE_STROKE = createStroke((3.0f));
     /** dotted stroke */
-    public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 4.0f, new float[]{4.0f}, 0.0f);
+    public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 4.0f, 
+            new float[]{4.0f}, 0.0f);
     /** zero insets */
     public final static RectangleInsets ZERO_INSETS = RectangleInsets.ZERO_INSETS;
     /** default tick label rectangle insets */
@@ -114,7 +118,7 @@ public class ChartUtils {
     /** The shape used for a right arrow. */
     private static final Shape ARROW_RIGHT;
     /* default Legend Shape (rectangle) */
-    private static final Shape LEGEND_SHAPE = new Rectangle2D.Double(-3.0, -5.0, 6.0, 10.0);
+    private static final Shape LEGEND_SHAPE;
 
     /**
      * Forbidden constructor
@@ -153,15 +157,7 @@ public class ChartUtils {
             // text annotations :
             CHART_THEME.setItemLabelPaint(Color.BLACK);
 
-            // use 'SansSerif' fonts:
-            CHART_THEME.setExtraLargeFont(getFont(20, Font.BOLD));
-            /* new Font("Tahoma", Font.BOLD, 20) */
-            CHART_THEME.setLargeFont(DEFAULT_TITLE_FONT);
-            /* new Font("Tahoma", Font.BOLD, 14); */
-            CHART_THEME.setRegularFont(DEFAULT_FONT);
-            /* new Font("Tahoma", Font.PLAIN, 12); */
-            CHART_THEME.setSmallFont(DEFAULT_TEXT_SMALL_FONT);
-            /* new Font("Tahoma", Font.PLAIN, 10) */
+            adjustChartThemeFonts();
 
         } else {
             throw new IllegalStateException("Unsupported chart theme : " + ChartFactory.getChartTheme());
@@ -208,6 +204,31 @@ public class ChartUtils {
         p.addPoint(s, t + -s);
         p.addPoint(s, t + s);
         ARROW_LEFT = p;
+        
+        LEGEND_SHAPE = new Rectangle2D.Double(-3.0, -5.0, 6.0, 10.0);
+    }
+
+    public static void adjustChartScaleUI(final boolean doScaleUI) {
+        DO_SCALE_UI = doScaleUI;
+        adjustChartThemeFonts();
+    }
+
+    public static void adjustChartThemeFonts() {
+        logger.info("adjustChartThemeFonts: {}", DO_SCALE_UI);
+        // use 'SansSerif' fonts:
+        CHART_THEME.setExtraLargeFont(getFont(20, Font.BOLD));
+        /* new Font("Tahoma", Font.BOLD, 20) */
+        CHART_THEME.setLargeFont(DEFAULT_TITLE_FONT);
+        /* new Font("Tahoma", Font.BOLD, 14); */
+        CHART_THEME.setRegularFont(DEFAULT_FONT);
+        /* new Font("Tahoma", Font.PLAIN, 12); */
+        CHART_THEME.setSmallFont(DEFAULT_TEXT_SMALL_FONT);
+        /* new Font("Tahoma", Font.PLAIN, 10) */
+    }
+    
+    public static BasicStroke createStroke(final float size) {
+        //return new BasicStroke(scaleUI(size));
+        return new BasicStroke(size);
     }
 
     /**
@@ -287,10 +308,11 @@ public class ChartUtils {
      * @return annotation font
      */
     private static Font getFont(final int size, final int style) {
-        final Integer key = NumberUtils.valueOf(size);
+        final int scaledSize = scaleUI(size);
+        final Integer key = NumberUtils.valueOf(scaledSize);
         Font f = cachedFonts.get(key);
         if (f == null) {
-            f = new Font("SansSerif", style, size);
+            f = new Font("SansSerif", style, scaledSize);
             cachedFonts.put(key, f);
         }
         return f;
@@ -837,5 +859,13 @@ public class ChartUtils {
         jmmcAnnotation.setNotify(false);
 
         return jmmcAnnotation;
+    }
+    
+    public static int scaleUI(final int size) {
+        return (DO_SCALE_UI) ? SwingUtils.adjustUISize(size) : size;
+    }
+    
+    public static float scaleUI(final float size) {
+        return (DO_SCALE_UI) ? SwingUtils.adjustUISize(size) : size;
     }
 }
