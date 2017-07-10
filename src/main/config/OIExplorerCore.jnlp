@@ -20,7 +20,7 @@
 
         <!-- Libraries -->
         <!-- JEL (oitools) -->
-        <jar href="@SHARED@/JEL-2.0.2.jar" />
+        <jar href="@SHARED@/JEL-2.1.1-jdk5.jar" />
 
         <!-- JFreeChart -->
         <jar href="@SHARED@/jfreechart-1.0.19.jar" />
