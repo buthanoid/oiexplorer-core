@@ -104,7 +104,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private void postInit() {
         // start with compact form
         detailledToggleButtonActionPerformed(null);
-        
+
         // disable 'Draw lines':
         this.drawLinesCheckBox.setVisible(false);
 
@@ -770,7 +770,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     public String getPlotId() {
         return plotId;
     }
-    
+
     /**
      * Define the plot identifier and reset plot
      * @param plotId plot identifier or null to reset state

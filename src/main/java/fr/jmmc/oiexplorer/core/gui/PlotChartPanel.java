@@ -1728,29 +1728,29 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             case OBSERVATION_DATE:
             // not implemented still
          */ if (useWaveLengths && waveLengthRange.getLength() > LAMBDA_EPSILON) {
-                final double min = NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(waveLengthRange.getLowerBound()) - 1e-3D); // microns
-                final double max = NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(waveLengthRange.getUpperBound()) + 1e-3D); // microns
+            final double min = NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(waveLengthRange.getLowerBound()) - 1e-3D); // microns
+            final double max = NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(waveLengthRange.getUpperBound()) + 1e-3D); // microns
 
-                final NumberAxis lambdaAxis = new NumberAxis();
-                // inverted color palette:
-                mapLegend = new PaintScaleLegend(new ColorModelPaintScale(min, max, colorModel, ColorScale.LINEAR, true), lambdaAxis);
+            final NumberAxis lambdaAxis = new NumberAxis();
+            // inverted color palette:
+            mapLegend = new PaintScaleLegend(new ColorModelPaintScale(min, max, colorModel, ColorScale.LINEAR, true), lambdaAxis);
 
-                lambdaAxis.setTickLabelFont(ChartUtils.DEFAULT_FONT);
-                lambdaAxis.setAxisLinePaint(Color.BLACK);
-                lambdaAxis.setTickMarkPaint(Color.BLACK);
+            lambdaAxis.setTickLabelFont(ChartUtils.DEFAULT_FONT);
+            lambdaAxis.setAxisLinePaint(Color.BLACK);
+            lambdaAxis.setTickMarkPaint(Color.BLACK);
 
-                mapLegend.setPosition(RectangleEdge.BOTTOM);
-                mapLegend.setStripWidth(15d);
-                mapLegend.setStripOutlinePaint(Color.BLACK);
-                mapLegend.setStripOutlineVisible(true);
-                mapLegend.setSubdivisionCount(colorModel.getMapSize());
-                mapLegend.setAxisLocation(AxisLocation.BOTTOM_OR_LEFT);
-                mapLegend.setFrame(new BlockBorder(Color.BLACK));
-                mapLegend.setMargin(10d, 10d, 10d, 10d);
-                mapLegend.setPadding(10d, 25d, 10d, 25d);
+            mapLegend.setPosition(RectangleEdge.BOTTOM);
+            mapLegend.setStripWidth(15d);
+            mapLegend.setStripOutlinePaint(Color.BLACK);
+            mapLegend.setStripOutlineVisible(true);
+            mapLegend.setSubdivisionCount(colorModel.getMapSize());
+            mapLegend.setAxisLocation(AxisLocation.BOTTOM_OR_LEFT);
+            mapLegend.setFrame(new BlockBorder(Color.BLACK));
+            mapLegend.setMargin(10d, 10d, 10d, 10d);
+            mapLegend.setPadding(10d, 25d, 10d, 25d);
 
-                this.chart.addSubtitle(mapLegend);
-            }
+            this.chart.addSubtitle(mapLegend);
+        }
 
         this.combinedXYPlot.setFixedLegendItems(legendCollection);
     }

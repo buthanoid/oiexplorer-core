@@ -70,7 +70,7 @@ public final class FitsImageUtils {
      * @return new FitsImage
      */
     public static FitsImage createFitsImage(final float[][] data,
-                                            final double dataMin, final double dataMax) {
+            final double dataMin, final double dataMax) {
         final FitsImage image = new FitsImage();
 
         updateFitsImage(image, data, dataMin, dataMax);
@@ -86,7 +86,7 @@ public final class FitsImageUtils {
      * @param dataMax maximum value in data
      */
     public static void updateFitsImage(final FitsImage image, final float[][] data,
-                                       final double dataMin, final double dataMax) {
+            final double dataMin, final double dataMax) {
         image.setData(data);
 
         image.setDataMin(dataMin);
@@ -104,8 +104,8 @@ public final class FitsImageUtils {
      * @return new FitsImage
      */
     public static FitsImage createFitsImage(final float[][] data,
-                                            final double pixRefRow, final double pixRefCol,
-                                            final double incRow, final double incCol) {
+            final double pixRefRow, final double pixRefCol,
+            final double incRow, final double incCol) {
 
         final FitsImage image = createFitsImage(data);
 
@@ -131,9 +131,9 @@ public final class FitsImageUtils {
      * @return new FitsImage
      */
     public static FitsImage createFitsImage(final float[][] data,
-                                            final double dataMin, final double dataMax,
-                                            final double pixRefRow, final double pixRefCol,
-                                            final double incRow, final double incCol) {
+            final double dataMin, final double dataMax,
+            final double pixRefRow, final double pixRefCol,
+            final double incRow, final double incCol) {
 
         final FitsImage image = new FitsImage();
 
@@ -241,7 +241,7 @@ public final class FitsImageUtils {
 
             logger.info("Square size = {} x {}", nbRows, nbCols);
         }
-        
+
         if (false) {
             // dec 2016: disabled as this modifies the image data (flip) and increments
             // the idea was that Aspro2 adopts UV convention (positive increments) so the data are flipped
