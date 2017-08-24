@@ -26,6 +26,7 @@ import fr.jmmc.oiexplorer.core.model.oi.Plot;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.oi.TableUID;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
+import fr.jmmc.oitools.meta.OIFitsStandard;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsFile;
@@ -151,7 +152,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker,
-                                     final LoadOIFitsListener listener) throws IOException, IllegalStateException, XmlBindException {
+            final LoadOIFitsListener listener) throws IOException, IllegalStateException, XmlBindException {
         loadOIFitsCollection(file, checker, listener, false);
     }
 
@@ -166,7 +167,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker,
-                                     final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) throws IOException, IllegalStateException, XmlBindException {
+            final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) throws IOException, IllegalStateException, XmlBindException {
 
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
 
@@ -245,7 +246,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param appendOIFitsFilesOnly load only OIFits and skip plot+subset if true, else reset and load whole collection content
      */
     private void loadOIDataCollection(final File file, final OiDataCollection oiDataCollection, final OIFitsChecker checker,
-                                      final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) {
+            final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) {
 
         final List<OIDataFile> oidataFiles = oiDataCollection.getFiles();
         final List<String> fileLocations = new ArrayList<String>(oidataFiles.size());
@@ -339,7 +340,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         private final OIFitsChecker checker;
 
         LoadOIFitsFilesSwingWorker(final List<String> fileLocations, final OIFitsChecker checker,
-                                   final LoadOIFitsListener listener) {
+                final LoadOIFitsListener listener) {
             super(OIExplorerTaskRegistry.TASK_LOAD_OIFITS);
             this.fileLocations = fileLocations;
             this.checker = checker;
@@ -619,7 +620,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param remove true to remove the column; false to update the column
      */
     private void modifyExprColumnInOIFitsCollection(final String userName, final String expression,
-                                                    final boolean remove) {
+            final boolean remove) {
 
         final String name = "[" + userName + "]";
 
@@ -1022,7 +1023,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 if (subsetDefinition.getTables().isEmpty()) {
                     oiFitsSubset = dataForTarget;
                 } else {
-                    oiFitsSubset = new OIFitsFile();
+                    oiFitsSubset = new OIFitsFile(OIFitsStandard.VERSION_1);
 
                     for (TableUID table : subsetDefinition.getTables()) {
                         final OIDataFile oiDataFile = table.getFile();

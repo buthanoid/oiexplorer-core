@@ -6,6 +6,7 @@ package fr.jmmc.oiexplorer.core.model;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.jmcs.util.ToStringable;
 import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
+import fr.jmmc.oitools.meta.OIFitsStandard;
 import fr.jmmc.oitools.model.Granule;
 import fr.jmmc.oitools.model.InstrumentMode;
 import fr.jmmc.oitools.model.OIData;
@@ -170,7 +171,7 @@ public final class OIFitsCollection implements ToStringable {
      */
     public void analyzeCollection() {
         clearCache();
-        
+
         // Always define mapping for Undefined values:
         imm.register(InstrumentMode.UNDEFINED);
         tm.register(Target.UNDEFINED);
@@ -204,7 +205,7 @@ public final class OIFitsCollection implements ToStringable {
                 // TODO: Cross Match on target RA/DEC because names ...
                 OIFitsFile oiFitsTarget = oiFitsPerTarget.get(target);
                 if (oiFitsTarget == null) {
-                    oiFitsTarget = new OIFitsFile();
+                    oiFitsTarget = new OIFitsFile(OIFitsStandard.VERSION_1);
 
                     oiFitsPerTarget.put(target, oiFitsTarget);
                 }
@@ -232,7 +233,7 @@ public final class OIFitsCollection implements ToStringable {
                 // TODO: keep mapping between global granule and OIFits Granules ?
                 OIFitsFile oiFitsGranule = oiFitsPerGranule.get(gg);
                 if (oiFitsGranule == null) {
-                    oiFitsGranule = new OIFitsFile();
+                    oiFitsGranule = new OIFitsFile(OIFitsStandard.VERSION_1);
 
                     oiFitsPerGranule.put(gg, oiFitsGranule);
                     gg = new Granule();
