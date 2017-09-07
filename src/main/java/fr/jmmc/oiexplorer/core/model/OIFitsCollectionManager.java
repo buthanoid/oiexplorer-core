@@ -250,8 +250,15 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
         final List<OIDataFile> oidataFiles = oiDataCollection.getFiles();
         final List<String> fileLocations = new ArrayList<String>(oidataFiles.size());
+        
+        final String parentPath = file.getParent();
+        
         for (OIDataFile oidataFile : oidataFiles) {
-            fileLocations.add(oidataFile.getFile());
+            String oiFile = oidataFile.getFile();
+            if (oiFile != null && oiFile.startsWith("./")) {
+                oiFile = parentPath + oiFile.substring(1);
+            }
+            fileLocations.add(oiFile);
         }
 
         new LoadOIFitsFilesSwingWorker(fileLocations, checker, listener) {
