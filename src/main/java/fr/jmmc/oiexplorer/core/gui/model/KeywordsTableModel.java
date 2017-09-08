@@ -6,7 +6,7 @@ package fr.jmmc.oiexplorer.core.gui.model;
 import fr.jmmc.oitools.fits.FitsHeaderCard;
 import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.meta.KeywordMeta;
-import fr.jmmc.oitools.model.FitsTable;
+import fr.jmmc.oitools.fits.FitsTable;
 import java.util.List;
 import javax.swing.table.AbstractTableModel;
 
