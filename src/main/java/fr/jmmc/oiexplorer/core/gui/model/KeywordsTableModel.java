@@ -4,9 +4,9 @@
 package fr.jmmc.oiexplorer.core.gui.model;
 
 import fr.jmmc.oitools.fits.FitsHeaderCard;
-import fr.jmmc.oitools.fits.HDUFits;
+import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.meta.KeywordMeta;
-import fr.jmmc.oitools.model.Table;
+import fr.jmmc.oitools.model.FitsTable;
 import java.util.List;
 import javax.swing.table.AbstractTableModel;
 
@@ -19,9 +19,9 @@ public final class KeywordsTableModel extends AbstractTableModel {
     private static final long serialVersionUID = 1L;
 
     /* FITS hdu reference */
-    private final HDUFits hdu;
+    private final FitsHDU hdu;
 
-    public KeywordsTableModel(final HDUFits hdu) {
+    public KeywordsTableModel(final FitsHDU hdu) {
         this.hdu = hdu;
     }
 
