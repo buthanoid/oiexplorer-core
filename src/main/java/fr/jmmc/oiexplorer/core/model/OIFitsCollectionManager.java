@@ -250,9 +250,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
         final List<OIDataFile> oidataFiles = oiDataCollection.getFiles();
         final List<String> fileLocations = new ArrayList<String>(oidataFiles.size());
-        
+
         final String parentPath = file.getParent();
-        
+
         for (OIDataFile oidataFile : oidataFiles) {
             String oiFile = oidataFile.getFile();
             if (oiFile != null && oiFile.startsWith("./")) {
@@ -535,12 +535,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 // Add new OIDataFile in collection
                 final OIDataFile dataFile = new OIDataFile();
 
-                final String id = StringUtils.replaceNonAlphaNumericCharsByUnderscore(oiFitsFile.getName());
+                final String id = StringUtils.replaceNonAlphaNumericCharsByUnderscore(oiFitsFile.getFileName());
 
                 // TODO: make it unique !!
                 dataFile.setId(id);
 
-                dataFile.setName(oiFitsFile.getName());
+                dataFile.setName(oiFitsFile.getFileName());
 
                 dataFile.setFile(oiFitsFile.getAbsoluteFilePath());
                 // checksum !

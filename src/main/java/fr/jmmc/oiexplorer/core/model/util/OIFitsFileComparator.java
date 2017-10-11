@@ -21,8 +21,8 @@ public final class OIFitsFileComparator implements Comparator<OIFitsFile> {
 
     @Override
     public int compare(final OIFitsFile o1, final OIFitsFile o2) {
-        final String filename1 = (o1 != null) ? o1.getName() : "";
-        final String filename2 = (o2 != null) ? o2.getName() : "";
+        final String filename1 = (o1 != null) ? o1.getFileName() : "";
+        final String filename2 = (o2 != null) ? o2.getFileName() : "";
         return String.CASE_INSENSITIVE_ORDER.compare(filename1, filename2);
     }
 

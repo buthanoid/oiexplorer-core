@@ -29,7 +29,7 @@ public final class OITableByFileComparator implements Comparator<OITable> {
         if (t != null) {
             final OIFitsFile oiFitsFile = t.getOIFitsFile();
             if (oiFitsFile != null) {
-                return oiFitsFile.getName();
+                return oiFitsFile.getFileName();
             }
         }
         return "[Undefined]";

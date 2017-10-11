@@ -121,7 +121,7 @@ public final class DataPointer {
     }
 
     public String getOIFitsFileName() {
-        return oiData.getOIFitsFile().getName();
+        return oiData.getOIFitsFile().getFileName();
     }
 
 // Fast access to computed values:    
