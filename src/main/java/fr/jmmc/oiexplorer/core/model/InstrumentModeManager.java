@@ -5,8 +5,6 @@ package fr.jmmc.oiexplorer.core.model;
 
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oitools.model.InstrumentMode;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  *
