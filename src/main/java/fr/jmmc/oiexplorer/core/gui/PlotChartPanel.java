@@ -899,15 +899,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         if (subplotIndex != -1) {
             final PlotInfo info = getPlotInfos().get(subplotIndex);
-            infoMouse = String.format("[%.3f, %.3f]", domainValue, rangeValue);
+            infoMouse = String.format("[%s, %s]", NumberUtils.format(domainValue), NumberUtils.format(rangeValue));
             infoPoints = String.format("%d / %d points", info.nDisplayedPoints, info.nDataPoints);
-            infoDataRange = String.format("Data: X[%.3f, %.3f] Y[%.3f, %.3f]",
-                    info.xAxisInfo.dataRange.getLowerBound(), info.xAxisInfo.dataRange.getUpperBound(),
-                    info.yAxisInfo.dataRange.getLowerBound(), info.yAxisInfo.dataRange.getUpperBound()
+            infoDataRange = String.format("Data: X[%s, %s] Y[%s, %s]",
+                    NumberUtils.format(info.xAxisInfo.dataRange.getLowerBound()), NumberUtils.format(info.xAxisInfo.dataRange.getUpperBound()),
+                    NumberUtils.format(info.yAxisInfo.dataRange.getLowerBound()), NumberUtils.format(info.yAxisInfo.dataRange.getUpperBound())
             );
-            infoDataErrRange = String.format("Data+Err: X[%.3f, %.3f] Y[%.3f, %.3f]",
-                    info.xAxisInfo.dataErrRange.getLowerBound(), info.xAxisInfo.dataErrRange.getUpperBound(),
-                    info.yAxisInfo.dataErrRange.getLowerBound(), info.yAxisInfo.dataErrRange.getUpperBound()
+            infoDataErrRange = String.format("Data+Err: X[%s, %s] Y[%s, %s]",
+                    NumberUtils.format(info.xAxisInfo.dataErrRange.getLowerBound()), NumberUtils.format(info.xAxisInfo.dataErrRange.getUpperBound()),
+                    NumberUtils.format(info.yAxisInfo.dataErrRange.getLowerBound()), NumberUtils.format(info.yAxisInfo.dataErrRange.getUpperBound())
             );
         }
         this.jLabelMouse.setText(infoMouse);
