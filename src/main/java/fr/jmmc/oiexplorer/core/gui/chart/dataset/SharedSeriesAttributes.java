@@ -131,7 +131,9 @@ public final class SharedSeriesAttributes {
             if (parent != null) {
                 return parent.getColorIndex(label);
             }
-            throw new IllegalStateException("Missing color for label: " + label);
+            logger.warn("Missing color for label: {}", label);
+            // Use first color in the palette:
+            return 0; 
         }
         return idx;
     }
