@@ -139,7 +139,7 @@ public class ColorUtils {
     private static float lab_f_to(final float v) {
         return (v > 0.008856f) ? (float) Math.cbrt(v) : 7.787037f * v + (16.0f / 116.0f);
     }
-    private final static float epsilon = 0.206896551f;
+    private final static float epsilon = 0.20689656f;
     private final static float kappa = (24389.0f / 27.0f);
 
     private static float lab_f_inv(float x) {

@@ -627,7 +627,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
                         rotationAnchor = TextAnchor.TOP_CENTER;
                     }
                 }
-                Tick tick = new NumberTick(new Double(currentTickValue),
+                Tick tick = new NumberTick(Double.valueOf(currentTickValue),
                         tickLabel, anchor, rotationAnchor, angle);
                 ticks.add(tick);
             }
@@ -716,7 +716,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
                         rotationAnchor = TextAnchor.CENTER_LEFT;
                     }
                 }
-                Tick tick = new NumberTick(new Double(currentTickValue),
+                Tick tick = new NumberTick(Double.valueOf(currentTickValue),
                         tickLabel, anchor, rotationAnchor, angle);
                 ticks.add(tick);
             }
@@ -757,7 +757,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
             return false;
         }
         MutableSymbolAxis that = (MutableSymbolAxis) obj;
-        if (!this.symbols.equals(that.getSymbols())) {
+        if (!this.symbols.equals(that.symbols)) {
             return false;
         }
         if (this.gridBandsVisible != that.gridBandsVisible) {

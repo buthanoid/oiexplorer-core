@@ -880,7 +880,7 @@ public class EnhancedLogarithmicAxis extends NumberAxis {
                         }
                     }
                     //create tick object and add to list:
-                    ticks.add(new NumberTick(new Double(tickVal), tickLabel, anchor, rotationAnchor, angle));
+                    ticks.add(new NumberTick(Double.valueOf(tickVal), tickLabel, anchor, rotationAnchor, angle));
                 }
             }
         }
@@ -1025,7 +1025,7 @@ public class EnhancedLogarithmicAxis extends NumberAxis {
                         }
                     }
                     //create tick object and add to list:
-                    ticks.add(new NumberTick(new Double(tickVal), tickLabel, anchor, rotationAnchor, angle));
+                    ticks.add(new NumberTick(Double.valueOf(tickVal), tickLabel, anchor, rotationAnchor, angle));
                 }
             }
         }
