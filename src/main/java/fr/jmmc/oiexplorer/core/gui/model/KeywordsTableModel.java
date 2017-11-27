@@ -17,25 +17,48 @@ public final class KeywordsTableModel extends AbstractTableModel {
 
     private static final long serialVersionUID = 1L;
 
-    /* FITS hdu reference */
-    private final FitsHDU hdu;
+    private static final String[] COLUMN_NAMES = new String[]{"Keyword Name", "Value", "Description"};
+    private static final Class<?>[] COLUMN_TYPES = new Class<?>[]{String.class, Object.class, String.class};
 
-    public KeywordsTableModel(final FitsHDU hdu) {
-        this.hdu = hdu;
+    /* FITS hdu reference */
+    private FitsHDU hdu = null;
+
+    public KeywordsTableModel() {
     }
 
-    @Override
-    public int getRowCount() {
-        return hdu.getHeaderCards().size() + hdu.getKeywordsDesc().size();
+    public void setFitsHdu(final FitsHDU hdu) {
+        this.hdu = hdu;
+        fireTableStructureChanged();
     }
 
     @Override
     public int getColumnCount() {
-        return 3;
+        return COLUMN_NAMES.length;
+    }
+
+    @Override
+    public String getColumnName(final int column) {
+        return COLUMN_NAMES[column];
+    }
+
+    @Override
+    public Class<?> getColumnClass(final int column) {
+        return COLUMN_TYPES[column];
+    }
+
+    @Override
+    public int getRowCount() {
+        if (hdu == null) {
+            return 0;
+        }
+        return hdu.getHeaderCards().size() + hdu.getKeywordsDesc().size();
     }
 
     @Override
     public Object getValueAt(final int rowIndex, final int columnIndex) {
+        if (hdu == null) {
+            return null;
+        }
         final List<FitsHeaderCard> headerCards = hdu.getHeaderCards();
         final int nHeaderCards = headerCards.size();
 
