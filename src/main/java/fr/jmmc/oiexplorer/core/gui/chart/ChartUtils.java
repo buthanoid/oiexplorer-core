@@ -32,6 +32,7 @@ import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.axis.TickUnitSource;
 import org.jfree.chart.axis.TickUnits;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.block.LineBorder;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.PlotOrientation;
@@ -83,7 +84,7 @@ public class ChartUtils {
     /** larger draw stroke */
     public static final BasicStroke VERY_LARGE_STROKE = createStroke((3.0f));
     /** dotted stroke */
-    public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 4.0f, 
+    public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 4.0f,
             new float[]{4.0f}, 0.0f);
     /** zero insets */
     public final static RectangleInsets ZERO_INSETS = RectangleInsets.ZERO_INSETS;
@@ -188,7 +189,7 @@ public class ChartUtils {
         p.addPoint(s, t + -s);
         p.addPoint(s, t + s);
         ARROW_LEFT = p;
-        
+
         LEGEND_SHAPE = new Rectangle2D.Double(-3.0, -5.0, 6.0, 10.0);
     }
 
@@ -209,7 +210,7 @@ public class ChartUtils {
         CHART_THEME.setSmallFont(DEFAULT_TEXT_SMALL_FONT);
         /* new Font("Tahoma", Font.PLAIN, 10) */
     }
-    
+
     public static BasicStroke createStroke(final float size) {
         //return new BasicStroke(scaleUI(size));
         return new BasicStroke(size);
@@ -594,7 +595,16 @@ public class ChartUtils {
      * @return The chart.
      */
     public static JFreeChart createChart(final String title, final Plot plot, boolean createLegend) {
-        return new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, createLegend);
+        final JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, createLegend);
+
+        if (createLegend) {
+            // Set the legend border:
+            final LegendTitle legend = chart.getLegend();
+            if (legend != null) {
+                legend.setFrame(new LineBorder());
+            }
+        }
+        return chart;
     }
 
     /**
@@ -844,11 +854,11 @@ public class ChartUtils {
 
         return jmmcAnnotation;
     }
-    
+
     public static int scaleUI(final int size) {
         return (DO_SCALE_UI) ? SwingUtils.adjustUISize(size) : size;
     }
-    
+
     public static float scaleUI(final float size) {
         return (DO_SCALE_UI) ? SwingUtils.adjustUISize(size) : size;
     }
