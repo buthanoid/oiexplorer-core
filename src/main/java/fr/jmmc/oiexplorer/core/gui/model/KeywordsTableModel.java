@@ -20,7 +20,7 @@ public final class KeywordsTableModel extends AbstractTableModel {
     private static final String[] COLUMN_NAMES = new String[]{"Keyword Name", "Value", "Description"};
     private static final Class<?>[] COLUMN_TYPES = new Class<?>[]{String.class, Object.class, String.class};
 
-    /* FITS hdu reference */
+    /** FITS hdu reference */
     private FitsHDU hdu = null;
 
     public KeywordsTableModel() {
@@ -48,10 +48,10 @@ public final class KeywordsTableModel extends AbstractTableModel {
 
     @Override
     public int getRowCount() {
-        if (hdu == null) {
-            return 0;
+        if (hdu != null) {
+            return hdu.getHeaderCards().size() + hdu.getKeywordsDesc().size();
         }
-        return hdu.getHeaderCards().size() + hdu.getKeywordsDesc().size();
+        return 0;
     }
 
     @Override
