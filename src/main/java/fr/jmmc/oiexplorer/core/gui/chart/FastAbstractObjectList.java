@@ -8,8 +8,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
-import org.jfree.util.AbstractObjectList;
-import org.jfree.util.ObjectUtilities;
+import org.jfree.chart.util.AbstractObjectList;
+import org.jfree.chart.util.ObjectUtils;
 
 /**
  * A list of objects that can grow as required.
@@ -161,7 +161,7 @@ public class FastAbstractObjectList implements Cloneable, Serializable {
         final FastAbstractObjectList other = (FastAbstractObjectList) obj;
         final int listSize = size();
         for (int i = 0; i < listSize; i++) {
-            if (!ObjectUtilities.equal(get(i), other.get(i))) {
+            if (!ObjectUtils.equal(get(i), other.get(i))) {
                 return false;
             }
         }

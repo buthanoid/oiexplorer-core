@@ -7,9 +7,9 @@ import java.awt.Paint;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import org.jfree.io.SerialUtilities;
-import org.jfree.util.PaintList;
-import org.jfree.util.PaintUtilities;
+import org.jfree.chart.util.PaintList;
+import org.jfree.chart.util.PaintUtils;
+import org.jfree.chart.util.SerialUtils;
 
 /**
  * A table of {@link Paint} objects.
@@ -68,7 +68,7 @@ public final class FastPaintList extends FastAbstractObjectList {
             PaintList that = (PaintList) obj;
             int listSize = size();
             for (int i = 0; i < listSize; i++) {
-                if (!PaintUtilities.equal(getPaint(i), that.getPaint(i))) {
+                if (!PaintUtils.equal(getPaint(i), that.getPaint(i))) {
                     return false;
                 }
             }
@@ -101,7 +101,7 @@ public final class FastPaintList extends FastAbstractObjectList {
             final Paint paint = getPaint(i);
             if (paint != null) {
                 stream.writeInt(i);
-                SerialUtilities.writePaint(paint, stream);
+                SerialUtils.writePaint(paint, stream);
             } else {
                 stream.writeInt(-1);
             }
@@ -123,7 +123,7 @@ public final class FastPaintList extends FastAbstractObjectList {
         for (int i = 0; i < count; i++) {
             final int index = stream.readInt();
             if (index != -1) {
-                setPaint(index, SerialUtilities.readPaint(stream));
+                setPaint(index, SerialUtils.readPaint(stream));
             }
         }
 

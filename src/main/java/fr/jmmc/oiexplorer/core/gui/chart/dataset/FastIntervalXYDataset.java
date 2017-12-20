@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import org.jfree.data.general.DatasetChangeEvent;
 import org.jfree.data.xy.AbstractIntervalXYDataset;
-import org.jfree.util.PublicCloneable;
+import org.jfree.chart.util.PublicCloneable;
 
 /**
  * An efficient implementation of jFreeChart's DefaultIntervalXYDataset

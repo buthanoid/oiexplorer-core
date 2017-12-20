@@ -107,9 +107,9 @@ import org.jfree.chart.event.AxisChangeEvent;
 
 import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.ValueAxisPlot;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.TextAnchor;
 import org.jfree.data.Range;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.TextAnchor;
 
 /**
  * Enhanced logarithmic scale to support dynamic ticks and switch to normal ticks if less than 1 decade.

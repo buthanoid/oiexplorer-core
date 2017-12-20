@@ -30,11 +30,11 @@ import org.jfree.chart.plot.Crosshair;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.PlotRenderingInfo;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.text.TextUtilities;
-import org.jfree.ui.RectangleAnchor;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.TextAnchor;
-import org.jfree.util.PublicCloneable;
+import org.jfree.chart.text.TextUtils;
+import org.jfree.chart.ui.RectangleAnchor;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.TextAnchor;
+import org.jfree.chart.util.PublicCloneable;
 
 /**
  * An overlay for a {@link ChartPanel} that draws cross-hairs on a plot.
@@ -329,7 +329,7 @@ public class CombinedCrosshairOverlay extends AbstractOverlay implements Overlay
                 float xx = (float) pt.getX();
                 float yy = (float) pt.getY();
                 TextAnchor alignPt = textAlignPtForLabelAnchorH(anchor);
-                Shape hotspot = TextUtilities.calculateRotatedStringBounds(label, g2, xx, yy, alignPt, 0.0, TextAnchor.CENTER);
+                Shape hotspot = TextUtils.calculateRotatedStringBounds(label, g2, xx, yy, alignPt, 0.0, TextAnchor.CENTER);
 
                 if (!dataArea.contains(hotspot.getBounds2D())) {
                     anchor = flipAnchorV(anchor);
@@ -337,14 +337,14 @@ public class CombinedCrosshairOverlay extends AbstractOverlay implements Overlay
                     xx = (float) pt.getX();
                     yy = (float) pt.getY();
                     alignPt = textAlignPtForLabelAnchorH(anchor);
-                    hotspot = TextUtilities.calculateRotatedStringBounds(label, g2, xx, yy, alignPt, 0.0, TextAnchor.CENTER);
+                    hotspot = TextUtils.calculateRotatedStringBounds(label, g2, xx, yy, alignPt, 0.0, TextAnchor.CENTER);
                 }
 
                 g2.setPaint(crosshair.getLabelBackgroundPaint());
                 g2.fill(hotspot);
                 g2.setPaint(crosshair.getLabelOutlinePaint());
                 g2.draw(hotspot);
-                TextUtilities.drawAlignedString(label, g2, xx, yy, alignPt);
+                TextUtils.drawAlignedString(label, g2, xx, yy, alignPt);
             }
             g2.setPaint(savedPaint);
             g2.setStroke(savedStroke);
@@ -376,7 +376,7 @@ public class CombinedCrosshairOverlay extends AbstractOverlay implements Overlay
                 float xx = (float) pt.getX();
                 float yy = (float) pt.getY();
                 TextAnchor alignPt = textAlignPtForLabelAnchorV(anchor);
-                Shape hotspot = TextUtilities.calculateRotatedStringBounds(label, g2, xx, yy, alignPt, 0.0, TextAnchor.CENTER);
+                Shape hotspot = TextUtils.calculateRotatedStringBounds(label, g2, xx, yy, alignPt, 0.0, TextAnchor.CENTER);
 
                 if (!dataArea.contains(hotspot.getBounds2D())) {
                     anchor = flipAnchorH(anchor);
@@ -384,13 +384,13 @@ public class CombinedCrosshairOverlay extends AbstractOverlay implements Overlay
                     xx = (float) pt.getX();
                     yy = (float) pt.getY();
                     alignPt = textAlignPtForLabelAnchorV(anchor);
-                    hotspot = TextUtilities.calculateRotatedStringBounds(label, g2, xx, yy, alignPt, 0.0, TextAnchor.CENTER);
+                    hotspot = TextUtils.calculateRotatedStringBounds(label, g2, xx, yy, alignPt, 0.0, TextAnchor.CENTER);
                 }
                 g2.setPaint(crosshair.getLabelBackgroundPaint());
                 g2.fill(hotspot);
                 g2.setPaint(crosshair.getLabelOutlinePaint());
                 g2.draw(hotspot);
-                TextUtilities.drawAlignedString(label, g2, xx, yy, alignPt);
+                TextUtils.drawAlignedString(label, g2, xx, yy, alignPt);
             }
             g2.setPaint(savedPaint);
             g2.setStroke(savedStroke);
@@ -590,10 +590,6 @@ public class CombinedCrosshairOverlay extends AbstractOverlay implements Overlay
     public Object clone() throws CloneNotSupportedException {
         final CombinedCrosshairOverlay clone = (CombinedCrosshairOverlay) super.clone();
         // TODO: clone maps
-/*
-         clone.xCrosshairs = (List) ObjectUtilities.deepClone(this.xCrosshairs);
-         clone.yCrosshairs = (List) ObjectUtilities.deepClone(this.yCrosshairs);
-         */
         return clone;
     }
 
@@ -648,10 +644,6 @@ public class CombinedCrosshairOverlay extends AbstractOverlay implements Overlay
         public Object clone() throws CloneNotSupportedException {
             final CrosshairPlotState clone = (CrosshairPlotState) super.clone();
             // TODO: clone
-/*
-             clone.xCrosshairs = (List) ObjectUtilities.deepClone(this.xCrosshairs);
-             clone.yCrosshairs = (List) ObjectUtilities.deepClone(this.yCrosshairs);
-             */
             return clone;
         }
     }

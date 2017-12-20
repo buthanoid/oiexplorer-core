@@ -16,7 +16,7 @@ import java.util.List;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.panel.Overlay;
-import org.jfree.ui.Drawable;
+import org.jfree.chart.ui.Drawable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -9,9 +9,9 @@ import java.awt.Color;
 import java.awt.Paint;
 import java.awt.image.IndexColorModel;
 import java.io.Serializable;
-import org.jfree.chart.HashUtilities;
+import org.jfree.chart.HashUtils;
 import org.jfree.chart.renderer.PaintScale;
-import org.jfree.util.PublicCloneable;
+import org.jfree.chart.util.PublicCloneable;
 
 /**
  * This custom Paint scale returns colors using linear mapping defined by an indexed color model:
@@ -169,8 +169,8 @@ public class ColorModelPaintScale
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = HashUtilities.hashCode(hash, this.lowerBound);
-        hash = HashUtilities.hashCode(hash, this.upperBound);
+        hash = HashUtils.hashCode(hash, this.lowerBound);
+        hash = HashUtils.hashCode(hash, this.upperBound);
         hash = 43 * hash;
         return hash;
     }

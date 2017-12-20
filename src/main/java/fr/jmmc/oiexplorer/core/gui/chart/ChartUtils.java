@@ -4,7 +4,6 @@
 package fr.jmmc.oiexplorer.core.gui.chart;
 
 import fr.jmmc.jmcs.gui.util.SwingUtils;
-import fr.jmmc.jmcs.util.IntrospectionUtils;
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oiexplorer.core.util.TimeFormat;
 import java.awt.BasicStroke;
@@ -23,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.LegendItem;
 import org.jfree.chart.StandardChartTheme;
@@ -42,15 +40,15 @@ import org.jfree.chart.renderer.xy.StandardXYBarPainter;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.text.TextUtils;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.chart.title.Title;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.RectangleInsets;
+import org.jfree.chart.ui.TextAnchor;
 import org.jfree.chart.urls.StandardXYURLGenerator;
 import org.jfree.data.xy.XYDataset;
-import org.jfree.text.TextUtilities;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.RectangleInsets;
-import org.jfree.ui.TextAnchor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,20 +159,6 @@ public class ChartUtils {
 
         } else {
             throw new IllegalStateException("Unsupported chart theme : " + ChartFactory.getChartTheme());
-        }
-
-        // Disable JFreeChart (internal) Logs:
-        try {
-            final org.jfree.util.Log log = org.jfree.util.Log.getInstance();
-            final java.lang.reflect.Field logLevelField = IntrospectionUtils.getField(log.getClass(), "debuglevel");
-            if (logLevelField != null) {
-                // make private field accessible:
-                logLevelField.setAccessible(true);
-                // 0 means ERROR level:
-                logLevelField.setInt(log, 0);
-            }
-        } catch (Exception e) {
-            logger.warn("Unable to disable JFreeChart Log:", e);
         }
 
         int t = -45;
@@ -346,7 +330,7 @@ public class ChartUtils {
             fm = g2d.getFontMetrics(f);
 
             // get pixel width of the given text with the current font :
-            width = TextUtilities.getTextBounds(text, g2d, fm).getWidth();
+            width = TextUtils.getTextBounds(text, g2d, fm).getWidth();
 
 //      logger.info("width     : {}", width);
             size--;
@@ -388,7 +372,7 @@ public class ChartUtils {
             fm = g2d.getFontMetrics(f);
 
             // get pixel height of the given text with the current font :
-            height = TextUtilities.getTextBounds(text, g2d, fm).getHeight();
+            height = TextUtils.getTextBounds(text, g2d, fm).getHeight();
 
 //      logger.info("height     : {}", height);
             size--;
@@ -438,10 +422,10 @@ public class ChartUtils {
 
         // force to use the base stroke :
         lineAndShapeRenderer.setAutoPopulateSeriesStroke(false);
-        lineAndShapeRenderer.setBaseStroke(LARGE_STROKE);
+        lineAndShapeRenderer.setDefaultStroke(LARGE_STROKE);
 
         // update theme at end :
-        ChartUtilities.applyCurrentTheme(chart);
+        org.jfree.chart.ChartUtils.applyCurrentTheme(chart);
 
         return chart;
     }
@@ -487,7 +471,7 @@ public class ChartUtils {
 
         plot.setOrientation(orientation);
         if (tooltips) {
-            renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+            renderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         }
         if (urls) {
             renderer.setURLGenerator(new StandardXYURLGenerator());
@@ -540,7 +524,7 @@ public class ChartUtils {
 
         plot.setOrientation(orientation);
         if (tooltips) {
-            renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+            renderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         }
         if (urls) {
             renderer.setURLGenerator(new StandardXYURLGenerator());

@@ -20,10 +20,10 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.AbstractXYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRendererState;
+import org.jfree.chart.ui.RectangleEdge;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYZDataset;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.util.PublicCloneable;
+import org.jfree.chart.util.PublicCloneable;
 
 /**
  * A renderer that draws a circle at each data point with a diameter that is
@@ -85,7 +85,7 @@ public final class FastXYBubbleRenderer extends AbstractXYItemRenderer
             throw new IllegalArgumentException("Invalid 'scaleType'.");
         }
         this.scaleType = scaleType;
-        setBaseLegendShape(new Ellipse2D.Double(-4.0, -4.0, 8.0, 8.0));
+        setDefaultLegendShape(new Ellipse2D.Double(-4.0, -4.0, 8.0, 8.0));
     }
 
     /**

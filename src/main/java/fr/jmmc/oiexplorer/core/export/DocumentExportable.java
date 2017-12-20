@@ -4,7 +4,7 @@
 package fr.jmmc.oiexplorer.core.export;
 
 import fr.jmmc.oiexplorer.core.gui.action.ExportDocumentAction;
-import org.jfree.ui.Drawable;
+import org.jfree.chart.ui.Drawable;
 
 /**
  * This interface defines a simple method to export a chart as document

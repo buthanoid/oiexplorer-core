@@ -46,7 +46,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JPanel;
-import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.LogarithmicAxis;
@@ -62,9 +61,9 @@ import org.jfree.chart.title.PaintScaleLegend;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.chart.title.Title;
 import org.jfree.data.Range;
-import org.jfree.ui.Drawable;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.RectangleInsets;
+import org.jfree.chart.ui.Drawable;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.RectangleInsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -657,7 +656,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         this.xyPlot.setDataset(null);
 
         // update theme at end :
-        ChartUtilities.applyCurrentTheme(this.chart);
+        org.jfree.chart.ChartUtils.applyCurrentTheme(this.chart);
     }
 
     /**
@@ -750,7 +749,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         updateImage(imageData);
 
         // update theme at end :
-        ChartUtilities.applyCurrentTheme(this.chart);
+        org.jfree.chart.ChartUtils.applyCurrentTheme(this.chart);
 
         if (infoTitle != null) {
             // after theme:

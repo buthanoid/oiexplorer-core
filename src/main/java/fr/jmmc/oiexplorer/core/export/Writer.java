@@ -9,7 +9,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
-import org.jfree.ui.Drawable;
+import org.jfree.chart.ui.Drawable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

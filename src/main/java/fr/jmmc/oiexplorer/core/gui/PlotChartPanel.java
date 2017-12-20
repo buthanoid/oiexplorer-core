@@ -75,7 +75,6 @@ import java.util.Set;
 import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.LegendItemCollection;
 import org.jfree.chart.annotations.XYTextAnnotation;
@@ -94,9 +93,9 @@ import org.jfree.chart.renderer.AbstractRenderer;
 import org.jfree.chart.title.PaintScaleLegend;
 import org.jfree.data.Range;
 import org.jfree.data.xy.XYDataset;
-import org.jfree.ui.Drawable;
-import org.jfree.ui.Layer;
-import org.jfree.ui.RectangleEdge;
+import org.jfree.chart.ui.Drawable;
+import org.jfree.chart.ui.Layer;
+import org.jfree.chart.ui.RectangleEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1328,7 +1327,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 ChartUtils.addSubtitle(this.chart, sb.toString());
 
-                ChartUtilities.applyCurrentTheme(this.chart);
+                org.jfree.chart.ChartUtils.applyCurrentTheme(this.chart);
             }
 
             showPlot(hasData);
@@ -1542,7 +1541,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     // use deprecated method but defines shape once for ALL series (performance):
                     // define base shape as valid point (fallback):
-                    renderer.setBaseShape(shapePointValid, false);
+                    renderer.setDefaultShape(shapePointValid, false);
 
                     renderer.setLinesVisible(plotDef.isDrawLine());
 

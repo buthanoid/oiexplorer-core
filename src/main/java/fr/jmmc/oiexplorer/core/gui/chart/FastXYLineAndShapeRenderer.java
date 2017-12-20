@@ -29,12 +29,13 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.AbstractXYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRendererState;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.util.ObjectUtils;
 import org.jfree.data.xy.XYDataset;
-import org.jfree.io.SerialUtilities;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.util.ObjectUtilities;
-import org.jfree.util.PublicCloneable;
-import org.jfree.util.ShapeUtilities;
+import org.jfree.chart.util.PublicCloneable;
+import org.jfree.chart.util.SerialUtils;
+import org.jfree.chart.util.ShapeUtils;
+import static org.jfree.chart.util.ShapeUtils.isPointInRect;
 
 /**
  * A renderer that connects data points with lines and/or draws shapes at each
@@ -1000,7 +1001,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
     public Object clone() throws CloneNotSupportedException {
         FastXYLineAndShapeRenderer clone = (FastXYLineAndShapeRenderer) super.clone();
         if (this.legendLine != null) {
-            clone.legendLine = ShapeUtilities.clone(this.legendLine);
+            clone.legendLine = ShapeUtils.clone(this.legendLine);
         }
         return clone;
     }
@@ -1024,16 +1025,16 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
             return false;
         }
         FastXYLineAndShapeRenderer that = (FastXYLineAndShapeRenderer) obj;
-        if (!ObjectUtilities.equal(this.linesVisible, that.linesVisible)) {
+        if (!ObjectUtils.equal(this.linesVisible, that.linesVisible)) {
             return false;
         }
-        if (!ShapeUtilities.equal(this.legendLine, that.legendLine)) {
+        if (!ShapeUtils.equal(this.legendLine, that.legendLine)) {
             return false;
         }
-        if (!ObjectUtilities.equal(this.shapesVisible, that.shapesVisible)) {
+        if (!ObjectUtils.equal(this.shapesVisible, that.shapesVisible)) {
             return false;
         }
-        if (!ObjectUtilities.equal(this.shapesFilled, that.shapesFilled)) {
+        if (!ObjectUtils.equal(this.shapesFilled, that.shapesFilled)) {
             return false;
         }
         if (this.drawOutlines != that.drawOutlines) {
@@ -1062,7 +1063,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
     private void readObject(ObjectInputStream stream)
             throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
-        this.legendLine = SerialUtilities.readShape(stream);
+        this.legendLine = SerialUtils.readShape(stream);
     }
 
     /**
@@ -1074,7 +1075,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      */
     private void writeObject(ObjectOutputStream stream) throws IOException {
         stream.defaultWriteObject();
-        SerialUtilities.writeShape(this.legendLine, stream);
+        SerialUtils.writeShape(this.legendLine, stream);
     }
 
     // ITEM VISIBLE
@@ -1128,7 +1129,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
             }
         }
         // fallback: use base shape for the complete serie:
-        return getBaseShape();
+        return getDefaultShape();
     }
 
     /**

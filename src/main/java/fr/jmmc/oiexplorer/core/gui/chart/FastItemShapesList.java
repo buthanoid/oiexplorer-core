@@ -4,7 +4,7 @@
 package fr.jmmc.oiexplorer.core.gui.chart;
 
 import java.awt.Shape;
-import org.jfree.util.ShapeUtilities;
+import org.jfree.chart.util.ShapeUtils;
 
 /**
  * A table of {@link Shape[]} objects.
@@ -99,7 +99,7 @@ public final class FastItemShapesList extends FastAbstractObjectList {
         for (int i = 0; i < length; i++) {
             Shape o1 = a[i];
             Shape o2 = a2[i];
-            if (!(o1 == null ? o2 == null : ShapeUtilities.equal(o1, o2))) {
+            if (!(o1 == null ? o2 == null : ShapeUtils.equal(o1, o2))) {
                 return false;
             }
         }
@@ -116,50 +116,4 @@ public final class FastItemShapesList extends FastAbstractObjectList {
     public int hashCode() {
         return super.hashCode();
     }
-    /**
-     * Provides serialization support.
-     *
-     * @param stream  the output stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     */
-    /*    
-     private void writeObject(final ObjectOutputStream stream) throws IOException {
-
-     stream.defaultWriteObject();
-     final int count = size();
-     stream.writeInt(count);
-     for (int i = 0; i < count; i++) {
-     final Shape shape = getItemShapes(i);
-     if (shape != null) {
-     stream.writeInt(i);
-     SerialUtilities.writeShape(shape, stream);
-     }
-     else {
-     stream.writeInt(-1);
-     }
-     }
-     }
-     */
-    /**
-     * Provides serialization support.
-     *
-     * @param stream  the input stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     * @throws ClassNotFoundException  if there is a classpath problem.
-     */
-    /*    
-     private void readObject(final ObjectInputStream stream) throws IOException, ClassNotFoundException {
-
-     stream.defaultReadObject();
-     final int count = stream.readInt();
-     for (int i = 0; i < count; i++) {
-     final int index = stream.readInt();
-     if (index != -1) {
-     setItemShapes(index, SerialUtilities.readShape(stream));
-     }
-     }
-     }
-     */
 }
