@@ -377,8 +377,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                     n++;
                 } catch (IOException ioe) {
                     logger.info("Error reading file: {}", fileLocation, ioe.getCause());
-                    // Append to checker report:
-                    checker.severe("Could not load the file : " + fileLocation);
                     // Update status bar:
                     StatusBar.show("Could not load the file : " + fileLocation);
                 }
