@@ -4,6 +4,7 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.Bootstrapper;
+import fr.jmmc.jmcs.gui.component.BasicTableSorter;
 import fr.jmmc.jmcs.gui.util.AutofitTableColumns;
 import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.jmcs.util.NumberUtils;
@@ -43,10 +44,28 @@ public final class FitsTableViewer extends javax.swing.JPanel {
     public static final TextAreaCellEditor EDITOR_AREA_INSTANCE = new TextAreaCellEditor(RDR_AREA_INSTANCE);
 
     private final int initialRowHeight;
+    private final KeywordsTableModel keywordsModel;
+    private final BasicTableSorter keywordsTableSorter;
+    private final ColumnsTableModel columnsModel;
+    private final BasicTableSorter columnsTableSorter;
 
     /** Creates new form FitsTableViewer */
     public FitsTableViewer() {
+        this.keywordsModel = new KeywordsTableModel();
+        this.columnsModel = new ColumnsTableModel();
+
         initComponents();
+
+        // Configure table sorting
+        keywordsTableSorter = new BasicTableSorter(keywordsModel, jTableKeywords.getTableHeader());
+        jTableKeywords.setModel(keywordsTableSorter);
+
+        if (false) {
+            columnsTableSorter = null;
+        } else {
+            columnsTableSorter = new BasicTableSorter(columnsModel, jTableColumns.getTableHeader());
+            jTableColumns.setModel(columnsTableSorter);
+        }
 
         // Fix row height:
         SwingUtils.adjustRowHeight(jTableKeywords);
@@ -61,8 +80,9 @@ public final class FitsTableViewer extends javax.swing.JPanel {
 
     // Display Table
     private FitsTableViewer setTable(final FitsTable table) {
-        ((KeywordsTableModel) jTableKeywords.getModel()).setFitsHdu(table);
-        ((ColumnsTableModel) jTableColumns.getModel()).setFitsHdu(table);
+        keywordsModel.setFitsHdu(table);
+        columnsModel.setFitsHdu(table);
+//        columnsTableSorter.setTableHeader(jTableColumns.getTableHeader());
 
         if (false) {
             ((ColumnsTableModel) jTableColumns.getModel()).fixColumnModel(jTableColumns, initialRowHeight);
@@ -101,7 +121,7 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         jScrollPaneKeywords.setName("jScrollPaneKeywords"); // NOI18N
         jScrollPaneKeywords.setViewportView(null);
 
-        jTableKeywords.setModel(new KeywordsTableModel());
+        jTableKeywords.setModel(keywordsModel);
         jTableKeywords.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
         jTableKeywords.setMinimumSize(new java.awt.Dimension(50, 50));
         jTableKeywords.setName("jTableKeywords"); // NOI18N
@@ -119,7 +139,7 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         jScrollPaneColumns.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPaneColumns.setName("jScrollPaneColumns"); // NOI18N
 
-        jTableColumns.setModel(new ColumnsTableModel());
+        jTableColumns.setModel(columnsModel);
         jTableColumns.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
         jTableColumns.setMinimumSize(new java.awt.Dimension(50, 50));
         jTableColumns.setName("jTableColumns"); // NOI18N

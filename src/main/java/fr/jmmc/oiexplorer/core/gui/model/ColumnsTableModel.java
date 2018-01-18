@@ -35,7 +35,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
     /** flag to include derived columns */
     private boolean includeDerivedColumns = true;
     /** flag to expand or not arrays (2D only) */
-    private boolean expandArrays = false;
+    private boolean expandArrays = true;
     /** column mapping */
     private final ArrayList<ColumnMapping> mappings = new ArrayList<ColumnMapping>();
     /* temporary buffer */
