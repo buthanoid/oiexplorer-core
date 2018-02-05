@@ -14,19 +14,13 @@ import fr.jmmc.oitools.fits.FitsTable;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.nom.tam.fits.FitsException;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.AbstractCellEditor;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 
 /**
@@ -39,11 +33,6 @@ public final class FitsTableViewer extends javax.swing.JPanel {
 
     public static final TableCellRenderer RDR_NUM_INSTANCE = new TableCellNumberRenderer();
 
-    public static final TextAreaRenderer RDR_AREA_INSTANCE = new TextAreaRenderer();
-
-    public static final TextAreaCellEditor EDITOR_AREA_INSTANCE = new TextAreaCellEditor(RDR_AREA_INSTANCE);
-
-    private final int initialRowHeight;
     private final KeywordsTableModel keywordsModel;
     private final BasicTableSorter keywordsTableSorter;
     private final ColumnsTableModel columnsModel;
@@ -71,9 +60,8 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         SwingUtils.adjustRowHeight(jTableKeywords);
         SwingUtils.adjustRowHeight(jTableColumns);
 
-        this.initialRowHeight = jTableColumns.getRowHeight();
-
         jTableKeywords.setDefaultRenderer(Boolean.class, RDR_NUM_INSTANCE);
+        jTableKeywords.setDefaultRenderer(Double.class, RDR_NUM_INSTANCE);
         jTableColumns.setDefaultRenderer(Float.class, RDR_NUM_INSTANCE);
         jTableColumns.setDefaultRenderer(Double.class, RDR_NUM_INSTANCE);
     }
@@ -82,11 +70,6 @@ public final class FitsTableViewer extends javax.swing.JPanel {
     private FitsTableViewer setTable(final FitsTable table) {
         keywordsModel.setFitsHdu(table);
         columnsModel.setFitsHdu(table);
-//        columnsTableSorter.setTableHeader(jTableColumns.getTableHeader());
-
-        if (false) {
-            ((ColumnsTableModel) jTableColumns.getModel()).fixColumnModel(jTableColumns, initialRowHeight);
-        }
 
         if (jTableKeywords.getRowCount() != 0) {
             AutofitTableColumns.autoResizeTable(jTableKeywords);
@@ -226,81 +209,6 @@ public final class FitsTableViewer extends javax.swing.JPanel {
                 }
             }
             setText(text);
-        }
-    }
-
-    private final static class TextAreaRenderer extends JScrollPane implements TableCellRenderer {
-
-        /** default serial UID for Serializable interface */
-        private static final long serialVersionUID = 1;
-
-        private final JTextArea textarea;
-
-        private TextAreaRenderer() {
-            super(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-            textarea = new JTextArea();
-            textarea.setLineWrap(true);
-            textarea.setWrapStyleWord(true);
-            textarea.setEditable(false);
-            textarea.setOpaque(true);
-            getViewport().add(textarea);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                                                       boolean isSelected, boolean hasFocus,
-                                                       int row, int column) {
-            if (isSelected) {
-                setForeground(table.getSelectionForeground());
-                setBackground(table.getSelectionBackground());
-                textarea.setForeground(table.getSelectionForeground());
-                textarea.setBackground(table.getSelectionBackground());
-            } else {
-                setForeground(table.getForeground());
-                setBackground(table.getBackground());
-                textarea.setForeground(table.getForeground());
-                textarea.setBackground(table.getBackground());
-            }
-
-            final String text = (value != null) ? value.toString() : null;
-            setToolTipText(text);
-            textarea.setText(text);
-            textarea.setCaretPosition(0);
-
-            return this;
-        }
-
-        String getText() {
-            return textarea.getText();
-        }
-    }
-
-    private final static class TextAreaCellEditor extends AbstractCellEditor implements TableCellEditor {
-
-        private final TextAreaRenderer renderer;
-
-        TextAreaCellEditor(final TextAreaRenderer renderer) {
-            this.renderer = renderer;
-        }
-
-        /**
-         * Returns the cell editor component.
-         *
-         */
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value,
-                                                     boolean isSelected,
-                                                     int row, int column) {
-            if (value == null) {
-                return null;
-            }
-
-            return renderer.getTableCellRendererComponent(table, value, isSelected, true, row, column);
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            return renderer.getText();
         }
     }
 }

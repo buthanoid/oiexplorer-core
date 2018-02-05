@@ -4,16 +4,12 @@
 package fr.jmmc.oiexplorer.core.gui.model;
 
 import fr.jmmc.jmcs.util.NumberUtils;
-import fr.jmmc.oiexplorer.core.gui.FitsTableViewer;
 import fr.jmmc.oitools.OIFitsConstants;
 import fr.jmmc.oitools.fits.FitsTable;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.Types;
 import java.util.ArrayList;
-import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableColumn;
-import javax.swing.table.TableColumnModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -350,30 +346,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
     @Override
     public boolean isCellEditable(int row, int column) {
-        return mappings.get(column).meta.isArray();
-    }
-
-    public void fixColumnModel(final JTable table, final int initialRowHeight) {
-        final TableColumnModel columnModel = table.getColumnModel();
-
-        boolean hasArrays = false;
-        int col = 0;
-        for (ColumnMapping mapping : mappings) {
-            final TableColumn column = columnModel.getColumn(col);
-
-            if ((mapping.meta.isArray())) {
-                hasArrays = true;
-                column.setCellRenderer(FitsTableViewer.RDR_AREA_INSTANCE);
-                column.setCellEditor(FitsTableViewer.EDITOR_AREA_INSTANCE);
-            } else {
-                column.setCellRenderer(FitsTableViewer.RDR_NUM_INSTANCE);
-            }
-
-            col++;
-        }
-        if (hasArrays) {
-            table.setRowHeight(initialRowHeight * 4);
-        }
+        return false;
     }
 
     final static class ColumnMapping {
