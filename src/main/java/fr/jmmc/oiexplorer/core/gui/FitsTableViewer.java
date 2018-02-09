@@ -31,7 +31,7 @@ public final class FitsTableViewer extends javax.swing.JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    public static final TableCellRenderer RDR_NUM_INSTANCE = new TableCellNumberRenderer();
+    private static final TableCellRenderer RDR_NUM_INSTANCE = new TableCellNumberRenderer();
 
     private final KeywordsTableModel keywordsModel;
     private final BasicTableSorter keywordsTableSorter;
@@ -49,12 +49,8 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         keywordsTableSorter = new BasicTableSorter(keywordsModel, jTableKeywords.getTableHeader());
         jTableKeywords.setModel(keywordsTableSorter);
 
-        if (false) {
-            columnsTableSorter = null;
-        } else {
-            columnsTableSorter = new BasicTableSorter(columnsModel, jTableColumns.getTableHeader());
-            jTableColumns.setModel(columnsTableSorter);
-        }
+        columnsTableSorter = new BasicTableSorter(columnsModel, jTableColumns.getTableHeader());
+        jTableColumns.setModel(columnsTableSorter);
 
         // Fix row height:
         SwingUtils.adjustRowHeight(jTableKeywords);
@@ -149,7 +145,7 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         // invoke Bootstrapper method to initialize logback now:
         Bootstrapper.getState();
         try {
-            OIFitsFile oiFitsFile = OIFitsLoader.loadOIFits("/home/bourgesl/dev/oitools-dev/src/test/resources/oifits/GRAVI.2016-06-23T03:10:17.458_singlesciviscalibrated.fits");
+            OIFitsFile oiFitsFile = OIFitsLoader.loadOIFits("/home/bourgesl/dev/oitools-public/src/test/resources/oifits/GRAVI.2016-06-23T03:10:17.458_singlesciviscalibrated.fits");
             oiFitsFile.analyze();
 
             for (FitsTable table : oiFitsFile.getOITableList()) {
