@@ -3,7 +3,6 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.selection;
 
-import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OITarget;
 import fr.jmmc.oitools.model.OIWavelength;
 
@@ -11,26 +10,20 @@ import fr.jmmc.oitools.model.OIWavelength;
  *
  * @author bourgesl
  */
-public final class DataPointer {
+public final class DataPointer extends OIDataPointer {
 
     public final static int UNDEFINED = -1;
 
     /* member */
-    /** data table */
-    private final OIData oiData;
-    /* row index in the data table */
+ /* row index in the data table */
     private final int row;
     /* column index in the data table (wavelength) */
     private final int col;
 
-    public DataPointer(final OIData oiData, final int row, final int col) {
-        this.oiData = oiData;
+    public DataPointer(final OIDataPointer ptr, final int row, final int col) {
+        super(ptr.getOiData());
         this.row = row;
         this.col = col;
-    }
-
-    public OIData getOiData() {
-        return oiData;
     }
 
     public int getRow() {
@@ -58,17 +51,17 @@ public final class DataPointer {
         if (obj == null) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
+        if (!(obj instanceof DataPointer)) {
             return false;
         }
         final DataPointer other = (DataPointer) obj;
+        if (this.oiData != other.getOiData() && (this.oiData == null || !this.oiData.equals(other.getOiData()))) {
+            return false;
+        }
         if (this.row != other.getRow()) {
             return false;
         }
         if (this.col != other.getCol()) {
-            return false;
-        }
-        if (this.oiData != other.getOiData() && (this.oiData == null || !this.oiData.equals(other.getOiData()))) {
             return false;
         }
         return true;
@@ -110,18 +103,6 @@ public final class DataPointer {
             }
         }
         return Float.NaN;
-    }
-
-    public String getArrName() {
-        return oiData.getArrName();
-    }
-
-    public String getInsName() {
-        return oiData.getInsName();
-    }
-
-    public String getOIFitsFileName() {
-        return oiData.getOIFitsFile().getFileName();
     }
 
 // Fast access to computed values:    

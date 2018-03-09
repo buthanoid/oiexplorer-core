@@ -6,12 +6,16 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import org.jfree.data.Range;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author bourgesl
  */
 public final class AxisInfo {
+    /** Logger */
+    private static final Logger logger = LoggerFactory.getLogger(AxisInfo.class.getName());
 
     /** colum meta data */
     ColumnMeta columnMeta = null;

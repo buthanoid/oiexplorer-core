@@ -28,9 +28,10 @@ import fr.jmmc.oiexplorer.core.gui.chart.SelectionOverlay;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.FastIntervalXYDataset;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.OITableSerieKey;
 import fr.jmmc.oiexplorer.core.gui.chart.dataset.SharedSeriesAttributes;
-import fr.jmmc.oiexplorer.core.gui.selection.DataPoint;
+import fr.jmmc.oiexplorer.core.gui.selection.XYPlotPoint;
 import fr.jmmc.oiexplorer.core.gui.selection.DataPointInfo;
 import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
+import fr.jmmc.oiexplorer.core.gui.selection.OIDataPointer;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEvent;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventListener;
@@ -105,20 +106,25 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public final class PlotChartPanel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
-        DocumentExportable, OIFitsCollectionManagerEventListener {
+                                                                        DocumentExportable, OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
+    /** Class logger */
+    private static final Logger logger = LoggerFactory.getLogger(PlotChartPanel.class.getName());
     /** Debug setting */
     private static final boolean DEBUG = false;
     /** use plot (true) or overlay (false) crosshair support (faster is overlay) */
-    private static final boolean usePlotCrossHairSupport = false;
+    private static final boolean USE_PLOT_CROSSHAIR = false;
     /** enable mouse selection handling (DEV) TODO: enable selection ASAP (TODO sub plot support) */
-    private static final boolean useSelectionSupport = false;
-    /** Class logger */
-    private static final Logger logger = LoggerFactory.getLogger(PlotChartPanel.class.getName());
+    private static final boolean USE_SELECTION_SUPPORT = false;
     /** data margin in percents (5%) */
     private final static double MARGIN_PERCENTS = 5.0 / 100.0;
+    /** crosshair label background */
+    private final static Color COLOR_LABEL_BCKG = new Color(255, 216, 0); // School bus yellow
+    /** crosshair line color */
+    private final static Color COLOR_XING_LINE = new Color(119, 139, 165); // Shadow Blue
+    
     /** double formatter for wave lengths */
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
     /** double formatter for other values */
@@ -566,7 +572,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // enlarge right margin to have last displayed value:
         this.combinedXYPlot.setInsets(ChartUtils.NORMAL_PLOT_INSETS);
 
-        configureCrosshair(this.combinedXYPlot, usePlotCrossHairSupport);
+        configureCrosshair(this.combinedXYPlot, USE_PLOT_CROSSHAIR);
 
         // get read-only subplot list:
         this.combinedXYPlotList = this.combinedXYPlot.getSubplots();
@@ -582,17 +588,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // enable mouse wheel:
         this.chartPanel.setMouseWheelEnabled(true);
 
-        if (useSelectionSupport) {
+        if (USE_SELECTION_SUPPORT) {
             this.selectionOverlay = new SelectionOverlay(this.chartPanel, this);
             this.chartPanel.addOverlay(this.selectionOverlay);
         }
 
-        if (!usePlotCrossHairSupport) {
+        if (!USE_PLOT_CROSSHAIR) {
             this.crosshairOverlay = new CombinedCrosshairOverlay();
             this.chartPanel.addOverlay(crosshairOverlay);
         }
 
-        if (useSelectionSupport || !usePlotCrossHairSupport) {
+        if (USE_SELECTION_SUPPORT || !USE_PLOT_CROSSHAIR) {
             this.chartPanel.addChartMouseListener(this);
         }
 
@@ -607,7 +613,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private void addXYPlot() {
         final XYTextAnnotation aJMMCPlot = ChartUtils.createJMMCAnnotation(Constants.JMMC_ANNOTATION);
 
-        final XYPlot xyPlot = createScientificScatterPlot(null, "", usePlotCrossHairSupport);
+        final XYPlot xyPlot = createScientificScatterPlot(null, "", USE_PLOT_CROSSHAIR);
         xyPlot.getRenderer().addAnnotation(aJMMCPlot, Layer.BACKGROUND);
 
         final int size = this.xyPlotList.size();
@@ -616,11 +622,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         this.xyPlotList.add(xyPlot);
         this.aJMMCPlots.add(aJMMCPlot);
 
-        if (!usePlotCrossHairSupport) {
+        if (!USE_PLOT_CROSSHAIR) {
             // enable overlay crosshair support:
             final Integer plotIndex = NumberUtils.valueOf(size);
-            crosshairOverlay.addDomainCrosshair(plotIndex, createCrosshair());
-            crosshairOverlay.addRangeCrosshair(plotIndex, createCrosshair());
+
+            // symetry in UV plan needs up to 2 crosshairs:
+            for (int i = 0; i < 2; i++) {
+                crosshairOverlay.addDomainCrosshair(plotIndex, createCrosshair());
+                crosshairOverlay.addRangeCrosshair(plotIndex, createCrosshair());
+            }
         }
     }
 
@@ -637,7 +647,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // crosshair.setPaint(Color.BLUE);
         crosshair.setLabelVisible(true);
         crosshair.setLabelFont(ChartUtils.DEFAULT_TEXT_SMALL_FONT);
-        crosshair.setLabelBackgroundPaint(new Color(255, 255, 0, 200));
+        crosshair.setLabelBackgroundPaint(COLOR_LABEL_BCKG);
+        crosshair.setStroke(ChartUtils.DEFAULT_STROKE);
+        crosshair.setPaint(COLOR_XING_LINE);
         return crosshair;
     }
 
@@ -757,44 +769,70 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             );
 
             // find matching data ie. closest data point according to its screen distance to the mouse clicked point:
-            final DataPoint dataPoint = findDataPoint(info, xyPlot, domainValue, rangeValue, xRatio, yRatio);
+            final DataPointer ptr = findDataPointer(info, xyPlot, domainValue, rangeValue, xRatio, yRatio);
 
-            if (dataPoint != DataPoint.UNDEFINED) {
-                updateCrosshairs(dataPoint);
+            if (ptr != null) {
+                refreshCrosshairs(ptr);
             }
         }
     }
 
-    private void updateCrosshairs(final DataPoint dataPoint) {
+    private void updateCrosshairs(final Map<XYPlot, XYPlotPoint[]> xyPointsMap) {
+        DataPointer ptr = null;
+
         // update other plot crosshairs:
         for (Integer index : this.plotIndexMapping.keySet()) {
-            List<Crosshair> xCrosshairs = this.crosshairOverlay.getDomainCrosshairs(index);
-            List<Crosshair> yCrosshairs = this.crosshairOverlay.getRangeCrosshairs(index);
+            final List<Crosshair> xCrosshairs = this.crosshairOverlay.getDomainCrosshairs(index);
+            final List<Crosshair> yCrosshairs = this.crosshairOverlay.getRangeCrosshairs(index);
+
+            final int ncx = xCrosshairs.size() - 1;
+            final int ncy = yCrosshairs.size() - 1;
 
             final XYPlot xyPlot = this.plotIndexMapping.get(index);
             final PlotInfo info = getPlotInfos().get(index);
+            int nx = 0;
+            int ny = 0;
 
             if (xyPlot != null && info != null) {
-                if (xCrosshairs.size() == 1) {
-                    // check field:
-                    xCrosshairs.get(0).setValue(
-                            (dataPoint.getxAxisInfo().isCompatible(info.xAxisInfo)) ? dataPoint.getX() : Double.NaN
-                    );
+                final XYPlotPoint[] xyPoints = xyPointsMap.get(xyPlot);
+
+                if (xyPoints != null) {
+                    for (XYPlotPoint xyPoint : xyPoints) {
+                        if (xyPoint != null) {
+                            // use only first one for tooltip (same info) !
+                            if (ptr == null && xyPoint instanceof DataPointInfo) {
+                                ptr = ((DataPointInfo) xyPoint).getDataPointer();
+                            }
+                            if (nx <= ncx) {
+                                // check field:
+                                xCrosshairs.get(nx++).setValue(
+                                        (xyPoint.getxAxisInfo().isCompatible(info.xAxisInfo)) ? xyPoint.getX() : Double.NaN
+                                );
+                            }
+                            if (ny <= ncy) {
+                                // check field:
+                                yCrosshairs.get(ny++).setValue(
+                                        (xyPoint.getyAxisInfo().isCompatible(info.yAxisInfo)) ? xyPoint.getY() : Double.NaN
+                                );
+                            }
+                        }
+                    }
                 }
-                if (yCrosshairs.size() == 1) {
-                    // check field:
-                    yCrosshairs.get(0).setValue(
-                            (dataPoint.getyAxisInfo().isCompatible(info.yAxisInfo)) ? dataPoint.getY() : Double.NaN
-                    );
-                }
+            }
+
+            // reset unused crosshairs:
+            while (nx <= ncx) {
+                xCrosshairs.get(nx++).setValue(Double.NaN);
+            }
+            while (ny <= ncy) {
+                yCrosshairs.get(ny++).setValue(Double.NaN);
             }
         }
 
-        if (dataPoint instanceof DataPointInfo) {
+        // All datapointer indicates the same reference:
+        // use only first one for tooltip (same info) !
+        if (ptr != null) {
             this.jPanelCrosshair.setVisible(true);
-
-            // TODO: memorize the data pointer to be able to restore it after plot refresh ?
-            final DataPointer ptr = ((DataPointInfo) dataPoint).getDataPointer();
 
             // memorize the last data pointer:
             ocm.setSelection(this, ptr);
@@ -830,17 +868,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
     }
 
-    private void refreshCrosshair(final DataPointer selPtr) {
+    private void refreshCrosshairs(final DataPointer selPtr) {
         if (selPtr != null) {
             logger.debug("refreshCrosshair: plot {} lookup for data pointer: {}", this.plotId, selPtr);
 
-            // find matching data ie. closest data point according to its screen distance to the mouse clicked point:
-            final DataPoint dataPoint = findDataPoint(selPtr);
+            // find matching data in plots:
+            final Map<XYPlot, XYPlotPoint[]> xyPointsMap = findDataPoints(selPtr);
 
-            if (dataPoint == DataPoint.UNDEFINED) {
+            if (xyPointsMap == null) {
                 resetCrosshairOverlay();
             } else {
-                updateCrosshairs(dataPoint);
+                updateCrosshairs(xyPointsMap);
             }
         }
     }
@@ -938,30 +976,34 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         return (FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>) xyPlot.getDataset();
     }
 
-    private DataPoint findDataPoint(final DataPointer selPtr) {
-        int matchPlotIndex = -1;
-        FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> matchDataset = null;
-        int matchSerie = -1;
-        int matchItem = -1;
+    private Map<XYPlot, XYPlotPoint[]> findDataPoints(final DataPointer selPtr) {
+        Map<XYPlot, XYPlotPoint[]> dataPoints = null;
 
         if (selPtr != null) {
+            dataPoints = new IdentityHashMap<XYPlot, XYPlotPoint[]>(8);
+
             // TODO: move such code elsewhere : ChartUtils or XYDataSetUtils ?
             final long startTime = System.nanoTime();
 
             // matching criteria
             final int mRow = selPtr.getRow();
-
-            int nMatchs = 0;
+            final int mCol = selPtr.getCol();
 
             for (int i = 0, len = this.xyPlotList.size(); i < len; i++) {
                 final XYPlot xyPlot = this.xyPlotList.get(i);
 
                 final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = getDataset(xyPlot);
                 if (dataset != null) {
+                    int nMatchs = 0;
+                    XYPlotPoint pt1 = null;
+                    XYPlotPoint pt2 = null;
+
                     for (int serie = 0, seriesCount = dataset.getSeriesCount(), item, itemCount, row; serie < seriesCount; serie++) {
                         final OITableSerieKey serieKey = (OITableSerieKey) dataset.getSeriesKey(serie);
 
-                        if (serieKey.getDataPointer().isSameCol(selPtr)) {
+                        // check oidata pointer (OIData) and column index (wavelength ?)
+                        if ((serieKey.getWaveLengthIndex() == mCol)
+                                && serieKey.getDataPointer().equals(selPtr)) {
                             itemCount = dataset.getItemCount(serie);
 
                             for (item = 0; item < itemCount; item++) {
@@ -972,27 +1014,37 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                     logger.debug("matching point: serie={} item={}", serie, item);
 
                                     if (++nMatchs > 2) {
-                                        logger.debug("Too much matching items !");
-                                        return DataPoint.UNDEFINED;
+                                        logger.info("Too much matching items for ptr: {}", selPtr);
+                                        break;
                                     }
 
-                                    matchPlotIndex = this.plotMapping.get(xyPlot).intValue();
-                                    matchDataset = dataset;
-                                    matchSerie = serie;
-                                    matchItem = item;
+                                    final XYPlotPoint pt = createDataPoint(
+                                            getPlotInfos().get(this.plotMapping.get(xyPlot).intValue()),
+                                            dataset, serie, item);
+
+                                    if (pt1 == null) {
+                                        pt1 = pt;
+                                    } else if (pt2 == null) {
+                                        pt2 = pt;
+                                    }
                                 }
                             }
                         }
+                    }
+
+                    logger.debug("matching points: {}", nMatchs);
+
+                    if (nMatchs != 0) {
+                        dataPoints.put(xyPlot, new XYPlotPoint[]{pt1, pt2});
                     }
                 }
             }
 
             if (logger.isDebugEnabled()) {
-                logger.debug("findDataPoint: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
+                logger.debug("findDataPoints: duration = {} ms.", 1e-6d * (System.nanoTime() - startTime));
             }
         }
-        // note: if matchPlotIndex = -1 then matchItem = -1 so returns DataPoint.UNDEFINED:
-        return createDataPoint((matchPlotIndex != -1) ? getPlotInfos().get(matchPlotIndex) : null, matchDataset, matchSerie, matchItem);
+        return (dataPoints != null && !dataPoints.isEmpty()) ? dataPoints : null;
     }
 
     /**
@@ -1003,11 +1055,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param anchorY range axis coordinate
      * @param xRatio pixels per data on domain axis
      * @param yRatio pixels per data on range axis
-     * @return found Point2D (data coordinates) or Point2D(NaN, NaN)
+     * @return found DataPointer or null
      */
-    private static DataPoint findDataPoint(final PlotInfo info, final XYPlot xyPlot,
-            final double anchorX, final double anchorY,
-            final double xRatio, final double yRatio) {
+    private static DataPointer findDataPointer(final PlotInfo info, final XYPlot xyPlot,
+                                               final double anchorX, final double anchorY,
+                                               final double xRatio, final double yRatio) {
         int matchSerie = -1;
         int matchItem = -1;
 
@@ -1050,7 +1102,34 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             }
         }
 
-        return createDataPoint(info, dataset, matchSerie, matchItem);
+        return createDataPointer(dataset, matchSerie, matchItem);
+    }
+
+    /**
+     * Create the data point given the dataset and corresponding row / col values
+     * @param dataset corresponding dataset
+     * @param matchSerie index of the series
+     * @param matchItem index of the item
+     * @return found DataPointer or null
+     */
+    private static DataPointer createDataPointer(final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
+                                                 final int matchSerie, final int matchItem) {
+        if (matchItem != -1) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Matching item [serie = " + matchSerie + ", item = " + matchItem + "]");
+                logger.debug("SeriesKey = {}", dataset.getSeriesKey(matchSerie));
+            }
+
+            final OITableSerieKey serieKey = (OITableSerieKey) dataset.getSeriesKey(matchSerie);
+
+            final int row = dataset.getDataRow(matchSerie, matchItem);
+            final int col = dataset.getDataCol(matchSerie, matchItem);
+
+            // Create a new data pointer with (row, col):
+            return new DataPointer(serieKey.getDataPointer(), row, col);
+        }
+        logger.debug("No Matching item.");
+        return null;
     }
 
     /**
@@ -1061,29 +1140,19 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param matchItem index of the item
      * @return found DataPoint (data coordinates) or DataPoint.UNDEFINED
      */
-    private static DataPoint createDataPoint(final PlotInfo info, final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
-            final int matchSerie, final int matchItem) {
+    private static XYPlotPoint createDataPoint(final PlotInfo info, final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
+                                               final int matchSerie, final int matchItem) {
         if (matchItem != -1) {
             final double matchX = dataset.getXValue(matchSerie, matchItem);
             final double matchY = dataset.getYValue(matchSerie, matchItem);
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("Matching item [serie = " + matchSerie + ", item = " + matchItem + "] : (" + matchX + ", " + matchY + ")");
-                logger.debug("SeriesKey = {}", dataset.getSeriesKey(matchSerie));
-            }
-
-            final OITableSerieKey serieKey = (OITableSerieKey) dataset.getSeriesKey(matchSerie);
-
-            final DataPointer ptrKey = serieKey.getDataPointer();
-            final int row = dataset.getDataRow(matchSerie, matchItem);
-
             // Create a new data pointer with (row, col):
-            final DataPointer ptr = new DataPointer(ptrKey.getOiData(), row, ptrKey.getCol());
-
-            return new DataPointInfo(info.xAxisInfo, info.yAxisInfo, matchX, matchY, ptr);
+            final DataPointer ptr = createDataPointer(dataset, matchSerie, matchItem);
+            if (ptr != null) {
+                return new DataPointInfo(info.xAxisInfo, info.yAxisInfo, matchX, matchY, ptr);
+            }
         }
-        logger.debug("No Matching item.");
-        return DataPoint.UNDEFINED;
+        return XYPlotPoint.UNDEFINED;
     }
 
     /**
@@ -1237,7 +1306,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             final boolean hasData = isHasData();
 
             if (hasData) {
-                refreshCrosshair(ocm.getSelection());
+                refreshCrosshairs(ocm.getSelection());
 
                 final Set<String> distinct = new LinkedHashSet<String>();
 
@@ -1956,10 +2025,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param info plot information to update
      */
     private void updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
-            final PlotDefinition plotDef, final int yAxisIndex,
-            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
-            final Converter initialXConverter, final Converter initialYConverter,
-            final PlotInfo info) {
+                            final PlotDefinition plotDef, final int yAxisIndex,
+                            final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
+                            final Converter initialXConverter, final Converter initialYConverter,
+                            final PlotInfo info) {
 
         final boolean isLogDebug = logger.isDebugEnabled();
 
@@ -2218,10 +2287,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // Iterate on wave channels (j):
         for (int i, j = 0, k, idx; j < nWaveChannels; j++) {
 
-            final DataPointer ptr = new DataPointer(oiData,
-                    DataPointer.UNDEFINED,
-                    (useWaveLengths) ? j : DataPointer.UNDEFINED
-            );
+            final OIDataPointer ptr = new OIDataPointer(oiData);
 
             // Iterate on baselines (k):
             for (k = 0; k < nStaIndexes; k++) {
@@ -3047,7 +3113,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 updatePlot();
                 break;
             case SELECTION_CHANGED:
-                refreshCrosshair(event.getSelection());
+                refreshCrosshairs(event.getSelection());
                 break;
             default:
         }

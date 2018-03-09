@@ -9,9 +9,9 @@ import fr.jmmc.oiexplorer.core.gui.AxisInfo;
  *
  * @author bourgesl
  */
-public class DataPoint {
+public class XYPlotPoint {
 
-    public static final DataPoint UNDEFINED = new DataPoint(null, null, Double.NaN, Double.NaN);
+    public static final XYPlotPoint UNDEFINED = new XYPlotPoint(null, null, Double.NaN, Double.NaN);
 
     /* members */
     /** x axis information */
@@ -23,7 +23,7 @@ public class DataPoint {
     /** y coordinate */
     private final double y;
 
-    public DataPoint(final AxisInfo xAxisInfo, final AxisInfo yAxisInfo,
+    public XYPlotPoint(final AxisInfo xAxisInfo, final AxisInfo yAxisInfo,
                      final double x, final double y) {
         this.xAxisInfo = xAxisInfo;
         this.yAxisInfo = yAxisInfo;
@@ -49,7 +49,7 @@ public class DataPoint {
 
     @Override
     public String toString() {
-        return "DataPoint{" + "x=" + x + ", y=" + y + '}';
+        return "XYPlotPoint{" + "x=" + x + ", y=" + y + '}';
     }
 
 }

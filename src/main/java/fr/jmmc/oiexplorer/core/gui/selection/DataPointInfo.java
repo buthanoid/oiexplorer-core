@@ -9,7 +9,7 @@ import fr.jmmc.oiexplorer.core.gui.AxisInfo;
  *
  * @author bourgesl
  */
-public final class DataPointInfo extends DataPoint {
+public final class DataPointInfo extends XYPlotPoint {
 
     private final DataPointer ptr;
 
