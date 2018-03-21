@@ -10,6 +10,7 @@ import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oiexplorer.core.gui.model.ColumnsTableModel;
 import fr.jmmc.oiexplorer.core.gui.model.KeywordsTableModel;
+import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.fits.FitsTable;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
@@ -63,9 +64,9 @@ public final class FitsTableViewer extends javax.swing.JPanel {
     }
 
     // Display Table
-    private FitsTableViewer setTable(final FitsTable table) {
-        keywordsModel.setFitsHdu(table);
-        columnsModel.setFitsHdu(table);
+    private FitsTableViewer setHdu(final FitsHDU hdu) {
+        keywordsModel.setFitsHdu(hdu);
+        columnsModel.setFitsHdu((hdu instanceof FitsTable) ? (FitsTable) hdu : null);
 
         if (jTableKeywords.getRowCount() != 0) {
             AutofitTableColumns.autoResizeTable(jTableKeywords);
@@ -85,19 +86,23 @@ public final class FitsTableViewer extends javax.swing.JPanel {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
-        java.awt.GridBagConstraints gridBagConstraints;
 
+        jSplitPaneVert = new javax.swing.JSplitPane();
         jScrollPaneKeywords = new javax.swing.JScrollPane();
         jTableKeywords = new javax.swing.JTable();
         jScrollPaneColumns = new javax.swing.JScrollPane();
         jTableColumns = new javax.swing.JTable();
 
         setName("Form"); // NOI18N
-        setLayout(new java.awt.GridBagLayout());
+        setLayout(new java.awt.BorderLayout());
+
+        jSplitPaneVert.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
+        jSplitPaneVert.setName("jSplitPaneVert"); // NOI18N
 
         jScrollPaneKeywords.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPaneKeywords.setColumnHeaderView(null);
         jScrollPaneKeywords.setName("jScrollPaneKeywords"); // NOI18N
+        jScrollPaneKeywords.setPreferredSize(new java.awt.Dimension(300, 300));
         jScrollPaneKeywords.setViewportView(null);
 
         jTableKeywords.setModel(keywordsModel);
@@ -106,17 +111,13 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         jTableKeywords.setName("jTableKeywords"); // NOI18N
         jScrollPaneKeywords.setViewportView(jTableKeywords);
 
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 0.2;
-        add(jScrollPaneKeywords, gridBagConstraints);
+        jSplitPaneVert.setLeftComponent(jScrollPaneKeywords);
 
         jScrollPaneColumns.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
         jScrollPaneColumns.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPaneColumns.setName("jScrollPaneColumns"); // NOI18N
+        jScrollPaneColumns.setPreferredSize(new java.awt.Dimension(300, 300));
+        jScrollPaneColumns.setViewportView(null);
 
         jTableColumns.setModel(columnsModel);
         jTableColumns.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
@@ -124,19 +125,16 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         jTableColumns.setName("jTableColumns"); // NOI18N
         jScrollPaneColumns.setViewportView(jTableColumns);
 
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 0.8;
-        add(jScrollPaneColumns, gridBagConstraints);
+        jSplitPaneVert.setRightComponent(jScrollPaneColumns);
+
+        add(jSplitPaneVert, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPaneColumns;
     private javax.swing.JScrollPane jScrollPaneKeywords;
+    private javax.swing.JSplitPane jSplitPaneVert;
     private javax.swing.JTable jTableColumns;
     private javax.swing.JTable jTableKeywords;
     // End of variables declaration//GEN-END:variables
@@ -148,15 +146,12 @@ public final class FitsTableViewer extends javax.swing.JPanel {
             OIFitsFile oiFitsFile = OIFitsLoader.loadOIFits("/home/bourgesl/dev/oitools-public/src/test/resources/oifits/GRAVI.2016-06-23T03:10:17.458_singlesciviscalibrated.fits");
             oiFitsFile.analyze();
 
+            if (oiFitsFile.getPrimaryImageHDU() != null) {
+                showHDU(oiFitsFile.getPrimaryImageHDU());
+            }
+
             for (FitsTable table : oiFitsFile.getOITableList()) {
-                final JFrame frame = new JFrame("Table: " + table.toString());
-                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-                frame.setMinimumSize(new Dimension(800, 800));
-
-                frame.add(new FitsTableViewer().setTable(table));
-                frame.pack();
-                frame.setVisible(true);
+                showHDU(table);
             }
 
         } catch (IOException ex) {
@@ -164,6 +159,17 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         } catch (FitsException ex) {
             Logger.getLogger(FitsTableViewer.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private static void showHDU(final FitsHDU hdu) {
+        final JFrame frame = new JFrame("HDU: " + hdu.toString());
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        frame.setMinimumSize(new Dimension(800, 800));
+
+        frame.add(new FitsTableViewer().setHdu(hdu));
+        frame.pack();
+        frame.setVisible(true);
     }
 
     /**
