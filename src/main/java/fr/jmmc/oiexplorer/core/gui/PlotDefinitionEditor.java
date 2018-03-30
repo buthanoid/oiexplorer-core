@@ -117,7 +117,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
         }
 
-        // TODO check if it has to be done by the netbeans GUI builder ?
         xAxisEditor = new AxisEditor(this);
         xAxisPanel.add(xAxisEditor);
 
@@ -207,6 +206,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 yAxes.clear();
                 yAxesPanel.removeAll();
 
+// TODO: keep user settings for previous axis !                
                 for (Axis yAxis : plotDef.getYAxes()) {
                     addYEditor((Axis) yAxis.clone());
                 }
@@ -289,8 +289,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         if (oiFitsFile.hasOiT3()) {
             oiFitsFile.getOiT3()[0].getNumericalColumnsNames(columns);
         }
-        if (oiFitsFile.hasOiSpectrum()) {
-            oiFitsFile.getOiSpectrum()[0].getNumericalColumnsNames(columns);
+        if (oiFitsFile.hasOiFlux()) {
+            oiFitsFile.getOiFlux()[0].getNumericalColumnsNames(columns);
         }
 
         return columns;
