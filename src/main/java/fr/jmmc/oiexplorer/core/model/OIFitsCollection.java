@@ -3,6 +3,8 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
+import fr.jmmc.oitools.model.TargetManager;
+import fr.jmmc.oitools.model.InstrumentModeManager;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.jmcs.util.ToStringable;
 import fr.jmmc.oiexplorer.core.model.oi.TargetUID;
@@ -172,10 +174,6 @@ public final class OIFitsCollection implements ToStringable {
     public void analyzeCollection() {
         clearCache();
 
-        // Always define mapping for Undefined values:
-        imm.register(InstrumentMode.UNDEFINED);
-        tm.register(Target.UNDEFINED);
-
         // analyze instrument modes & targets:
         for (OIFitsFile oiFitsFile : oiFitsCollection.values()) {
             for (OIWavelength oiTable : oiFitsFile.getOiWavelengths()) {
@@ -183,7 +181,7 @@ public final class OIFitsCollection implements ToStringable {
             }
 
             if (oiFitsFile.hasOiTarget()) {
-                for (Target target : oiFitsFile.getOiTarget().getTargetObjToTargetId().keySet()) {
+                for (Target target : oiFitsFile.getOiTarget().getTargetSet()) {
                     tm.register(target);
                 }
             }

@@ -3,7 +3,6 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model.util;
 
-import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oitools.model.Granule;
 import fr.jmmc.oitools.model.Granule.GranuleField;
 import fr.jmmc.oitools.model.InstrumentMode;
@@ -27,41 +26,6 @@ public final class GranuleComparator implements Comparator<Granule> {
                     GranuleField.NIGHT
             )
     );
-
-    public static final Comparator<Target> CMP_TARGET = new Comparator<Target>() {
-        @Override
-        public int compare(final Target t1, final Target t2) {
-            // Just name
-            return String.CASE_INSENSITIVE_ORDER.compare(t1.getTarget(), t2.getTarget());
-        }
-    };
-
-    public static final Comparator<InstrumentMode> CMP_INS_MODE = new Comparator<InstrumentMode>() {
-        @Override
-        public int compare(final InstrumentMode i1, final InstrumentMode i2) {
-            // name
-            int cmp = String.CASE_INSENSITIVE_ORDER.compare(i1.getInsName(), i2.getInsName());
-            if (cmp != 0) {
-                return cmp;
-            }
-            // nb channels
-            cmp = NumberUtils.compare(i1.getNbChannels(), i2.getNbChannels());
-            if (cmp != 0) {
-                return cmp;
-            }
-            cmp = Float.compare(i1.getResPower(), i2.getResPower());
-
-            return cmp;
-        }
-    };
-
-    @SuppressWarnings("unchecked")
-    public static final Comparator<NightId> CMP_NIGHT = new Comparator<NightId>() {
-        @Override
-        public int compare(NightId n1, NightId n2) {
-            return NumberUtils.compare(n1.getNightId(), n2.getNightId());
-        }
-    };
 
     // members:
     private final List<GranuleField> sortDirectives;
@@ -109,11 +73,11 @@ public final class GranuleComparator implements Comparator<Granule> {
     public Comparator getComparator(GranuleField field) {
         switch (field) {
             case TARGET:
-                return CMP_TARGET;
+                return Target.CMP_TARGET;
             case INS_MODE:
-                return CMP_INS_MODE;
+                return InstrumentMode.CMP_INS_MODE;
             case NIGHT:
-                return CMP_NIGHT;
+                return NightId.CMP_NIGHT;
             default:
                 return null;
         }
