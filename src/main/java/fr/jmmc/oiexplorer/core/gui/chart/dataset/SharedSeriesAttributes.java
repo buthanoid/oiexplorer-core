@@ -5,7 +5,7 @@ package fr.jmmc.oiexplorer.core.gui.chart.dataset;
 
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oiexplorer.core.gui.chart.ColorPalette;
-import fr.jmmc.oiexplorer.core.model.util.StationNamesComparator;
+import fr.jmmc.oitools.util.StationNamesComparator;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;

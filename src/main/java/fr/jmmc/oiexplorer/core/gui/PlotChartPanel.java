@@ -45,7 +45,7 @@ import static fr.jmmc.oiexplorer.core.model.plot.ColorMapping.OBSERVATION_DATE;
 import static fr.jmmc.oiexplorer.core.model.plot.ColorMapping.STATION_INDEX;
 import static fr.jmmc.oiexplorer.core.model.plot.ColorMapping.WAVELENGTH_RANGE;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
-import fr.jmmc.oiexplorer.core.model.util.StationNamesComparator;
+import fr.jmmc.oitools.util.StationNamesComparator;
 import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.DataRange;
