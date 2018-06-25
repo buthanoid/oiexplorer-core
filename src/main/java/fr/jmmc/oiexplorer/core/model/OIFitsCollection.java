@@ -67,7 +67,7 @@ public final class OIFitsCollection extends fr.jmmc.oitools.model.OIFitsCollecti
     public void analyzeCollection() {
         super.analyzeCollection();
 
-        for (OIFitsFile oiFitsFile : oiFitsCollection.values()) {
+        for (OIFitsFile oiFitsFile : getSortedOIFitsFiles()) {
 
             // Note: per OIFits, multiple target ids may have the same target name !
             // take care !
