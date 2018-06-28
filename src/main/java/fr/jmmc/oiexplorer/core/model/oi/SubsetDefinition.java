@@ -23,9 +23,7 @@ import javax.xml.bind.annotation.XmlType;
  *   &lt;complexContent&gt;
  *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-base/0.1}Identifiable"&gt;
  *       &lt;sequence&gt;
- *         &lt;element name="target" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TargetUID"/&gt;
- *         &lt;element name="table" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}TableUID" maxOccurs="unbounded" minOccurs="0"/&gt;
- *         &lt;element name="filter" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="filter" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}SubsetFilter" maxOccurs="unbounded"/&gt;
  *       &lt;/sequence&gt;
  *     &lt;/extension&gt;
  *   &lt;/complexContent&gt;
@@ -36,73 +34,14 @@ import javax.xml.bind.annotation.XmlType;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "SubsetDefinition", propOrder = {
-    "target",
-    "tables",
     "filters"
 })
 public class SubsetDefinition
     extends Identifiable
 {
 
-    @XmlElement(required = true)
-    protected TargetUID target;
-    @XmlElement(name = "table")
-    protected List<TableUID> tables;
-    @XmlElement(name = "filter")
-    protected List<String> filters;
-
-    /**
-     * Gets the value of the target property.
-     * 
-     * @return
-     *     possible object is
-     *     {@link TargetUID }
-     *     
-     */
-    public TargetUID getTarget() {
-        return target;
-    }
-
-    /**
-     * Sets the value of the target property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link TargetUID }
-     *     
-     */
-    public void setTarget(TargetUID value) {
-        this.target = value;
-    }
-
-    /**
-     * Gets the value of the tables property.
-     * 
-     * <p>
-     * This accessor method returns a reference to the live list,
-     * not a snapshot. Therefore any modification you make to the
-     * returned list will be present inside the JAXB object.
-     * This is why there is not a <CODE>set</CODE> method for the tables property.
-     * 
-     * <p>
-     * For example, to add a new item, do as follows:
-     * <pre>
-     *    getTables().add(newItem);
-     * </pre>
-     * 
-     * 
-     * <p>
-     * Objects of the following type(s) are allowed in the list
-     * {@link TableUID }
-     * 
-     * 
-     */
-    public List<TableUID> getTables() {
-        if (tables == null) {
-            tables = new ArrayList<TableUID>();
-        }
-        return this.tables;
-    }
+    @XmlElement(name = "filter", required = true)
+    protected List<SubsetFilter> filters;
 
     /**
      * Gets the value of the filters property.
@@ -122,18 +61,33 @@ public class SubsetDefinition
      * 
      * <p>
      * Objects of the following type(s) are allowed in the list
-     * {@link String }
+     * {@link SubsetFilter }
      * 
      * 
      */
-    public List<String> getFilters() {
+    public List<SubsetFilter> getFilters() {
         if (filters == null) {
-            filters = new ArrayList<String>();
+            filters = new ArrayList<SubsetFilter>();
         }
         return this.filters;
     }
     
 //--simple--preserve
+    /**
+    * Return the first SubsetFilter (or create a new instance)
+    * @return SubsetFilter instance
+    */
+    public SubsetFilter getFilter() {
+        final SubsetFilter filter;
+        if (filters == null || filters.isEmpty()) {
+            filter = new SubsetFilter();
+            getFilters().add(filter);
+        } else {
+            filter = getFilters().get(0);
+        }
+        return filter;
+    }
+    
     /**
      * Perform a deep-copy EXCEPT Identifiable attributes of the given other instance into this instance
      * 
@@ -145,12 +99,8 @@ public class SubsetDefinition
     public void copyValues(final fr.jmmc.oiexplorer.core.model.OIBase other) {
         final SubsetDefinition subset = (SubsetDefinition) other;
 
-        // deep copy target, tables:
-        this.target = (subset.getTarget() != null) ? (TargetUID) subset.getTarget().clone() : null;
-        this.tables = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.getTables());
-
-        // copy filters until filter are defined (TODO):
-        this.filters = fr.jmmc.jmcs.util.ObjectUtils.copyList(subset.getFilters());
+        // deep copy filters:
+        this.filters = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.getFilters());
     }
 
     @Override
@@ -159,12 +109,6 @@ public class SubsetDefinition
             return false;
         }
         final SubsetDefinition other = (SubsetDefinition) obj;
-        if (this.target != other.target && (this.target == null || !this.target.equals(other.target))) {
-            return false;
-        }
-        if (this.tables != other.tables && (this.tables == null || !this.tables.equals(other.tables))) {
-            return false;
-        }
         if (this.filters != other.filters && (this.filters == null || !this.filters.equals(other.filters))) {
             return false;
         }
@@ -199,16 +143,8 @@ public class SubsetDefinition
         super.toString(sb, full); // Identifiable
 
         if (full) {
-            sb.append(", target='").append(this.target).append('\'');
-
-            sb.append(", tables=");
-            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.tables);
-
             sb.append(", filters=");
-
-            // TODO: fix filter impl:
-            sb.append(this.filters);
-            // fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.filters);
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.filters);
         }
         sb.append('}');
     }

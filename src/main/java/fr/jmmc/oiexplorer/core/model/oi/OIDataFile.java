@@ -98,8 +98,8 @@ public class OIDataFile
     }
 
     /**
-     * Return the loaded oiFitsFile structure
-     * @param loaded oiFitsFile structure
+     * Define the loaded oiFitsFile structure
+     * @param oiFitsFile loaded oiFitsFile structure
      */
     public final void setOIFitsFile(final fr.jmmc.oitools.model.OIFitsFile oiFitsFile) {
         this.oiFitsFile = oiFitsFile;

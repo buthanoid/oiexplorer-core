@@ -24,11 +24,14 @@ import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
 import fr.jmmc.oiexplorer.core.model.oi.OiDataCollection;
 import fr.jmmc.oiexplorer.core.model.oi.Plot;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
+import fr.jmmc.oiexplorer.core.model.oi.SubsetFilter;
 import fr.jmmc.oiexplorer.core.model.oi.TableUID;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oitools.meta.OIFitsStandard;
+import fr.jmmc.oitools.model.NightId;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
+import fr.jmmc.oitools.model.OIFitsCollection;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.jmmc.oitools.model.OIT3;
@@ -152,7 +155,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker,
-            final LoadOIFitsListener listener) throws IOException, IllegalStateException, XmlBindException {
+                                     final LoadOIFitsListener listener) throws IOException, IllegalStateException, XmlBindException {
         loadOIFitsCollection(file, checker, listener, false);
     }
 
@@ -167,7 +170,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @throws XmlBindException if a JAXBException was caught while creating an unmarshaller
      */
     public void loadOIFitsCollection(final File file, final OIFitsChecker checker,
-            final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) throws IOException, IllegalStateException, XmlBindException {
+                                     final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) throws IOException, IllegalStateException, XmlBindException {
 
         final OiDataCollection loadedUserCollection = (OiDataCollection) JAXBUtils.loadObject(file.toURI().toURL(), this.jf);
 
@@ -184,9 +187,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         // then add SubsetDefinition:
         for (SubsetDefinition subsetDefinition : oiDataCollection.getSubsetDefinitions()) {
             // fix OIDataFile reference:
-            for (TableUID tableUID : subsetDefinition.getTables()) {
-                tableUID.setFile(getOIDataFile(tableUID.getFile().getId()));
-                // if missing, remove ?
+            for (SubsetFilter filter : subsetDefinition.getFilters()) {
+                for (TableUID tableUID : filter.getTables()) {
+                    tableUID.setFile(getOIDataFile(tableUID.getFile().getId()));
+                    // if missing, remove ?
+                }
             }
             addSubsetDefinitionRef(subsetDefinition);
         }
@@ -246,7 +251,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param appendOIFitsFilesOnly load only OIFits and skip plot+subset if true, else reset and load whole collection content
      */
     private void loadOIDataCollection(final File file, final OiDataCollection oiDataCollection, final OIFitsChecker checker,
-            final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) {
+                                      final LoadOIFitsListener listener, final boolean appendOIFitsFilesOnly) {
 
         final List<OIDataFile> oidataFiles = oiDataCollection.getFiles();
         final List<String> fileLocations = new ArrayList<String>(oidataFiles.size());
@@ -347,7 +352,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         private final OIFitsChecker checker;
 
         LoadOIFitsFilesSwingWorker(final List<String> fileLocations, final OIFitsChecker checker,
-                final LoadOIFitsListener listener) {
+                                   final LoadOIFitsListener listener) {
             super(OIExplorerTaskRegistry.TASK_LOAD_OIFITS);
             this.fileLocations = fileLocations;
             this.checker = checker;
@@ -625,7 +630,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param remove true to remove the column; false to update the column
      */
     private void modifyExprColumnInOIFitsCollection(final String userName, final String expression,
-            final boolean remove) {
+                                                    final boolean remove) {
 
         final String name = "[" + userName + "]";
 
@@ -645,7 +650,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
             final String[] messages = new String[3];
 
-            for (OIFitsFile oiFitsFile : oiFitsCollection.getOiFitsPerTarget().values()) {
+            for (OIFitsFile oiFitsFile : oiFitsCollection.getSortedOIFitsFiles()) {
                 logger.debug("oiFitsFile: {}", oiFitsFile);
 
                 if (vis == null) {
@@ -714,6 +719,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                         }
                     }
                 }
+
+                // TODO: support OI_FLUX ...
                 if (n == 3) {
                     break;
                 }
@@ -774,7 +781,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
         final long startTime = System.nanoTime();
 
-        for (OIFitsFile oiFitsFile : oiFitsCollection.getOiFitsPerTarget().values()) {
+        // TODO: what OIData should be processed ? current subset or all data ?
+        for (OIFitsFile oiFitsFile : oiFitsCollection.getSortedOIFitsFiles()) {
             logger.debug("oiFitsFile: {}", oiFitsFile);
 
             for (OIData oiData : oiFitsFile.getOiDataList()) {
@@ -1013,43 +1021,52 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             logger.debug("updateSubsetDefinitionRef: subsetDefinition: {}", subsetDefinition);
         }
 
-        // Get OIFitsFile structure for this target:
+        // TODO: loop on subset filters:
+        List<OIData> oiDatas = null;
+
+        for (SubsetFilter filter : subsetDefinition.getFilters()) {
+            String targetUID = null;
+            String insModeUID = null;
+            NightId nightId = null;
+            String oiFitsPath = null;
+            Integer extNb = null;
+
+            // Target
+            targetUID = filter.getTargetUID();
+
+            // InstrumentMode
+            insModeUID = filter.getInsModeUID();
+
+            // NightId (from Integer field ?)
+            if (filter.getNightID() != null) {
+                nightId = new NightId(filter.getNightID());
+            }
+
+            // Table
+            if (!filter.getTables().isEmpty()) {
+                final TableUID table = filter.getTables().get(0); // hack
+                oiFitsPath = table.getFile().getFile();
+                extNb = table.getExtNb();
+            }
+
+            // Query OIData matching criteria:
+            oiDatas = this.oiFitsCollection.findOIData(targetUID, insModeUID, nightId, oiFitsPath, extNb, oiDatas);
+        }
+
+        // Create the OIFitsFile structure:
         final OIFitsFile oiFitsSubset;
 
-        if (this.oiFitsCollection.isEmpty()) {
+        if (oiDatas == null) {
             oiFitsSubset = null;
         } else {
-            final OIFitsFile dataForTarget = this.oiFitsCollection.getOiFits(subsetDefinition.getTarget());
+            // TODO: use Merger ?
 
-            if (dataForTarget == null) {
-                oiFitsSubset = null;
-            } else {
-                // apply table selection:
-                if (subsetDefinition.getTables().isEmpty()) {
-                    oiFitsSubset = dataForTarget;
-                } else {
-                    oiFitsSubset = new OIFitsFile(OIFitsStandard.VERSION_1);
+            // create a new OIFitsFile:
+            oiFitsSubset = new OIFitsFile(OIFitsStandard.VERSION_1);
 
-                    for (TableUID table : subsetDefinition.getTables()) {
-                        final OIDataFile oiDataFile = table.getFile();
-                        final OIFitsFile oiFitsFile = oiDataFile.getOIFitsFile();
-
-                        if (oiFitsFile != null) {
-                            final Integer extNb = table.getExtNb();
-
-                            // add all tables:
-                            for (OIData oiData : dataForTarget.getOiDataList()) {
-                                // file path comparison:
-                                if (oiData.getOIFitsFile().equals(oiFitsFile)) {
-
-                                    if (extNb == null || oiData.getExtNb() == extNb.intValue()) {
-                                        oiFitsSubset.addOiTable(oiData);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            // add all tables:
+            for (OIData oiData : oiDatas) {
+                oiFitsSubset.addOiTable(oiData);
             }
         }
 

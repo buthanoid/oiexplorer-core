@@ -62,19 +62,19 @@ public class ObjectFactory {
     }
 
     /**
+     * Create an instance of {@link SubsetFilter }
+     * 
+     */
+    public SubsetFilter createSubsetFilter() {
+        return new SubsetFilter();
+    }
+
+    /**
      * Create an instance of {@link View }
      * 
      */
     public View createView() {
         return new View();
-    }
-
-    /**
-     * Create an instance of {@link TargetUID }
-     * 
-     */
-    public TargetUID createTargetUID() {
-        return new TargetUID();
     }
 
     /**

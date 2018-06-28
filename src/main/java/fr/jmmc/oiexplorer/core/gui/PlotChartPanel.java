@@ -124,7 +124,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private final static Color COLOR_LABEL_BCKG = new Color(255, 216, 0); // School bus yellow
     /** crosshair line color */
     private final static Color COLOR_XING_LINE = new Color(119, 139, 165); // Shadow Blue
-    
+
     /** double formatter for wave lengths */
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
     /** double formatter for other values */
@@ -455,7 +455,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             sb.append('_');
 
             // Add target name:
-            final String altName = StringUtils.replaceNonAlphaNumericCharsByUnderscore(getTargetName());
+            final String altName = StringUtils.replaceNonAlphaNumericCharsByUnderscore(getTargetUID());
 
             sb.append(altName).append('_');
 
@@ -1392,7 +1392,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     toString(distinct, sb, " ", " / ", 3, "MULTI DATE");
                 }
 
-                sb.append(" - Source: ").append(getTargetName());
+                sb.append(" - Source: ").append(getTargetUID());
 
                 ChartUtils.addSubtitle(this.chart, sb.toString());
 
@@ -2164,11 +2164,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final short[] targetIds;
         if (checkTargetId) {
             // targetID can not be null as the OIData table is supposed to have the target:
-            matchTargetId = oiData.getTargetId(getTargetName());
-            targetIds = oiData.getTargetId();
+            final Short foundId = oiData.getTargetId(getTargetUID());
+            if (foundId != null) {
+                matchTargetId = foundId;
+                targetIds = oiData.getTargetId();
 
-            if (isLogDebug) {
-                logger.debug("matchTargetId: {}", matchTargetId);
+                if (isLogDebug) {
+                    logger.debug("matchTargetId: {}", matchTargetId);
+                }
+            } else {
+                matchTargetId = -1;
+                targetIds = null;
             }
         } else {
             matchTargetId = -1;
@@ -2730,7 +2736,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     this.chartDrawStartTime = System.nanoTime();
                     break;
                 case ChartProgressEvent.DRAWING_FINISHED:
-                    logger.debug("Drawing chart time[{}] = {} ms.", getTargetName(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                    logger.debug("Drawing chart time[{}] = {} ms.", getTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
                     this.chartDrawStartTime = 0l;
                     break;
                 default:
@@ -2743,7 +2749,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     this.chartDrawStartTime = System.nanoTime();
                     break;
                 case ChartProgressEvent.DRAWING_FINISHED:
-                    logger.info("Drawing chart time[{}] = {} ms.", getTargetName(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                    logger.info("Drawing chart time[{}] = {} ms.", getTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
                     this.chartDrawStartTime = 0l;
                     break;
                 default:
@@ -3071,11 +3077,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         return getPlot().getSubsetDefinition().getOIFitsSubset();
     }
 
-    private String getTargetName() {
-        if (getPlot() == null || getPlot().getSubsetDefinition() == null || getPlot().getSubsetDefinition().getTarget() == null) {
+    private String getTargetUID() {
+        if (getPlot() == null || getPlot().getSubsetDefinition() == null
+                || getPlot().getSubsetDefinition().getFilter().getTargetUID() == null) {
             return null;
         }
-        return getPlot().getSubsetDefinition().getTarget().getTarget();
+        // TODO: handle multiple filters (TargetUID) ...
+        return getPlot().getSubsetDefinition().getFilter().getTargetUID();
 
     }
 
