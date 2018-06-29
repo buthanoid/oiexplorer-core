@@ -143,7 +143,10 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         // invoke Bootstrapper method to initialize logback now:
         Bootstrapper.getState();
         try {
-            OIFitsFile oiFitsFile = OIFitsLoader.loadOIFits("/home/bourgesl/dev/oitools-public/src/test/resources/oifits/GRAVI.2016-06-23T03:10:17.458_singlesciviscalibrated.fits");
+            OIFitsFile oiFitsFile = OIFitsLoader.loadOIFits(
+//                    "/home/bourgesl/dev/oitools-public/src/test/resources/oifits/GRAVI.2016-06-23T03:10:17.458_singlesciviscalibrated.fits"
+                    "/home/bourgesl/OIFitsExplorer/private/GRAVITY.2016-07-15T05-27-34_visdualsciraw_visdualcalibrated.fits"
+            );
             oiFitsFile.analyze();
 
             if (oiFitsFile.getPrimaryImageHDU() != null) {
