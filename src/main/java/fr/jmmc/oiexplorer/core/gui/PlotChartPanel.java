@@ -52,6 +52,7 @@ import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
+import fr.jmmc.oitools.model.TargetIdMatcher;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Point;
@@ -2158,28 +2159,24 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final boolean[][] flags = (checkFlaggedData) ? oiData.getFlag() : null;
 
         // Use targetId on each data row ?
-        final boolean checkTargetId = !oiData.hasSingleTarget();
-
-        final short matchTargetId;
-        final short[] targetIds;
-        if (checkTargetId) {
+        final TargetIdMatcher targetIdMatcher;
+        if (oiData.hasSingleTarget()) {
+            targetIdMatcher = null;
+        } else {
             // targetID can not be null as the OIData table is supposed to have the target:
-            final Short foundId = oiData.getTargetId(getTargetUID());
-            if (foundId != null) {
-                matchTargetId = foundId;
-                targetIds = oiData.getTargetId();
+            final TargetIdMatcher matcher = oiData.getTargetIdMatcher(getTargetUID());
+            if (matcher != null) {
+                targetIdMatcher = (matcher.matchAll(oiData.getDistinctTargetId())) ? null : matcher;
 
                 if (isLogDebug) {
-                    logger.debug("matchTargetId: {}", matchTargetId);
+                    logger.debug("targetIdMatcher: {}", targetIdMatcher);
                 }
             } else {
-                matchTargetId = -1;
-                targetIds = null;
+                targetIdMatcher = null;
             }
-        } else {
-            matchTargetId = -1;
-            targetIds = null;
         }
+
+        final short[] targetIds = (targetIdMatcher != null) ? oiData.getTargetId() : null;
 
         // Get Global SharedSeriesAttributes:
         final SharedSeriesAttributes oixpAttrs = SharedSeriesAttributes.INSTANCE_OIXP;
@@ -2351,12 +2348,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         isFlag = true;
                     }
 
-                    if (checkTargetId) {
-                        if (matchTargetId != targetIds[i]) {
-                            // data row does not coorespond to current target so skip it:
-                            nSkipTarget++;
-                            continue;
-                        }
+                    if ((targetIdMatcher != null) && !targetIdMatcher.match(targetIds[i])) {
+                        // data row does not correspond to current target so skip it:
+                        nSkipTarget++;
+                        continue;
                     }
 
                     // staConf corresponds to the baseline also:

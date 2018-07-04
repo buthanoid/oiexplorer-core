@@ -37,6 +37,8 @@ import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.jmmc.oitools.model.OIT3;
 import fr.jmmc.oitools.model.OIVis;
 import fr.jmmc.oitools.model.OIVis2;
+import fr.jmmc.oitools.processing.Selector;
+import fr.jmmc.oitools.processing.SelectorResult;
 import fr.nom.tam.fits.FitsException;
 import java.io.File;
 import java.io.IOException;
@@ -1021,51 +1023,47 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             logger.debug("updateSubsetDefinitionRef: subsetDefinition: {}", subsetDefinition);
         }
 
-        // TODO: loop on subset filters:
-        List<OIData> oiDatas = null;
+        final Selector selector = new Selector();
+        SelectorResult result = null;
 
         for (SubsetFilter filter : subsetDefinition.getFilters()) {
-            String targetUID = null;
-            String insModeUID = null;
-            NightId nightId = null;
-            String oiFitsPath = null;
-            Integer extNb = null;
+            selector.reset();
 
             // Target
-            targetUID = filter.getTargetUID();
+            selector.setTargetUID(filter.getTargetUID());
 
             // InstrumentMode
-            insModeUID = filter.getInsModeUID();
+            selector.setInsModeUID(filter.getInsModeUID());
 
             // NightId (from Integer field ?)
             if (filter.getNightID() != null) {
-                nightId = new NightId(filter.getNightID());
+                selector.setNightID(new NightId(filter.getNightID()));
             }
 
             // Table
             if (!filter.getTables().isEmpty()) {
-                final TableUID table = filter.getTables().get(0); // hack
-                oiFitsPath = table.getFile().getFile();
-                extNb = table.getExtNb();
+                for (TableUID tableUID : filter.getTables()) {
+                    selector.addTable(tableUID.getFile().getFile(), tableUID.getExtNb());
+                }
             }
 
             // Query OIData matching criteria:
-            oiDatas = this.oiFitsCollection.findOIData(targetUID, insModeUID, nightId, oiFitsPath, extNb, oiDatas);
+            result = this.oiFitsCollection.findOIData(selector, result);
         }
 
         // Create the OIFitsFile structure:
         final OIFitsFile oiFitsSubset;
 
-        if (oiDatas == null) {
+        if (result == null) {
             oiFitsSubset = null;
         } else {
-            // TODO: use Merger ?
+            // TODO: use Merger or later ?
 
-            // create a new OIFitsFile:
+            // create a new fake OIFitsFile:
             oiFitsSubset = new OIFitsFile(OIFitsStandard.VERSION_1);
 
             // add all tables:
-            for (OIData oiData : oiDatas) {
+            for (OIData oiData : result.getSortedOIDatas()) {
                 oiFitsSubset.addOiTable(oiData);
             }
         }
