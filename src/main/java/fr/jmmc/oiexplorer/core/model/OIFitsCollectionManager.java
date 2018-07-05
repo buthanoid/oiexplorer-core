@@ -37,6 +37,7 @@ import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.jmmc.oitools.model.OIT3;
 import fr.jmmc.oitools.model.OIVis;
 import fr.jmmc.oitools.model.OIVis2;
+import fr.jmmc.oitools.processing.Merger;
 import fr.jmmc.oitools.processing.Selector;
 import fr.jmmc.oitools.processing.SelectorResult;
 import fr.nom.tam.fits.FitsException;
@@ -1023,33 +1024,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             logger.debug("updateSubsetDefinitionRef: subsetDefinition: {}", subsetDefinition);
         }
 
-        final Selector selector = new Selector();
-        SelectorResult result = null;
-
-        for (SubsetFilter filter : subsetDefinition.getFilters()) {
-            selector.reset();
-
-            // Target
-            selector.setTargetUID(filter.getTargetUID());
-
-            // InstrumentMode
-            selector.setInsModeUID(filter.getInsModeUID());
-
-            // NightId (from Integer field ?)
-            if (filter.getNightID() != null) {
-                selector.setNightID(new NightId(filter.getNightID()));
-            }
-
-            // Table
-            if (!filter.getTables().isEmpty()) {
-                for (TableUID tableUID : filter.getTables()) {
-                    selector.addTable(tableUID.getFile().getFile(), tableUID.getExtNb());
-                }
-            }
-
-            // Query OIData matching criteria:
-            result = this.oiFitsCollection.findOIData(selector, result);
-        }
+        final SelectorResult result = findOIData(subsetDefinition);
 
         // Create the OIFitsFile structure:
         final OIFitsFile oiFitsSubset;
@@ -1057,7 +1032,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         if (result == null) {
             oiFitsSubset = null;
         } else {
-            // TODO: use Merger or later ?
+            // TODO: use Merger directly LATER ?
 
             // create a new fake OIFitsFile:
             oiFitsSubset = new OIFitsFile(OIFitsStandard.VERSION_1);
@@ -1088,6 +1063,49 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             }
         }
     }
+    
+    public OIFitsFile createOIFitsFromCurrentSubsetDefinition() {
+        final SubsetDefinition subsetDefinition = getCurrentSubsetDefinitionRef();
+        
+        final SelectorResult result = findOIData(subsetDefinition);
+        
+        final OIFitsFile oiFitsFile = Merger.process(result);
+        oiFitsFile.analyze();
+        
+        return oiFitsFile;
+    }
+    
+    private SelectorResult findOIData(final SubsetDefinition subsetDefinition) {
+        final Selector selector = new Selector();
+        SelectorResult result = null;
+
+        for (SubsetFilter filter : subsetDefinition.getFilters()) {
+            selector.reset();
+
+            // Target
+            selector.setTargetUID(filter.getTargetUID());
+
+            // InstrumentMode
+            selector.setInsModeUID(filter.getInsModeUID());
+
+            // NightId (from Integer field ?)
+            if (filter.getNightID() != null) {
+                selector.setNightID(new NightId(filter.getNightID()));
+            }
+
+            // Table
+            if (!filter.getTables().isEmpty()) {
+                for (TableUID tableUID : filter.getTables()) {
+                    selector.addTable(tableUID.getFile().getFile(), tableUID.getExtNb());
+                }
+            }
+
+            // Query OIData matching criteria:
+            result = this.oiFitsCollection.findOIData(selector, result);
+        }
+        return result;
+    }
+
 
     /* --- plot definition handling --------- ---------------------------- */
     /**
