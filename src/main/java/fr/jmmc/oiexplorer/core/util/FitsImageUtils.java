@@ -4,7 +4,6 @@
 package fr.jmmc.oiexplorer.core.util;
 
 import fr.jmmc.jmal.image.ImageArrayUtils;
-import fr.jmmc.jmal.image.job.ImageFlipJob;
 import fr.jmmc.jmal.image.job.ImageLowerThresholdJob;
 import fr.jmmc.jmal.image.job.ImageMinMaxJob;
 import fr.jmmc.oitools.image.FitsImage;
@@ -240,39 +239,6 @@ public final class FitsImageUtils {
             nbCols = fitsImage.getNbCols();
 
             logger.info("Square size = {} x {}", nbRows, nbCols);
-        }
-
-        if (false) {
-            // dec 2016: disabled as this modifies the image data (flip) and increments
-            // the idea was that Aspro2 adopts UV convention (positive increments) so the data are flipped
-            // to accelerate the FFT (less permutations)
-            // To be discussed later !
-
-            // 3 - flip axes to have positive increments (left to right for the column axis and bottom to top for the row axis)
-            // note: flip operation requires image size to be an even number
-            final double incRow = fitsImage.getSignedIncRow();
-            if (incRow < 0d) {
-                // flip row axis:
-                final ImageFlipJob flipJob = new ImageFlipJob(data, nbCols, nbRows, false);
-
-                flipJob.forkAndJoin();
-
-                logger.info("ImageFlipJob - flipY done");
-
-                fitsImage.setSignedIncRow(-incRow);
-            }
-
-            final double incCol = fitsImage.getSignedIncCol();
-            if (incCol < 0d) {
-                // flip column axis:
-                final ImageFlipJob flipJob = new ImageFlipJob(data, nbCols, nbRows, true);
-
-                flipJob.forkAndJoin();
-
-                logger.info("ImageFlipJob - flipX done");
-
-                fitsImage.setSignedIncCol(-incCol);
-            }
         }
     }
 
