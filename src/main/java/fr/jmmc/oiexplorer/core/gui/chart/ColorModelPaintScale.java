@@ -121,7 +121,7 @@ public class ColorModelPaintScale
      */
     @Override
     public Paint getPaint(final double value) {
-        final int colorIdx = ImageUtils.getColor(this.colorModel, this.iMaxColor,
+        final int colorIdx = ImageUtils.getColor(this.iMaxColor,
                 ImageUtils.getScaledValue((colorScale == ColorScale.LOGARITHMIC), scaledMin, scalingFactor, (float) value));
         
         return new Color(this.colorModel.getRGB((inverted) ? (iMaxColor - colorIdx) : colorIdx));
