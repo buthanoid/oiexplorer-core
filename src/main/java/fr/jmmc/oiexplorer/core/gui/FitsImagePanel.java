@@ -34,9 +34,9 @@ import fr.jmmc.oitools.image.FitsUnit;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.Image;
+import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.text.DecimalFormat;
@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * @author bourgesl
  */
 public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressListener, ZoomEventListener,
-        Observer, DocumentExportable, Disposable {
+                                                                  Observer, DocumentExportable, Disposable {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1L;
@@ -146,7 +146,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      * @param minDataRange optional minimal range for data
      */
     public FitsImagePanel(final Preferences prefs, final boolean showId, final boolean showOptions,
-            final float[] minDataRange) {
+                          final float[] minDataRange) {
         this.myPreferences = prefs;
         this.showId = showId;
         this.showOptions = showOptions;
@@ -224,11 +224,11 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     }// </editor-fold>//GEN-END:initComponents
 
   private void jComboBoxColorScaleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxColorScaleActionPerformed
-        refreshPlot();
+      refreshPlot();
   }//GEN-LAST:event_jComboBoxColorScaleActionPerformed
 
   private void jComboBoxLUTActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxLUTActionPerformed
-        refreshPlot();
+      refreshPlot();
   }//GEN-LAST:event_jComboBoxLUTActionPerformed
 
     private void jButtonDisplayKeywordsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDisplayKeywordsActionPerformed
@@ -492,7 +492,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          * @param colorScale color scaling method
          */
         private ConvertFitsImageSwingWorker(final FitsImagePanel fitsPanel, final FitsImage fitsImage, final float[] minDataRange,
-                final IndexColorModel colorModel, final ColorScale colorScale) {
+                                            final IndexColorModel colorModel, final ColorScale colorScale) {
             // get current observation version :
             super(fitsPanel.task);
             this.fitsPanel = fitsPanel;
@@ -565,32 +565,90 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 return null;
             }
 
-            _logger.info("compute[ImageChartData]: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
+            AffineTransform at = null;
 
-            final BufferedImage displayedImage;
+            int sx = 1, sy = 1;
             if (fitsImage.isIncColPositive() || !fitsImage.isIncRowPositive()) {
-                double sx = 1.0, sy = 1.0;
-                double tx = 0.0, ty = 0.0;
+                int tx = 0, ty = 0;
                 if (fitsImage.isIncColPositive()) {
                     // Flip the image horizontally to have RA orientation = East is towards the left:
-                    sx = -1.0;
+                    sx = -1;
                     tx = -image.getWidth();
                 }
                 if (!fitsImage.isIncRowPositive()) {
                     // Flip the image vertically to have DEC orientation = North is towards the top:
-                    sx = -1.0;
-                    tx = -image.getHeight();
+                    sy = -1;
+                    ty = -image.getHeight();
                 }
-                final AffineTransform at = AffineTransform.getScaleInstance(sx, sy);
+                at = AffineTransform.getScaleInstance(sx, sy);
                 at.translate(tx, ty);
+            }
 
-                final AffineTransformOp op = new AffineTransformOp(at, AffineTransformOp.TYPE_BICUBIC);
-                displayedImage = op.filter(image, null);
+            if (fitsImage.isRotAngleDefined()) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("rotate image: {} deg", fitsImage.getRotAngle());
+                }
+                // angle sign is inverted:
+                final double theta = -(sx * sy) * Math.toRadians(fitsImage.getRotAngle());
+                // should rotation happen at the pixel center or at the image center ?
+                final double anchorx = image.getWidth() / 2.0;
+                final double anchory = image.getHeight() / 2.0;
+
+                if (at == null) {
+                    at = new AffineTransform();
+                }
+                // see AffineTransform.getRotateInstance(theta, anchorx, anchory)
+                at.translate(anchorx, anchory);    // S3: final translation
+                at.rotate(theta);                  // S2: rotate around anchor
+                at.translate(-anchorx, -anchory);  // S1: translate anchor to origin
+            }
+
+            final BufferedImage displayedImage;
+            if (at != null) {
+                // Compute output bounding box:
+                final Rectangle2D bbox = new Rectangle(0, 0, image.getWidth(), image.getHeight());
+                // enlarge output image if rotation defined:
+                final Rectangle2D outbbox = (fitsImage.isRotAngleDefined()) ? ImageUtils.getBoundingBox(at, bbox) : bbox;
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("bbox:  {}", bbox);
+                    logger.debug("tbbox: {}", outbbox);
+                }
+
+                final int w = (int) Math.ceil(outbbox.getWidth());
+                final int h = (int) Math.ceil(outbbox.getHeight());
+
+                displayedImage = ImageUtils.transformImage(image, this.colorModel, at, w, h);
             } else {
                 displayedImage = image;
             }
 
-            return new ImageChartData(fitsImage, colorModel, usedColorScale, min, max, displayedImage);
+            logger.info("compute[ImageChartData]: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
+
+            // Adjust viewed area:
+            Rectangle2D.Double imgRectRef = fitsImage.getArea();
+
+            if (fitsImage.isRotAngleDefined()) {
+                // angle sign is same direction (North -> East):
+                final double theta = Math.toRadians(fitsImage.getRotAngle());
+                // should rotation happen at the pixel center or at the image center ?
+                final double anchorx = imgRectRef.getCenterX();
+                final double anchory = imgRectRef.getCenterY();
+
+                at = AffineTransform.getRotateInstance(theta, anchorx, anchory);
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("area: {}", imgRectRef);
+                }
+
+                imgRectRef = ImageUtils.getBoundingBox(at, imgRectRef);
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("rotated area: {}", imgRectRef);
+                }
+            }
+
+            return new ImageChartData(fitsImage, colorModel, usedColorScale, min, max, displayedImage, imgRectRef);
         }
 
         /**
@@ -690,21 +748,29 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             final BlockContainer infoBlock = new BlockContainer(new ColumnArrangement());
 
             if (lFitsImage.isIncRowDefined() && lFitsImage.isIncColDefined()) {
-                infoBlock.add(new TextTitle("Increments:", ChartUtils.DEFAULT_FONT));
-                infoBlock.add(new TextTitle("RA: " + FitsImage.getAngleAsString(lFitsImage.getIncCol(), df), ChartUtils.DEFAULT_FONT));
-                infoBlock.add(new TextTitle("DE: " + FitsImage.getAngleAsString(lFitsImage.getIncRow(), df), ChartUtils.DEFAULT_FONT));
+                infoBlock.add(createText("Increments:"));
+                infoBlock.add(createText("RA: " + FitsImage.getAngleAsString(lFitsImage.getIncCol(), df)));
+                infoBlock.add(createText("DE: " + FitsImage.getAngleAsString(lFitsImage.getIncRow(), df)));
 
-                infoBlock.add(new TextTitle("\nFOV:", ChartUtils.DEFAULT_FONT));
-                infoBlock.add(new TextTitle(FitsImage.getAngleAsString(lFitsImage.getMaxAngle(), df3), ChartUtils.DEFAULT_FONT));
+                infoBlock.add(createText("\nFOV:"));
+                if (lFitsImage.isRotAngleDefined()) {
+                    // FOV depends on the rotation angle
+                    final BufferedImage image = imageData.getImage();
+
+                    infoBlock.add(createText(FitsImage.getAngleAsString(lFitsImage.getMaxAngle(image.getWidth(), image.getHeight()), df3)));
+                } else {
+                    infoBlock.add(createText(FitsImage.getAngleAsString(lFitsImage.getMaxAngle(), df3)));
+                }
             }
 
             if (lFitsImage.getImageCount() > 1) {
-                infoBlock.add(new TextTitle("\nImage:" + lFitsImage.getImageIndex() + '/' + lFitsImage.getImageCount(), ChartUtils.DEFAULT_FONT));
+                infoBlock.add(createText("\nImage:" + lFitsImage.getImageIndex() + '/' + lFitsImage.getImageCount()));
             }
 
             if (!Double.isNaN(lFitsImage.getWaveLength())) {
-                infoBlock.add(new TextTitle("\nModel " + SpecialChars.LAMBDA_LOWER + ":", ChartUtils.DEFAULT_FONT));
-                infoBlock.add(new TextTitle(NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(lFitsImage.getWaveLength())) + " " + ConverterFactory.CONVERTER_MICRO_METER.getUnit(), ChartUtils.DEFAULT_FONT));
+                infoBlock.add(createText("\nModel " + SpecialChars.LAMBDA_LOWER + ":"));
+                infoBlock.add(createText(NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(lFitsImage.getWaveLength()))
+                        + " " + ConverterFactory.CONVERTER_MICRO_METER.getUnit()));
             }
 
             infoTitle = new CompositeTitle(infoBlock);
@@ -715,7 +781,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         }
 
         // define axis boundaries:
-        final Rectangle2D.Double imgRectRef = lFitsImage.getArea();
+        final Rectangle2D.Double imgRectRef = imageData.getImgRectRef();
 
         final FitsUnit axisUnit = FitsUnit.getAngleUnit(Math.min(imgRectRef.width, imgRectRef.height));
 
@@ -767,6 +833,10 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         }
     }
 
+    private static TextTitle createText(final String label) {
+        return new TextTitle(label, ChartUtils.DEFAULT_FONT_MEDIUM);
+    }
+
     /**
      * Process the zoom event to refresh the image according to the new coordinates
      * @param ze zoom event
@@ -810,7 +880,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         final int imageHeight = image.getHeight();
 
         // area reference :
-        final Rectangle2D.Double imgRectRef = imageData.getFitsImage().getArea();
+        final Rectangle2D.Double imgRectRef = imageData.getImgRectRef();
 
         if (logger.isDebugEnabled()) {
             logger.debug("image rect     = {}", imgRect);
@@ -823,17 +893,12 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         int w = (int) Math.ceil(imageWidth * imgRect.getWidth() / imgRectRef.getWidth());
         int h = (int) Math.ceil(imageHeight * imgRect.getHeight() / imgRectRef.getHeight());
 
-        // Note : the image is produced from an array where 0,0 corresponds to the upper left corner
-        // whereas it corresponds in Fits image to the lower left corner => inverse the Y axis
-        if (imageData.getFitsImage().isIncColPositive()) {
-            // Inverse X axis issue :
-            x = imageWidth - x - w;
-        }
+        // Note : the image is processed to stay oriented: North (top ie inverted Y axis) and East (left ie inverted X axis):
+        // Inverse X axis issue :
+        x = imageWidth - x - w;
 
-        if (imageData.getFitsImage().isIncRowPositive()) {
-            // Inverse Y axis issue :
-            y = imageHeight - y - h;
-        }
+        // Inverse Y axis issue :
+        y = imageHeight - y - h;
 
         // check bounds:
         x = checkBounds(x, 0, imageWidth - 1);
@@ -1024,7 +1089,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     /**
      * This class contains image data (fits image, image, colorModel ...) for consistency
      */
-    private static class ImageChartData {
+    private static final class ImageChartData {
 
         /** fits image */
         private final FitsImage fitsImage;
@@ -1038,6 +1103,8 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         private final float min;
         /** maximum value used by color conversion */
         private final float max;
+        /** image physical area */
+        private final Rectangle2D.Double imgRectRef;
 
         /**
          * Protected constructor
@@ -1047,16 +1114,18 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          * @param min minimum value used by color conversion
          * @param max maximum value used by color conversion
          * @param image java2D image
+         * @param imgRectRef image physical area
          */
         ImageChartData(final FitsImage fitsImage, final IndexColorModel colorModel, final ColorScale colorScale,
-                final float min, final float max,
-                final BufferedImage image) {
+                       final float min, final float max,
+                       final BufferedImage image, final Rectangle2D.Double imgRectRef) {
             this.fitsImage = fitsImage;
             this.colorModel = colorModel;
             this.colorScale = colorScale;
             this.min = min;
             this.max = max;
             this.image = image;
+            this.imgRectRef = imgRectRef;
         }
 
         /**
@@ -1105,6 +1174,14 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          */
         public float getMax() {
             return max;
+        }
+
+        /**
+         * Return the image physical area
+         * @return image physical area
+         */
+        public Rectangle2D.Double getImgRectRef() {
+            return imgRectRef;
         }
     }
 }
