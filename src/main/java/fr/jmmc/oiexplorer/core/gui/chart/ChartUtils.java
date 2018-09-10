@@ -199,16 +199,12 @@ public class ChartUtils {
     }
 
     public static void adjustChartThemeFonts() {
-        logger.info("adjustChartThemeFonts: {}", DO_SCALE_UI);
+        logger.debug("adjustChartThemeFonts: {}", DO_SCALE_UI);
         // use 'SansSerif' fonts:
         CHART_THEME.setExtraLargeFont(getFont(20, Font.BOLD));
-        /* new Font("Tahoma", Font.BOLD, 20) */
-        CHART_THEME.setLargeFont(DEFAULT_TITLE_FONT);
-        /* new Font("Tahoma", Font.BOLD, 14); */
-        CHART_THEME.setRegularFont(DEFAULT_FONT);
-        /* new Font("Tahoma", Font.PLAIN, 12); */
-        CHART_THEME.setSmallFont(DEFAULT_TEXT_SMALL_FONT);
-        /* new Font("Tahoma", Font.PLAIN, 10) */
+        CHART_THEME.setLargeFont(getFont(14, Font.BOLD)); // DEFAULT_TITLE_FONT
+        CHART_THEME.setRegularFont(getFont(12)); // DEFAULT_FONT
+        CHART_THEME.setSmallFont(getFont(9)); // DEFAULT_TEXT_SMALL_FONT
     }
 
     public static BasicStroke createStroke(final float size) {
