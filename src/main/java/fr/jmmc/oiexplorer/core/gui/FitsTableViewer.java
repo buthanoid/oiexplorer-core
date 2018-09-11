@@ -12,6 +12,7 @@ import fr.jmmc.oiexplorer.core.gui.model.ColumnsTableModel;
 import fr.jmmc.oiexplorer.core.gui.model.KeywordsTableModel;
 import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.fits.FitsTable;
+import fr.jmmc.oitools.model.DataModel;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.nom.tam.fits.FitsException;
@@ -142,10 +143,13 @@ public final class FitsTableViewer extends javax.swing.JPanel {
     public static void main(String[] args) {
         // invoke Bootstrapper method to initialize logback now:
         Bootstrapper.getState();
+        
+        DataModel.setOiVisComplexSupport(true);
         try {
             OIFitsFile oiFitsFile = OIFitsLoader.loadOIFits(
 //                    "/home/bourgesl/dev/oitools-public/src/test/resources/oifits/GRAVI.2016-06-23T03:10:17.458_singlesciviscalibrated.fits"
-                    "/home/bourgesl/OIFitsExplorer/private/GRAVITY.2016-07-15T05-27-34_visdualsciraw_visdualcalibrated.fits"
+//                    "/home/bourgesl/OIFitsExplorer/private/GRAVITY.2016-07-15T05-27-34_visdualsciraw_visdualcalibrated.fits"
+                    "/home/bourgesl/ASPRO2/oifits/Aspro2_HD_100546_MATISSE_LM_2_80453-4_19271-203ch_A0-G1-J2-J3_2015-06-03.fits"
             );
             oiFitsFile.analyze();
 
