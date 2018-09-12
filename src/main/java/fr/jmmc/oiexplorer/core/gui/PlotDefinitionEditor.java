@@ -335,8 +335,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
-        gridBagConstraints.weightx = 0.1;
-        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
+        gridBagConstraints.insets = new java.awt.Insets(0, 6, 0, 3);
         add(plotDefLabel, gridBagConstraints);
 
         plotDefinitionComboBox.setPrototypeDisplayValue("01234567890123456789");
@@ -360,8 +359,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
-        gridBagConstraints.weightx = 0.1;
-        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
+        gridBagConstraints.insets = new java.awt.Insets(0, 8, 0, 4);
         add(colorMappingLabel, gridBagConstraints);
 
         colorMappingComboBox.setPrototypeDisplayValue("0123456789");
@@ -375,7 +373,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        gridBagConstraints.weightx = 0.2;
         add(colorMappingComboBox, gridBagConstraints);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
@@ -393,11 +390,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridx = 5;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
-        gridBagConstraints.weightx = 0.1;
         add(flaggedDataCheckBox, gridBagConstraints);
 
         detailledToggleButton.setText("...");
-        detailledToggleButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
         detailledToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 detailledToggleButtonActionPerformed(evt);
@@ -422,7 +417,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridx = 6;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
-        gridBagConstraints.weightx = 0.1;
         add(drawLinesCheckBox, gridBagConstraints);
 
         extendedPanel.setLayout(new java.awt.GridBagLayout());
@@ -445,7 +439,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         extendedPanel.add(xLabel, gridBagConstraints);
 
         addYAxisButton.setText("+");
-        addYAxisButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
         addYAxisButton.setPreferredSize(new java.awt.Dimension(21, 21));
         addYAxisButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -461,7 +454,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         extendedPanel.add(addYAxisButton, gridBagConstraints);
 
         delYAxisButton.setText("-");
-        delYAxisButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
         delYAxisButton.setPreferredSize(new java.awt.Dimension(21, 21));
         delYAxisButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -503,7 +495,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
         refreshButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/fr/jmmc/jmcs/resource/image/refresh.png"))); // NOI18N
         refreshButton.setToolTipText("refresh zoom / remove plot selection");
-        refreshButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
         refreshButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 refreshButtonActionPerformed(evt);
