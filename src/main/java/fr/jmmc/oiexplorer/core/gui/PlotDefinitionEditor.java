@@ -206,7 +206,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 yAxes.clear();
                 yAxesPanel.removeAll();
 
-// TODO: keep user settings for previous axis !                
+// TODO: keep user settings for previous axis !
                 for (Axis yAxis : plotDef.getYAxes()) {
                     addYEditor((Axis) yAxis.clone());
                 }
@@ -263,7 +263,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
         for (PlotDefinition plotDefPreset : PlotDefinitionFactory.getInstance().getDefaults()) {
             sb.setLength(0);
-            sb.append("preset: ").append(plotDefPreset.getName());
+            sb.append(plotDefPreset.getName());
             plotDefNames.add(sb.toString());
         }
 
