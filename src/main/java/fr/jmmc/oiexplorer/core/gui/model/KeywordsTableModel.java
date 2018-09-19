@@ -49,7 +49,8 @@ public final class KeywordsTableModel extends AbstractTableModel {
     @Override
     public int getRowCount() {
         if (hdu != null) {
-            return hdu.getHeaderCards().size() + hdu.getKeywordsDesc().size();
+            final int nHeaderCards = hdu.hasHeaderCards() ? hdu.getHeaderCards().size() : 0;
+            return nHeaderCards + hdu.getKeywordsDesc().size();
         }
         return 0;
     }
@@ -59,10 +60,10 @@ public final class KeywordsTableModel extends AbstractTableModel {
         if (hdu == null) {
             return null;
         }
-        final List<FitsHeaderCard> headerCards = hdu.getHeaderCards();
-        final int nHeaderCards = headerCards.size();
+        final int nHeaderCards = hdu.hasHeaderCards() ? hdu.getHeaderCards().size() : 0;
 
         if (rowIndex < nHeaderCards) {
+            final List<FitsHeaderCard> headerCards = hdu.getHeaderCards();
             // header cards first
             final FitsHeaderCard headerCard = headerCards.get(rowIndex);
             switch (columnIndex) {
