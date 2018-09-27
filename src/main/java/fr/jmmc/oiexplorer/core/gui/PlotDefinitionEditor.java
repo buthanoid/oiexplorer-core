@@ -42,7 +42,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     /** Logger */
     private final static Logger logger = LoggerFactory.getLogger(PlotDefinitionEditor.class);
     /** flag to enable / disable the expression editor */
-    private static boolean enableExpressionEditor = true;
+    private static boolean ENABLE_EXPRESSION_EDITOR = true;
     /** Define the max number of plots */
     private final static int MAX_Y_AXES = 10;
 
@@ -51,7 +51,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      * @param flag true to enable / false to disable the expression editor
      */
     public static void setEnableExpressionEditor(final boolean flag) {
-        enableExpressionEditor = flag;
+        ENABLE_EXPRESSION_EDITOR = flag;
     }
 
     /* members */
@@ -120,7 +120,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         xAxisEditor = new AxisEditor(this);
         xAxisPanel.add(xAxisEditor);
 
-        if (enableExpressionEditor) {
+        if (ENABLE_EXPRESSION_EDITOR) {
             expressionEditor = new ExpressionEditor(this);
             expressionEditor.setVisible(false);
 
@@ -623,7 +623,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }//GEN-LAST:event_refreshButtonActionPerformed
 
     private void jToggleButtonExprEditorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButtonExprEditorActionPerformed
-        if (enableExpressionEditor) {
+        if (ENABLE_EXPRESSION_EDITOR) {
             expressionEditor.setVisible(jToggleButtonExprEditor.isSelected());
         }
     }//GEN-LAST:event_jToggleButtonExprEditorActionPerformed
