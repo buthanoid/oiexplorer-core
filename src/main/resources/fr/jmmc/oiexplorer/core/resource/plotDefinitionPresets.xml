@@ -383,7 +383,7 @@
 
 
     <!-- OImaging -->
-    <!-- plot (Vis2 / Vis2 Model) vs spatial freq -->
+    <!-- plot (Data / Model) vs spatial freq -->
     <plotDefinition>
         <id>OIMG_DATA_MODEL/SPATIAL_FREQ</id>
         <name>Data and Model vs. Spatial freq.</name>
@@ -395,6 +395,7 @@
             <includeZero>true</includeZero>
             <converter>MEGA_LAMBDA</converter>
         </xAxis>
+
         <yAxes>
             <name>VISAMP</name>
             <logScale>false</logScale>
@@ -426,6 +427,7 @@
             <logScale>false</logScale>
             <includeZero>true</includeZero>
         </yAxes>
+
         <yAxes>
             <name>T3AMP</name>
             <logScale>false</logScale>
@@ -448,6 +450,72 @@
         </yAxes>
     </plotDefinition>
 
+    <!-- plot (Data / Residuals) vs spatial freq -->
+    <plotDefinition>
+        <id>OIMG_DATA_RESIDUAL/SPATIAL_FREQ</id>
+        <name>Data and Residuals vs. Spatial freq.</name>
+        <skipFlaggedData>true</skipFlaggedData>
+        <drawLine>false</drawLine>
+        <xAxis>
+            <name>SPATIAL_FREQ</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+            <converter>MEGA_LAMBDA</converter>
+        </xAxis>
+
+        <yAxes>
+            <name>VISAMP</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>RES_VISAMP_MODEL</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>VISPHI</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>RES_VISPHI_MODEL</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+
+        <yAxes>
+            <name>VIS2DATA</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>RES_VIS2_MODEL</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+
+        <yAxes>
+            <name>T3AMP</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>RES_T3AMP_MODEL</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>T3PHI</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>RES_T3PHI_MODEL</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+    </plotDefinition>
 
 
 </p:plotDefinitions>
