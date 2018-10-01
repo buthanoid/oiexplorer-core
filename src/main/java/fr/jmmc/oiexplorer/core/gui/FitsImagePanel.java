@@ -6,6 +6,7 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ColorScale;
 import fr.jmmc.jmal.image.ImageUtils;
+import fr.jmmc.jmal.image.ImageUtils.ImageInterpolation;
 import fr.jmmc.jmcs.gui.component.Disposable;
 import fr.jmmc.jmcs.gui.component.MessagePane;
 import fr.jmmc.jmcs.gui.task.Task;
@@ -395,14 +396,15 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         logger.debug("Preferences updated on : {}", this);
 
         final String colorModelPref = this.myPreferences.getPreference(Preferences.MODEL_IMAGE_LUT);
-        final ColorScale colorScale = this.myPreferences.getImageColorScale();
+        final ColorScale colorScalePref = this.myPreferences.getImageColorScale();
+        final ImageInterpolation interpolationPref = this.myPreferences.getImageInterpolation();
 
         // disable the automatic refresh :
         final boolean prevAutoRefresh = setAutoRefresh(false);
         try {
             // update selected items:
             this.jComboBoxLUT.setSelectedItem(colorModelPref);
-            this.jComboBoxColorScale.setSelectedItem(colorScale);
+            this.jComboBoxColorScale.setSelectedItem(colorScalePref);
         } finally {
             // restore the automatic refresh :
             setAutoRefresh(prevAutoRefresh);
@@ -410,7 +412,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
         final IndexColorModel colorModel = ColorModels.getColorModel(colorModelPref);
 
-        if (getChartData() != null && (getChartData().getColorModel() != colorModel || getChartData().getColorScale() != colorScale)) {
+        if (getChartData() != null && !getChartData().isCompatible(colorModel, colorScalePref, interpolationPref)) {
             refreshPlot();
         }
     }
@@ -603,6 +605,8 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 at.translate(-anchorx, -anchory);  // S1: translate anchor to origin
             }
 
+            final ImageInterpolation usedInterpolation = ImageUtils.getImageInterpolation();
+
             final BufferedImage displayedImage;
             if (at != null) {
                 // Compute output bounding box:
@@ -648,7 +652,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 }
             }
 
-            return new ImageChartData(fitsImage, colorModel, usedColorScale, min, max, displayedImage, imgRectRef);
+            return new ImageChartData(fitsImage, colorModel, usedColorScale, usedInterpolation, min, max, displayedImage, imgRectRef);
         }
 
         /**
@@ -1099,6 +1103,8 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         private final BufferedImage image;
         /** color scaling method */
         private final ColorScale colorScale;
+        /** image interpolation */
+        private final ImageInterpolation interpolation;
         /** minimum value used by color conversion */
         private final float min;
         /** maximum value used by color conversion */
@@ -1111,21 +1117,29 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          * @param fitsImage fits image
          * @param colorModel image color model
          * @param colorScale color scaling method
+         * @param interpolation image interpolation
          * @param min minimum value used by color conversion
          * @param max maximum value used by color conversion
          * @param image java2D image
          * @param imgRectRef image physical area
          */
         ImageChartData(final FitsImage fitsImage, final IndexColorModel colorModel, final ColorScale colorScale,
+                       final ImageInterpolation interpolation,
                        final float min, final float max,
                        final BufferedImage image, final Rectangle2D.Double imgRectRef) {
             this.fitsImage = fitsImage;
             this.colorModel = colorModel;
             this.colorScale = colorScale;
+            this.interpolation = interpolation;
             this.min = min;
             this.max = max;
             this.image = image;
             this.imgRectRef = imgRectRef;
+        }
+
+        public boolean isCompatible(final IndexColorModel colorModel, final ColorScale colorScale,
+                                    final ImageInterpolation interpolation) {
+            return (getColorModel() == colorModel && getColorScale() == colorScale && getInterpolation() == interpolation);
         }
 
         /**
@@ -1150,6 +1164,14 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
          */
         ColorScale getColorScale() {
             return colorScale;
+        }
+
+        /**
+         * Return the image interpolation
+         * @return image interpolation
+         */
+        public ImageInterpolation getInterpolation() {
+            return interpolation;
         }
 
         /**

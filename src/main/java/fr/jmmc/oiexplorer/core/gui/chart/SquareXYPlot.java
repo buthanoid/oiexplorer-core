@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
+import fr.jmmc.jmal.image.ImageUtils;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
@@ -124,7 +125,7 @@ public final class SquareXYPlot extends XYPlot {
 
         if (USE_INTERPOLATION) {
             // Use bicubic interpolation (slower) for quality:
-            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, ImageUtils.getImageInterpolationHint());
         } else {
             // Use no interpolation (faster) for raw display:
             g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);

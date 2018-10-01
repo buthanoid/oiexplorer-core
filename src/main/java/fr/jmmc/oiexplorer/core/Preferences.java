@@ -5,6 +5,8 @@ package fr.jmmc.oiexplorer.core;
 
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ColorScale;
+import fr.jmmc.jmal.image.ImageUtils;
+import fr.jmmc.jmal.image.ImageUtils.ImageInterpolation;
 import fr.jmmc.jmcs.data.preference.PreferencesException;
 import fr.jmmc.oiexplorer.core.gui.chart.ColorPalette;
 import java.util.Observable;
@@ -25,10 +27,12 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(Preferences.class.getName());
     /* Preferences */
-    /** Preference : LUT table to use for the object model image in the UV Coverage plot */
+    /** Preference : LUT table to use for the any image */
     public final static String MODEL_IMAGE_LUT = "model.image.lut";
-    /** Preference : Color scaling method to use for the object model image in the UV Coverage plot */
+    /** Preference : Color scaling method to use for the any image */
     public final static String MODEL_IMAGE_SCALE = "model.image.scale";
+    /** Preference : image interpolation */
+    public final static String MODEL_IMAGE_INTERPOLATION = "model.image.interpolation";
     /** Preference : Color palette to use in the charts / plots */
     public final static String CHART_PALETTE = "chart.palette";
 
@@ -44,8 +48,8 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
         super(notify);
     }
 
-    protected void addColorPaletteObserver() {
-        final Observer observer = new ColorPaletteObserver();
+    protected void addPreferenceObserver() {
+        final Observer observer = new PreferenceObserver();
         addObserver(observer);
         // notify:
         observer.update(this, null);
@@ -63,6 +67,7 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
         // Default color scale and LUT:
         setDefaultPreference(MODEL_IMAGE_LUT, DEFAULT_IMAGE_LUT);
         setDefaultPreference(MODEL_IMAGE_SCALE, ColorScale.LINEAR.toString());
+        setDefaultPreference(MODEL_IMAGE_INTERPOLATION, ImageInterpolation.Bicubic.toString());
         // Color palette:
         setDefaultPreference(CHART_PALETTE, DEFAULT_COLOR_PALETTE);
     }
@@ -73,7 +78,6 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
      */
     public final ColorScale getImageColorScale() {
         final String value = getPreference(MODEL_IMAGE_SCALE);
-
         try {
             return ColorScale.valueOf(value);
         } catch (IllegalArgumentException iae) {
@@ -82,13 +86,29 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
         return ColorScale.LINEAR;
     }
 
-    private final class ColorPaletteObserver implements Observer {
+    /**
+     * Return the Image interpolation Preference : use preferences or Bicubic if it is undefined
+     * @return Image interpolation
+     */
+    public final ImageInterpolation getImageInterpolation() {
+        final String value = getPreference(MODEL_IMAGE_INTERPOLATION);
+        try {
+            return ImageInterpolation.valueOf(value);
+        } catch (IllegalArgumentException iae) {
+            logger.debug("ignored invalid value: {}", value);
+        }
+        return ImageInterpolation.Bicubic;
+    }
+
+    private final class PreferenceObserver implements Observer {
 
         @Override
         public void update(Observable o, Object arg) {
-            logger.debug("ColorPaletteObserver notified");
+            logger.debug("PreferenceObserver notified");
 
             ColorPalette.setColorPalettes(getPreference(CHART_PALETTE));
+
+            ImageUtils.setImageInterpolation(getImageInterpolation());
         }
 
     }
