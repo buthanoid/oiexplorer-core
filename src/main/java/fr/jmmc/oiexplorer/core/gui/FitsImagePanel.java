@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui;
 
+import fr.jmmc.jmal.ALX;
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ColorScale;
 import fr.jmmc.jmal.image.ImageUtils;
@@ -296,7 +297,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      * This method is useful to set the models and specific features of initialized swing components :
      */
     private void postInit() {
-        this.chart = ChartUtils.createSquareXYLineChart("RA - [North]", "DEC - [East]", false);
+        this.chart = ChartUtils.createSquareXYLineChart(SpecialChars.DELTA_UPPER + "RA - [North]", SpecialChars.DELTA_UPPER + "DE - [East]", false);
         this.chart.setPadding(CHART_PADDING);
 
         this.xyPlot = (SquareXYPlot) this.chart.getPlot();
@@ -752,7 +753,11 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             final BlockContainer infoBlock = new BlockContainer(new ColumnArrangement());
 
             if (lFitsImage.isIncRowDefined() && lFitsImage.isIncColDefined()) {
-                infoBlock.add(createText("Increments:"));
+                infoBlock.add(createText("Coordinates:"));
+                infoBlock.add(createText("RA: " + ALX.toHMS(Math.toDegrees(lFitsImage.getValRefCol()))));
+                infoBlock.add(createText("DE: " + ALX.toDMS(Math.toDegrees(lFitsImage.getValRefRow()))));
+
+                infoBlock.add(createText("\nIncrements:"));
                 infoBlock.add(createText("RA: " + FitsImage.getAngleAsString(lFitsImage.getIncCol(), df)));
                 infoBlock.add(createText("DE: " + FitsImage.getAngleAsString(lFitsImage.getIncRow(), df)));
 
@@ -804,12 +809,12 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         // define axis orientation:
         // RA: East is positive at left:
         ValueAxis axis = this.xyPlot.getDomainAxis();
-        axis.setLabel("RA (" + axisUnit.getStandardRepresentation() + ") - [North]");
+        axis.setLabel(SpecialChars.DELTA_UPPER + "RA (" + axisUnit.getStandardRepresentation() + ") - [North]");
         axis.setInverted(true);
 
         // DEC: North is positive at top:
         axis = this.xyPlot.getRangeAxis();
-        axis.setLabel("DEC (" + axisUnit.getStandardRepresentation() + ") - [East]");
+        axis.setLabel(SpecialChars.DELTA_UPPER + "DE (" + axisUnit.getStandardRepresentation() + ") - [East]");
         axis.setInverted(false);
 
         // memorize the axis unit:
