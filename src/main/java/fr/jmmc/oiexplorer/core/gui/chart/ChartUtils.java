@@ -293,7 +293,7 @@ public class ChartUtils {
         final Integer key = NumberUtils.valueOf(scaledSize);
         Font f = cachedFonts.get(key);
         if (f == null) {
-            f = new Font("SansSerif", style, scaledSize);
+            f = new Font(Font.SANS_SERIF, style, scaledSize);
             cachedFonts.put(key, f);
         }
         return f;
