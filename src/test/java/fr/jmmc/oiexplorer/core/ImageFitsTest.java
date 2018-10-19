@@ -3,7 +3,9 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core;
 
+import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ColorScale;
+import fr.jmmc.jmal.image.ImageUtils.ImageInterpolation;
 import fr.jmmc.oiexplorer.core.gui.FitsImagePanel;
 import fr.jmmc.oiexplorer.core.util.FitsImageUtils;
 import fr.jmmc.jmcs.Bootstrapper;
@@ -48,6 +50,8 @@ public final class ImageFitsTest {
     public static void main(String[] args) {
 
         try {
+            TestPreferences.getInstance().setPreference(Preferences.MODEL_IMAGE_LUT, ColorModels.COLOR_MODEL_HEAT);
+            TestPreferences.getInstance().setPreference(Preferences.MODEL_IMAGE_INTERPOLATION, ImageInterpolation.None.toString());
             TestPreferences.getInstance().setPreference(Preferences.MODEL_IMAGE_SCALE, ColorScale.LOGARITHMIC.toString());
         } catch (PreferencesException pe) {
             // noop;

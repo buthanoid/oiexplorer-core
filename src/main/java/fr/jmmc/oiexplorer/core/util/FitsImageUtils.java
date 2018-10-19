@@ -10,6 +10,8 @@ import fr.jmmc.oitools.image.FitsImage;
 import fr.jmmc.oitools.image.FitsImageFile;
 import fr.jmmc.oitools.image.FitsImageHDU;
 import fr.jmmc.oitools.image.FitsImageLoader;
+import fr.jmmc.oitools.processing.Resampler;
+import fr.jmmc.oitools.util.ArrayConvert;
 import fr.nom.tam.fits.FitsException;
 import java.io.IOException;
 import java.util.List;
@@ -69,7 +71,7 @@ public final class FitsImageUtils {
      * @return new FitsImage
      */
     public static FitsImage createFitsImage(final float[][] data,
-            final double dataMin, final double dataMax) {
+                                            final double dataMin, final double dataMax) {
         final FitsImage image = new FitsImage();
 
         updateFitsImage(image, data, dataMin, dataMax);
@@ -85,7 +87,7 @@ public final class FitsImageUtils {
      * @param dataMax maximum value in data
      */
     public static void updateFitsImage(final FitsImage image, final float[][] data,
-            final double dataMin, final double dataMax) {
+                                       final double dataMin, final double dataMax) {
         image.setData(data);
 
         image.setDataMin(dataMin);
@@ -103,8 +105,8 @@ public final class FitsImageUtils {
      * @return new FitsImage
      */
     public static FitsImage createFitsImage(final float[][] data,
-            final double pixRefRow, final double pixRefCol,
-            final double incRow, final double incCol) {
+                                            final double pixRefRow, final double pixRefCol,
+                                            final double incRow, final double incCol) {
 
         final FitsImage image = createFitsImage(data);
 
@@ -130,9 +132,9 @@ public final class FitsImageUtils {
      * @return new FitsImage
      */
     public static FitsImage createFitsImage(final float[][] data,
-            final double dataMin, final double dataMax,
-            final double pixRefRow, final double pixRefCol,
-            final double incRow, final double incCol) {
+                                            final double dataMin, final double dataMax,
+                                            final double pixRefRow, final double pixRefCol,
+                                            final double incRow, final double incCol) {
 
         final FitsImage image = new FitsImage();
 
@@ -284,4 +286,64 @@ public final class FitsImageUtils {
         // update sum:
         image.setSum(minMaxJob.getSum());
     }
+
+    public static void resampleImages(final FitsImageHDU hdu, final int newSize) {
+        resampleImages(hdu, newSize, Resampler.FILTER_MITCHELL);
+    }
+
+    public static void resampleImages(final FitsImageHDU hdu, final int newSize, final int filterType) {
+        if (newSize < 1) {
+            throw new IllegalStateException("Invalid size: " + newSize);
+        }
+        if (hdu != null && hdu.hasImages()) {
+            for (FitsImage fitsImage : hdu.getFitsImages()) {
+                // First resize square image:
+                resampleImage(fitsImage, newSize, filterType);
+
+                // note: fits image instance can be modified by image preparation:
+                // can throw IllegalArgumentException if image has invalid keyword(s) / data:
+                FitsImageUtils.prepareImage(fitsImage);
+            }
+        }
+    }
+
+    private static void resampleImage(final FitsImage fitsImage, final int newSize, final int filterType) {
+        // in place modifications:
+        logger.info("input image: {}", fitsImage);
+
+        float[][] data = fitsImage.getData();
+        int nbRows = fitsImage.getNbRows();
+        int nbCols = fitsImage.getNbCols();
+
+        final double[][] imgDbl = ArrayConvert.toDoubles(nbRows, nbCols, data);
+        logger.info("input: " + nbRows + "x" + nbCols);
+        logger.info("newSize: " + newSize + "x" + newSize);
+
+        final long start = System.nanoTime();
+        /*
+            boolean inversable = false;
+            int analyDegree = -1; // or 3
+            int syntheDegree = 3;
+            int interpDegree = 3;
+            double shift = 0;
+            final double[][] imgResized = new Resize().computeZoom(imgDbl, inversable, analyDegree, syntheDegree, interpDegree, zoom, zoom, shift, shift);
+         */
+
+        final double[][] imgResized = Resampler.filter(imgDbl, new double[newSize][newSize], filterType);
+
+        logger.info("resampleImage: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
+
+        updateFitsImage(fitsImage, ArrayConvert.toFloats(newSize, newSize, imgResized));
+
+        // update increments:
+        fitsImage.setSignedIncRow((fitsImage.getSignedIncRow() * nbRows) / newSize);
+        fitsImage.setSignedIncCol((fitsImage.getSignedIncCol() * nbCols) / newSize);
+
+        // update ref pixel:
+        fitsImage.setPixRefRow(fitsImage.getPixRefRow() + 0.5d * (newSize - nbRows));
+        fitsImage.setPixRefCol(fitsImage.getPixRefCol() + 0.5d * (newSize - nbCols));
+
+        logger.info("updated image: {}", fitsImage);
+    }
+
 }

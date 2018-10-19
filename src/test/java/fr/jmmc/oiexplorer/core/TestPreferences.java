@@ -39,6 +39,12 @@ public final class TestPreferences extends fr.jmmc.oiexplorer.core.Preferences {
             logger.debug("Preferences.getInstance()");
 
             _singleton = new TestPreferences(true);
+            
+            // register color palette observer:
+            _singleton.addPreferenceObserver();
+
+            // enable future notifications:
+            _singleton.setNotify(true);
         }
 
         return _singleton;
