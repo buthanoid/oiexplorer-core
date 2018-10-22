@@ -33,6 +33,8 @@ import fr.jmmc.oiexplorer.core.util.FitsImageUtils;
 import fr.jmmc.oitools.image.FitsImage;
 import fr.jmmc.oitools.image.FitsImageHDU;
 import fr.jmmc.oitools.image.FitsUnit;
+import fr.jmmc.oitools.processing.Resampler;
+import fr.jmmc.oitools.processing.Resampler.Filter;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.Image;
@@ -171,12 +173,135 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
+        jPanelResample = new javax.swing.JPanel();
+        jLabelInfo = new javax.swing.JLabel();
+        jFormattedTextFieldNewSize = new javax.swing.JFormattedTextField();
+        jLabelNewSize = new javax.swing.JLabel();
+        jLabelOldSize = new javax.swing.JLabel();
+        jLabelFilter = new javax.swing.JLabel();
+        jComboBoxFilter = new javax.swing.JComboBox();
+        jPanelViewport = new javax.swing.JPanel();
+        jLabelDeltaRA = new javax.swing.JLabel();
+        jFormattedTextFieldRAMin = new javax.swing.JFormattedTextField();
+        jFormattedTextFieldRAMax = new javax.swing.JFormattedTextField();
+        jLabelDeltaDE = new javax.swing.JLabel();
+        jFormattedTextFieldDEMin = new javax.swing.JFormattedTextField();
+        jFormattedTextFieldDEMax = new javax.swing.JFormattedTextField();
         jPanelOptions = new javax.swing.JPanel();
         jLabelLutTable = new javax.swing.JLabel();
         jComboBoxLUT = new javax.swing.JComboBox();
         jLabelColorScale = new javax.swing.JLabel();
         jComboBoxColorScale = new javax.swing.JComboBox();
         jButtonDisplayKeywords = new javax.swing.JButton();
+
+        jPanelResample.setLayout(new java.awt.GridBagLayout());
+
+        jLabelInfo.setText("Old size");
+        jLabelInfo.setToolTipText("Current image size in pixels");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelResample.add(jLabelInfo, gridBagConstraints);
+
+        jFormattedTextFieldNewSize.setColumns(8);
+        jFormattedTextFieldNewSize.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0"))));
+        jFormattedTextFieldNewSize.setToolTipText("");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelResample.add(jFormattedTextFieldNewSize, gridBagConstraints);
+
+        jLabelNewSize.setText("New size");
+        jLabelNewSize.setToolTipText("New image size in pixels");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelResample.add(jLabelNewSize, gridBagConstraints);
+
+        jLabelOldSize.setText("jLabel2");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelResample.add(jLabelOldSize, gridBagConstraints);
+
+        jLabelFilter.setText("Resampling Filter");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelResample.add(jLabelFilter, gridBagConstraints);
+
+        jComboBoxFilter.setModel(new DefaultComboBoxModel(Filter.values()));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelResample.add(jComboBoxFilter, gridBagConstraints);
+
+        jPanelViewport.setLayout(new java.awt.GridBagLayout());
+
+        jLabelDeltaRA.setText("Delta RA:");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelViewport.add(jLabelDeltaRA, gridBagConstraints);
+
+        jFormattedTextFieldRAMin.setColumns(10);
+        jFormattedTextFieldRAMin.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.0##"))));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelViewport.add(jFormattedTextFieldRAMin, gridBagConstraints);
+
+        jFormattedTextFieldRAMax.setColumns(10);
+        jFormattedTextFieldRAMax.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.0##"))));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelViewport.add(jFormattedTextFieldRAMax, gridBagConstraints);
+
+        jLabelDeltaDE.setText("Delta RE:");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelViewport.add(jLabelDeltaDE, gridBagConstraints);
+
+        jFormattedTextFieldDEMin.setColumns(10);
+        jFormattedTextFieldDEMin.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.0##"))));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelViewport.add(jFormattedTextFieldDEMin, gridBagConstraints);
+
+        jFormattedTextFieldDEMax.setColumns(10);
+        jFormattedTextFieldDEMax.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.0##"))));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelViewport.add(jFormattedTextFieldDEMax, gridBagConstraints);
 
         setLayout(new java.awt.BorderLayout());
 
@@ -234,7 +359,6 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
   }//GEN-LAST:event_jComboBoxLUTActionPerformed
 
     private void jButtonDisplayKeywordsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDisplayKeywordsActionPerformed
-
         if (this.fitsImage != null) {
             FitsImageHDU fitsImageHDU = this.fitsImage.getFitsImageHDU();
             // note: only possible with one Fits image or one Fits cube (single HDU):
@@ -337,6 +461,8 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             // update selected items:
             this.jComboBoxLUT.setSelectedItem(this.myPreferences.getPreference(Preferences.MODEL_IMAGE_LUT));
             this.jComboBoxColorScale.setSelectedItem(this.myPreferences.getImageColorScale());
+
+            this.jComboBoxFilter.setSelectedItem(Resampler.FILTER_DEFAULT);
         } finally {
             // restore the automatic refresh :
             setAutoRefresh(prevAutoRefresh);
@@ -433,6 +559,55 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      */
     public FitsImage getFitsImage() {
         return this.fitsImage;
+    }
+
+    public boolean resampleFitsImage() {
+        if (this.fitsImage == null) {
+            return false;
+        }
+        // initialise the form:
+        final int nbRows = fitsImage.getNbRows();
+        this.jLabelOldSize.setText(String.valueOf(nbRows));
+        this.jFormattedTextFieldNewSize.setValue(nbRows);
+
+        if (MessagePane.showDialogPanel("Resample Image", this.jPanelResample)) {
+            final int newSize = (int) Math.round(Double.parseDouble(jFormattedTextFieldNewSize.getText()));
+            final Filter filter = (Filter) jComboBoxFilter.getSelectedItem();
+            logger.debug("resampleImages: newSize: {} - filter: {}", newSize, filter);
+
+            FitsImageUtils.resampleImages(fitsImage.getFitsImageHDU(), newSize, filter);
+
+            return true;
+        }
+        return false;
+    }
+
+    public boolean viewportFitsImage() {
+        if (this.fitsImage == null) {
+            return false;
+        }
+        // initialise the form:
+        final Rectangle2D.Double area = fitsImage.getArea();
+        logger.info("viewportFitsImage: area: {}", area);
+
+        this.jFormattedTextFieldRAMin.setValue(ALX.convertRadToMas(area.getMinX()));
+        this.jFormattedTextFieldRAMax.setValue(ALX.convertRadToMas(area.getMaxX()));
+        this.jFormattedTextFieldDEMin.setValue(ALX.convertRadToMas(area.getMinY()));
+        this.jFormattedTextFieldDEMax.setValue(ALX.convertRadToMas(area.getMaxY()));
+
+        if (MessagePane.showDialogPanel("Change Image viewport", this.jPanelViewport)) {
+            final Rectangle2D.Double newArea = new Rectangle2D.Double(
+                    ALX.convertMasToRad(Double.parseDouble(jFormattedTextFieldRAMin.getText())),
+                    ALX.convertMasToRad(Double.parseDouble(jFormattedTextFieldDEMin.getText())),
+                    ALX.convertMasToRad(Double.parseDouble(jFormattedTextFieldRAMax.getText()) - Double.parseDouble(jFormattedTextFieldRAMin.getText())),
+                    ALX.convertMasToRad(Double.parseDouble(jFormattedTextFieldDEMax.getText()) - Double.parseDouble(jFormattedTextFieldDEMin.getText()))
+            );
+            logger.info("viewportFitsImage: newArea: {}", newArea);
+
+//            FitsImageUtils.resampleImages(fitsImage.getFitsImageHDU(), newSize, filter);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -765,11 +940,12 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 if (lFitsImage.isRotAngleDefined()) {
                     // FOV depends on the rotation angle
                     final BufferedImage image = imageData.getImage();
-
                     infoBlock.add(createText(FitsImage.getAngleAsString(lFitsImage.getMaxAngle(image.getWidth(), image.getHeight()), df3)));
                 } else {
                     infoBlock.add(createText(FitsImage.getAngleAsString(lFitsImage.getMaxAngle(), df3)));
                 }
+                infoBlock.add(createText("\nPixels:"));
+                infoBlock.add(createText(lFitsImage.getNbCols() + " x " + lFitsImage.getNbRows()));
             }
 
             if (lFitsImage.getImageCount() > 1) {
@@ -1038,10 +1214,24 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonDisplayKeywords;
     private javax.swing.JComboBox jComboBoxColorScale;
+    private javax.swing.JComboBox jComboBoxFilter;
     private javax.swing.JComboBox jComboBoxLUT;
+    private javax.swing.JFormattedTextField jFormattedTextFieldDEMax;
+    private javax.swing.JFormattedTextField jFormattedTextFieldDEMin;
+    private javax.swing.JFormattedTextField jFormattedTextFieldNewSize;
+    private javax.swing.JFormattedTextField jFormattedTextFieldRAMax;
+    private javax.swing.JFormattedTextField jFormattedTextFieldRAMin;
     private javax.swing.JLabel jLabelColorScale;
+    private javax.swing.JLabel jLabelDeltaDE;
+    private javax.swing.JLabel jLabelDeltaRA;
+    private javax.swing.JLabel jLabelFilter;
+    private javax.swing.JLabel jLabelInfo;
     private javax.swing.JLabel jLabelLutTable;
+    private javax.swing.JLabel jLabelNewSize;
+    private javax.swing.JLabel jLabelOldSize;
     private javax.swing.JPanel jPanelOptions;
+    private javax.swing.JPanel jPanelResample;
+    private javax.swing.JPanel jPanelViewport;
     // End of variables declaration//GEN-END:variables
     /** drawing started time value */
     private long chartDrawStartTime = 0l;
