@@ -34,8 +34,6 @@ public final class SquareXYPlot extends XYPlot {
     private static final long serialVersionUID = 1;
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(SquareXYPlot.class.getName());
-    /** flag to enable image anti aliasing and bi-cubic interpolation */
-    public static final boolean USE_INTERPOLATION = true;
 
     /**
      * Creates a new plot with the specified dataset, axes and renderer.  Any
@@ -49,9 +47,9 @@ public final class SquareXYPlot extends XYPlot {
      * @param renderer  the renderer (<code>null</code> permitted).
      */
     public SquareXYPlot(final XYDataset dataset,
-            final ValueAxis domainAxis,
-            final ValueAxis rangeAxis,
-            final XYItemRenderer renderer) {
+                        final ValueAxis domainAxis,
+                        final ValueAxis rangeAxis,
+                        final XYItemRenderer renderer) {
         super(dataset, domainAxis, rangeAxis, renderer);
     }
 
@@ -69,7 +67,7 @@ public final class SquareXYPlot extends XYPlot {
      */
     @Override
     public void draw(final Graphics2D g2d, final Rectangle2D area, final Point2D anchor,
-            final PlotState parentState, final PlotRenderingInfo info) {
+                     final PlotState parentState, final PlotRenderingInfo info) {
 
         double hSpace = 0d;
         double vSpace = 0d;
@@ -123,13 +121,9 @@ public final class SquareXYPlot extends XYPlot {
         g2d.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
 
-        if (USE_INTERPOLATION) {
-            // Use bicubic interpolation (slower) for quality:
-            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, ImageUtils.getImageInterpolationHint());
-        } else {
-            // Use no interpolation (faster) for raw display:
-            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-        }
+        // Use custom interpolation:
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, ImageUtils.getImageInterpolationHint());
+
         super.draw(g2d, adjustedArea, anchor, parentState, info);
     }
 
