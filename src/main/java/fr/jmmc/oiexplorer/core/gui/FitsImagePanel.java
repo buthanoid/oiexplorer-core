@@ -972,12 +972,12 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
         this.xyPlot.defineBounds(
                 new Range(
-                        FitsUnit.ANGLE_RAD.convert(imgRectRef.x, axisUnit),
-                        FitsUnit.ANGLE_RAD.convert(imgRectRef.x + imgRectRef.width, axisUnit)
+                        FitsUnit.ANGLE_RAD.convert(imgRectRef.getMinX(), axisUnit),
+                        FitsUnit.ANGLE_RAD.convert(imgRectRef.getMaxX(), axisUnit)
                 ),
                 new Range(
-                        FitsUnit.ANGLE_RAD.convert(imgRectRef.y, axisUnit),
-                        FitsUnit.ANGLE_RAD.convert(imgRectRef.y + imgRectRef.height, axisUnit)
+                        FitsUnit.ANGLE_RAD.convert(imgRectRef.getMinY(), axisUnit),
+                        FitsUnit.ANGLE_RAD.convert(imgRectRef.getMaxY(), axisUnit)
                 ));
 
         this.xyPlot.restoreAxesBounds();
@@ -1045,7 +1045,19 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 );
 
                 // compute an approximated image from the reference image :
-                computeSubImage(this.getChartData(), imgRect);
+                if (computeSubImage(this.getChartData(), imgRect)) {
+                    // adjust axis bounds to exact viewed rectangle (i.e. avoid rounding errors)
+                    ValueAxis axis = this.xyPlot.getDomainAxis();
+                    axis.setRange(
+                            FitsUnit.ANGLE_RAD.convert(imgRect.getMinX(), axisUnit),
+                            FitsUnit.ANGLE_RAD.convert(imgRect.getMaxX(), axisUnit)
+                    );
+                    axis = this.xyPlot.getRangeAxis();
+                    axis.setRange(
+                            FitsUnit.ANGLE_RAD.convert(imgRect.getMinY(), axisUnit),
+                            FitsUnit.ANGLE_RAD.convert(imgRect.getMaxY(), axisUnit)
+                    );
+                }
             }
         }
     }
@@ -1057,8 +1069,6 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      * @return true if the given image rectangle is smaller than rectangle of the reference image
      */
     private boolean computeSubImage(final ImageChartData imageData, final Rectangle2D.Double imgRect) {
-        boolean doCrop = false;
-
         final BufferedImage image = imageData.getImage();
 
         final int imageWidth = image.getWidth();
@@ -1072,18 +1082,14 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             logger.debug("image rect REF = {}", imgRectRef);
         }
 
+        final double pixRatioX = ((double) imageWidth) / imgRectRef.getWidth();
+        final double pixRatioY = ((double) imageHeight) / imgRectRef.getHeight();
+
         // note : floor/ceil to be sure to have at least 1x1 pixel image
-        int x = (int) Math.floor(imageWidth * (imgRect.getX() - imgRectRef.getX()) / imgRectRef.getWidth());
-        int y = (int) Math.floor(imageHeight * (imgRect.getY() - imgRectRef.getY()) / imgRectRef.getHeight());
-        int w = (int) Math.ceil(imageWidth * imgRect.getWidth() / imgRectRef.getWidth());
-        int h = (int) Math.ceil(imageHeight * imgRect.getHeight() / imgRectRef.getHeight());
-
-        // Note : the image is processed to stay oriented: North (top ie inverted Y axis) and East (left ie inverted X axis):
-        // Inverse X axis issue :
-        x = imageWidth - x - w;
-
-        // Inverse Y axis issue :
-        y = imageHeight - y - h;
+        int x = (int) Math.floor(pixRatioX * (imgRect.getX() - imgRectRef.getX()));
+        int y = (int) Math.floor(pixRatioY * (imgRect.getY() - imgRectRef.getY()));
+        int w = (int) Math.ceil(pixRatioX * imgRect.getWidth());
+        int h = (int) Math.ceil(pixRatioY * imgRect.getHeight());
 
         // check bounds:
         x = checkBounds(x, 0, imageWidth - 1);
@@ -1091,19 +1097,43 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         w = checkBounds(w, 1, imageWidth - x);
         h = checkBounds(h, 1, imageHeight - y);
 
+        final boolean doCrop = ((x != 0) || (y != 0) || (w != imageWidth) || (h != imageHeight));
+
         if (logger.isDebugEnabled()) {
             logger.debug("sub image [{}, {} - {}, {}] - doCrop = {}", new Object[]{x, y, w, h, doCrop});
         }
 
-        doCrop = ((x != 0) || (y != 0) || (w != imageWidth) || (h != imageHeight));
-
-        // crop a small sub image:
         // check reset zoom to avoid computing sub image == ref image:
-        final Image subImage = (doCrop) ? image.getSubimage(x, y, w, h) : image;
+        if (doCrop) {
+            // adjust rounded data coords:
+            logger.info("image rect (IN) = {}", imgRect);
 
-        // TODO: adjust axis bounds to exact viewed rectangle (i.e. avoid rounding errors) !!
-        // update the background image :
-        updatePlotImage(subImage);
+            imgRect.setRect(
+                    ((double) x) / pixRatioX + imgRectRef.getX(),
+                    ((double) y) / pixRatioY + imgRectRef.getY(),
+                    ((double) w) / pixRatioX,
+                    ((double) h) / pixRatioY
+            );
+            logger.info("image rect (OUT) = {}", imgRect);
+
+            // Note : the image is processed to stay oriented: North (top ie inverted Y axis) and East (left ie inverted X axis):
+            // Inverse X axis issue :
+            x = imageWidth - x - w;
+
+            // Inverse Y axis issue :
+            y = imageHeight - y - h;
+
+            // crop a small sub image:
+            final Image subImage = image.getSubimage(x, y, w, h);
+
+            // update the background image :
+            updatePlotImage(subImage);
+        } else {
+            imgRect.setRect(imgRectRef);
+
+            // update the background image :
+            updatePlotImage(image);
+        }
 
         return doCrop;
     }
