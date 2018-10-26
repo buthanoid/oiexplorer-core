@@ -14,6 +14,7 @@ import fr.jmmc.oitools.processing.Resampler;
 import fr.jmmc.oitools.processing.Resampler.Filter;
 import fr.jmmc.oitools.util.ArrayConvert;
 import fr.nom.tam.fits.FitsException;
+import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.List;
 import org.slf4j.Logger;
@@ -31,6 +32,8 @@ public final class FitsImageUtils {
     /* constants */
     /** Logger associated to image classes */
     private final static Logger logger = LoggerFactory.getLogger(FitsImageUtils.class.getName());
+
+    public final static int MAX_IMAGE_SIZE = 4096;
 
     /**
      * Forbidden constructor
@@ -287,13 +290,97 @@ public final class FitsImageUtils {
         image.setSum(minMaxJob.getSum());
     }
 
+    public static void changeViewportImages(final FitsImageHDU hdu, final Rectangle2D.Double newArea) {
+        if (newArea == null || newArea.isEmpty()) {
+            throw new IllegalStateException("Invalid area: " + newArea);
+        }
+        if (hdu != null && hdu.hasImages()) {
+            for (FitsImage fitsImage : hdu.getFitsImages()) {
+                // First modify image:
+                changeViewportImage(fitsImage, newArea);
+
+                // note: fits image instance can be modified by image preparation:
+                // can throw IllegalArgumentException if image has invalid keyword(s) / data:
+                FitsImageUtils.prepareImage(fitsImage);
+            }
+        }
+    }
+
+    private static void changeViewportImage(final FitsImage fitsImage, final Rectangle2D.Double newArea) {
+        final float[][] data = fitsImage.getData();
+        final int nbRows = fitsImage.getNbRows();
+        final int nbCols = fitsImage.getNbCols();
+
+        // area reference :
+        final Rectangle2D.Double areaRef = fitsImage.getArea();
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("image area     = {}", newArea);
+            logger.debug("image area REF = {}", areaRef);
+            logger.debug("image REF      = [{} x {}]", nbCols, nbRows);
+        }
+
+        final double pixRatioX = ((double) nbCols) / areaRef.getWidth();
+        final double pixRatioY = ((double) nbRows) / areaRef.getHeight();
+
+        // note : floor/ceil to be sure to have at least 1x1 pixel image
+        int x = (int) Math.floor(pixRatioX * (newArea.getX() - areaRef.getX()));
+        int y = (int) Math.floor(pixRatioY * (newArea.getY() - areaRef.getY()));
+        int w = (int) Math.ceil(pixRatioX * newArea.getWidth());
+        int h = (int) Math.ceil(pixRatioY * newArea.getHeight());
+
+        // check bounds:
+        w = checkBounds(w, 1, MAX_IMAGE_SIZE);
+        h = checkBounds(h, 1, MAX_IMAGE_SIZE);
+
+        // Keep it square and even to avoid any black border (not present originally):
+        final int newSize = Math.max(w, h);
+        w = h = (newSize % 2 != 0) ? newSize + 1 : newSize;
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("new image [{}, {} - {}, {}]", new Object[]{x, y, w, h});
+        }
+
+        final float[][] newData = new float[w][h];
+
+        final int sx0 = Math.max(0, x);
+        final int swx = Math.min(x + w, nbCols) - sx0;
+        if (logger.isDebugEnabled()) {
+            logger.debug("sx [{} - {}]", sx0, swx);
+        }
+
+        final int sy0 = Math.max(0, y);
+        final int sy1 = Math.min(y + h, nbRows);
+        if (logger.isDebugEnabled()) {
+            logger.debug("sy [{} - {}]", sy0, sy1);
+        }
+
+        final int offX = (x < 0) ? -x : 0;
+        final int offY = (y < 0) ? -y : -sy0;
+        if (logger.isDebugEnabled()) {
+            logger.debug("off [{} - {}]", offX, offY);
+        }
+
+        for (int j = sy0; j < sy1; j++) {
+            System.arraycopy(data[j], sx0, newData[j + offY], offX, swx);
+        }
+
+        updateFitsImage(fitsImage, newData);
+
+        // update ref pixel:
+        fitsImage.setPixRefCol(fitsImage.getPixRefCol() - x);
+        fitsImage.setPixRefRow(fitsImage.getPixRefRow() - y);
+
+        logger.debug("changeViewportImage: updated image: {}", fitsImage);
+    }
+
     public static void resampleImages(final FitsImageHDU hdu, final int newSize, final Filter filter) {
         if (newSize < 1) {
             throw new IllegalStateException("Invalid size: " + newSize);
         }
         if (hdu != null && hdu.hasImages()) {
             for (FitsImage fitsImage : hdu.getFitsImages()) {
-                // First resize square image:
+                // First modify image:
                 resampleImage(fitsImage, newSize, filter);
 
                 // note: fits image instance can be modified by image preparation:
@@ -304,13 +391,14 @@ public final class FitsImageUtils {
     }
 
     private static void resampleImage(final FitsImage fitsImage, final int newSize, final Filter filter) {
-        // in place modifications:
-        float[][] data = fitsImage.getData();
-        int nbRows = fitsImage.getNbRows();
-        int nbCols = fitsImage.getNbCols();
+        final float[][] data = fitsImage.getData();
+        final int nbRows = fitsImage.getNbRows();
+        final int nbCols = fitsImage.getNbCols();
 
         final double[][] imgDbl = ArrayConvert.toDoubles(nbRows, nbCols, data);
-        logger.info("resampleImage: input [{} x {}] dest [{} x {}]", nbCols, nbRows, newSize, newSize);
+        if (logger.isDebugEnabled()) {
+            logger.debug("resampleImage: input [{} x {}] dest [{} x {}]", nbCols, nbRows, newSize, newSize);
+        }
 
         final long start = System.nanoTime();
 
@@ -335,7 +423,23 @@ public final class FitsImageUtils {
         fitsImage.setPixRefCol(-oriCol / fitsImage.getIncCol() + 1.0);
         fitsImage.setPixRefRow(-oriRow / fitsImage.getIncRow() + 1.0);
 
-        logger.info("resampleImage: updated image: {}", fitsImage);
+        logger.debug("resampleImage: updated image: {}", fitsImage);
     }
 
+    /**
+     * Return the value or the closest bound
+     * @param value value to check
+     * @param min minimum value
+     * @param max maximum value
+     * @return value or the closest bound
+     */
+    public static int checkBounds(final int value, final int min, final int max) {
+        if (value < min) {
+            return min;
+        }
+        if (value > max) {
+            return max;
+        }
+        return value;
+    }
 }
