@@ -158,9 +158,9 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         this.showOptions = showOptions;
         this.minDataRange = minDataRange;
         this.task = new Task(PREFIX_IMAGE_TASK + panelCounter.getAndIncrement());
-        
+
         initComponents();
-        
+
         postInit();
     }
 
@@ -183,18 +183,24 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         jLabelFilter = new javax.swing.JLabel();
         jComboBoxFilter = new javax.swing.JComboBox();
         jPanelViewport = new javax.swing.JPanel();
+        jLabelViewport = new javax.swing.JLabel();
         jLabelDeltaRA = new javax.swing.JLabel();
         jFormattedTextFieldRAMin = new javax.swing.JFormattedTextField();
         jFormattedTextFieldRAMax = new javax.swing.JFormattedTextField();
         jLabelDeltaDE = new javax.swing.JLabel();
         jFormattedTextFieldDEMin = new javax.swing.JFormattedTextField();
         jFormattedTextFieldDEMax = new javax.swing.JFormattedTextField();
-        jLabelViewport = new javax.swing.JLabel();
         jButtonPick = new javax.swing.JButton();
         jButtonOrig = new javax.swing.JButton();
-        jLabelFov = new javax.swing.JLabel();
-        jFormattedTextFieldFov = new javax.swing.JFormattedTextField();
-        jButtonFovUpdate = new javax.swing.JButton();
+        jLabelResampleFov = new javax.swing.JLabel();
+        jFormattedTextFieldResampleFov = new javax.swing.JFormattedTextField();
+        jButtonResampleFovUpdate = new javax.swing.JButton();
+        jPanelRescale = new javax.swing.JPanel();
+        jLabelRescale = new javax.swing.JLabel();
+        jLabelRescaleFov = new javax.swing.JLabel();
+        jFormattedTextFieldRescaleFov = new javax.swing.JFormattedTextField();
+        jLabelScale = new javax.swing.JLabel();
+        jFormattedTextFieldScaleX = new javax.swing.JFormattedTextField();
         jPanelOptions = new javax.swing.JPanel();
         jLabelLutTable = new javax.swing.JLabel();
         jComboBoxLUT = new javax.swing.JComboBox();
@@ -256,6 +262,15 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         jPanelResample.add(jComboBoxFilter, gridBagConstraints);
 
         jPanelViewport.setLayout(new java.awt.GridBagLayout());
+
+        jLabelViewport.setText("TODO");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.FIRST_LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelViewport.add(jLabelViewport, gridBagConstraints);
 
         jLabelDeltaRA.setText("Delta RA:");
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -331,15 +346,6 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelViewport.add(jFormattedTextFieldDEMax, gridBagConstraints);
 
-        jLabelViewport.setText("TODO");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 4;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.FIRST_LINE_START;
-        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        jPanelViewport.add(jLabelViewport, gridBagConstraints);
-
         jButtonPick.setText("pick");
         jButtonPick.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -364,34 +370,88 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelViewport.add(jButtonOrig, gridBagConstraints);
 
-        jLabelFov.setText("FOV:");
+        jLabelResampleFov.setText("FOV:");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
-        jPanelViewport.add(jLabelFov, gridBagConstraints);
+        jPanelViewport.add(jLabelResampleFov, gridBagConstraints);
 
-        jFormattedTextFieldFov.setColumns(8);
-        jFormattedTextFieldFov.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.0##"))));
+        jFormattedTextFieldResampleFov.setColumns(8);
+        jFormattedTextFieldResampleFov.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.0##"))));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        jPanelViewport.add(jFormattedTextFieldFov, gridBagConstraints);
+        jPanelViewport.add(jFormattedTextFieldResampleFov, gridBagConstraints);
 
-        jButtonFovUpdate.setText("update");
-        jButtonFovUpdate.addActionListener(new java.awt.event.ActionListener() {
+        jButtonResampleFovUpdate.setText("update");
+        jButtonResampleFovUpdate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonFovUpdateActionPerformed(evt);
+                jButtonResampleFovUpdateActionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 3;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        jPanelViewport.add(jButtonFovUpdate, gridBagConstraints);
+        jPanelViewport.add(jButtonResampleFovUpdate, gridBagConstraints);
+
+        jPanelRescale.setLayout(new java.awt.GridBagLayout());
+
+        jLabelRescale.setText("TODO");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.FIRST_LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelRescale.add(jLabelRescale, gridBagConstraints);
+
+        jLabelRescaleFov.setText("FOV:");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 6);
+        jPanelRescale.add(jLabelRescaleFov, gridBagConstraints);
+
+        jFormattedTextFieldRescaleFov.setEditable(false);
+        jFormattedTextFieldRescaleFov.setColumns(8);
+        jFormattedTextFieldRescaleFov.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.0##"))));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelRescale.add(jFormattedTextFieldRescaleFov, gridBagConstraints);
+
+        jLabelScale.setText("Scale");
+        jLabelScale.setToolTipText("image increments in mas");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 6);
+        jPanelRescale.add(jLabelScale, gridBagConstraints);
+
+        jFormattedTextFieldScaleX.setColumns(10);
+        jFormattedTextFieldScaleX.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("0.00##E0"))));
+        jFormattedTextFieldScaleX.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                jFormattedTextFieldScaleXPropertyChange(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        jPanelRescale.add(jFormattedTextFieldScaleX, gridBagConstraints);
 
         setLayout(new java.awt.BorderLayout());
 
@@ -467,15 +527,21 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         setOriginalViewportForm();
     }//GEN-LAST:event_jButtonOrigActionPerformed
 
-    private void jButtonFovUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonFovUpdateActionPerformed
+    private void jButtonResampleFovUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonResampleFovUpdateActionPerformed
         setFovInViewportForm();
-    }//GEN-LAST:event_jButtonFovUpdateActionPerformed
+    }//GEN-LAST:event_jButtonResampleFovUpdateActionPerformed
 
     private void viewportFormCoordPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_viewportFormCoordPropertyChange
         if ("value".equals(evt.getPropertyName())) {
             updateFovInViewportForm();
         }
     }//GEN-LAST:event_viewportFormCoordPropertyChange
+
+    private void jFormattedTextFieldScaleXPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_jFormattedTextFieldScaleXPropertyChange
+        if ("value".equals(evt.getPropertyName())) {
+            updateFovInRescaleForm();
+        }
+    }//GEN-LAST:event_jFormattedTextFieldScaleXPropertyChange
 
     /**
      * Export the component as a document using the given action:
@@ -531,12 +597,12 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     private void postInit() {
         this.chart = ChartUtils.createSquareXYLineChart(SpecialChars.DELTA_UPPER + "RA - [North]", SpecialChars.DELTA_UPPER + "DE - [East]", false);
         this.chart.setPadding(CHART_PADDING);
-        
+
         this.xyPlot = (SquareXYPlot) this.chart.getPlot();
 
         // Move RA axis to top:
         this.xyPlot.setDomainAxisLocation(AxisLocation.TOP_OR_LEFT);
-        
+
         this.xyPlot.getDomainAxis().setPositiveArrowVisible(true);
         this.xyPlot.getRangeAxis().setPositiveArrowVisible(true);
 
@@ -553,7 +619,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
         // define zoom listener :
         this.chartPanel.setZoomEventListener(this);
-        
+
         this.add(this.chartPanel);
 
         // register this instance as a Preference Observer :
@@ -569,7 +635,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             // update selected items:
             this.jComboBoxLUT.setSelectedItem(this.myPreferences.getPreference(Preferences.MODEL_IMAGE_LUT));
             this.jComboBoxColorScale.setSelectedItem(this.myPreferences.getImageColorScale());
-            
+
             this.jComboBoxFilter.setSelectedItem(Resampler.FILTER_DEFAULT);
         } finally {
             // restore the automatic refresh :
@@ -604,7 +670,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     public String toString() {
         return "FitsImagePanel@" + Integer.toHexString(hashCode());
     }
-    
+
     public void addOptionPanel(final JPanel optionPanel) {
         if (this.showOptions && optionPanel != null) {
             final GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
@@ -613,7 +679,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             this.jPanelOptions.revalidate();
         }
     }
-    
+
     public void removeOptionPanel(final JPanel optionPanel) {
         if (this.showOptions && optionPanel != null) {
             this.jPanelOptions.remove(optionPanel);
@@ -629,7 +695,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     @Override
     public void update(final Observable o, final Object arg) {
         logger.debug("Preferences updated on : {}", this);
-        
+
         final String colorModelPref = this.myPreferences.getPreference(Preferences.MODEL_IMAGE_LUT);
         final ColorScale colorScalePref = this.myPreferences.getImageColorScale();
         final ImageInterpolation interpolationPref = this.myPreferences.getImageInterpolation();
@@ -644,9 +710,9 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             // restore the automatic refresh :
             setAutoRefresh(prevAutoRefresh);
         }
-        
+
         final IndexColorModel colorModel = ColorModels.getColorModel(colorModelPref);
-        
+
         if (getChartData() != null && !getChartData().isCompatible(colorModel, colorScalePref, interpolationPref)) {
             refreshPlot();
         }
@@ -668,7 +734,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     public FitsImage getFitsImage() {
         return this.fitsImage;
     }
-    
+
     public boolean resampleFitsImage() {
         if (this.fitsImage == null) {
             return false;
@@ -677,13 +743,14 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         final int nbRows = fitsImage.getNbRows();
         this.jLabelOldSize.setText(String.valueOf(nbRows));
         this.jFormattedTextFieldNewSize.setValue(nbRows);
-        
+
         if (MessagePane.showDialogPanel("Resample Image", this.jPanelResample)
                 && !jFormattedTextFieldNewSize.getText().isEmpty()) {
+
             final int newSize = (int) Math.round(parseDouble(jFormattedTextFieldNewSize.getText()));
             final Filter filter = (Filter) jComboBoxFilter.getSelectedItem();
             logger.debug("resampleImages: newSize: {} - filter: {}", newSize, filter);
-            
+
             boolean ok = false;
             try {
                 FitsImageUtils.resampleImages(fitsImage.getFitsImageHDU(), newSize, filter);
@@ -695,20 +762,82 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         }
         return false;
     }
-    
+
+    public boolean rescaleFitsImage() {
+        if (this.fitsImage == null) {
+            return false;
+        }
+        final FitsUnit axisUnit = this.lastAxisUnit;
+        if (axisUnit == null) {
+            return false;
+        }
+
+        // initialise the form:
+        // TODO: handle X/Y ie col/row increments (not linked) ?
+        // update the form:
+        this.jLabelRescale.setText("Enter increments in " + axisUnit.getStandardRepresentation());
+        this.jFormattedTextFieldScaleX.setValue(FitsUnit.ANGLE_RAD.convert(fitsImage.getIncCol(), axisUnit));
+        updateFovInRescaleForm();
+
+        if (MessagePane.showDialogPanel("Rescale Image", this.jPanelRescale)
+                && !jFormattedTextFieldScaleX.getText().isEmpty()) {
+
+            final double value = parseDouble(jFormattedTextFieldScaleX.getText());
+            if (value > 0.0) {
+                final double inc = axisUnit.convert(value, FitsUnit.ANGLE_RAD);
+                logger.debug("rescaleFitsImage: inc: {}", inc);
+
+                boolean ok = false;
+                try {
+                    FitsImageUtils.rescaleImages(fitsImage.getFitsImageHDU(), inc, inc);
+                    ok = true;
+                } catch (IllegalStateException ise) {
+                    MessagePane.showErrorMessage("Unable to rescale image", ise);
+                }
+                return ok;
+            }
+        }
+        return false;
+    }
+
+    private void updateFovInRescaleForm() {
+        final FitsUnit axisUnit = this.lastAxisUnit;
+        if (axisUnit == null) {
+            return;
+        }
+        final int nbRows = fitsImage.getNbRows();
+        final int nbCols = fitsImage.getNbCols();
+
+        final double value = parseDouble(jFormattedTextFieldScaleX.getText());
+        if (value > 0.0) {
+            final double inc = axisUnit.convert(value, FitsUnit.ANGLE_RAD);
+            final double fov = Math.max(nbRows * inc, nbCols * inc);
+            logger.debug("updateFovInRescaleForm: fov: {}", fov);
+
+            if (!Double.isNaN(fov)) {
+                updateRescaleFormFov(fov, axisUnit);
+            }
+        }
+    }
+
+    private void updateRescaleFormFov(final double fov, final FitsUnit axisUnit) {
+        this.jFormattedTextFieldRescaleFov.setValue(FitsUnit.ANGLE_RAD.convert(
+                fov, axisUnit));
+    }
+
     public boolean changeViewportFitsImage() {
         final FitsUnit axisUnit = this.lastAxisUnit;
-        
+
         if (this.fitsImage == null || axisUnit == null) {
             return false;
         }
         // initialise the form:
         setCurrentViewportForm();
-        
+
         if (MessagePane.showDialogPanel("Change Image viewport", this.jPanelViewport)) {
             final Rectangle2D.Double newArea = getEditedViewportArea();
             logger.debug("changeViewportFitsImage: newArea: {}", newArea);
-            
+
             if (newArea == null || !newArea.intersects(fitsImage.getArea())) {
                 MessagePane.showMessage("Invalid coordinate ranges, no data !");
             } else {
@@ -724,7 +853,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         }
         return false;
     }
-    
+
     private Rectangle2D.Double getEditedViewportArea() {
         final FitsUnit axisUnit = this.lastAxisUnit;
         if (axisUnit == null) {
@@ -734,7 +863,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         final double ra1 = parseDouble(jFormattedTextFieldRAMax.getText());
         final double de0 = parseDouble(jFormattedTextFieldDEMin.getText());
         final double de1 = parseDouble(jFormattedTextFieldDEMax.getText());
-        
+
         if ((ra0 < ra1) && (de0 < de1)) {
             final Rectangle2D.Double area = new Rectangle2D.Double();
             area.setFrameFromDiagonal(
@@ -747,10 +876,10 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         }
         return null;
     }
-    
+
     private void setOriginalViewportForm() {
         final FitsUnit axisUnit = this.lastAxisUnit;
-        
+
         if (this.fitsImage == null || axisUnit == null) {
             return;
         }
@@ -760,14 +889,14 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         // update the form:
         updateViewportForm(area, axisUnit);
     }
-    
+
     private void setCurrentViewportForm() {
         final FitsUnit axisUnit = this.lastAxisUnit;
         if (axisUnit == null) {
             return;
         }
         final Rectangle2D.Double area = getCurrentZoomRect();
-        
+
         if (area != null) {
             logger.debug("setCurrentViewportForm: image area: {}", area);
 
@@ -777,25 +906,25 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             setOriginalViewportForm();
         }
     }
-    
+
     private void setFovInViewportForm() {
         final FitsUnit axisUnit = this.lastAxisUnit;
         if (axisUnit == null) {
             return;
         }
-        final double fov = parseDouble(jFormattedTextFieldFov.getText());
+        final double fov = parseDouble(jFormattedTextFieldResampleFov.getText());
         if (fov > 0.0) {
             final double halfFov = 0.5 * axisUnit.convert(fov, FitsUnit.ANGLE_RAD);
             logger.debug("setFovInViewportForm: halfFov: {}", halfFov);
-            
+
             final Rectangle2D.Double area = getEditedViewportArea();
             logger.debug("setFovInViewportForm: area: {}", area);
-            
+
             if (area != null) {
                 final double cx = area.getCenterX();
                 final double cy = area.getCenterY();
                 area.setFrameFromDiagonal(cx - halfFov, cy - halfFov, cx + halfFov, cy + halfFov);
-                
+
                 logger.debug("setFovInViewportForm: fov area: {}", area);
 
                 // update the form:
@@ -803,20 +932,20 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             }
         }
     }
-    
+
     private void updateFovInViewportForm() {
         final FitsUnit axisUnit = this.lastAxisUnit;
         if (axisUnit == null) {
             return;
         }
         final Rectangle2D.Double area = getEditedViewportArea();
-        logger.debug("setFovInViewportForm: area: {}", area);
-        
+        logger.debug("updateFovInViewportForm: area: {}", area);
+
         if (area != null) {
             updateViewportFormFov(area, axisUnit);
         }
     }
-    
+
     private void updateViewportForm(final Rectangle2D.Double area, final FitsUnit axisUnit) {
         // update the form:
         this.jLabelViewport.setText("Enter coordinates in " + axisUnit.getStandardRepresentation());
@@ -828,7 +957,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     }
 
     private void updateViewportFormFov(final Rectangle2D.Double area, final FitsUnit axisUnit) {
-        this.jFormattedTextFieldFov.setValue(FitsUnit.ANGLE_RAD.convert(
+        this.jFormattedTextFieldResampleFov.setValue(FitsUnit.ANGLE_RAD.convert(
                 Math.max(area.getWidth(), area.getHeight()), axisUnit));
     }
 
@@ -912,10 +1041,10 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
             // Start the computations :
             final long start = System.nanoTime();
-            
+
             float min = (float) this.fitsImage.getDataMin();
             float max = (float) this.fitsImage.getDataMax();
-            
+
             if (this.minDataRange != null) {
                 // check minimum data range:
                 if (min > this.minDataRange[0]) {
@@ -925,7 +1054,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                     max = this.minDataRange[1];
                 }
             }
-            
+
             final ColorScale usedColorScale;
             if (colorScale == ColorScale.LOGARITHMIC
                     && (min <= 0f || max <= 0f || min == max || Float.isInfinite(min) || Float.isInfinite(max))) {
@@ -935,7 +1064,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 FitsImageUtils.updateDataRange(fitsImage);
                 min = (float) this.fitsImage.getDataMin();
                 max = (float) this.fitsImage.getDataMax();
-                
+
                 if (min == max) {
                     max = min + 1f;
                 }
@@ -947,7 +1076,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 FitsImageUtils.updateDataRange(fitsImage);
                 min = (float) this.fitsImage.getDataMin();
                 max = (float) this.fitsImage.getDataMax();
-                
+
                 if (min == max) {
                     max = min + 1f;
                 }
@@ -964,9 +1093,9 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             if (Thread.currentThread().isInterrupted()) {
                 return null;
             }
-            
+
             AffineTransform at = null;
-            
+
             int sx = 1, sy = 1;
             if (fitsImage.isIncColPositive() || !fitsImage.isIncRowPositive()) {
                 int tx = 0, ty = 0;
@@ -983,7 +1112,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 at = AffineTransform.getScaleInstance(sx, sy);
                 at.translate(tx, ty);
             }
-            
+
             if (fitsImage.isRotAngleDefined()) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("rotate image: {} deg", fitsImage.getRotAngle());
@@ -993,7 +1122,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 // should rotation happen at the pixel center or at the image center ?
                 final double anchorx = image.getWidth() / 2.0;
                 final double anchory = image.getHeight() / 2.0;
-                
+
                 if (at == null) {
                     at = new AffineTransform();
                 }
@@ -1002,54 +1131,54 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 at.rotate(theta);                  // S2: rotate around anchor
                 at.translate(-anchorx, -anchory);  // S1: translate anchor to origin
             }
-            
+
             final ImageInterpolation usedInterpolation = ImageUtils.getImageInterpolation();
-            
+
             final BufferedImage displayedImage;
             if (at != null) {
                 // Compute output bounding box:
                 final Rectangle2D bbox = new Rectangle(0, 0, image.getWidth(), image.getHeight());
                 // enlarge output image if rotation defined:
                 final Rectangle2D outbbox = (fitsImage.isRotAngleDefined()) ? ImageUtils.getBoundingBox(at, bbox) : bbox;
-                
+
                 if (logger.isDebugEnabled()) {
                     logger.debug("bbox:  {}", bbox);
                     logger.debug("tbbox: {}", outbbox);
                 }
-                
+
                 final int w = (int) Math.ceil(outbbox.getWidth());
                 final int h = (int) Math.ceil(outbbox.getHeight());
-                
+
                 displayedImage = ImageUtils.transformImage(image, this.colorModel, at, w, h);
             } else {
                 displayedImage = image;
             }
-            
+
             logger.info("compute[ImageChartData]: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
 
             // Adjust viewed area:
             Rectangle2D.Double imgRectRef = fitsImage.getArea();
-            
+
             if (fitsImage.isRotAngleDefined()) {
                 // angle sign is same direction (North -> East):
                 final double theta = Math.toRadians(fitsImage.getRotAngle());
                 // should rotation happen at the pixel center or at the image center ?
                 final double anchorx = imgRectRef.getCenterX();
                 final double anchory = imgRectRef.getCenterY();
-                
+
                 at = AffineTransform.getRotateInstance(theta, anchorx, anchory);
-                
+
                 if (logger.isDebugEnabled()) {
                     logger.debug("area: {}", imgRectRef);
                 }
-                
+
                 imgRectRef = ImageUtils.getBoundingBox(at, imgRectRef);
-                
+
                 if (logger.isDebugEnabled()) {
                     logger.debug("rotated area: {}", imgRectRef);
                 }
             }
-            
+
             return new ImageChartData(fitsImage, colorModel, usedColorScale, usedInterpolation, min, max, displayedImage, imgRectRef);
         }
 
@@ -1102,7 +1231,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      */
     protected void resetPlot() {
         ChartUtils.clearTextSubTitle(this.chart);
-        
+
         this.lastZoomEvent = null;
         this.lastAxisUnit = null;
         this.chartData = null;
@@ -1134,30 +1263,30 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
         // title :
         ChartUtils.clearTextSubTitle(this.chart);
-        
+
         final FitsImage lFitsImage = imageData.getFitsImage();
-        
+
         if (this.showId && lFitsImage.getFitsImageIdentifier() != null) {
             ChartUtils.addSubtitle(this.chart, "Id: " + lFitsImage.getFitsImageIdentifier());
         }
-        
+
         final Title infoTitle;
-        
+
         if (!(lFitsImage.isIncRowDefined() && lFitsImage.isIncColDefined())
                 && Double.isNaN(lFitsImage.getWaveLength()) && lFitsImage.getImageCount() <= 1) {
             infoTitle = null;
         } else {
             final BlockContainer infoBlock = new BlockContainer(new ColumnArrangement());
-            
+
             if (lFitsImage.isIncRowDefined() && lFitsImage.isIncColDefined()) {
                 infoBlock.add(createText("Coordinates:"));
                 infoBlock.add(createText("RA: " + ALX.toHMS(Math.toDegrees(lFitsImage.getValRefCol()))));
                 infoBlock.add(createText("DE: " + ALX.toDMS(Math.toDegrees(lFitsImage.getValRefRow()))));
-                
+
                 infoBlock.add(createText("\nIncrements:"));
                 infoBlock.add(createText("RA: " + FitsImage.getAngleAsString(lFitsImage.getIncCol(), df)));
                 infoBlock.add(createText("DE: " + FitsImage.getAngleAsString(lFitsImage.getIncRow(), df)));
-                
+
                 infoBlock.add(createText("\nFOV:"));
                 if (lFitsImage.isRotAngleDefined()) {
                     // FOV depends on the rotation angle
@@ -1169,17 +1298,17 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 infoBlock.add(createText("\nPixels:"));
                 infoBlock.add(createText(lFitsImage.getNbCols() + " x " + lFitsImage.getNbRows()));
             }
-            
+
             if (lFitsImage.getImageCount() > 1) {
                 infoBlock.add(createText("\nImage:" + lFitsImage.getImageIndex() + '/' + lFitsImage.getImageCount()));
             }
-            
+
             if (!Double.isNaN(lFitsImage.getWaveLength())) {
                 infoBlock.add(createText("\nModel " + SpecialChars.LAMBDA_LOWER + ":"));
                 infoBlock.add(createText(NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(lFitsImage.getWaveLength()))
                         + " " + ConverterFactory.CONVERTER_MICRO_METER.getUnit()));
             }
-            
+
             infoTitle = new CompositeTitle(infoBlock);
             infoTitle.setFrame(new BlockBorder(Color.BLACK));
             infoTitle.setMargin(1d, 1d, 1d, 1d);
@@ -1189,9 +1318,9 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
         // define axis boundaries:
         final Rectangle2D.Double imgRectRef = imageData.getImgRectRef();
-        
+
         final FitsUnit axisUnit = FitsUnit.getAngleUnit(Math.min(imgRectRef.width, imgRectRef.height));
-        
+
         this.xyPlot.defineBounds(
                 new Range(
                         FitsUnit.ANGLE_RAD.convert(imgRectRef.getMinX(), axisUnit),
@@ -1201,7 +1330,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                         FitsUnit.ANGLE_RAD.convert(imgRectRef.getMinY(), axisUnit),
                         FitsUnit.ANGLE_RAD.convert(imgRectRef.getMaxY(), axisUnit)
                 ));
-        
+
         this.xyPlot.restoreAxesBounds();
 
         // define axis orientation:
@@ -1223,7 +1352,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
 
         // update theme at end :
         org.jfree.chart.ChartUtils.applyCurrentTheme(this.chart);
-        
+
         if (infoTitle != null) {
             // after theme:
             chart.addSubtitle(infoTitle);
@@ -1239,7 +1368,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             setAutoRefresh(prevAutoRefresh);
         }
     }
-    
+
     private static TextTitle createText(final String label) {
         return new TextTitle(label, ChartUtils.DEFAULT_FONT_MEDIUM);
     }
@@ -1253,7 +1382,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         // check if the zoom changed :
         if (!ze.equals(this.lastZoomEvent)) {
             this.lastZoomEvent = ze;
-            
+
             if (this.getChartData() != null) {
                 final Rectangle2D.Double imgRect = getCurrentZoomRect();
 
@@ -1276,15 +1405,15 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             }
         }
     }
-    
+
     private Rectangle2D.Double getCurrentZoomRect() {
         final FitsUnit axisUnit = this.lastAxisUnit;
         final ZoomEvent ze = this.lastZoomEvent;
-        
+
         if (ze == null || axisUnit == null) {
             return null;
         }
-        
+
         final Rectangle2D.Double imgRect = new Rectangle2D.Double();
         imgRect.setFrameFromDiagonal(
                 axisUnit.convert(ze.getDomainLowerBound(), FitsUnit.ANGLE_RAD),
@@ -1303,18 +1432,18 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      */
     private boolean computeSubImage(final ImageChartData imageData, final Rectangle2D.Double imgRect) {
         final BufferedImage image = imageData.getImage();
-        
+
         final int imageWidth = image.getWidth();
         final int imageHeight = image.getHeight();
 
         // area reference :
         final Rectangle2D.Double imgRectRef = imageData.getImgRectRef();
-        
+
         if (logger.isDebugEnabled()) {
             logger.debug("image rect     = {}", imgRect);
             logger.debug("image rect REF = {}", imgRectRef);
         }
-        
+
         final double pixRatioX = ((double) imageWidth) / imgRectRef.getWidth();
         final double pixRatioY = ((double) imageHeight) / imgRectRef.getHeight();
 
@@ -1329,9 +1458,9 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         y = checkBounds(y, 0, imageHeight - 1);
         w = checkBounds(w, 1, imageWidth - x);
         h = checkBounds(h, 1, imageHeight - y);
-        
+
         final boolean doCrop = ((x != 0) || (y != 0) || (w != imageWidth) || (h != imageHeight));
-        
+
         if (logger.isDebugEnabled()) {
             logger.debug("sub image [{}, {} - {}, {}] - doCrop = {}", new Object[]{x, y, w, h, doCrop});
         }
@@ -1340,7 +1469,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         if (doCrop) {
             // adjust rounded data coords:
             logger.debug("image rect (IN) = {}", imgRect);
-            
+
             imgRect.setRect(
                     ((double) x) / pixRatioX + imgRectRef.getX(),
                     ((double) y) / pixRatioY + imgRectRef.getY(),
@@ -1367,7 +1496,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             // update the background image :
             updatePlotImage(image);
         }
-        
+
         return doCrop;
     }
 
@@ -1376,17 +1505,17 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
      * @param imageData computed image data or null
      */
     private void updateImage(final ImageChartData imageData) {
-        
+
         if (mapLegend != null) {
             this.chart.removeSubtitle(mapLegend);
         }
-        
+
         if (imageData != null) {
             final double min = imageData.getMin();
             final double max = imageData.getMax();
             final IndexColorModel colorModel = imageData.getColorModel();
             final ColorScale colorScale = imageData.getColorScale();
-            
+
             final NumberAxis uvMapAxis;
             if (colorScale == ColorScale.LINEAR) {
                 uvMapAxis = new NumberAxis();
@@ -1399,11 +1528,11 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 ((LogarithmicAxis) uvMapAxis).setExpTickLabelsFlag(true);
                 mapLegend = new PaintLogScaleLegend(new ColorModelPaintScale(min, max, colorModel, colorScale), uvMapAxis);
             }
-            
+
             uvMapAxis.setTickLabelFont(ChartUtils.DEFAULT_FONT);
             uvMapAxis.setAxisLinePaint(Color.BLACK);
             uvMapAxis.setTickMarkPaint(Color.BLACK);
-            
+
             mapLegend.setPosition(RectangleEdge.LEFT);
             mapLegend.setStripWidth(15d);
             mapLegend.setStripOutlinePaint(Color.BLACK);
@@ -1413,11 +1542,11 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             mapLegend.setFrame(new BlockBorder(Color.BLACK));
             mapLegend.setMargin(1d, 1d, 1d, 1d);
             mapLegend.setPadding(10d, 10d, 10d, 10d);
-            
+
             this.chart.addSubtitle(mapLegend);
-            
+
             updatePlotImage(imageData.getImage());
-            
+
         } else {
             updatePlotImage(null);
         }
@@ -1459,30 +1588,36 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonDisplayKeywords;
-    private javax.swing.JButton jButtonFovUpdate;
     private javax.swing.JButton jButtonOrig;
     private javax.swing.JButton jButtonPick;
+    private javax.swing.JButton jButtonResampleFovUpdate;
     private javax.swing.JComboBox jComboBoxColorScale;
     private javax.swing.JComboBox jComboBoxFilter;
     private javax.swing.JComboBox jComboBoxLUT;
     private javax.swing.JFormattedTextField jFormattedTextFieldDEMax;
     private javax.swing.JFormattedTextField jFormattedTextFieldDEMin;
-    private javax.swing.JFormattedTextField jFormattedTextFieldFov;
     private javax.swing.JFormattedTextField jFormattedTextFieldNewSize;
     private javax.swing.JFormattedTextField jFormattedTextFieldRAMax;
     private javax.swing.JFormattedTextField jFormattedTextFieldRAMin;
+    private javax.swing.JFormattedTextField jFormattedTextFieldResampleFov;
+    private javax.swing.JFormattedTextField jFormattedTextFieldRescaleFov;
+    private javax.swing.JFormattedTextField jFormattedTextFieldScaleX;
     private javax.swing.JLabel jLabelColorScale;
     private javax.swing.JLabel jLabelDeltaDE;
     private javax.swing.JLabel jLabelDeltaRA;
     private javax.swing.JLabel jLabelFilter;
-    private javax.swing.JLabel jLabelFov;
     private javax.swing.JLabel jLabelInfo;
     private javax.swing.JLabel jLabelLutTable;
     private javax.swing.JLabel jLabelNewSize;
     private javax.swing.JLabel jLabelOldSize;
+    private javax.swing.JLabel jLabelResampleFov;
+    private javax.swing.JLabel jLabelRescale;
+    private javax.swing.JLabel jLabelRescaleFov;
+    private javax.swing.JLabel jLabelScale;
     private javax.swing.JLabel jLabelViewport;
     private javax.swing.JPanel jPanelOptions;
     private javax.swing.JPanel jPanelResample;
+    private javax.swing.JPanel jPanelRescale;
     private javax.swing.JPanel jPanelViewport;
     // End of variables declaration//GEN-END:variables
     /** drawing started time value */
@@ -1583,7 +1718,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             this.image = image;
             this.imgRectRef = imgRectRef;
         }
-        
+
         public boolean isCompatible(final IndexColorModel colorModel, final ColorScale colorScale,
                                     final ImageInterpolation interpolation) {
             return (getColorModel() == colorModel && getColorScale() == colorScale && getInterpolation() == interpolation);
@@ -1653,7 +1788,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
             return imgRectRef;
         }
     }
-    
+
     private static double parseDouble(final String text) {
         if (!StringUtils.isEmpty(text)) {
             try {
