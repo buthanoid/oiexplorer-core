@@ -7,6 +7,7 @@ import fr.jmmc.jmal.ALX;
 import fr.jmmc.jmal.image.ImageArrayUtils;
 import fr.jmmc.jmal.image.job.ImageLowerThresholdJob;
 import fr.jmmc.jmal.image.job.ImageMinMaxJob;
+import fr.jmmc.jmal.image.job.ImageNormalizeJob;
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oitools.image.FitsImage;
 import fr.jmmc.oitools.image.FitsImageFile;
@@ -234,7 +235,20 @@ public final class FitsImageUtils {
                 FitsImageUtils.updateDataRangeExcludingZero(fitsImage);
             }
 
-            // 2 - Make sure the image is square i.e. padding (width = height = even number):
+            // 2 - Normalize data (total flux):
+            if (!NumberUtils.equals(fitsImage.getSum(), 1.0, 1e-3)) {
+                final double normFactor = 1d / fitsImage.getSum();
+
+                final ImageNormalizeJob normJob = new ImageNormalizeJob(data, nbCols, nbRows, normFactor);
+                logger.info("ImageNormalizeJob - factor: {}", normFactor);
+
+                normJob.forkAndJoin();
+
+                // update boundaries excluding zero values:
+                FitsImageUtils.updateDataRangeExcludingZero(fitsImage);
+            }
+
+            // 3 - Make sure the image is square i.e. padding (width = height = even number):
             final int size = Math.max(nbRows, nbCols);
             final int newSize = (size % 2 != 0) ? size + 1 : size;
 
