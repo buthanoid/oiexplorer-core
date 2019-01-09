@@ -31,10 +31,10 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
      * default serial UID for Serializable interface
      */
     private static final long serialVersionUID = 1;
-    /**
-     * Class logger
-     */
+    /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(GlobalView.class.getName());
+    
+    /* members */
     /** List of charts */
     private final List<ChartPanel> chartPanelList;
 

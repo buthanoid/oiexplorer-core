@@ -18,12 +18,12 @@ import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.nom.tam.fits.FitsException;
 import java.awt.Dimension;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -32,6 +32,8 @@ import javax.swing.table.TableCellRenderer;
 public final class FitsTableViewer extends javax.swing.JPanel {
 
     private static final long serialVersionUID = 1L;
+    /** Class logger */
+    private static final Logger logger = LoggerFactory.getLogger(FitsTableViewer.class.getName());
 
     private static final TableCellRenderer RDR_NUM_INSTANCE = new TableCellNumberRenderer();
 
@@ -140,34 +142,6 @@ public final class FitsTableViewer extends javax.swing.JPanel {
     private javax.swing.JTable jTableKeywords;
     // End of variables declaration//GEN-END:variables
 
-    public static void main(String[] args) {
-        // invoke Bootstrapper method to initialize logback now:
-        Bootstrapper.getState();
-        
-        DataModel.setOiVisComplexSupport(true);
-        try {
-            OIFitsFile oiFitsFile = OIFitsLoader.loadOIFits(
-//                    "/home/bourgesl/dev/oitools-public/src/test/resources/oifits/GRAVI.2016-06-23T03:10:17.458_singlesciviscalibrated.fits"
-//                    "/home/bourgesl/OIFitsExplorer/private/GRAVITY.2016-07-15T05-27-34_visdualsciraw_visdualcalibrated.fits"
-                    "/home/bourgesl/ASPRO2/oifits/Aspro2_HD_100546_MATISSE_LM_2_80453-4_19271-203ch_A0-G1-J2-J3_2015-06-03.fits"
-            );
-            oiFitsFile.analyze();
-
-            if (oiFitsFile.getPrimaryImageHDU() != null) {
-                showHDU(oiFitsFile.getPrimaryImageHDU());
-            }
-
-            for (FitsTable table : oiFitsFile.getOITableList()) {
-                showHDU(table);
-            }
-
-        } catch (IOException ex) {
-            Logger.getLogger(FitsTableViewer.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (FitsException ex) {
-            Logger.getLogger(FitsTableViewer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
     private static void showHDU(final FitsHDU hdu) {
         final JFrame frame = new JFrame("HDU: " + hdu.toString());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -218,6 +192,34 @@ public final class FitsTableViewer extends javax.swing.JPanel {
                 }
             }
             setText(text);
+        }
+    }
+
+    public static void main(String[] args) {
+        if (args.length == 0) {
+            System.err.println("No file location given in arguments.");
+            System.exit(1);
+        }
+        // invoke Bootstrapper method to initialize logback now:
+        Bootstrapper.getState();
+
+        DataModel.setOiVisComplexSupport(true);
+        try {
+            OIFitsFile oiFitsFile = OIFitsLoader.loadOIFits(args[0]);
+            oiFitsFile.analyze();
+
+            if (oiFitsFile.getPrimaryImageHDU() != null) {
+                showHDU(oiFitsFile.getPrimaryImageHDU());
+            }
+
+            for (FitsTable table : oiFitsFile.getOITableList()) {
+                showHDU(table);
+            }
+
+        } catch (IOException ioe) {
+            logger.error("IO exception occured:", ioe);
+        } catch (FitsException fe) {
+            logger.error("Fits exception occured:", fe);
         }
     }
 }

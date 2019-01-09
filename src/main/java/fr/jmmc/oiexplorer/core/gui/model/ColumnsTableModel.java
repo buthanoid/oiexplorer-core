@@ -233,7 +233,6 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
     private Object getColumnValue(final ColumnMapping mapping, final int row) {
         final ColumnMeta column = mapping.meta;
-        final boolean isDerived = mapping.isDerived;
 
         // compute real row:
         int rowIndex = row;
@@ -253,7 +252,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
         switch (column.getDataType()) {
             case TYPE_CHAR:
-                final String[] chValues = (isDerived) ? table.getColumnDerivedString(column.getName()) : table.getColumnString(column.getName());
+                final String[] chValues = table.getColumnAsString(column.getName());
                 if (chValues != null) {
                     return chValues[rowIndex];
                 }
@@ -261,7 +260,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
             case TYPE_SHORT:
                 if (column.isArray()) {
-                    final short[][] sValues = (isDerived) ? table.getColumnDerivedShorts(column.getName()) : table.getColumnShorts(column.getName());
+                    final short[][] sValues = table.getColumnAsShorts(column.getName());
                     if (sValues != null) {
                         final short[] rowValues = sValues[rowIndex];
                         if (columnIndex >= 0) {
@@ -280,7 +279,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
                     }
                     break;
                 }
-                final short[] sValues = (isDerived) ? table.getColumnDerivedShort(column.getName()) : table.getColumnShort(column.getName());
+                final short[] sValues = table.getColumnAsShort(column.getName());
                 if (sValues != null) {
                     return Short.valueOf(sValues[rowIndex]);
                 }
@@ -288,7 +287,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
             case TYPE_INT:
                 if (column.isArray()) {
-                    final int[][] iValues = (isDerived) ? table.getColumnDerivedInts(column.getName()) : table.getColumnInts(column.getName());
+                    final int[][] iValues = table.getColumnAsInts(column.getName());
                     if (iValues != null) {
                         final int[] rowValues = iValues[rowIndex];
                         if (columnIndex >= 0) {
@@ -307,7 +306,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
                     }
                     break;
                 }
-                final int[] iValues = (isDerived) ? table.getColumnDerivedInt(column.getName()) : table.getColumnInt(column.getName());
+                final int[] iValues = table.getColumnAsInt(column.getName());
                 if (iValues != null) {
                     return NumberUtils.valueOf(iValues[rowIndex]);
                 }
@@ -345,7 +344,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
                     // Impossible case in OIFits
                     break;
                 }
-                final float[] fValues = table.getColumnFloat(column.getName());
+                final float[] fValues = table.getColumnAsFloat(column.getName());
                 if (fValues != null) {
                     return Float.valueOf(fValues[rowIndex]);
                 }
