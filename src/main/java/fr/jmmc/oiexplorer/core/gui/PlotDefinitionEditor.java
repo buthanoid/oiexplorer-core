@@ -55,8 +55,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }
 
     /* members */
-    /** OIFitsCollectionManager singleton */
-    private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    /** OIFitsCollectionManager singleton reference */
+    private final static OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** OPTIONAL plot identifier */
     private String plotId = null;
     /** plot definition identifier */

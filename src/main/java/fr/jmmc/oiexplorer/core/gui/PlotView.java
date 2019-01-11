@@ -27,7 +27,7 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
 
     /* members */
     /** OIFitsCollectionManager singleton reference */
-    private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    private final static OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** related plot identifier */
     private final String plotId;
     /** last version of the subset of the plot */

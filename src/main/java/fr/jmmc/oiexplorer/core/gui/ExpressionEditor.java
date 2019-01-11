@@ -16,8 +16,8 @@ public class ExpressionEditor extends javax.swing.JPanel {
     private static final long serialVersionUID = 1L;
 
     /* members */
-    /** OIFitsCollectionManager singleton */
-    private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    /** OIFitsCollectionManager singleton reference */
+    private final static OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
     /** PlotDefinitionEditor to notify in case of modification */
     private final PlotDefinitionEditor parentToNotify;
 

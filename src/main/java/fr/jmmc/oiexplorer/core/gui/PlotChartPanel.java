@@ -53,6 +53,7 @@ import fr.jmmc.oitools.meta.Units;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.TargetIdMatcher;
+import fr.jmmc.oitools.model.TargetManager;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Point;
@@ -186,9 +187,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         return Math.round(ChartUtils.scaleUI(SYMBOL_SCALE * v));
     }
 
-    /* members */
     /** OIFitsCollectionManager singleton */
-    private final OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    private final static OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
+    /* members */
     /** ConverterFactory singleton */
     private final ConverterFactory cf = ConverterFactory.getInstance();
     /** plot identifier */
@@ -936,6 +937,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         String infoDataErrRange = "";
 
         if (subplotIndex != -1) {
+            /*
+13:26:45.184 ERROR [AWT-EventQueue-0] fr.jmmc.jmcs.gui.FeedbackReport - An exception was given to the feedback report: 
+java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
+	at java.base/jdk.internal.util.Preconditions.outOfBounds(Preconditions.java:64)
+	at java.base/jdk.internal.util.Preconditions.outOfBoundsCheckIndex(Preconditions.java:70)
+	at java.base/jdk.internal.util.Preconditions.checkIndex(Preconditions.java:248)
+	at java.base/java.util.Objects.checkIndex(Objects.java:372)
+	at java.base/java.util.ArrayList.get(ArrayList.java:458)
+	at fr.jmmc.oiexplorer.core.gui.PlotChartPanel.chartMouseMoved(PlotChartPanel.java:939)
+             */
             final PlotInfo info = getPlotInfos().get(subplotIndex);
             infoMouse = String.format("[%s, %s]", NumberUtils.format(domainValue), NumberUtils.format(rangeValue));
             infoPoints = String.format("%d / %d points", info.nDisplayedPoints, info.nDataPoints);
@@ -2164,7 +2175,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             targetIdMatcher = null;
         } else {
             // targetID can not be null as the OIData table is supposed to have the target:
-            final TargetIdMatcher matcher = oiData.getTargetIdMatcher(getTargetUID());
+            final TargetIdMatcher matcher = oiData.getTargetIdMatcher(getTargetManager(), getTargetUID());
             if (matcher != null) {
                 targetIdMatcher = (matcher.matchAll(oiData.getDistinctTargetId())) ? null : matcher;
 
@@ -3080,6 +3091,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // TODO: handle multiple filters (TargetUID) ...
         return getPlot().getSubsetDefinition().getFilter().getTargetUID();
 
+    }
+
+    private static TargetManager getTargetManager() {
+        return ocm.getOIFitsCollection().getTargetManager();
     }
 
     /*
