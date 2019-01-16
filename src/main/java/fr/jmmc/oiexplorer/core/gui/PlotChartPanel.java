@@ -50,6 +50,8 @@ import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
+import fr.jmmc.oitools.model.NightId;
+import fr.jmmc.oitools.model.NightIdMatcher;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.TargetIdMatcher;
@@ -457,7 +459,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             sb.append('_');
 
             // Add target name:
-            final String altName = StringUtils.replaceNonAlphaNumericCharsByUnderscore(getTargetUID());
+            final String altName = StringUtils.replaceNonAlphaNumericCharsByUnderscore(getFilterTargetUID());
 
             sb.append(altName).append('_');
 
@@ -1404,7 +1406,7 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
                     toString(distinct, sb, " ", " / ", 3, "MULTI DATE");
                 }
 
-                sb.append(" - Source: ").append(getTargetUID());
+                sb.append(" - Source: ").append(getFilterTargetUID());
 
                 ChartUtils.addSubtitle(this.chart, sb.toString());
 
@@ -1467,7 +1469,9 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
     private void updateChart() {
         logger.debug("updateChart: plot {}", this.plotId);
 
-        final OIFitsFile oiFitsSubset = getOiFitsSubset();
+        // selected OIData tables matching filters
+        // TODO: preserve selection results in SelectorResult (data structures) ...
+        final List<OIData> oiDataList = getOiFitsSubset().getOiDataList();
         final PlotDefinition plotDef = getPlotDefinition();
 
         final Axis xAxis = plotDef.getXAxis();
@@ -1479,12 +1483,12 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
         oixpAttrs.reset();
 
         // Get distinct station indexes from OIFits subset (not filtered):
-        final List<String> distinctStaIndexNames = getDistinctStaNames(oiFitsSubset.getOiDataList());
+        final List<String> distinctStaIndexNames = getDistinctStaNames(oiDataList);
 
         // Get distinct station configuration from OIFits subset (not filtered):
-        final List<String> distinctStaConfNames = getDistinctStaConfs(oiFitsSubset.getOiDataList());
+        final List<String> distinctStaConfNames = getDistinctStaConfs(oiDataList);
 
-        final Range waveLengthRange = getWaveLengthRange(oiFitsSubset.getOiDataList());
+        final Range waveLengthRange = getWaveLengthRange(oiDataList);
 
         logger.debug("distinctStaIndexNames: {}", distinctStaIndexNames);
         logger.debug("distinctStaConfNames: {}", distinctStaConfNames);
@@ -1518,7 +1522,7 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
             boolean showPlot = false;
             final PlotInfo info;
 
-            if (oiFitsSubset.getNbOiTables() == 0) {
+            if (oiDataList.isEmpty()) {
                 info = null;
             } else {
                 final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset = new FastIntervalXYDataset<OITableSerieKey, OITableSerieKey>();
@@ -1534,7 +1538,7 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
                 if (useSymmetry(xAxis, yAxis)) {
                     xConverter = yConverter = ConverterFactory.CONVERTER_REFLECT;
 
-                    for (OIData oiData : oiFitsSubset.getOiDataList()) {
+                    for (OIData oiData : oiDataList) {
                         // process data and add data series into given dataset:
                         updatePlot(xyPlot, oiData, tableIndex, plotDef, i, dataset, xConverter, yConverter, info);
 
@@ -1543,7 +1547,7 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
                     xConverter = yConverter = null;
                 }
 
-                for (OIData oiData : oiFitsSubset.getOiDataList()) {
+                for (OIData oiData : oiDataList) {
                     // process data and add data series into given dataset:
                     updatePlot(xyPlot, oiData, tableIndex, plotDef, i, dataset, xConverter, yConverter, info);
 
@@ -1632,7 +1636,7 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
             }
 
             if (showPlot) {
-                this.combinedXYPlot.add(xyPlot, 1); // weight=1
+                this.combinedXYPlot.add(xyPlot); // weight=1
 
                 final Integer plotIndex = NumberUtils.valueOf(nShowPlot++);
                 this.plotMapping.put(xyPlot, plotIndex);
@@ -2169,13 +2173,14 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
 
         final boolean[][] flags = (checkFlaggedData) ? oiData.getFlag() : null;
 
-        // Use targetId on each data row ?
+        // filter targetId on each data row ?
         final TargetIdMatcher targetIdMatcher;
         if (oiData.hasSingleTarget()) {
+            // implicitely matching selected target
             targetIdMatcher = null;
         } else {
             // targetID can not be null as the OIData table is supposed to have the target:
-            final TargetIdMatcher matcher = oiData.getTargetIdMatcher(getTargetManager(), getTargetUID());
+            final TargetIdMatcher matcher = oiData.getTargetIdMatcher(getTargetManager(), getFilterTargetUID());
             if (matcher != null) {
                 targetIdMatcher = (matcher.matchAll(oiData.getDistinctTargetId())) ? null : matcher;
 
@@ -2188,6 +2193,23 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
         }
 
         final short[] targetIds = (targetIdMatcher != null) ? oiData.getTargetId() : null;
+
+        // filter nightId on each data row ?
+        final NightIdMatcher nightIdMatcher;
+        if (oiData.hasSingleNight()) {
+            // implicitely matching selected night
+            nightIdMatcher = null;
+        } else {
+            // TODO: reuse ctx.selectorResult.getDistinctNightIds() to use nightIds associated to selected Granules ONLY
+            final NightId filterNightId = getFilterNightID();
+            if (filterNightId != null) {
+                nightIdMatcher = new NightIdMatcher(filterNightId);
+            } else {
+                nightIdMatcher = null;
+            }
+        }
+
+        final int[] nightIds = (nightIdMatcher != null) ? oiData.getNightId() : null;
 
         // Get Global SharedSeriesAttributes:
         final SharedSeriesAttributes oixpAttrs = SharedSeriesAttributes.INSTANCE_OIXP;
@@ -2288,8 +2310,7 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
 
         String staIndexName, staConfName;
 
-        int nSkipTarget = 0;
-        int nSkipFlag = 0;
+        int nSkipFlag = 0, nSkipTarget = 0, nSkipNight = 0;
         boolean isFlag, isXErrValid, isYErrValid, useXErrInBounds, useYErrInBounds;
 
         int nData = 0;
@@ -2298,10 +2319,10 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
         // fast access to NaN value:
         final double NaN = Double.NaN;
 
+        final OIDataPointer ptr = new OIDataPointer(oiData);
+
         // Iterate on wave channels (j):
         for (int i, j = 0, k, idx; j < nWaveChannels; j++) {
-
-            final OIDataPointer ptr = new OIDataPointer(oiData);
 
             // Iterate on baselines (k):
             for (k = 0; k < nStaIndexes; k++) {
@@ -2348,6 +2369,18 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
                         }
                     }
 
+                    if ((targetIdMatcher != null) && !targetIdMatcher.match(targetIds[i])) {
+                        // data row does not correspond to current target so skip it:
+                        nSkipTarget++;
+                        continue;
+                    }
+
+                    if ((nightIdMatcher != null) && !nightIdMatcher.match(nightIds[i])) {
+                        // data row does not correspond to current night so skip it:
+                        nSkipNight++;
+                        continue;
+                    }
+
                     isFlag = false;
                     if (checkFlaggedData && flags[i][j]) {
                         if (skipFlaggedData) {
@@ -2357,12 +2390,6 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
                         }
                         hasDataFlag = true;
                         isFlag = true;
-                    }
-
-                    if ((targetIdMatcher != null) && !targetIdMatcher.match(targetIds[i])) {
-                        // data row does not correspond to current target so skip it:
-                        nSkipTarget++;
-                        continue;
                     }
 
                     // staConf corresponds to the baseline also:
@@ -2630,6 +2657,9 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
             if (nSkipTarget != 0) {
                 logger.debug("Nb SkipTarget: {}", nSkipTarget);
             }
+            if (nSkipNight != 0) {
+                logger.debug("Nb SkipNight: {}", nSkipNight);
+            }
         }
 
         // update plot information (should be consistent between calls):
@@ -2742,7 +2772,7 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
                     this.chartDrawStartTime = System.nanoTime();
                     break;
                 case ChartProgressEvent.DRAWING_FINISHED:
-                    logger.debug("Drawing chart time[{}] = {} ms.", getTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                    logger.debug("Drawing chart time[{}] = {} ms.", getFilterTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
                     this.chartDrawStartTime = 0l;
                     break;
                 default:
@@ -2755,7 +2785,7 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
                     this.chartDrawStartTime = System.nanoTime();
                     break;
                 case ChartProgressEvent.DRAWING_FINISHED:
-                    logger.info("Drawing chart time[{}] = {} ms.", getTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                    logger.info("Drawing chart time[{}] = {} ms.", getFilterTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
                     this.chartDrawStartTime = 0l;
                     break;
                 default:
@@ -3083,14 +3113,23 @@ java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
         return getPlot().getSubsetDefinition().getOIFitsSubset();
     }
 
-    private String getTargetUID() {
+    // reuse Selector Result instead ?
+    private String getFilterTargetUID() {
         if (getPlot() == null || getPlot().getSubsetDefinition() == null
                 || getPlot().getSubsetDefinition().getFilter().getTargetUID() == null) {
             return null;
         }
         // TODO: handle multiple filters (TargetUID) ...
         return getPlot().getSubsetDefinition().getFilter().getTargetUID();
+    }
 
+    private NightId getFilterNightID() {
+        if (getPlot() == null || getPlot().getSubsetDefinition() == null
+                || getPlot().getSubsetDefinition().getFilter().getNightID() == null) {
+            return null;
+        }
+        // TODO: handle multiple filters (NightID) ...
+        return NightId.getCachedInstance(getPlot().getSubsetDefinition().getFilter().getNightID());
     }
 
     private static TargetManager getTargetManager() {
