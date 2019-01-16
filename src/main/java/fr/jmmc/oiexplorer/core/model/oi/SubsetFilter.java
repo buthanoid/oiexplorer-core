@@ -206,14 +206,14 @@ public class SubsetFilter
         super.toString(sb, full); // Identifiable
 
         if (full) {
-            sb.append(", targetUID='").append(this.targetUID).append('\'');
+            sb.append("{ targetUID='").append(this.targetUID).append('\'');
             sb.append(", insModeUID='").append(this.insModeUID).append('\'');
             sb.append(", nightID='").append(this.nightID).append('\'');
 
             sb.append(", tables=");
             fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.tables);
+            sb.append('}');
         }
-        sb.append('}');
     }
 //--simple--preserve
 

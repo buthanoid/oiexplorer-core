@@ -28,7 +28,6 @@ import fr.jmmc.oiexplorer.core.model.oi.SubsetFilter;
 import fr.jmmc.oiexplorer.core.model.oi.TableUID;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oitools.meta.OIFitsStandard;
-import fr.jmmc.oitools.model.NightId;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsCollection;
@@ -1034,6 +1033,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         } else {
             // TODO: use Merger directly LATER ?
 
+            // Or keep SelectorResult (selection results are more rich than the OIFits data structure)
             // create a new fake OIFitsFile:
             oiFitsSubset = new OIFitsFile(OIFitsStandard.VERSION_1);
 
@@ -1063,18 +1063,18 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             }
         }
     }
-    
+
     public OIFitsFile createOIFitsFromCurrentSubsetDefinition() {
         final SubsetDefinition subsetDefinition = getCurrentSubsetDefinitionRef();
-        
+
         final SelectorResult result = findOIData(subsetDefinition);
-        
+
         final OIFitsFile oiFitsFile = Merger.process(result);
         oiFitsFile.analyze();
-        
+
         return oiFitsFile;
     }
-    
+
     private SelectorResult findOIData(final SubsetDefinition subsetDefinition) {
         final Selector selector = new Selector();
         SelectorResult result = null;
@@ -1088,10 +1088,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             // InstrumentMode
             selector.setInsModeUID(filter.getInsModeUID());
 
-            // NightId (from Integer field ?)
-            if (filter.getNightID() != null) {
-                selector.setNightID(new NightId(filter.getNightID()));
-            }
+            // NightId
+            selector.setNightID(filter.getNightID());
 
             // Table
             if (!filter.getTables().isEmpty()) {
