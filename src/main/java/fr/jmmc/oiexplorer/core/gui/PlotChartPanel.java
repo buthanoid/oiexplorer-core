@@ -938,17 +938,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         String infoDataRange = "";
         String infoDataErrRange = "";
 
-        if (subplotIndex != -1) {
-            /*
-13:26:45.184 ERROR [AWT-EventQueue-0] fr.jmmc.jmcs.gui.FeedbackReport - An exception was given to the feedback report: 
-java.lang.IndexOutOfBoundsException: Index 1 out of bounds for length 1
-	at java.base/jdk.internal.util.Preconditions.outOfBounds(Preconditions.java:64)
-	at java.base/jdk.internal.util.Preconditions.outOfBoundsCheckIndex(Preconditions.java:70)
-	at java.base/jdk.internal.util.Preconditions.checkIndex(Preconditions.java:248)
-	at java.base/java.util.Objects.checkIndex(Objects.java:372)
-	at java.base/java.util.ArrayList.get(ArrayList.java:458)
-	at fr.jmmc.oiexplorer.core.gui.PlotChartPanel.chartMouseMoved(PlotChartPanel.java:939)
-             */
+        if (subplotIndex >= 0 && subplotIndex < getPlotInfos().size()) {
             final PlotInfo info = getPlotInfos().get(subplotIndex);
             infoMouse = String.format("[%s, %s]", NumberUtils.format(domainValue), NumberUtils.format(rangeValue));
             infoPoints = String.format("%d / %d points", info.nDisplayedPoints, info.nDataPoints);
