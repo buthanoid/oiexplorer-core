@@ -821,6 +821,14 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
+     * Return the OIDataFile identifiers
+     * @return identifiers
+     */
+    public List<String> getOIDataFileIds() {
+        return Identifiable.getIds(getOIDataFileList());
+    }
+
+    /**
      * Return an OIDataFile given its identifier
      * @param id OIDataFile identifier
      * @return OIDataFile or null if not found
@@ -871,6 +879,14 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     List<SubsetDefinition> getSubsetDefinitionList() {
         return this.userCollection.getSubsetDefinitions();
+    }
+
+    /**
+     * Return the subset definition identifiers
+     * @return identifiers
+     */
+    public List<String> getSubsetDefinitionIds() {
+        return Identifiable.getIds(getSubsetDefinitionList());
     }
 
     /**
@@ -1104,7 +1120,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         return result;
     }
 
-
     /* --- plot definition handling --------- ---------------------------- */
     /**
      * Return the plot definition list (reference)
@@ -1112,6 +1127,14 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     List<PlotDefinition> getPlotDefinitionList() {
         return this.userCollection.getPlotDefinitions();
+    }
+
+    /**
+     * Return the plot definition identifiers
+     * @return identifiers
+     */
+    public List<String> getPlotDefinitionIds() {
+        return Identifiable.getIds(getPlotDefinitionList());
     }
 
     /**
@@ -1285,6 +1308,14 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     List<Plot> getPlotList() {
         return this.userCollection.getPlots();
+    }
+
+    /**
+     * Return the plot identifiers
+     * @return identifiers
+     */
+    public List<String> getPlotIds() {
+        return Identifiable.getIds(getPlotList());
     }
 
     /**
