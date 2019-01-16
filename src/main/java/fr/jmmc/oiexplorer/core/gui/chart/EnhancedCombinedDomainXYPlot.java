@@ -3,11 +3,14 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
+import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.util.Iterator;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotRenderingInfo;
+import org.jfree.chart.plot.PlotState;
 import org.jfree.chart.plot.XYPlot;
 
 /**
@@ -90,4 +93,28 @@ public final class EnhancedCombinedDomainXYPlot extends CombinedDomainXYPlot {
         }
     }
 
+    /**
+     * Draws the plot within the specified area on a graphics device.
+     *
+     * @param g2  the graphics device.
+     * @param area  the plot area (in Java2D space).
+     * @param anchor  an anchor point in Java2D space ({@code null}
+     *                permitted).
+     * @param parentState  the state from the parent plot, if there is one
+     *                     ({@code null} permitted).
+     * @param info  collects chart drawing information ({@code null}
+     *              permitted).
+     */
+    @Override
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor,
+                     PlotState parentState, PlotRenderingInfo info) {
+
+        // avoid drawing shared (domain) axis if no sub plot
+        if (getSubplots().isEmpty()) {
+            // draw the plot background only
+            drawBackground(g2, area);
+        } else {
+            super.draw(g2, area, anchor, parentState, info);
+        }
+    }
 }
