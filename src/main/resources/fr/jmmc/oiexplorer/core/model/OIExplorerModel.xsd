@@ -148,7 +148,7 @@
                     <xsd:element name="filter" type="SubsetFilter" minOccurs="1" maxOccurs="unbounded">
                         <xsd:annotation>
                             <xsd:documentation>
-                                selected target
+                                data selection filter(s)
                             </xsd:documentation>
                         </xsd:annotation>
                     </xsd:element>
@@ -184,7 +184,7 @@
             <xsd:element name="nightID" type="xsd:int" minOccurs="0">
                 <xsd:annotation>
                     <xsd:documentation>
-                        selected instrument mode (global UID)
+                        selected night (rounded MJD)
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
