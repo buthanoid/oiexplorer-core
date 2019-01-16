@@ -53,7 +53,7 @@ public abstract class ExportDocumentAction extends WaitingTaskAction {
      * @param options parameters of the document including width, height and the document mode
      */
     public static void export(final DocumentExportable exportable,
-            final File file, final DocumentOptions options) {
+                              final File file, final DocumentOptions options) {
         getInstance(options.getMimeType()).process(exportable, file, options);
     }
 
@@ -134,7 +134,7 @@ public abstract class ExportDocumentAction extends WaitingTaskAction {
      * @param cmdOptions document options or null to get default output
      */
     public void process(final DocumentExportable exportable, final File proposedFile,
-            final DocumentOptions cmdOptions) {
+                        final DocumentOptions cmdOptions) {
 
         logger.debug("process");
 
@@ -156,9 +156,6 @@ public abstract class ExportDocumentAction extends WaitingTaskAction {
             // Set document mode used by prepareExport():
             docOptions.setMode((cmdOptions != null) ? cmdOptions.getMode() : DocumentMode.DEFAULT);
 
-            // Adjust Font scale:
-            adjustChartScaleUI(false);
-            
             // Perform Layout and get options from component:
             exportable.prepareExport(docOptions);
             try {
@@ -183,17 +180,9 @@ public abstract class ExportDocumentAction extends WaitingTaskAction {
             } catch (IOException ioe) {
                 MessagePane.showErrorMessage("Could not write to file : " + file.getAbsolutePath(), ioe);
             } finally {
-                adjustChartScaleUI(true);
-                
                 // post file export: restore Chart state if modified:
                 exportable.postExport();
             }
         }
-    }
-
-    private static void adjustChartScaleUI(final boolean doScaleUI) {
-        // TODO: adjust chart settings (scale):
-        // font for texts, size, tick lengths ...
-        ChartUtils.adjustChartScaleUI(doScaleUI);
     }
 }
