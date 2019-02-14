@@ -47,6 +47,7 @@ import static fr.jmmc.oiexplorer.core.model.plot.ColorMapping.WAVELENGTH_RANGE;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oitools.util.StationNamesComparator;
 import fr.jmmc.oiexplorer.core.util.Constants;
+import fr.jmmc.oitools.OIFitsConstants;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
@@ -58,6 +59,7 @@ import fr.jmmc.oitools.model.TargetIdMatcher;
 import fr.jmmc.oitools.model.TargetManager;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Paint;
 import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
@@ -94,7 +96,6 @@ import org.jfree.chart.plot.Crosshair;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.PlotRenderingInfo;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.AbstractRenderer;
 import org.jfree.chart.title.PaintScaleLegend;
 import org.jfree.data.Range;
 import org.jfree.data.xy.XYDataset;
@@ -133,7 +134,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private final static NumberFormat df4 = new DecimalFormat("0.000#");
     /** double formatter for other values */
     private final static NumberFormat df2 = new DecimalFormat("0.00");
-    public static final float SYMBOL_SCALE = 1.0f;
     public final static double LAMBDA_EPSILON = 1e-10; // 0.1 nm
 
     /* shared point shapes */
@@ -186,7 +186,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     private static int scale(final int v) {
-        return Math.round(ChartUtils.scaleUI(SYMBOL_SCALE * v));
+        return Math.round(ChartUtils.scaleUI(v));
     }
 
     /** OIFitsCollectionManager singleton */
@@ -684,13 +684,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // side effect with chart theme :
         renderer.setAutoPopulateSeriesPaint(false);
 
+        // force to use the base stroke :
+        renderer.setAutoPopulateSeriesStroke(false);
+        renderer.setDefaultStroke(ChartUtils.DEFAULT_STROKE);
+
         // set renderer options for ALL series (performance):
         renderer.setShapesVisible(true);
         renderer.setShapesFilled(true);
         renderer.setDrawOutlines(false);
 
         // define error bar settings:
-        renderer.setErrorStroke(AbstractRenderer.DEFAULT_STROKE);
+        renderer.setErrorStroke(ChartUtils.DEFAULT_STROKE);
         renderer.setCapLength(0d);
         renderer.setErrorPaint(new Color(192, 192, 192, 128));
 
@@ -1002,34 +1006,37 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     XYPlotPoint pt1 = null;
                     XYPlotPoint pt2 = null;
 
-                    for (int serie = 0, seriesCount = dataset.getSeriesCount(), item, itemCount, row; serie < seriesCount; serie++) {
+                    for (int serie = 0, seriesCount = dataset.getSeriesCount(), item, itemCount, row, col; serie < seriesCount; serie++) {
                         final OITableSerieKey serieKey = (OITableSerieKey) dataset.getSeriesKey(serie);
 
                         // check oidata pointer (OIData) and column index (wavelength ?)
-                        if ((serieKey.getWaveLengthIndex() == mCol)
-                                && serieKey.getDataPointer().equals(selPtr)) {
+                        if (serieKey.getDataPointer().equals(selPtr)) {
                             itemCount = dataset.getItemCount(serie);
 
                             for (item = 0; item < itemCount; item++) {
                                 row = dataset.getDataRow(serie, item);
 
                                 if (row == mRow) {
-                                    // matching
-                                    logger.debug("matching point: serie={} item={}", serie, item);
+                                    col = dataset.getDataCol(serie, item);
 
-                                    if (++nMatchs > 2) {
-                                        logger.info("Too much matching items for ptr: {}", selPtr);
-                                        break;
-                                    }
+                                    if (col == mCol) {
+                                        // matching
+                                        logger.debug("matching point: serie={} item={}", serie, item);
 
-                                    final XYPlotPoint pt = createDataPoint(
-                                            getPlotInfos().get(this.plotMapping.get(xyPlot).intValue()),
-                                            dataset, serie, item);
+                                        if (++nMatchs > 2) {
+                                            logger.info("Too much matching items for ptr: {}", selPtr);
+                                            break;
+                                        }
 
-                                    if (pt1 == null) {
-                                        pt1 = pt;
-                                    } else if (pt2 == null) {
-                                        pt2 = pt;
+                                        final XYPlotPoint pt = createDataPoint(
+                                                getPlotInfos().get(this.plotMapping.get(xyPlot).intValue()),
+                                                dataset, serie, item);
+
+                                        if (pt1 == null) {
+                                            pt1 = pt;
+                                        } else if (pt2 == null) {
+                                            pt2 = pt;
+                                        }
                                     }
                                 }
                             }
@@ -1502,6 +1509,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             resetXYPlot(xyPlot);
         }
 
+        final boolean drawLines = plotDef.isDrawLine();
+        final boolean useStepLine = (OIFitsConstants.COLUMN_EFF_WAVE.equalsIgnoreCase(xAxis.getName()));
+
         int nShowPlot = 0;
 
         // Loop on Y axes:
@@ -1530,7 +1540,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     for (OIData oiData : oiDataList) {
                         // process data and add data series into given dataset:
-                        updatePlot(xyPlot, oiData, tableIndex, plotDef, i, dataset, xConverter, yConverter, info);
+                        updatePlot(xyPlot, oiData, tableIndex, plotDef, i, dataset, xConverter, yConverter, info, drawLines);
 
                         tableIndex++;
                     }
@@ -1539,7 +1549,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 for (OIData oiData : oiDataList) {
                     // process data and add data series into given dataset:
-                    updatePlot(xyPlot, oiData, tableIndex, plotDef, i, dataset, xConverter, yConverter, info);
+                    updatePlot(xyPlot, oiData, tableIndex, plotDef, i, dataset, xConverter, yConverter, info, drawLines);
 
                     tableIndex++;
                 }
@@ -1618,7 +1628,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     // define base shape as valid point (fallback):
                     renderer.setDefaultShape(shapePointValid, false);
 
-                    renderer.setLinesVisible(plotDef.isDrawLine());
+// TODO: if only 1 channel: it is not possible to draw lines (nothing shown) => switch back to shapes ?
+                    final boolean useDrawLines = drawLines && info.useWaveLengths;
+
+                    renderer.setShapesVisible(!useDrawLines);
+                    renderer.setLinesVisible(useDrawLines);
+                    if (useDrawLines) {
+                        renderer.setUseStepLine(useStepLine);
+                    }
 
                     // update plot's dataset (notify events):
                     xyPlot.setDataset(dataset);
@@ -1786,7 +1803,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 }
             }
 
-            // TODO: use ColorScale to paint an horizontal wavelength color scale
             if (legendCollection.getItemCount() > 100) {
                 // avoid too many legend items:
                 if (logger.isDebugEnabled()) {
@@ -2029,12 +2045,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param initialXConverter converter to use first on x axis
      * @param initialYConverter converter to use first on Y axis
      * @param info plot information to update
+     * @param drawLines flag indicating to build series for line representation (along wavelength axis)
      */
     private void updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
                             final PlotDefinition plotDef, final int yAxisIndex,
                             final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
                             final Converter initialXConverter, final Converter initialYConverter,
-                            final PlotInfo info) {
+                            final PlotInfo info, final boolean drawLines) {
 
         final boolean isLogDebug = logger.isDebugEnabled();
 
@@ -2126,9 +2143,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final ColorMapping colorMapping = (plotDef.getColorMapping() != null) ? plotDef.getColorMapping() : ColorMapping.WAVELENGTH_RANGE;
 
-        // serie count:
-        int seriesCount = dataset.getSeriesCount();
-
         final int nRows = oiData.getNbRows();
         final int nWaves = oiData.getNWave();
 
@@ -2215,7 +2229,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // try to fill dataset:
         // avoid loop on wavelength if no 2D data:
-        final boolean useWaveLengths = (isXData2D || isYData2D);
+        final boolean useWaveLengths = (isXData2D || isYData2D) && (nWaves > 1);
         final int nWaveChannels = (useWaveLengths) ? nWaves : 1;
 
         // TODO: use an XYZ dataset to have a color axis (z) and then use linear or custom z conversion to colors.
@@ -2255,11 +2269,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final FastXYErrorRenderer renderer = (FastXYErrorRenderer) plot.getRenderer();
 
         if (isLogDebug) {
-            logger.debug("nbSeries to create : {}", nStaIndexes * nWaveChannels);
+            logger.debug("nbSeries to create : {}", nStaIndexes);
         }
 
-        // Prepare data models to contain a lot of series:
-        final int maxSeriesCount = seriesCount + nStaIndexes * nWaveChannels;
+        // Prepare data models to contain 1 serie per baseline:
+        final int maxSeriesCount = dataset.getSeriesCount() + nStaIndexes;
         dataset.ensureCapacity(maxSeriesCount);
         renderer.ensureCapacity(maxSeriesCount);
 
@@ -2282,17 +2296,23 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         double minYe = Double.POSITIVE_INFINITY;
         double maxYe = Double.NEGATIVE_INFINITY;
 
-        int[] iRow, iCol;
-        double[] xValue, xLower, xUpper, yValue, yLower, yUpper;
+        int[] iRows, iCols;
+        double[] xValues, xLowers, xUppers, yValues, yLowers, yUppers;
         Shape[] itemShapes;
+        Paint[] itemPaints;
 
         boolean recycleArray = false;
-        final int[][] arrayIntPool = new int[6][];
+        final int[][] arrayIntPool = new int[2][];
         final double[][] arrayDblPool = new double[6][];
         Shape[] shapePool = null;
+        Paint[] paintPool = null;
+        // mul 2 for cut-off points (NaN)
+        // add 1 for cut-off points (rows)
+        final int poolCapacity = nRows * 2 * (nWaveChannels + 1);
 
         double x, xErr, y, yErr;
 
+        int serieIdx;
         OITableSerieKey serieKey;
 
         short[] currentStaIndex;
@@ -2305,74 +2325,80 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         int nData = 0;
 
-        // TODO: unroll loops (wave / baseline) ... and avoid repeated checks on rows (targetId, baseline ...)
         // fast access to NaN value:
         final double NaN = Double.NaN;
 
         final OIDataPointer ptr = new OIDataPointer(oiData);
 
-        // Iterate on wave channels (j):
-        for (int i, j = 0, k, idx; j < nWaveChannels; j++) {
+        // TODO: unroll loops (wave / baseline) ... and avoid repeated checks on rows (targetId, baseline ...)
+        // Iterate on baselines (k):
+        for (int k = 0, idx, nCut, prevL; k < nStaIndexes; k++) {
 
-            // Iterate on baselines (k):
-            for (k = 0; k < nStaIndexes; k++) {
+            // get the sta index array:
+            currentStaIndex = distinctStaIndexes[k];
+            currentStaConf = null;
 
-                // get the sta index array:
-                currentStaIndex = distinctStaIndexes[k];
-                currentStaConf = null;
+            // 1 serie per baseline and per spectral channel:
+            if (recycleArray) {
+                recycleArray = false;
+                iRows = arrayIntPool[0];
+                iCols = arrayIntPool[1];
+                xValues = arrayDblPool[0];
+                xLowers = arrayDblPool[1];
+                xUppers = arrayDblPool[2];
+                yValues = arrayDblPool[3];
+                yLowers = arrayDblPool[4];
+                yUppers = arrayDblPool[5];
+                itemShapes = shapePool;
+                itemPaints = paintPool;
+            } else {
+                iRows = new int[poolCapacity];
+                iCols = new int[poolCapacity];
+                xValues = new double[poolCapacity];
+                xLowers = new double[poolCapacity];
+                xUppers = new double[poolCapacity];
+                yValues = new double[poolCapacity];
+                yLowers = new double[poolCapacity];
+                yUppers = new double[poolCapacity];
+                itemShapes = new Shape[poolCapacity];
+                itemPaints = new Paint[poolCapacity];
+            }
 
-                // 1 serie per baseline and per spectral channel:
-                if (recycleArray) {
-                    recycleArray = false;
-                    iRow = arrayIntPool[0];
-                    iCol = arrayIntPool[1];
-                    xValue = arrayDblPool[0];
-                    xLower = arrayDblPool[1];
-                    xUpper = arrayDblPool[2];
-                    yValue = arrayDblPool[3];
-                    yLower = arrayDblPool[4];
-                    yUpper = arrayDblPool[5];
-                    itemShapes = shapePool;
-                } else {
-                    iRow = new int[nRows];
-                    iCol = new int[nRows];
-                    xValue = new double[nRows];
-                    xLower = new double[nRows];
-                    xUpper = new double[nRows];
-                    yValue = new double[nRows];
-                    yLower = new double[nRows];
-                    yUpper = new double[nRows];
-                    itemShapes = new Shape[nRows];
+            idx = 0;
+            nCut = 0;
+
+            // Iterate on table rows (i):
+            for (int i = 0; i < nRows; i++) {
+
+                // check sta indexes ?
+                if (checkStaIndex) {
+                    // note: sta indexes are compared using pointer comparison:
+                    if (currentStaIndex != staIndexes[i]) {
+                        // data row does not correspond to current baseline so skip it:
+                        continue;
+                    }
                 }
 
-                idx = 0;
+                if ((targetIdMatcher != null) && !targetIdMatcher.match(targetIds[i])) {
+                    // data row does not correspond to current target so skip it:
+                    nSkipTarget++;
+                    continue;
+                }
 
-                // Iterate on table rows (i):
-                for (i = 0; i < nRows; i++) {
+                if ((nightIdMatcher != null) && !nightIdMatcher.match(nightIds[i])) {
+                    // data row does not correspond to current night so skip it:
+                    nSkipNight++;
+                    continue;
+                }
 
-                    // check sta indexes ?
-                    if (checkStaIndex) {
-                        // note: sta indexes are compared using pointer comparison:
-                        if (currentStaIndex != staIndexes[i]) {
-                            // data row does not correspond to current baseline so skip it:
-                            continue;
-                        }
-                    }
+                // previous channel index:
+                prevL = -1;
 
-                    if ((targetIdMatcher != null) && !targetIdMatcher.match(targetIds[i])) {
-                        // data row does not correspond to current target so skip it:
-                        nSkipTarget++;
-                        continue;
-                    }
-
-                    if ((nightIdMatcher != null) && !nightIdMatcher.match(nightIds[i])) {
-                        // data row does not correspond to current night so skip it:
-                        nSkipNight++;
-                        continue;
-                    }
+                // Iterate on wave channels (l):
+                for (int l = 0; l < nWaveChannels; l++) {
 
                     isFlag = false;
-                    if (checkFlaggedData && flags[i][j]) {
+                    if (checkFlaggedData && flags[i][l]) {
                         if (skipFlaggedData) {
                             // data point is flagged so skip it:
                             nSkipFlag++;
@@ -2397,7 +2423,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     if ((isYData2D) ? yData2D == null : yData1D == null) {
                         y = NaN;
                     } else {
-                        y = (isYData2D) ? yData2D[i][j] : yData1D[i];
+                        y = (isYData2D) ? yData2D[i][l] : yData1D[i];
 
                         if (yUseLog && (y <= 0.0)) {
                             // keep only strictly positive data:
@@ -2408,14 +2434,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     if (NumberUtils.isFinite(y)) {
                         // convert y value:
                         if (doConvertY) {
-                            y = initialXConverter.evaluate(y);
+                            y = initialYConverter.evaluate(y);
                         }
                         if (doScaleY) {
                             y = yConverter.evaluate(y);
                         }
 
                         // Process X value:
-                        x = (isXData2D) ? xData2D[i][j] : xData1D[i];
+                        x = (isXData2D) ? xData2D[i][l] : xData1D[i];
 
                         if (xUseLog && (x <= 0.0)) {
                             // keep only positive data:
@@ -2423,6 +2449,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         }
 
                         if (NumberUtils.isFinite(x)) {
+                            // insert cut-off for data lines of non contiguous items (NaN)
+                            if (drawLines) {
+                                if ((prevL != -1) && (l - prevL > 1)) {
+                                    // add cut-off point
+                                    yValues[idx++] = NaN;
+                                    nCut++;
+                                }
+                            }
+
                             // convert x value:
                             if (doConvertX) {
                                 x = initialXConverter.evaluate(x);
@@ -2432,17 +2467,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             }
 
                             // Process X / Y Errors:
-                            yErr = (hasErrY) ? ((isYData2D) ? yData2DErr[i][j] : yData1DErr[i]) : NaN;
-                            xErr = (hasErrX) ? ((isXData2D) ? xData2DErr[i][j] : xData1DErr[i]) : NaN;
+                            yErr = (hasErrY) ? ((isYData2D) ? yData2DErr[i][l] : yData1DErr[i]) : NaN;
+                            xErr = (hasErrX) ? ((isXData2D) ? xData2DErr[i][l] : xData1DErr[i]) : NaN;
 
                             // Define Y data:
                             isYErrValid = true;
                             useYErrInBounds = false;
 
                             if (!NumberUtils.isFinite(yErr)) {
-                                yValue[idx] = y;
-                                yLower[idx] = NaN;
-                                yUpper[idx] = NaN;
+                                yValues[idx] = y;
+                                yLowers[idx] = NaN;
+                                yUppers[idx] = NaN;
                             } else {
                                 hasDataErrorY = true;
 
@@ -2450,7 +2485,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                 if (yErr >= 0.0) {
                                     // convert yErr value:
                                     if (doConvertY) {
-                                        yErr = initialXConverter.evaluate(yErr);
+                                        yErr = initialYConverter.evaluate(yErr);
                                     }
                                     if (doScaleY) {
                                         yErr = yConverter.evaluate(yErr);
@@ -2461,13 +2496,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                     isYErrValid = false;
                                 }
 
-                                yValue[idx] = y;
-                                yLower[idx] = y - yErr;
-                                yUpper[idx] = y + yErr;
+                                yValues[idx] = y;
+                                yLowers[idx] = y - yErr;
+                                yUppers[idx] = y + yErr;
 
                                 // useLog: check if (y - err) <= 0:
-                                if (yUseLog && (yLower[idx] <= 0.0)) {
-                                    yLower[idx] = Double.MIN_VALUE;
+                                if (yUseLog && (yLowers[idx] <= 0.0)) {
+                                    yLowers[idx] = Double.MIN_VALUE;
                                     useYErrInBounds = false;
                                 }
                             }
@@ -2475,11 +2510,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             // update Y boundaries:
                             if (useYErrInBounds) {
                                 // update Y boundaries including error:
-                                if (yLower[idx] < minYe) {
-                                    minYe = yLower[idx];
+                                if (yLowers[idx] < minYe) {
+                                    minYe = yLowers[idx];
                                 }
-                                if (yUpper[idx] > maxYe) {
-                                    maxYe = yUpper[idx];
+                                if (yUppers[idx] > maxYe) {
+                                    maxYe = yUppers[idx];
                                 }
                             }
                             if (y < minY) {
@@ -2494,9 +2529,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             useXErrInBounds = false;
 
                             if (!NumberUtils.isFinite(xErr)) {
-                                xValue[idx] = x;
-                                xLower[idx] = NaN;
-                                xUpper[idx] = NaN;
+                                xValues[idx] = x;
+                                xLowers[idx] = NaN;
+                                xUppers[idx] = NaN;
                             } else {
                                 hasDataErrorX = true;
 
@@ -2515,13 +2550,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                                     isXErrValid = false;
                                 }
 
-                                xValue[idx] = x;
-                                xLower[idx] = x - xErr;
-                                xUpper[idx] = x + xErr;
+                                xValues[idx] = x;
+                                xLowers[idx] = x - xErr;
+                                xUppers[idx] = x + xErr;
 
                                 // useLog: check if (x - err) <= 0:
-                                if (xUseLog && (xLower[idx] <= 0.0)) {
-                                    xLower[idx] = Double.MIN_VALUE;
+                                if (xUseLog && (xLowers[idx] <= 0.0)) {
+                                    xLowers[idx] = Double.MIN_VALUE;
                                     useXErrInBounds = false;
                                 }
                             }
@@ -2529,11 +2564,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             // update X boundaries:
                             if (useXErrInBounds) {
                                 // update X boundaries including error:
-                                if (xLower[idx] < minXe) {
-                                    minXe = xLower[idx];
+                                if (xLowers[idx] < minXe) {
+                                    minXe = xLowers[idx];
                                 }
-                                if (xUpper[idx] > maxXe) {
-                                    maxXe = xUpper[idx];
+                                if (xUppers[idx] > maxXe) {
+                                    maxXe = xUppers[idx];
                                 }
                             }
                             if (x < minX) {
@@ -2549,9 +2584,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             // invalid shape if flagged or invalid error value
                             itemShapes[idx] = getPointShape(isYErrValid && isXErrValid && !isFlag);
 
+                            // TODO: adjust renderer settings per Serie (color, shape ...) per series and item at higher level using dataset fields
+                            if (mappingWaveLengthColors != null) {
+                                itemPaints[idx] = mappingWaveLengthColors[l];
+                            }
+
                             // Define row / col indices:
-                            iRow[idx] = i;
-                            iCol[idx] = j;
+                            iRows[idx] = i;
+                            iCols[idx] = l;
+                            prevL = l;
 
                             // increment number of valid data in serie arrays:
                             idx++;
@@ -2560,81 +2601,91 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                     } // y defined
 
-                } // loop on data rows
+                } // iterate on wave channels
 
-                if (idx != 0) {
-                    hasPlotData = true;
-                    nData += idx;
-
-                    // crop data arrays:
-                    if (idx < nRows) {
-                        recycleArray = true;
-                        arrayIntPool[0] = iRow;
-                        arrayIntPool[1] = iCol;
-                        arrayDblPool[0] = xValue;
-                        arrayDblPool[1] = xLower;
-                        arrayDblPool[2] = xUpper;
-                        arrayDblPool[3] = yValue;
-                        arrayDblPool[4] = yLower;
-                        arrayDblPool[5] = yUpper;
-                        shapePool = itemShapes;
-
-                        iRow = extract(iRow, idx);
-                        iCol = extract(iCol, idx);
-                        xValue = extract(xValue, idx);
-                        xLower = extract(xLower, idx);
-                        xUpper = extract(xUpper, idx);
-                        yValue = extract(yValue, idx);
-                        yLower = extract(yLower, idx);
-                        yUpper = extract(yUpper, idx);
-                        itemShapes = extract(itemShapes, idx);
-                    }
-
-                    // update series index before adding serie:
-                    seriesCount = dataset.getSeriesCount();
-
-                    staIndexName = oiData.getStaNames(currentStaIndex); // cached
-                    staConfName = oiData.getStaNames(currentStaConf); // cached
-                    serieKey = new OITableSerieKey(tableIndex, ptr, k, j, staIndexName, staConfName); // baselines (k) & wave channels (j)
-
-                    // Avoid any key conflict:
-                    dataset.addSeries(serieKey,
-                            new int[][]{iRow, iCol},
-                            new double[][]{xValue, xLower, xUpper, yValue, yLower, yUpper}
-                    );
-
-                    // TODO: adjust renderer settings per Serie (color, shape ...) per series and item at higher level using dataset fields
-                    // Use special fields into dataset to encode color mapping (color value as double ?)
-                    // use colormapping enum:
-                    switch (colorMapping) {
-                        case WAVELENGTH_RANGE:
-                        // wavelength is default:
-                        case OBSERVATION_DATE:
-                        // not implemented still
-                        default:
-                            renderer.setSeriesPaint(seriesCount, mappingWaveLengthColors[j], false);
-                            break;
-                        case CONFIGURATION:
-                            oixpAttrs.addLabel(staConfName);
-                            break;
-                        case STATION_INDEX:
-                            oixpAttrs.addLabel(staIndexName);
-                            break;
-                    }
-
-                    // define shape per item in serie:
-                    renderer.setItemShapes(seriesCount, itemShapes);
-
-                    // Add staIndex into the unique used station indexes anyway:
-                    info.usedStaIndexNames.add(staIndexName);
-
-                    // Add staConf into the unique used station configurations anyway:
-                    info.usedStaConfNames.add(staConfName);
+                if (drawLines && (prevL >= 0)) {
+                    // add cut-off point to end line:
+                    yValues[idx++] = NaN;
+                    nCut++;
                 }
 
-            } // iterate on baselines
+            } // loop on data rows
 
-        } // iterate on wave channels
+            if (idx != nCut) {
+                hasPlotData = true;
+                nData += (idx - nCut);
+
+                // crop data arrays:
+                if (idx < poolCapacity) {
+                    recycleArray = true;
+                    arrayIntPool[0] = iRows;
+                    arrayIntPool[1] = iCols;
+                    arrayDblPool[0] = xValues;
+                    arrayDblPool[1] = xLowers;
+                    arrayDblPool[2] = xUppers;
+                    arrayDblPool[3] = yValues;
+                    arrayDblPool[4] = yLowers;
+                    arrayDblPool[5] = yUppers;
+                    shapePool = itemShapes;
+                    paintPool = itemPaints;
+
+                    iRows = extract(iRows, idx);
+                    iCols = extract(iCols, idx);
+                    xValues = extract(xValues, idx);
+                    xLowers = extract(xLowers, idx);
+                    xUppers = extract(xUppers, idx);
+                    yValues = extract(yValues, idx);
+                    yLowers = extract(yLowers, idx);
+                    yUppers = extract(yUppers, idx);
+                    itemShapes = extract(itemShapes, idx);
+                    itemPaints = extract(itemPaints, idx);
+                }
+
+                staIndexName = oiData.getStaNames(currentStaIndex); // cached
+                staConfName = oiData.getStaNames(currentStaConf); // cached
+                serieKey = new OITableSerieKey(tableIndex, ptr, k, staIndexName, staConfName); // baselines (k)
+
+                // Avoid any key conflict:
+                dataset.addSeries(serieKey,
+                        new int[][]{iRows, iCols},
+                        new double[][]{xValues, xLowers, xUppers, yValues, yLowers, yUppers}
+                );
+
+                serieIdx = dataset.indexOf(serieKey);
+
+                // Use special fields into dataset to encode color mapping (color value as double ?)
+                // use colormapping enum:
+                switch (colorMapping) {
+                    case WAVELENGTH_RANGE:
+                    // wavelength is default:
+                    case OBSERVATION_DATE:
+                    // not implemented still
+                    default:
+                        // use item paints instead
+                        renderer.setSeriesPaint(serieIdx, null, false);
+                        break;
+                    case CONFIGURATION:
+                        oixpAttrs.addLabel(staConfName);
+                        break;
+                    case STATION_INDEX:
+                        oixpAttrs.addLabel(staIndexName);
+                        break;
+                }
+
+                // define shape per item in serie:
+                renderer.setItemShapes(serieIdx, itemShapes);
+
+                // define paint per item in serie:
+                renderer.setItemPaints(serieIdx, itemPaints);
+
+                // Add staIndex into the unique used station indexes anyway:
+                info.usedStaIndexNames.add(staIndexName);
+
+                // Add staConf into the unique used station configurations anyway:
+                info.usedStaConfNames.add(staConfName);
+            }
+
+        } // iterate on baselines
 
         if (!hasPlotData) {
             return;
@@ -2730,6 +2781,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
         return output;
     }
+
+    private Paint[] extract(final Paint[] input, final int len) {
+        final Paint[] output = new Paint[len];
+        // manual array copy is faster on recent machine (64bits / hotspot server compiler)
+        for (int i = 0; i < len; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonHideCrossHair;
     private javax.swing.JLabel jLabelCrosshairInfos;

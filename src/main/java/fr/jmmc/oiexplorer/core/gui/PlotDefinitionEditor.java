@@ -105,9 +105,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         // start with compact form
         detailledToggleButtonActionPerformed(null);
 
-        // disable 'Draw lines':
-        this.drawLinesCheckBox.setVisible(false);
-
         colorMappingComboBox.setRenderer(ColorMappingListCellRenderer.getListCellRenderer());
 
         // Fill colorMapping combobox
@@ -407,7 +404,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         add(detailledToggleButton, gridBagConstraints);
 
         drawLinesCheckBox.setText("Draw lines");
-        drawLinesCheckBox.setEnabled(false);
         drawLinesCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 drawLinesCheckBoxActionPerformed(evt);
@@ -557,8 +553,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
     private void detailledToggleButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_detailledToggleButtonActionPerformed
         extendedPanel.setVisible(detailledToggleButton.isSelected());
-        // disable 'Draw lines':
-//        drawLinesCheckBox.setVisible(detailledToggleButton.isSelected());
         revalidate();
     }//GEN-LAST:event_detailledToggleButtonActionPerformed
 
@@ -700,17 +694,17 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 // We may also compute the yAxes Collection calling getAxis on the editor list
                 // This may reduce references nightmare
                 yAxesCopy.addAll(yAxes.keySet());
-            }
 
-            plotDefCopy.setColorMapping(getColorMapping());
+                plotDefCopy.setColorMapping(getColorMapping());
 
-            plotDefCopy.setDrawLine(drawLinesCheckBox.isSelected());
-            plotDefCopy.setSkipFlaggedData(flaggedDataCheckBox.isSelected());
+                plotDefCopy.setDrawLine(drawLinesCheckBox.isSelected());
+                plotDefCopy.setSkipFlaggedData(flaggedDataCheckBox.isSelected());
 
-            ocm.updatePlotDefinition(this, plotDefCopy);
+                ocm.updatePlotDefinition(this, plotDefCopy);
 
-            if (forceRefreshPlotDefNames) {
-                refreshPlotDefinitionNames(plotDefCopy);
+                if (forceRefreshPlotDefNames) {
+                    refreshPlotDefinitionNames(plotDefCopy);
+                }
             }
 
         } else {

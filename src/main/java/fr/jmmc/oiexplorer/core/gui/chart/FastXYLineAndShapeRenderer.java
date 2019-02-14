@@ -30,6 +30,7 @@ import org.jfree.chart.renderer.xy.AbstractXYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRendererState;
 import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.util.LineUtils;
 import org.jfree.chart.util.ObjectUtils;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.chart.util.PublicCloneable;
@@ -92,8 +93,12 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
     private final FastItemShapesList itemShapesList;
     /** The paint list. */
     private final FastPaintList paintList;
+    /** item paints list */
+    private final FastItemPaintsList itemPaintsList;
     /** number of visible items */
     private transient int renderedItemCount = 0;
+    /** flag indicating to use a step line instead of straight line */
+    private boolean useStepLine;
 
     /**
      * Creates a new renderer with both lines and shapes visible.
@@ -109,6 +114,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
      * @param shapes  shapes visible?
      */
     public FastXYLineAndShapeRenderer(boolean lines, boolean shapes) {
+        super();
         this.linesVisible = lines;
         this.legendLine = new Line2D.Double(-7.0, 0.0, 7.0, 0.0);
 
@@ -126,6 +132,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         // paint and shape lists:
         paintList = new FastPaintList();
         itemShapesList = new FastItemShapesList();
+        itemPaintsList = new FastItemPaintsList();
     }
 
     /**
@@ -138,6 +145,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
     public void ensureCapacity(final int minCapacity) {
         paintList.ensureCapacity(minCapacity);
         itemShapesList.ensureCapacity(minCapacity);
+        itemPaintsList.ensureCapacity(minCapacity);
     }
 
     /**
@@ -410,6 +418,15 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         fireChangeEvent();
     }
 
+    public boolean isUseStepLine() {
+        return useStepLine;
+    }
+
+    public void setUseStepLine(boolean useStepLine) {
+        this.useStepLine = useStepLine;
+        fireChangeEvent();
+    }
+
     /**
      * Records the state for the renderer.  This is used to preserve state
      * information between calls to the drawItem() method for a single chart
@@ -512,9 +529,8 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         state.g2AT = g2.getTransform();
         state.xAxisLocation = plot.getDomainAxisEdge();
         state.yAxisLocation = plot.getRangeAxisEdge();
-        
+
         // TODO: move it into state but no way to get it from ChartRenderingInfo ...
-        
         this.renderedItemCount = 0;
 
         return state;
@@ -673,29 +689,94 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
             return;
         }
 
-        PlotOrientation orientation = plot.getOrientation();
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            state.workingLine.setLine(transY0, transX0, transY1, transX1);
-        } else {
-            state.workingLine.setLine(transX0, transY0, transX1, transY1);
-        }
+        final PlotOrientation orientation = plot.getOrientation();
 
-        // clipping checks:
-        if (state.workingLine.intersects(dataArea)) {
-            drawFirstPassShape(g2, pass, series, item, state.workingLine);
+        if (isUseStepLine()) {
+            // step line
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                // calculate the step point
+                final double transXs = transX0 + 0.5 * (transX1 - transX0);
 
-            // add an entity for the line, but only if it falls within the data area...
-            if (entities != null) {
-                final Shape entityArea = createStrokedLineShape((Line2D.Double) state.workingLine);
+                g2.setStroke(getItemStroke(series, item - 1));
+                g2.setPaint(getItemPaint(series, item - 1));
 
-                if (debugEntityArea) {
-                    g2.setColor(Color.PINK);
-                    g2.draw(entityArea);
+                drawLine(g2, state.workingLine, transY0, transX0, transY0,
+                        transXs, dataArea);
+
+                g2.setStroke(getItemStroke(series, item));
+                g2.setPaint(getItemPaint(series, item));
+
+                if (transY0 != transY1) {
+                    drawLine(g2, state.workingLine, transY0, transXs, transY1,
+                            transXs, dataArea);
                 }
+                drawLine(g2, state.workingLine, transY1, transXs, transY1,
+                        transX1, dataArea);
+            } else if (orientation == PlotOrientation.VERTICAL) {
+                // calculate the step point
+                final double transXs = transX0 + 0.5 * (transX1 - transX0);
 
-                // note: item corresponds to point (x1,y1):
-                addEntity(entities, entityArea, dataset, series, item, Double.NaN, Double.NaN);
+                g2.setStroke(getItemStroke(series, item - 1));
+                g2.setPaint(getItemPaint(series, item - 1));
+
+                drawLine(g2, state.workingLine, transX0, transY0, transXs,
+                        transY0, dataArea);
+
+                g2.setStroke(getItemStroke(series, item));
+                g2.setPaint(getItemPaint(series, item));
+
+                if (transY0 != transY1) {
+                    drawLine(g2, state.workingLine, transXs, transY0, transXs,
+                            transY1, dataArea);
+                }
+                drawLine(g2, state.workingLine, transXs, transY1, transX1,
+                        transY1, dataArea);
             }
+        } else {
+            // simple line
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                state.workingLine.setLine(transY0, transX0, transY1, transX1);
+            } else {
+                state.workingLine.setLine(transX0, transY0, transX1, transY1);
+            }
+
+            // clipping checks:
+            if (state.workingLine.intersects(dataArea)) {
+                drawFirstPassShape(g2, pass, series, item, state.workingLine);
+
+                // add an entity for the line, but only if it falls within the data area...
+                if (entities != null) {
+                    final Shape entityArea = createStrokedLineShape((Line2D.Double) state.workingLine);
+
+                    if (debugEntityArea) {
+                        g2.setColor(Color.PINK);
+                        g2.draw(entityArea);
+                    }
+
+                    // note: item corresponds to point (x1,y1):
+                    addEntity(entities, entityArea, dataset, series, item, Double.NaN, Double.NaN);
+                }
+            }
+        }
+    }
+
+    /**
+     * A utility method that draws a line but only if none of the coordinates
+     * are NaN values.
+     *
+     * @param g2  the graphics target.
+     * @param line  the line object.
+     * @param x0  the x-coordinate for the starting point of the line.
+     * @param y0  the y-coordinate for the starting point of the line.
+     * @param x1  the x-coordinate for the ending point of the line.
+     * @param y1  the y-coordinate for the ending point of the line.
+     */
+    private void drawLine(Graphics2D g2, Line2D line, double x0, double y0,
+                          double x1, double y1, Rectangle2D dataArea) {
+        line.setLine(x0, y0, x1, y1);
+        boolean visible = LineUtils.clipLine(line, dataArea);
+        if (visible) {
+            g2.draw(line);
         }
     }
 
@@ -855,7 +936,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
                 return;
             }
         }
-        
+
         // Item is rendered:
         this.renderedItemCount++;
 
@@ -1049,6 +1130,9 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         if (this.drawSeriesLineAsPath != that.drawSeriesLineAsPath) {
             return false;
         }
+        if (this.useStepLine != that.useStepLine) {
+            return false;
+        }
         return true;
     }
 
@@ -1208,6 +1292,46 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         if (notify) {
             fireChangeEvent();
         }
+    }
+
+    /**
+     * Returns a paint used for this data item.
+     *
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     *
+     * @return The shape (never <code>null</code>).
+     */
+    @Override
+    public final Paint getItemPaint(final int series, final int item) {
+        // use paint per [serie, item]
+        final Paint[] itemShapes = this.itemPaintsList.getItemPaints(series);
+        if (itemShapes != null) {
+            if (item < itemShapes.length) {
+                final Paint paint = itemShapes[item];
+                if (paint != null) {
+                    return paint;
+                }
+            }
+        }
+        // fallback: use paint for the complete serie:
+        return lookupSeriesPaint(series);
+    }
+
+    /**
+     * Clears the item paints settings for this renderer
+     */
+    public final void clearItemPaints() {
+        this.itemPaintsList.clear();
+    }
+
+    /**
+     * Define the item paints settings for this renderer
+     * @param series  the series index (zero-based).
+     * @param itemPaints  the item paints as array (<code>null</code> permitted).
+     */
+    public final void setItemPaints(int series, Paint[] itemPaints) {
+        this.itemPaintsList.setItemPaints(series, itemPaints);
     }
 
     /**

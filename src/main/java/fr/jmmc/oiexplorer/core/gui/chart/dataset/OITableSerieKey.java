@@ -22,20 +22,16 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
     private final OIDataPointer ptr;
     /** StaIndex index */
     private final int staIdxIndex;
-    /** wavelength index */
-    private final int wlIndex;
     /** keys used for global series attributes */
     private final String staIndexName;
     private final String staConfName;
 
-    public OITableSerieKey(final int tableIndex, final OIDataPointer ptr, final int staIdxIndex, final int waveLengthIndex,
+    public OITableSerieKey(final int tableIndex, final OIDataPointer ptr, final int staIdxIndex,
                            final String staIndexName, final String staConfName) {
+
         this.tableIndex = tableIndex;
         this.ptr = ptr;
-
         this.staIdxIndex = staIdxIndex;
-        this.wlIndex = waveLengthIndex;
-
         this.staIndexName = staIndexName;
         this.staConfName = staConfName;
     }
@@ -45,9 +41,6 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
         int res = NumberUtils.compare(getTableIndex(), key.getTableIndex());
         if (res == 0) {
             res = NumberUtils.compare(getStaIdxIndex(), key.getStaIdxIndex());
-            if (res == 0) {
-                res = NumberUtils.compare(getWaveLengthIndex(), key.getWaveLengthIndex());
-            }
         }
         return res;
     }
@@ -57,7 +50,6 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
         int hash = 7;
         hash = 13 * hash + this.getTableIndex();
         hash = 31 * hash + this.getStaIdxIndex();
-        hash = 67 * hash + this.getWaveLengthIndex();
         return hash;
     }
 
@@ -76,10 +68,15 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
         if (this.getStaIdxIndex() != other.getStaIdxIndex()) {
             return false;
         }
-        if (this.getWaveLengthIndex() != other.getWaveLengthIndex()) {
-            return false;
-        }
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "#" + getTableIndex() + " B" + getStaIdxIndex()
+                + " pointer: " + ptr
+                + " staIndexName: " + getStaIndexName()
+                + " staConfName: " + getStaConfName();
     }
 
     public int getTableIndex() {
@@ -92,18 +89,6 @@ public final class OITableSerieKey implements java.io.Serializable, Comparable<O
 
     public int getStaIdxIndex() {
         return staIdxIndex;
-    }
-
-    public int getWaveLengthIndex() {
-        return wlIndex;
-    }
-
-    @Override
-    public String toString() {
-        return "#" + getTableIndex() + " B" + getStaIdxIndex() + " W" + getWaveLengthIndex()
-                + " pointer: " + ptr
-                + " staIndexName: " + getStaIndexName()
-                + " staConfName: " + getStaConfName();
     }
 
     public String getStaIndexName() {

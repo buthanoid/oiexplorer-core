@@ -116,7 +116,7 @@
         <id>VIS2DATA_T3PHI/EFF_WAVE</id>
         <name>Vis2Data and T3Phi vs. Eff. Wave</name>
         <skipFlaggedData>true</skipFlaggedData>
-        <drawLine>false</drawLine>
+        <drawLine>true</drawLine>
         <xAxis>
             <name>EFF_WAVE</name>
             <logScale>false</logScale>
@@ -236,7 +236,7 @@
         <id>VIS2DATA_VISAMP/EFF_WAVE</id>
         <name>Vis2Data and VisAmp vs. Eff. Wave</name>
         <skipFlaggedData>true</skipFlaggedData>
-        <drawLine>false</drawLine>
+        <drawLine>true</drawLine>
         <xAxis>
             <name>EFF_WAVE</name>
             <logScale>false</logScale>
@@ -310,7 +310,7 @@
         <id>VISAMP_VISPHI/EFF_WAVE</id>
         <name>VisAmp and VisPhi vs. Eff. Wave</name>
         <skipFlaggedData>true</skipFlaggedData>
-        <drawLine>false</drawLine>
+        <drawLine>true</drawLine>
         <xAxis>
             <name>EFF_WAVE</name>
             <logScale>false</logScale>
@@ -364,7 +364,7 @@
         <id>FLUXDATA/EFF_WAVE</id>
         <name>Flux vs. Eff. Wave</name>
         <skipFlaggedData>true</skipFlaggedData>
-        <drawLine>false</drawLine>
+        <drawLine>true</drawLine>
         <xAxis>
             <name>EFF_WAVE</name>
             <logScale>false</logScale>
