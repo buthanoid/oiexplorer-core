@@ -2055,6 +2055,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final boolean isLogDebug = logger.isDebugEnabled();
 
+        final int nRows = oiData.getNbRows();
+        final int nWaves = oiData.getNWave();
+
+        if (isLogDebug) {
+            logger.debug("nRows - nWaves : {} - {}", nRows, nWaves);
+        }
+
+        if (nRows <= 0 || nWaves <= 0) {
+            // bad dimensions
+            return;
+        }
+
         // Get yAxis data:
         final Axis yAxis = plotDef.getYAxes().get(yAxisIndex);
         final String yAxisName = yAxis.getName();
@@ -2087,9 +2099,21 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             yData1D = null;
             yData1DErr = null;
             yData2D = oiData.getColumnAsDoubles(yAxisName);
+            if (yData2D == null || yData2D.length < nRows || yData2D[0].length < nWaves) {
+                if (isLogDebug) {
+                    logger.debug("unsupported yAxis : {} on {}", yAxis.getName(), oiData);
+                }
+                return;
+            }
             yData2DErr = oiData.getColumnAsDoubles(yMeta.getErrorColumnName());
         } else {
             yData1D = oiData.getColumnAsDouble(yAxisName);
+            if (yData1D == null || yData1D.length < nRows) {
+                if (isLogDebug) {
+                    logger.debug("unsupported yAxis : {} on {}", yAxis.getName(), oiData);
+                }
+                return;
+            }
             yData1DErr = oiData.getColumnAsDouble(yMeta.getErrorColumnName());
             yData2D = null;
             yData2DErr = null;
@@ -2129,9 +2153,21 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             xData1D = null;
             xData1DErr = null;
             xData2D = oiData.getColumnAsDoubles(xAxisName);
+            if (xData2D == null || xData2D.length < nRows || xData2D[0].length < nWaves) {
+                if (isLogDebug) {
+                    logger.debug("unsupported xAxis : {} on {}", xAxis.getName(), oiData);
+                }
+                return;
+            }
             xData2DErr = oiData.getColumnAsDoubles(xMeta.getErrorColumnName());
         } else {
             xData1D = oiData.getColumnAsDouble(xAxisName);
+            if (xData1D == null || xData1D.length < nRows) {
+                if (isLogDebug) {
+                    logger.debug("unsupported xAxis : {} on {}", xAxis.getName(), oiData);
+                }
+                return;
+            }
             xData1DErr = oiData.getColumnAsDouble(xMeta.getErrorColumnName());
             xData2D = null;
             xData2DErr = null;
@@ -2142,13 +2178,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final boolean skipFlaggedData = plotDef.isSkipFlaggedData();
 
         final ColorMapping colorMapping = (plotDef.getColorMapping() != null) ? plotDef.getColorMapping() : ColorMapping.WAVELENGTH_RANGE;
-
-        final int nRows = oiData.getNbRows();
-        final int nWaves = oiData.getNWave();
-
-        if (isLogDebug) {
-            logger.debug("nRows - nWaves : {} - {}", nRows, nWaves);
-        }
 
         // standard columns:
         final short[][] staIndexes = oiData.getStaIndex();
@@ -2418,17 +2447,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     // such data stream could also perform conversion on the fly
                     // and maybe handle symetry (u, -u) (v, -v) ...
                     // Process Y value if not yData is not null:
-                    // TODO: remove next test and put it up and out of this loop
-                    // or avoid faulty case somewhere else : yData is null if user selects optional column name not present in the file
-                    if ((isYData2D) ? yData2D == null : yData1D == null) {
-                        y = NaN;
+                    if (isYData2D) {
+                        y = yData2D[i][l];
                     } else {
-                        y = (isYData2D) ? yData2D[i][l] : yData1D[i];
+                        y = yData1D[i];
+                    }
 
-                        if (yUseLog && (y <= 0.0)) {
-                            // keep only strictly positive data:
-                            y = NaN;
-                        }
+                    if (yUseLog && (y <= 0.0)) {
+                        // keep only strictly positive data:
+                        y = NaN;
                     }
 
                     if (NumberUtils.isFinite(y)) {
@@ -2441,10 +2468,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         }
 
                         // Process X value:
-                        x = (isXData2D) ? xData2D[i][l] : xData1D[i];
+                        if (isXData2D) {
+                            x = xData2D[i][l];
+                        } else {
+                            x = xData1D[i];
+                        }
 
                         if (xUseLog && (x <= 0.0)) {
-                            // keep only positive data:
+                            // keep only strictly positive data:
                             x = NaN;
                         }
 
