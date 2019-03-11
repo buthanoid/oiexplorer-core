@@ -204,6 +204,8 @@ public final class OIFitsHtmlPanel extends javax.swing.JPanel {
 
         pane.setContentType("text/html");
         pane.setEditable(false);
+        // Use default fonts (hi-dpi) if no font defined in html:
+        pane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 
         emptyDocument = pane.getEditorKit().createDefaultDocument();
 
