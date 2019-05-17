@@ -205,7 +205,7 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabelResampleFov">
           <Properties>
-            <Property name="text" type="java.lang.String" value="FOV:"/>
+            <Property name="text" type="java.lang.String" value="Image FOV:"/>
           </Properties>
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout" value="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout$GridBagConstraintsDescription">
@@ -257,7 +257,7 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabelRescaleFov">
           <Properties>
-            <Property name="text" type="java.lang.String" value="FOV:"/>
+            <Property name="text" type="java.lang.String" value="Image FOV:"/>
           </Properties>
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout" value="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout$GridBagConstraintsDescription">

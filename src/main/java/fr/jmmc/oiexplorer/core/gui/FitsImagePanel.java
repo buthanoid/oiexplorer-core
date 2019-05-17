@@ -370,7 +370,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelViewport.add(jButtonOrig, gridBagConstraints);
 
-        jLabelResampleFov.setText("FOV:");
+        jLabelResampleFov.setText("Image FOV:");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
@@ -410,7 +410,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelRescale.add(jLabelRescale, gridBagConstraints);
 
-        jLabelRescaleFov.setText("FOV:");
+        jLabelRescaleFov.setText("Image FOV:");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
@@ -1287,7 +1287,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
                 infoBlock.add(createText("RA: " + FitsImage.getAngleAsString(lFitsImage.getIncCol(), df)));
                 infoBlock.add(createText("DE: " + FitsImage.getAngleAsString(lFitsImage.getIncRow(), df)));
 
-                infoBlock.add(createText("\nFOV:"));
+                infoBlock.add(createText("\nImage FOV:"));
                 if (lFitsImage.isRotAngleDefined()) {
                     // FOV depends on the rotation angle
                     final BufferedImage image = imageData.getImage();
