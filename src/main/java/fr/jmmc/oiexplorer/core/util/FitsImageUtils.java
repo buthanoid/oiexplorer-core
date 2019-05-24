@@ -306,12 +306,12 @@ public final class FitsImageUtils {
 
             // update nData:
             fitsImage.setNData(minMaxJob.getNData());
+            // update sum:
+            fitsImage.setSum(minMaxJob.getSum());
 
             // update dataMin/dataMax:
             fitsImage.setDataMin(minMaxJob.getMin());
             fitsImage.setDataMax(minMaxJob.getMax());
-            // update sum:
-            fitsImage.setSum(minMaxJob.getSum());
         }
     }
 
@@ -479,6 +479,9 @@ public final class FitsImageUtils {
             // update increments:
             fitsImage.setSignedIncCol(fitsImage.isIncColPositive() ? incCol : -incCol);
             fitsImage.setSignedIncRow(fitsImage.isIncRowPositive() ? incRow : -incRow);
+
+            // update initial image FOV:
+            fitsImage.defineOrigMaxAngle();
 
             logger.debug("rescaleImage: updated image: {}", fitsImage);
         }
