@@ -9,10 +9,26 @@ import java.util.Arrays;
  * Color utility methods to transform colors between color spaces (sRGB, linear RGB, XYZ, Lab, Lch)
  * @author bourgesl
  */
-public class ColorUtils {
+public final class ColorUtils {
+
     private static boolean TRACE = false;
-    
-    
+
+    private ColorUtils() {
+        // no-op
+    }
+
+    public static float lum(final int rgb) {
+        return lum(rgb, new float[4]);
+    }
+
+    public static float lum(final int rgb, final float[] c4) {
+        // convert sRGB to Lab (float)
+        sRGB_to_Lab(rgb, c4);
+
+        // Convert L to Y (luminance in [0..1])
+        return L_to_Y(c4[0]);
+    }
+
     static void blend_LCH(float[] c1, float[] c2, float ratio, float[] result) {
 
         if (TRACE) {
@@ -73,7 +89,7 @@ public class ColorUtils {
 
         float L = Lab[0];
         // in [0..100]
-        float C = (float) Math.sqrt(Lab[1] * Lab[1] + Lab[2] * Lab[2]) / 1.28f; 
+        float C = (float) Math.sqrt(Lab[1] * Lab[1] + Lab[2] * Lab[2]) / 1.28f;
 
         Lab[0] = L;
         Lab[1] = C;
@@ -197,7 +213,7 @@ public class ColorUtils {
     public static float[] sRGB_to_XYZ(final int rgba, final float[] Lab) {
         return sRGB_to_XYZ(sRGB_to_f(rgba, Lab));
     }
-    
+
 // sRGB -> XYZ matrix, D65
     public static float[] sRGB_to_XYZ(float[] sRGB) {
         if (TRACE) {

@@ -396,7 +396,7 @@ public class ColorPalette {
 
                 // draw label:
                 if (drawLabel) {
-                    g2d.setColor((lum(color.getRGB(), c4) > 0.5f) ? Color.BLACK : Color.WHITE);
+                    g2d.setColor((ColorUtils.lum(color.getRGB(), c4) > 0.5f) ? Color.BLACK : Color.WHITE);
 
                     sb.setLength(0);
                     final String label = ColorPalette.toHexString(color, sb).toString();
@@ -420,14 +420,6 @@ public class ColorPalette {
             g2d.dispose();
         }
         return image;
-    }
-
-    private static float lum(final int rgb, final float[] c4) {
-        // convert sRGB to Lab (float)
-        ColorUtils.sRGB_to_Lab(rgb, c4);
-
-        // Convert L to Y (luminance in [0..1])
-        return ColorUtils.L_to_Y(c4[0]);
     }
 
     public ColorPalette sortByDeltaE() {
