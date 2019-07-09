@@ -33,6 +33,7 @@ import org.jfree.chart.plot.ValueAxisPlot;
 import org.jfree.chart.text.TextUtils;
 import org.jfree.chart.ui.RectangleEdge;
 import org.jfree.chart.ui.TextAnchor;
+import org.jfree.chart.util.Args;
 import org.jfree.chart.util.PaintUtils;
 import org.jfree.chart.util.SerialUtils;
 import org.jfree.data.Range;
@@ -114,6 +115,9 @@ import org.jfree.data.Range;
  * 28-Feb-2007 : Fixed bug 1669302 (tick label overlap) (DG);
  * 25-Jul-2007 : Added new field for alternate grid band paint (DG);
  * 15-Aug-2008 : Use alternate grid band paint when drawing (DG);
+ * 02-Jul-2013 : Use ParamChecks (DG);
+ * 19-Mar-2014 : Fix gridbands (bug #1056) (DG);
+ * 08-Sep-2014 : Update Javadocs for grid bands (DG):
  *
  */
 /**
@@ -148,7 +152,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
      * Constructs a symbol axis, using default attribute values where
      * necessary.
      *
-     * @param label  the axis label (<code>null</code> permitted).
+     * @param label  the axis label ({@code null} permitted).
      * @param sv  the list of symbols to display instead of the numeric
      *            values.
      */
@@ -160,7 +164,6 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
         this.gridBandAlternatePaint = DEFAULT_GRID_BAND_ALTERNATE_PAINT;
         setAutoTickUnitSelection(false, false);
         setAutoRangeStickyZero(false);
-
     }
 
     /**
@@ -183,11 +186,10 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
     }
 
     /**
-     * Returns <code>true</code> if the grid bands are showing, and
-     * <code>false</code> otherwise.
+     * Returns the flag that controls whether or not grid bands are drawn for 
+     * the axis.  The default value is {@code true}. 
      *
-     * @return <code>true</code> if the grid bands are showing, and
-     *         <code>false</code> otherwise.
+     * @return A boolean.
      *
      * @see #setGridBandsVisible(boolean)
      */
@@ -196,24 +198,29 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
     }
 
     /**
-     * Sets the visibility of the grid bands and notifies registered
-     * listeners that the axis has been modified.
+     * Sets the flag that controls whether or not grid bands are drawn for this
+     * axis and notifies registered listeners that the axis has been modified.
+     * Each band is the area between two adjacent gridlines 
+     * running perpendicular to the axis.  When the bands are drawn they are 
+     * filled with the colors {@link #getGridBandPaint()} and 
+     * {@link #getGridBandAlternatePaint()} in an alternating sequence.
      *
      * @param flag  the new setting.
      *
      * @see #isGridBandsVisible()
      */
     public void setGridBandsVisible(boolean flag) {
-        if (this.gridBandsVisible != flag) {
-            this.gridBandsVisible = flag;
-            notifyListeners(new AxisChangeEvent(this));
-        }
+        this.gridBandsVisible = flag;
+        fireChangeEvent();
     }
 
     /**
-     * Returns the paint used to color the grid bands.
+     * Returns the paint used to color grid bands (two colors are used
+     * alternately, the other is returned by 
+     * {@link #getGridBandAlternatePaint()}).  The default value is
+     * {@link #DEFAULT_GRID_BAND_PAINT}.
      *
-     * @return The grid band paint (never <code>null</code>).
+     * @return The paint (never {@code null}).
      *
      * @see #setGridBandPaint(Paint)
      * @see #isGridBandsVisible()
@@ -223,28 +230,29 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
     }
 
     /**
-     * Sets the grid band paint and sends an {@link AxisChangeEvent} to
-     * all registered listeners.
+     * Sets the grid band paint and notifies registered listeners that the
+     * axis has been changed.  See the {@link #setGridBandsVisible(boolean)}
+     * method for more information about grid bands.
      *
-     * @param paint  the paint (<code>null</code> not permitted).
+     * @param paint  the paint ({@code null} not permitted).
      *
      * @see #getGridBandPaint()
      */
     public void setGridBandPaint(Paint paint) {
-        if (paint == null) {
-            throw new IllegalArgumentException("Null 'paint' argument.");
-        }
+        Args.nullNotPermitted(paint, "paint");
         this.gridBandPaint = paint;
-        notifyListeners(new AxisChangeEvent(this));
+        fireChangeEvent();
     }
 
     /**
-     * Returns the paint used for alternate grid bands.
+     * Returns the second paint used to color grid bands (two colors are used
+     * alternately, the other is returned by {@link #getGridBandPaint()}).  
+     * The default value is {@link #DEFAULT_GRID_BAND_ALTERNATE_PAINT} 
+     * (transparent).
      *
-     * @return The paint (never <code>null</code>).
+     * @return The paint (never {@code null}).
      *
      * @see #setGridBandAlternatePaint(Paint)
-     * @see #getGridBandPaint()
      *
      * @since 1.0.7
      */
@@ -253,10 +261,11 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
     }
 
     /**
-     * Sets the paint used for alternate grid bands and sends a
-     * {@link AxisChangeEvent} to all registered listeners.
+     * Sets the grid band paint and notifies registered listeners that the
+     * axis has been changed.  See the {@link #setGridBandsVisible(boolean)}
+     * method for more information about grid bands.
      *
-     * @param paint  the paint (<code>null</code> not permitted).
+     * @param paint  the paint ({@code null} not permitted).
      *
      * @see #getGridBandAlternatePaint()
      * @see #setGridBandPaint(Paint)
@@ -264,11 +273,9 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
      * @since 1.0.7
      */
     public void setGridBandAlternatePaint(Paint paint) {
-        if (paint == null) {
-            throw new IllegalArgumentException("Null 'paint' argument.");
-        }
+        Args.nullNotPermitted(paint, "paint");
         this.gridBandAlternatePaint = paint;
-        notifyListeners(new AxisChangeEvent(this));
+        fireChangeEvent();
     }
 
     /**
@@ -278,6 +285,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
      * @param dataArea  the area in which the plot and axes should be drawn.
      * @param edge  the edge along which the axis is drawn.
      */
+    @Override
     protected void selectAutoTickUnit(Graphics2D g2, Rectangle2D dataArea,
                                       RectangleEdge edge) {
         throw new UnsupportedOperationException();
@@ -287,23 +295,21 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
      * Draws the axis on a Java 2D graphics device (such as the screen or a
      * printer).
      *
-     * @param g2  the graphics device (<code>null</code> not permitted).
+     * @param g2  the graphics device ({@code null} not permitted).
      * @param cursor  the cursor location.
      * @param plotArea  the area within which the plot and axes should be drawn
-     *                  (<code>null</code> not permitted).
+     *                  ({@code null} not permitted).
      * @param dataArea  the area within which the data should be drawn
-     *                  (<code>null</code> not permitted).
-     * @param edge  the axis location (<code>null</code> not permitted).
+     *                  ({@code null} not permitted).
+     * @param edge  the axis location ({@code null} not permitted).
      * @param plotState  collects information about the plot
-     *                   (<code>null</code> permitted).
+     *                   ({@code null} permitted).
      *
-     * @return The axis state (never <code>null</code>).
+     * @return The axis state (never {@code null}).
      */
-    public AxisState draw(Graphics2D g2,
-                          double cursor,
-                          Rectangle2D plotArea,
-                          Rectangle2D dataArea,
-                          RectangleEdge edge,
+    @Override
+    public AxisState draw(Graphics2D g2, double cursor, Rectangle2D plotArea,
+                          Rectangle2D dataArea, RectangleEdge edge,
                           PlotRenderingInfo plotState) {
 
         AxisState info = new AxisState(cursor);
@@ -318,23 +324,20 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
     }
 
     /**
-     * Draws the grid bands.  Alternate bands are colored using
-     * <CODE>gridBandPaint<CODE> (<CODE>DEFAULT_GRID_BAND_PAINT</CODE> by
-     * default).
+     * Draws the grid bands (alternate bands are colored using
+     * {@link #getGridBandPaint()} and {@link #getGridBandAlternatePaint()}.
      *
-     * @param g2  the graphics device.
-     * @param plotArea  the area within which the chart should be drawn.
-     * @param dataArea  the area within which the plot should be drawn (a
-     *                  subset of the drawArea).
-     * @param edge  the axis location.
-     * @param ticks  the ticks.
+     * @param g2  the graphics target ({@code null} not permitted).
+     * @param plotArea  the area within which the plot is drawn 
+     *     ({@code null} not permitted).
+     * @param dataArea  the data area to which the axes are aligned 
+     *     ({@code null} not permitted).
+     * @param edge  the edge to which the axis is aligned ({@code null} not
+     *     permitted).
+     * @param ticks  the ticks ({@code null} not permitted).
      */
-    protected void drawGridBands(Graphics2D g2,
-                                 Rectangle2D plotArea,
-                                 Rectangle2D dataArea,
-                                 RectangleEdge edge,
-                                 List ticks) {
-
+    protected void drawGridBands(Graphics2D g2, Rectangle2D plotArea,
+                                 Rectangle2D dataArea, RectangleEdge edge, List ticks) {
         Shape savedClip = g2.getClip();
         g2.clip(dataArea);
         if (RectangleEdge.isTopOrBottom(edge)) {
@@ -343,39 +346,35 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
             drawGridBandsVertical(g2, plotArea, dataArea, true, ticks);
         }
         g2.setClip(savedClip);
-
     }
 
     /**
      * Draws the grid bands for the axis when it is at the top or bottom of
      * the plot.
      *
-     * @param g2  the graphics device.
-     * @param plotArea  the area within which the chart should be drawn.
-     * @param dataArea  the area within which the plot should be drawn
-     *                  (a subset of the drawArea).
+     * @param g2  the graphics target ({@code null} not permitted).
+     * @param plotArea  the area within which the plot is drawn (not used here).
+     * @param dataArea  the area for the data (to which the axes are aligned,
+     *         {@code null} not permitted).
      * @param firstGridBandIsDark  True: the first grid band takes the
-     *                             color of <CODE>gridBandPaint<CODE>.
+     *                             color of {@code gridBandPaint}.
      *                             False: the second grid band takes the
-     *                             color of <CODE>gridBandPaint<CODE>.
-     * @param ticks  the ticks.
+     *                             color of {@code gridBandPaint}.
+     * @param ticks  a list of ticks ({@code null} not permitted).
      */
     protected void drawGridBandsHorizontal(Graphics2D g2,
-                                           Rectangle2D plotArea,
-                                           Rectangle2D dataArea,
-                                           boolean firstGridBandIsDark,
-                                           List ticks) {
+                                           Rectangle2D plotArea, Rectangle2D dataArea,
+                                           boolean firstGridBandIsDark, List ticks) {
 
         boolean currentGridBandIsDark = firstGridBandIsDark;
         double yy = dataArea.getY();
         double xx1, xx2;
 
         //gets the outline stroke width of the plot
-        double outlineStrokeWidth;
-        if (getPlot().getOutlineStroke() != null) {
-            outlineStrokeWidth = ((BasicStroke) getPlot().getOutlineStroke()).getLineWidth();
-        } else {
-            outlineStrokeWidth = 1d;
+        double outlineStrokeWidth = 1.0;
+        Stroke outlineStroke = getPlot().getOutlineStroke();
+        if (outlineStroke != null && outlineStroke instanceof BasicStroke) {
+            outlineStrokeWidth = ((BasicStroke) outlineStroke).getLineWidth();
         }
 
         Iterator iterator = ticks.iterator();
@@ -392,45 +391,41 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
             } else {
                 g2.setPaint(this.gridBandAlternatePaint);
             }
-            band = new Rectangle2D.Double(xx1, yy + outlineStrokeWidth,
-                    xx2 - xx1, dataArea.getMaxY() - yy - outlineStrokeWidth);
+            band = new Rectangle2D.Double(Math.min(xx1, xx2),
+                    yy + outlineStrokeWidth, Math.abs(xx2 - xx1),
+                    dataArea.getMaxY() - yy - outlineStrokeWidth);
             g2.fill(band);
             currentGridBandIsDark = !currentGridBandIsDark;
         }
-        g2.setPaintMode();
     }
 
     /**
-     * Draws the grid bands for the axis when it is at the top or bottom of
-     * the plot.
+     * Draws the grid bands for an axis that is aligned to the left or
+     * right of the data area (that is, a vertical axis).
      *
-     * @param g2  the graphics device.
-     * @param drawArea  the area within which the chart should be drawn.
-     * @param plotArea  the area within which the plot should be drawn (a
-     *                  subset of the drawArea).
+     * @param g2  the graphics target ({@code null} not permitted).
+     * @param plotArea  the area within which the plot is drawn (not used here).
+     * @param dataArea  the area for the data (to which the axes are aligned,
+     *         {@code null} not permitted).
      * @param firstGridBandIsDark  True: the first grid band takes the
-     *                             color of <CODE>gridBandPaint<CODE>.
+     *                             color of {@code gridBandPaint}.
      *                             False: the second grid band takes the
-     *                             color of <CODE>gridBandPaint<CODE>.
-     * @param ticks  a list of ticks.
+     *                             color of {@code gridBandPaint}.
+     * @param ticks  a list of ticks ({@code null} not permitted).
      */
-    protected void drawGridBandsVertical(Graphics2D g2,
-                                         Rectangle2D drawArea,
-                                         Rectangle2D plotArea,
-                                         boolean firstGridBandIsDark,
+    protected void drawGridBandsVertical(Graphics2D g2, Rectangle2D plotArea,
+                                         Rectangle2D dataArea, boolean firstGridBandIsDark,
                                          List ticks) {
 
         boolean currentGridBandIsDark = firstGridBandIsDark;
-        double xx = plotArea.getX();
+        double xx = dataArea.getX();
         double yy1, yy2;
 
         //gets the outline stroke width of the plot
-        double outlineStrokeWidth;
+        double outlineStrokeWidth = 1.0;
         Stroke outlineStroke = getPlot().getOutlineStroke();
         if (outlineStroke != null && outlineStroke instanceof BasicStroke) {
             outlineStrokeWidth = ((BasicStroke) outlineStroke).getLineWidth();
-        } else {
-            outlineStrokeWidth = 1d;
         }
 
         Iterator iterator = ticks.iterator();
@@ -438,28 +433,28 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
         Rectangle2D band;
         while (iterator.hasNext()) {
             tick = (ValueTick) iterator.next();
-            yy1 = valueToJava2D(tick.getValue() + 0.5d, plotArea,
+            yy1 = valueToJava2D(tick.getValue() + 0.5d, dataArea,
                     RectangleEdge.LEFT);
-            yy2 = valueToJava2D(tick.getValue() - 0.5d, plotArea,
+            yy2 = valueToJava2D(tick.getValue() - 0.5d, dataArea,
                     RectangleEdge.LEFT);
             if (currentGridBandIsDark) {
                 g2.setPaint(this.gridBandPaint);
             } else {
                 g2.setPaint(this.gridBandAlternatePaint);
             }
-            band = new Rectangle2D.Double(xx + outlineStrokeWidth, yy1,
-                    plotArea.getMaxX() - xx - outlineStrokeWidth, yy2 - yy1);
+            band = new Rectangle2D.Double(xx + outlineStrokeWidth,
+                    Math.min(yy1, yy2), dataArea.getMaxX() - xx
+                    - outlineStrokeWidth, Math.abs(yy2 - yy1));
             g2.fill(band);
             currentGridBandIsDark = !currentGridBandIsDark;
         }
-        g2.setPaintMode();
     }
 
     /**
      * Rescales the axis to ensure that all data is visible.
      */
+    @Override
     protected void autoAdjustRange() {
-
         Plot plot = getPlot();
         if (plot == null) {
             return;  // no plot, no data
@@ -516,11 +511,8 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
                     lower = lower - lowerMargin;
                 }
             }
-
             setRange(new Range(lower, upper), false, false);
-
         }
-
     }
 
     /**
@@ -534,6 +526,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
      *
      * @return A list of ticks.
      */
+    @Override
     public List refreshTicks(Graphics2D g2,
                              AxisState state,
                              Rectangle2D dataArea,
@@ -557,6 +550,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
      *
      * @return The ticks.
      */
+    @Override
     protected List refreshTicksHorizontal(Graphics2D g2,
                                           Rectangle2D dataArea,
                                           RectangleEdge edge) {
@@ -646,6 +640,7 @@ public class MutableSymbolAxis extends NumberAxis implements Serializable {
      *
      * @return The ticks.
      */
+    @Override
     protected List refreshTicksVertical(Graphics2D g2,
                                         Rectangle2D dataArea,
                                         RectangleEdge edge) {
