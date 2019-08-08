@@ -518,4 +518,51 @@
     </plotDefinition>
 
 
+    <!-- plot (V2, sqCorr, phot and SNR) vs wavelength -->
+    <plotDefinition>
+        <id>V2_DETAILS/EFF_WAVE</id>
+        <name>V2, sqCorr, phot and SNRs vs wavelength</name>
+        <skipFlaggedData>true</skipFlaggedData>
+        <drawLine>true</drawLine>
+        <xAxis>
+            <name>EFF_WAVE</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+            <converter>MICRO_METER</converter>
+        </xAxis>
+
+        <yAxes>
+            <name>VIS2DATA</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>SNR_VIS2</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+
+        <yAxes>
+            <name>NS_CORRSQ</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>SNR_NS_CORRSQ</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+
+        <yAxes>
+            <name>NS_PHOT</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>SNR_NS_PHOT</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+    </plotDefinition>
+
 </p:plotDefinitions>
