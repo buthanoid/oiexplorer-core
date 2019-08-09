@@ -146,8 +146,8 @@
         <Component class="javax.swing.JButton" name="addYAxisButton">
           <Properties>
             <Property name="text" type="java.lang.String" value="+"/>
-            <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-              <Dimension value="[21, 21]"/>
+            <Property name="margin" type="java.awt.Insets" editor="org.netbeans.beaninfo.editors.InsetsEditor">
+              <Insets value="[0, 1, 0, 1]"/>
             </Property>
           </Properties>
           <Events>
@@ -162,8 +162,8 @@
         <Component class="javax.swing.JButton" name="delYAxisButton">
           <Properties>
             <Property name="text" type="java.lang.String" value="-"/>
-            <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-              <Dimension value="[21, 21]"/>
+            <Property name="margin" type="java.awt.Insets" editor="org.netbeans.beaninfo.editors.InsetsEditor">
+              <Insets value="[0, 4, 0, 4]"/>
             </Property>
           </Properties>
           <Events>

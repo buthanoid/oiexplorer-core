@@ -3,11 +3,15 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui;
 
+import fr.jmmc.jmal.AbsorptionLineRange;
 import fr.jmmc.jmcs.gui.component.GenericListModel;
+import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.AxisRangeMode;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
+import fr.jmmc.oitools.OIFitsConstants;
+import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -15,6 +19,8 @@ import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.text.NumberFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Axis editor widget.
@@ -25,6 +31,10 @@ public class AxisEditor extends javax.swing.JPanel {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1L;
+    /** Logger */
+    private static final Logger logger = LoggerFactory.getLogger(AxisEditor.class.getName());
+    /** undefined value for range list */
+    private static final String RANGE_NONE = "[None]";
 
     /* members */
     /** PlotDefinitionEditor to notify in case of modification */
@@ -33,6 +43,8 @@ public class AxisEditor extends javax.swing.JPanel {
     private Axis axisToEdit;
     /** List of available axis names */
     private final GenericListModel<String> nameComboBoxModel;
+    /** List of possible ranges for the axis */
+    private final GenericListModel<String> rangeComboBoxModel;
     /** Flag notification of associated plotDefinitionEditor */
     private boolean notify = true;
 
@@ -47,6 +59,9 @@ public class AxisEditor extends javax.swing.JPanel {
         nameComboBoxModel = new GenericListModel<String>(new ArrayList<String>(25), true);
         nameComboBox.setModel(nameComboBoxModel);
 
+        rangeComboBoxModel = new GenericListModel<String>(new ArrayList<String>(10), true);
+        rangeListComboBox.setModel(rangeComboBoxModel);
+
         // hidden until request and valid code to get a correct behaviour
         final JComponent[] components = new JComponent[]{
             includeZeroCheckBox, jRadioModeAuto, jRadioModeDefault, jRadioModeFixed, jFieldMin, jFieldMax
@@ -54,6 +69,24 @@ public class AxisEditor extends javax.swing.JPanel {
         for (JComponent c : components) {
             c.setVisible(c.isEnabled());
         }
+
+        jFieldMin.addPropertyChangeListener("value", new java.beans.PropertyChangeListener() {
+            @Override
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                if (!ObjectUtils.areEquals(evt.getOldValue(), evt.getNewValue())) {
+                    actionPerformed(new ActionEvent(jFieldMin, 0, ""));
+                }
+            }
+        });
+
+        jFieldMax.addPropertyChangeListener("value", new java.beans.PropertyChangeListener() {
+            @Override
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                if (!ObjectUtils.areEquals(evt.getOldValue(), evt.getNewValue())) {
+                    actionPerformed(new ActionEvent(jFieldMax, 0, ""));
+                }
+            }
+        });
     }
 
     /** 
@@ -64,7 +97,8 @@ public class AxisEditor extends javax.swing.JPanel {
         this(null);
     }
 
-    /** Initialize widgets according to given axis 
+    /** 
+     * Initialize widgets according to given axis 
      * 
      * @param axis used to initialize widget states
      * @param axisChoices column names to display
@@ -85,9 +119,52 @@ public class AxisEditor extends javax.swing.JPanel {
             logScaleCheckBox.setSelected(axis.isLogScale());
 
             updateRangeEditor(axis.getRange(), axis.getRangeModeOrDefault());
+
+            updateRangeList();
         } finally {
             notify = true;
         }
+    }
+
+    private void updateRangeList() {
+        final boolean isWavelengthAxis = isWavelengthAxis();
+
+        // TODO: use a factory to get predefined ranges per column name ?
+        if (isWavelengthAxis) {
+            rangeComboBoxModel.clear();
+            rangeComboBoxModel.add(RANGE_NONE); // empty
+            for (AbsorptionLineRange r : AbsorptionLineRange.values()) {
+                rangeComboBoxModel.add(r.getName());
+            }
+        }
+        rangeListComboBox.setVisible(isWavelengthAxis);
+    }
+
+    private void handleRangeListSelection() {
+        final String selected = (String) rangeListComboBox.getSelectedItem();
+
+        if (isWavelengthAxis()) {
+            double min = Double.NaN;
+            double max = Double.NaN;
+
+            if (!RANGE_NONE.equalsIgnoreCase(selected)) {
+                for (AbsorptionLineRange r : AbsorptionLineRange.values()) {
+                    if (r.getName().equals(selected)) {
+                        logger.debug("AbsorptionLineRange: {}", r);
+                        min = r.getMin();
+                        max = r.getMax();
+                        break;
+                    }
+                }
+            }
+            jRadioModeFixed.doClick();
+            jFieldMin.setValue(isFinite(min) ? min : null);
+            jFieldMax.setValue(isFinite(max) ? max : null);
+        }
+    }
+
+    private boolean isWavelengthAxis() {
+        return (OIFitsConstants.COLUMN_EFF_WAVE.equalsIgnoreCase((String) nameComboBox.getSelectedItem()));
     }
 
     private void updateRangeEditor(final Range range, final AxisRangeMode mode) {
@@ -133,9 +210,8 @@ public class AxisEditor extends javax.swing.JPanel {
         final boolean minFinite = isFinite(min);
         final boolean maxFinite = isFinite(max);
 
-        if ((minFinite && maxFinite && (min < max))
-                || (minFinite && !maxFinite)
-                || (!minFinite && maxFinite)) {
+        if ((minFinite != maxFinite)
+                || (minFinite && maxFinite && (min < max))) {
 
             final Range range = new Range();
             range.setMin(min);
@@ -174,6 +250,7 @@ public class AxisEditor extends javax.swing.JPanel {
         jRadioModeFixed = new javax.swing.JRadioButton();
         jFieldMin = new JFormattedTextField(getNumberFieldFormatter());
         jFieldMax = new JFormattedTextField(getNumberFieldFormatter());
+        rangeListComboBox = new javax.swing.JComboBox();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -185,7 +262,6 @@ public class AxisEditor extends javax.swing.JPanel {
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
@@ -198,7 +274,7 @@ public class AxisEditor extends javax.swing.JPanel {
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
         add(logScaleCheckBox, gridBagConstraints);
 
@@ -209,7 +285,7 @@ public class AxisEditor extends javax.swing.JPanel {
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
         add(includeZeroCheckBox, gridBagConstraints);
 
@@ -277,8 +353,15 @@ public class AxisEditor extends javax.swing.JPanel {
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         jPanelBounds.add(jFieldMax, gridBagConstraints);
 
+        rangeListComboBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                rangeListComboBoxActionPerformed(evt);
+            }
+        });
+        jPanelBounds.add(rangeListComboBox, new java.awt.GridBagConstraints());
+
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 7;
+        gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
@@ -303,6 +386,8 @@ public class AxisEditor extends javax.swing.JPanel {
                 axisToEdit.setLogScale(logScaleCheckBox.isSelected());
                 // force refresh plot definition names:
                 forceRefreshPlotDefNames = true;
+
+                updateRangeList();
             }
         } else if (evt.getSource() == jRadioModeAuto) {
             axisToEdit.setRangeMode(AxisRangeMode.AUTO);
@@ -325,6 +410,8 @@ public class AxisEditor extends javax.swing.JPanel {
             if (r == null) {
                 jFieldMax.requestFocus();
             }
+        } else if (evt.getSource() == rangeListComboBox) {
+            handleRangeListSelection();
         } else {
             throw new IllegalStateException("TODO: handle event from " + evt.getSource());
         }
@@ -333,6 +420,10 @@ public class AxisEditor extends javax.swing.JPanel {
             parentToNotify.updateModel(forceRefreshPlotDefNames);
         }
     }//GEN-LAST:event_actionPerformed
+
+    private void rangeListComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rangeListComboBoxActionPerformed
+        AxisEditor.this.actionPerformed(evt);
+    }//GEN-LAST:event_rangeListComboBoxActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.ButtonGroup buttonGroupRangeModes;
@@ -345,6 +436,7 @@ public class AxisEditor extends javax.swing.JPanel {
     private javax.swing.JRadioButton jRadioModeFixed;
     private javax.swing.JCheckBox logScaleCheckBox;
     private javax.swing.JComboBox nameComboBox;
+    private javax.swing.JComboBox rangeListComboBox;
     // End of variables declaration//GEN-END:variables
 
     /**
@@ -371,8 +463,8 @@ public class AxisEditor extends javax.swing.JPanel {
         nf.setCommitsOnValidEdit(false);
         return nf;
     }
-    
+
     private static boolean isFinite(final double value) {
-        return !(Double.isNaN(value) || Double.isInfinite(value));
+        return !(Double.isNaN(value) && !Double.isInfinite(value));
     }
 }

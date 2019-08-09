@@ -435,7 +435,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         extendedPanel.add(xLabel, gridBagConstraints);
 
         addYAxisButton.setText("+");
-        addYAxisButton.setPreferredSize(new java.awt.Dimension(21, 21));
+        addYAxisButton.setMargin(new java.awt.Insets(0, 1, 0, 1));
         addYAxisButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 addYAxisButtonActionPerformed(evt);
@@ -450,7 +450,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         extendedPanel.add(addYAxisButton, gridBagConstraints);
 
         delYAxisButton.setText("-");
-        delYAxisButton.setPreferredSize(new java.awt.Dimension(21, 21));
+        delYAxisButton.setMargin(new java.awt.Insets(0, 4, 0, 4));
         delYAxisButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 delYAxisButtonActionPerformed(evt);
