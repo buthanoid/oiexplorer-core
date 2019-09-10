@@ -594,11 +594,6 @@
         </yAxes>
 
         <yAxes>
-            <name>T3PHI</name>
-            <logScale>false</logScale>
-            <includeZero>false</includeZero>
-        </yAxes>
-        <yAxes>
             <name>T3PHIERR</name>
             <logScale>false</logScale>
             <includeZero>true</includeZero>
