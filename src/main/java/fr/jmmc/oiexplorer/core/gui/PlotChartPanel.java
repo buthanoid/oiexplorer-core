@@ -2015,18 +2015,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // update view bounds & range:
         final Range viewBounds = new Range(bmin, bmax);
-        
-        // TODO: fix bug:
-/*        
-java.lang.IllegalArgumentException: Range(double, double): require lower (95.0) <= upper (67.19334924183538).
-	at org.jfree.data.Range.<init>(Range.java:93)
-	at fr.jmmc.oiexplorer.core.gui.PlotChartPanel.adjustAxisRanges(PlotChartPanel.java:2018)
-	at fr.jmmc.oiexplorer.core.gui.PlotChartPanel.updateChart(PlotChartPanel.java:1683)
-	at fr.jmmc.oiexplorer.core.gui.PlotChartPanel.updatePlot(PlotChartPanel.java:1315)
-	at fr.jmmc.oiexplorer.core.gui.PlotChartPanel.onProcess(PlotChartPanel.java:3252)
-	at fr.jmmc.oiexplorer.core.gui.PlotChartPanel.onProcess(PlotChartPanel.java:113)
-*/
-        
         final Range viewRange = new Range(vmin, vmax);
         axisInfo.viewBounds = viewBounds;
         axisInfo.viewRange = viewRange;
