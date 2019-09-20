@@ -62,16 +62,14 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     /** plot definition identifier */
     private String plotDefId = null;
     /* Swing components */
-    /** Store all choices available to plot on x axis given the plot's subset if any */
-    private final List<String> xAxisChoices = new LinkedList<String>();
-    /** Store all choices available to plot on y axes given the plot's subset if any */
-    private final List<String> yAxisChoices = new LinkedList<String>();
-    /** List of y axes with their editors (identity hashcode) */
-    private final HashMap<Axis, AxisEditor> yAxes = new LinkedHashMap<Axis, AxisEditor>();
-    /** Flag to declare that component has to notify an event from user gesture */
-    private boolean notify;
+    /** Store all axis choices available given the plot's subset if any */
+    private final List<String> axisChoices = new LinkedList<String>();
     /** xAxisEditor */
     private AxisEditor xAxisEditor;
+    /** List of y axes with their editors (identity hashcode) */
+    private final HashMap<Axis, AxisEditor> yAxisEditors = new LinkedHashMap<Axis, AxisEditor>();
+    /** Flag to declare that component has to notify an event from user gesture */
+    private boolean notify;
     /* expression editor */
     private ExpressionEditor expressionEditor = null;
 
@@ -80,6 +78,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         // TODO maybe move it in setPlotId, setPlotId to register to event notifiers instead of both:
         ocm.getPlotDefinitionChangedEventNotifier().register(this);
         ocm.getPlotChangedEventNotifier().register(this);
+        ocm.getPlotViewportChangedEventNotifier().register(this);
 
         initComponents();
         postInit();
@@ -96,6 +95,16 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         }
 
         ocm.unbind(this);
+
+        resetForm();
+    }
+
+    private void disposeYAxisEditors() {
+        for (AxisEditor editor : yAxisEditors.values()) {
+            editor.dispose();
+        }
+        yAxisEditors.clear();
+        yAxesPanel.removeAll();
     }
 
     /**
@@ -136,12 +145,12 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             notify = false;
 
             // Clear all content
-            xAxisChoices.clear();
-            yAxisChoices.clear();
+            axisChoices.clear();
 
-            // clear y AxisEditors
-            yAxes.clear();
-            yAxesPanel.removeAll();
+            // clear x/y AxisEditors
+            xAxisEditor.dispose();
+            disposeYAxisEditors();
+
         } finally {
             notify = true;
         }
@@ -170,29 +179,26 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                     final Set<String> columns = getDistinctColumns(oiFitsSubset);
 
                     // Clear all content
-                    xAxisChoices.clear();
-                    xAxisChoices.addAll(columns);
-
-                    yAxisChoices.clear();
-                    yAxisChoices.addAll(columns);
+                    axisChoices.clear();
+                    axisChoices.addAll(columns);
                 }
 
                 // Add choices present in the associated plotDef
                 final String currentX = plotDef.getXAxis().getName();
-                if (!xAxisChoices.contains(currentX)) {
-                    xAxisChoices.add(currentX);
+                if (!axisChoices.contains(currentX)) {
+                    axisChoices.add(currentX);
                 }
 
                 for (Axis y : plotDef.getYAxes()) {
                     final String currentY = y.getName();
-                    if (!yAxisChoices.contains(currentY)) {
-                        yAxisChoices.add(currentY);
+                    if (!axisChoices.contains(currentY)) {
+                        axisChoices.add(currentY);
                     }
                 }
 
-                logger.debug("refreshForm : xAxisChoices {}, yAxisChoices {}", xAxisChoices, yAxisChoices);
+                logger.debug("refreshForm : axisChoices {}", axisChoices);
 
-                xAxisEditor.setAxis((Axis) plotDef.getXAxis().clone(), xAxisChoices);
+                xAxisEditor.setAxis((Axis) plotDef.getXAxis().clone(), axisChoices);
 
                 // fill with associated plotdefinition
                 if (logger.isDebugEnabled()) {
@@ -200,10 +206,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 }
 
                 // clear y AxisEditors
-                yAxes.clear();
-                yAxesPanel.removeAll();
+                disposeYAxisEditors();
 
-// TODO: keep user settings for previous axis !
                 for (Axis yAxis : plotDef.getYAxes()) {
                     addYEditor((Axis) yAxis.clone());
                 }
@@ -226,10 +230,56 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         }
     }
 
+    /**
+     * Update axis editors using the given data.
+     * @param plotInfosData PlotInfosData
+     */
+    private void refreshForm(final PlotInfosData plotInfosData) {
+        logger.debug("refreshForm : plotInfosData = {}", plotInfosData);
+
+        if (plotInfosData != null) {
+            final PlotInfo[] plotInfos = plotInfosData.getPlotInfos();
+
+            if (plotInfos.length != 0) {
+                boolean changed = false;
+                try {
+                    // Leave programatic changes on widgets ignored to prevent model changes
+                    notify = false;
+
+                    AxisInfo axisInfo = plotInfos[0].xAxisInfo;
+
+                    // TODO: check axis name ?
+                    changed |= xAxisEditor.setAxisRange(axisInfo.plotRange.getLowerBound(), axisInfo.plotRange.getUpperBound());
+
+                    // TODO: merge plotInfos with yAxis (in-order):
+                    int i = 0;
+                    for (AxisEditor editor : yAxisEditors.values()) {
+                        axisInfo = plotInfos[i].yAxisInfo;
+
+                        if (editor.getAxis().getName().equals(axisInfo.getColumnMeta().getName())) {
+                            changed |= editor.setAxisRange(axisInfo.plotRange.getLowerBound(), axisInfo.plotRange.getUpperBound());
+                        } else {
+                            logger.warn("TODO: bad match");
+                        }
+                        if (++i >= plotInfos.length) {
+                            break;
+                        }
+                    }
+                } finally {
+                    notify = true;
+                    if (changed) {
+                        // notify once:
+                        updateModel();
+                    }
+                }
+            }
+        }
+    }
+
     private void checkYAxisActionButtons() {
         // disable buttons to limit number of yAxes
-        addYAxisButton.setEnabled(yAxes.size() < MAX_Y_AXES);
-        delYAxisButton.setEnabled(yAxes.size() > 1);
+        addYAxisButton.setEnabled(yAxisEditors.size() < MAX_Y_AXES);
+        delYAxisButton.setEnabled(yAxisEditors.size() > 1);
     }
 
     private void refreshPlotDefinitionNames(final PlotDefinition plotDef) {
@@ -390,6 +440,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         add(flaggedDataCheckBox, gridBagConstraints);
 
         detailledToggleButton.setText("...");
+        detailledToggleButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
         detailledToggleButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 detailledToggleButtonActionPerformed(evt);
@@ -491,6 +542,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
         refreshButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/fr/jmmc/jmcs/resource/image/refresh.png"))); // NOI18N
         refreshButton.setToolTipText("refresh zoom / remove plot selection");
+        refreshButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
         refreshButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 refreshButtonActionPerformed(evt);
@@ -512,6 +564,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         add(jPanelOtherEditors, gridBagConstraints);
 
         jToggleButtonExprEditor.setText("expr editor");
+        jToggleButtonExprEditor.setMargin(new java.awt.Insets(0, 0, 0, 0));
         jToggleButtonExprEditor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jToggleButtonExprEditorActionPerformed(evt);
@@ -520,11 +573,12 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 8;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 0);
         add(jToggleButtonExprEditor, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void addYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addYAxisButtonActionPerformed
-        Axis axis = new Axis();
+        final Axis axis = new Axis();
 
         // Add to PlotDefinition
         addYEditor(axis);
@@ -534,10 +588,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }//GEN-LAST:event_addYAxisButtonActionPerformed
 
     private void delYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_delYAxisButtonActionPerformed
-        final int size = yAxes.size();
+        final int size = yAxisEditors.size();
         if (size > 1) {
             // TODO replace by removal of the last yCombobox which one has lost the focus
-            Axis[] yAxisArray = yAxes.keySet().toArray(new Axis[size]);
+            Axis[] yAxisArray = yAxisEditors.keySet().toArray(new Axis[size]);
             Axis yAxis = yAxisArray[size - 1];
             delYEditor(yAxis);
 
@@ -638,13 +692,13 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
         // Link new Editor and Axis
         final AxisEditor yAxisEditor = new AxisEditor(this);
-        yAxisEditor.setAxis(yAxis, yAxisChoices);
+        yAxisEditor.setAxis(yAxis, axisChoices);
 
         // Add in editor list
         yAxesPanel.add(yAxisEditor);
 
         // Add in Map
-        yAxes.put(yAxis, yAxisEditor);
+        yAxisEditors.put(yAxis, yAxisEditor);
 
         revalidate();
     }
@@ -654,16 +708,16 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      */
     private void delYEditor(final Axis yAxis) {
         // Link new Editor and Axis
-        AxisEditor yAxisEditor = yAxes.get(yAxis);
+        AxisEditor yAxisEditor = yAxisEditors.get(yAxis);
 
         // Remove from editor list
         yAxesPanel.remove(yAxisEditor);
+        yAxisEditor.dispose();
 
         // Delete from Map
-        yAxes.remove(yAxis);
+        yAxisEditors.remove(yAxis);
 
         revalidate();
-
     }
 
     /**
@@ -682,6 +736,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      */
     void updateModel(final boolean forceRefreshPlotDefNames) {
         if (notify) {
+            logger.debug("updateModel");
             // get copy:
             final PlotDefinition plotDefCopy = getPlotDefinition();
 
@@ -693,7 +748,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 yAxesCopy.clear();
                 // We may also compute the yAxes Collection calling getAxis on the editor list
                 // This may reduce references nightmare
-                yAxesCopy.addAll(yAxes.keySet());
+                yAxesCopy.addAll(yAxisEditors.keySet());
 
                 plotDefCopy.setColorMapping(getColorMapping());
 
@@ -884,6 +939,11 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
                 refreshForm(plotDef, event.getPlot().getSubsetDefinition().getOIFitsSubset());
                 break;
+            case PLOT_VIEWPORT_CHANGED:
+                final PlotInfosData plotInfosData = event.getPlotInfosData();
+                if (this.plotId != null && plotInfosData != null && this.plotId.equals(plotInfosData.getPlotId())) {
+                    refreshForm(plotInfosData);
+                }
             default:
                 logger.debug("onProcess {} - done", event);
         }

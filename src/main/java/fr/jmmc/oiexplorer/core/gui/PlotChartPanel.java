@@ -6,6 +6,7 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmal.image.ColorModels;
 import fr.jmmc.jmal.image.ColorScale;
 import fr.jmmc.jmal.image.ImageUtils;
+import fr.jmmc.jmcs.gui.util.EDTDelayedEventHandler;
 import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.jmcs.util.ObjectUtils;
@@ -59,6 +60,7 @@ import fr.jmmc.oitools.model.TargetIdMatcher;
 import fr.jmmc.oitools.model.TargetManager;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Paint;
 import java.awt.Point;
 import java.awt.Polygon;
@@ -201,6 +203,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     /** plot information(s) */
     private final List<PlotInfo> plotInfos = new ArrayList<PlotInfo>();
     /* plot data */
+    /** defered event handler (100ms delay) */
+    private final EDTDelayedEventHandler deferedHandler = new EDTDelayedEventHandler(100);
     /** jFreeChart instance */
     private JFreeChart chart;
     /** combined xy plot sharing domain axis */
@@ -333,6 +337,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jLabelInfos, gridBagConstraints);
 
@@ -341,6 +346,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         gridBagConstraints.weightx = 0.1;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jLabelPoints, gridBagConstraints);
@@ -350,6 +356,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.05;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jSeparator1, gridBagConstraints);
 
@@ -358,6 +366,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         gridBagConstraints.weightx = 0.2;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jLabelDataRange, gridBagConstraints);
@@ -367,6 +376,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         gridBagConstraints.gridx = 4;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.05;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jSeparator2, gridBagConstraints);
 
@@ -375,7 +386,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         gridBagConstraints.gridx = 5;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 0.2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 0.3;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jLabelDataErrRange, gridBagConstraints);
 
@@ -384,6 +396,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         gridBagConstraints.gridx = 6;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        gridBagConstraints.weightx = 0.05;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jSeparator3, gridBagConstraints);
 
@@ -391,8 +405,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 7;
         gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = java.awt.GridBagConstraints.REMAINDER;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 0.05;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 0.1;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jLabelMouse, gridBagConstraints);
 
@@ -612,6 +628,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         addXYPlot();
 
         resetPlot();
+
+        // Adjust fonts:
+        final Font fixedFont = new Font(Font.MONOSPACED, Font.PLAIN, SwingUtils.adjustUISize(10));
+        this.jLabelCrosshairInfos.setFont(fixedFont);
+        this.jLabelInfos.setFont(fixedFont);
+        this.jLabelMouse.setFont(fixedFont);
+        this.jLabelPoints.setFont(fixedFont);
+        this.jLabelDataRange.setFont(fixedFont);
+        this.jLabelDataErrRange.setFont(fixedFont);
     }
 
     private void addXYPlot() {
@@ -1252,6 +1277,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             showPlot(isHasData());
 
+            // reset infos:
+            chartMouseMoved(null);
+
         } finally {
             // restore chart & plot notifications:
             for (int i = 0, len = this.xyPlotList.size(); i < len; i++) {
@@ -1764,7 +1792,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 if (DEBUG) {
                     if (dataset != null) {
-                        logger.debug("seriesCount : {}", dataset.getSeriesCount());
+                        logger.info("seriesCount : {}", dataset.getSeriesCount());
                     }
                 }
             }
@@ -1854,7 +1882,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         double bmin = axisInfo.dataErrRange.getLowerBound();
         double bmax = axisInfo.dataErrRange.getUpperBound();
 
-        // TODO: auto or default range:
         // view = data range:
         double vmin = axisInfo.dataRange.getLowerBound();
         double vmax = axisInfo.dataRange.getUpperBound();
@@ -1959,11 +1986,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             // ensure vmin < vmax:
             if (vmin > vmax) {
+                // fix range boundaries: data is out of range
                 if (fix_vmin) {
-                    vmin = bmin;
+                    vmax = vmin + 1d;
                 }
                 if (fix_vmax) {
-                    vmax = bmax;
+                    vmin = vmax - 1d;
                 }
             }
 
@@ -1981,7 +2009,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 bmin -= margin;
                 bmax += margin;
             }
-            if (bmax == bmin) {
+            if (bmax <= bmin) {
                 bmax = bmin + 1d;
             }
 
@@ -1999,7 +2027,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 vmin -= margin;
                 vmax += margin;
             }
-            if (vmax == vmin) {
+            if (vmax <= vmin) {
                 vmax = vmin + 1d;
             }
 
@@ -2848,26 +2876,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     @Override
     public void chartProgress(final ChartProgressEvent event) {
-        if (logger.isDebugEnabled()) {
+        if (DEBUG || logger.isDebugEnabled()) {
             switch (event.getType()) {
                 case ChartProgressEvent.DRAWING_STARTED:
                     this.chartDrawStartTime = System.nanoTime();
                     break;
                 case ChartProgressEvent.DRAWING_FINISHED:
                     logger.debug("Drawing chart time[{}] = {} ms.", getFilterTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
-                    this.chartDrawStartTime = 0l;
-                    break;
-                default:
-            }
-        }
-
-        if (DEBUG) {
-            switch (event.getType()) {
-                case ChartProgressEvent.DRAWING_STARTED:
-                    this.chartDrawStartTime = System.nanoTime();
-                    break;
-                case ChartProgressEvent.DRAWING_FINISHED:
-                    logger.info("Drawing chart time[{}] = {} ms.", getFilterTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                    if (DEBUG) {
+                        logger.info("Drawing chart time[{}] = {} ms.", getFilterTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                    }
                     this.chartDrawStartTime = 0l;
                     break;
                 default:
@@ -2875,7 +2893,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         if (event.getType() == ChartProgressEvent.DRAWING_STARTED) {
-            // Perform custom operations before chart rendering:
+            // Perform custom operations BEFORE chart rendering:
+
+            // cancel any defered action:
+            deferedHandler.cancel();
 
             // Get shared domain axis:
             final ValueAxis xAxis = this.combinedXYPlot.getDomainAxis();
@@ -2901,10 +2922,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     Range dataRange = info.xAxisInfo.dataRange;
                     if (dataRange != null) {
                         if (xRange.getLowerBound() > dataRange.getLowerBound()) {
-                            negX = true;
+                            negX |= true;
                         }
                         if (xRange.getUpperBound() < dataRange.getUpperBound()) {
-                            posX = true;
+                            posX |= true;
                         }
                     }
 
@@ -2921,6 +2942,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         }
                     }
 
+                    // decorate Y axis:
                     if (negY || posY) {
                         ChartUtils.setAxisDecorations(yAxis, ChartColor.DARK_RED, negY, posY);
                     } else {
@@ -2929,30 +2951,66 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 }
             }
 
+            // decorate X axis:
             if (negX || posX) {
                 ChartUtils.setAxisDecorations(xAxis, ChartColor.DARK_RED, negX, posX);
             } else {
                 ChartUtils.setAxisDecorations(xAxis, Color.BLACK, false, false);
             }
+
         } else {
-            // Collect rendered item count:
-            for (PlotInfo info : getPlotInfos()) {
+            // Perform custom operations AFTER chart rendering:
+
+            final String _plotId = this.plotId;
+            logger.debug("plotId: {}", _plotId);
+
+            // Get shared domain axis:
+            final ValueAxis xAxis = this.combinedXYPlot.getDomainAxis();
+            final Range xRange = xAxis.getRange();
+
+            // Clone PlotInfos to submit event:
+            final List<PlotInfo> plotInfoList = getPlotInfos();
+            final PlotInfo[] plotInfosCopy = plotInfoList.toArray(new PlotInfo[plotInfoList.size()]);
+
+            for (PlotInfo info : plotInfosCopy) {
                 final int plotIndex = info.yAxisIndex;
                 final XYPlot xyPlot = xyPlotList.get(plotIndex);
 
                 if (xyPlot != null) {
+                    // Collect rendered item count:
                     final FastXYErrorRenderer renderer = (FastXYErrorRenderer) xyPlot.getRenderer();
                     info.nDisplayedPoints = renderer.getRenderedItemCount();
+
+                    // Set plot x range:
+                    AxisInfo axisInfo = info.xAxisInfo;
+                    axisInfo.plotRange = xRange;
+
+                    final ValueAxis yAxis = xyPlot.getRangeAxis();
+                    final Range yRange = yAxis.getRange();
+
+                    // Set plot y range:
+                    axisInfo = info.yAxisInfo;
+                    axisInfo.plotRange = yRange;
+
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("xAxis: {} range: {}", axisInfo.columnMeta.getName(), xRange);
+                        logger.debug("yAxis: {} range: {}", info.yAxisInfo.columnMeta.getName(), yRange);
+                    }
                 }
             }
-            if (lastChartMouseEvent != null) {
-                SwingUtils.invokeLaterEDT(new Runnable() {
-                    @Override
-                    public void run() {
+
+            // fire new defered action:
+            deferedHandler.runLater(new Runnable() {
+                @Override
+                public void run() {
+                    if (lastChartMouseEvent != null) {
                         chartMouseMoved(lastChartMouseEvent);
                     }
-                });
-            }
+
+                    // Send PLOT_VIEWPORT_CHANGED event (later)
+                    ocm.setPlotInfosData(PlotChartPanel.this, new PlotInfosData(_plotId, plotInfosCopy));
+                }
+            });
         }
     }
 

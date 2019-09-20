@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.model;
 
+import fr.jmmc.oiexplorer.core.gui.PlotInfosData;
 import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 import static fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType.PLOT_CHANGED;
 import fr.jmmc.oiexplorer.core.model.event.GenericEvent;
@@ -24,6 +25,9 @@ import java.util.List;
  * - PLOT_LIST_CHANGED               List<Plot>
  * - PLOT_CHANGED                    Plot
  * - ACTIVE_PLOT_CHANGED             Plot
+ * - SELECTION_CHANGED               DataPointer
+ * - PLOT_VIEWPORT_CHANGED           PlotInfosData
+ *
  * @author bourgesl
  */
 public final class OIFitsCollectionManagerEvent extends GenericEvent<OIFitsCollectionManagerEventType, Object> {
@@ -65,11 +69,14 @@ public final class OIFitsCollectionManagerEvent extends GenericEvent<OIFitsColle
             case PLOT_CHANGED:
                 value = OIFitsCollectionManager.getInstance().getPlotRef(getSubjectId());
                 break;
+            case ACTIVE_PLOT_CHANGED:
+                value = OIFitsCollectionManager.getInstance().getPlotRef(getSubjectId());
+                break;
             case SELECTION_CHANGED:
                 value = OIFitsCollectionManager.getInstance().getSelection();
                 break;
-            case ACTIVE_PLOT_CHANGED:
-                value = OIFitsCollectionManager.getInstance().getPlotRef(getSubjectId());
+            case PLOT_VIEWPORT_CHANGED:
+                value = OIFitsCollectionManager.getInstance().getPlotInfosData();
                 break;
             default:
                 value = null;
@@ -164,18 +171,6 @@ public final class OIFitsCollectionManagerEvent extends GenericEvent<OIFitsColle
     }
 
     /**
-     * Return the Selection if this event is only SELECTION_CHANGED
-     * @return Selection or null if wrong event type
-     */
-    @SuppressWarnings("unchecked")
-    public DataPointer getSelection() {
-        if (getType() == OIFitsCollectionManagerEventType.SELECTION_CHANGED) {
-            return (DataPointer) getSubjectValue();
-        }
-        return null;
-    }
-    
-    /**
      * Return the active Plot if this event is only ACTIVE_PLOT_CHANGED
      * @return Plot or null if wrong event type
      */
@@ -186,4 +181,29 @@ public final class OIFitsCollectionManagerEvent extends GenericEvent<OIFitsColle
         }
         return null;
     }
+
+    /**
+     * Return the Selection if this event is only SELECTION_CHANGED
+     * @return Selection or null if wrong event type
+     */
+    @SuppressWarnings("unchecked")
+    public DataPointer getSelection() {
+        if (getType() == OIFitsCollectionManagerEventType.SELECTION_CHANGED) {
+            return (DataPointer) getSubjectValue();
+        }
+        return null;
+    }
+
+    /**
+     * Return the PlotInfosData if this event is only PLOT_VIEWPORT_CHANGED
+     * @return PlotInfosData or null if wrong event type
+     */
+    @SuppressWarnings("unchecked")
+    public PlotInfosData getPlotInfosData() {
+        if (getType() == OIFitsCollectionManagerEventType.PLOT_VIEWPORT_CHANGED) {
+            return (PlotInfosData) getSubjectValue();
+        }
+        return null;
+    }
+
 }

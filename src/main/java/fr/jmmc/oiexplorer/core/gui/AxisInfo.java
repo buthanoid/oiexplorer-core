@@ -33,6 +33,8 @@ public final class AxisInfo {
     Range viewBounds = null;
     /** view range */
     Range viewRange = null;
+    /** view range */
+    Range plotRange = null;
 
     AxisInfo() {
     }
@@ -46,6 +48,7 @@ public final class AxisInfo {
         this.hasDataError = src.hasDataError;
         this.viewBounds = null;
         this.viewRange = null;
+        this.plotRange = null;
     }
 
     void combineRanges(final AxisInfo src) {
@@ -85,6 +88,10 @@ public final class AxisInfo {
         return viewRange;
     }
 
+    public Range getPlotRange() {
+        return plotRange;
+    }
+    
     public boolean isCompatible(final AxisInfo other) {
         return columnMeta.getName().equals(other.columnMeta.getName())
                 && useLog == other.useLog

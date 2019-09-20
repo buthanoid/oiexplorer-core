@@ -435,12 +435,12 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
     protected static class State extends XYItemRendererState {
 
         /** The path for the current series. */
-        Path2D.Double seriesPath;
+        Path2D.Double seriesPath = null;
         /**
          * A flag that indicates if the last (x, y) point was 'good'
          * (non-null).
          */
-        private boolean lastPointGood;
+        boolean lastPointGood;
 
         /**
          * Creates a new state instance.
@@ -449,26 +449,6 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
          */
         protected State(PlotRenderingInfo info) {
             super(info);
-        }
-
-        /**
-         * Returns a flag that indicates if the last point drawn (in the
-         * current series) was 'good' (non-null).
-         *
-         * @return A boolean.
-         */
-        public boolean isLastPointGood() {
-            return this.lastPointGood;
-        }
-
-        /**
-         * Sets a flag that indicates if the last point drawn (in the current
-         * series) was 'good' (non-null).
-         *
-         * @param good  the flag.
-         */
-        public void setLastPointGood(boolean good) {
-            this.lastPointGood = good;
         }
 
         /**
@@ -485,7 +465,9 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
         @Override
         public void startSeriesPass(XYDataset dataset, int series,
                                     int firstItem, int lastItem, int pass, int passCount) {
-            this.seriesPath.reset();
+            if (this.seriesPath != null) {
+                this.seriesPath.reset();
+            }
             this.lastPointGood = false;
             super.startSeriesPass(dataset, series, firstItem, lastItem, pass, passCount);
         }
@@ -521,7 +503,7 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
                                           PlotRenderingInfo info) {
 
         final FastXYLineAndShapeRenderer.State state = new FastXYLineAndShapeRenderer.State(info);
-        state.seriesPath = new Path2D.Double();
+        state.seriesPath = (getDrawSeriesLineAsPath()) ? new Path2D.Double() : null;
 
         // not very efficient with the FastIntervalXYDataset:
         state.setProcessVisibleItemsOnly(false);
@@ -691,57 +673,60 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
 
         final PlotOrientation orientation = plot.getOrientation();
 
-        if (isUseStepLine()) {
-            // step line
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                // calculate the step point
-                final double transXs = transX0 + 0.5 * (transX1 - transX0);
+        // use simple line to count visible items:
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            state.workingLine.setLine(transY0, transX0, transY1, transX1);
+        } else {
+            state.workingLine.setLine(transX0, transY0, transX1, transY1);
+        }
 
-                g2.setStroke(getItemStroke(series, item - 1));
-                g2.setPaint(getItemPaint(series, item - 1));
+        // clipping checks:
+        if (state.workingLine.intersects(dataArea)) {
+            // Item is rendered:
+            this.renderedItemCount++;
 
-                drawLine(g2, state.workingLine, transY0, transX0, transY0,
-                        transXs, dataArea);
+            if (isUseStepLine()) {
+                // step line
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    // calculate the step point
+                    final double transXs = transX0 + 0.5 * (transX1 - transX0);
 
-                g2.setStroke(getItemStroke(series, item));
-                g2.setPaint(getItemPaint(series, item));
+                    g2.setStroke(getItemStroke(series, item - 1));
+                    g2.setPaint(getItemPaint(series, item - 1));
 
-                if (transY0 != transY1) {
-                    drawLine(g2, state.workingLine, transY0, transXs, transY1,
+                    drawLine(g2, state.workingLine, transY0, transX0, transY0,
                             transXs, dataArea);
-                }
-                drawLine(g2, state.workingLine, transY1, transXs, transY1,
-                        transX1, dataArea);
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                // calculate the step point
-                final double transXs = transX0 + 0.5 * (transX1 - transX0);
 
-                g2.setStroke(getItemStroke(series, item - 1));
-                g2.setPaint(getItemPaint(series, item - 1));
+                    g2.setStroke(getItemStroke(series, item));
+                    g2.setPaint(getItemPaint(series, item));
 
-                drawLine(g2, state.workingLine, transX0, transY0, transXs,
-                        transY0, dataArea);
+                    if (transY0 != transY1) {
+                        drawLine(g2, state.workingLine, transY0, transXs, transY1,
+                                transXs, dataArea);
+                    }
+                    drawLine(g2, state.workingLine, transY1, transXs, transY1,
+                            transX1, dataArea);
+                } else if (orientation == PlotOrientation.VERTICAL) {
+                    // calculate the step point
+                    final double transXs = transX0 + 0.5 * (transX1 - transX0);
 
-                g2.setStroke(getItemStroke(series, item));
-                g2.setPaint(getItemPaint(series, item));
+                    g2.setStroke(getItemStroke(series, item - 1));
+                    g2.setPaint(getItemPaint(series, item - 1));
 
-                if (transY0 != transY1) {
-                    drawLine(g2, state.workingLine, transXs, transY0, transXs,
+                    drawLine(g2, state.workingLine, transX0, transY0, transXs,
+                            transY0, dataArea);
+
+                    g2.setStroke(getItemStroke(series, item));
+                    g2.setPaint(getItemPaint(series, item));
+
+                    if (transY0 != transY1) {
+                        drawLine(g2, state.workingLine, transXs, transY0, transXs,
+                                transY1, dataArea);
+                    }
+                    drawLine(g2, state.workingLine, transXs, transY1, transX1,
                             transY1, dataArea);
                 }
-                drawLine(g2, state.workingLine, transXs, transY1, transX1,
-                        transY1, dataArea);
-            }
-        } else {
-            // simple line
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                state.workingLine.setLine(transY0, transX0, transY1, transX1);
             } else {
-                state.workingLine.setLine(transX0, transY0, transX1, transY1);
-            }
-
-            // clipping checks:
-            if (state.workingLine.intersects(dataArea)) {
                 drawFirstPassShape(g2, pass, series, item, state.workingLine);
 
                 // add an entity for the line, but only if it falls within the data area...
@@ -842,14 +827,14 @@ public class FastXYLineAndShapeRenderer extends AbstractXYItemRenderer
                 x = transY1;
                 y = transX1;
             }
-            if (s.isLastPointGood()) {
+            if (s.lastPointGood) {
                 s.seriesPath.lineTo(x, y);
             } else {
                 s.seriesPath.moveTo(x, y);
             }
-            s.setLastPointGood(true);
+            s.lastPointGood = true;
         } else {
-            s.setLastPointGood(false);
+            s.lastPointGood = false;
         }
         // if this is the last item, draw the path ...
         if (item == s.getLastItemIndex()) {

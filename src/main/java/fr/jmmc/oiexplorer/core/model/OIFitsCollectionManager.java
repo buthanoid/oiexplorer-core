@@ -17,6 +17,7 @@ import fr.jmmc.jmcs.util.jaxb.JAXBFactory;
 import fr.jmmc.jmcs.util.jaxb.JAXBUtils;
 import fr.jmmc.jmcs.util.jaxb.XmlBindException;
 import fr.jmmc.oiexplorer.core.gui.OIExplorerTaskRegistry;
+import fr.jmmc.oiexplorer.core.gui.PlotInfosData;
 import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
@@ -88,6 +89,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     private OIFitsCollection oiFitsCollection = null;
     /** data selection */
     private DataPointer selectedDataPointer = null;
+    /** plot Infos */
+    private PlotInfosData plotInfosData = null;
     /* event dispatchers */
     /** OIFitsCollectionManagerEventType event notifier map */
     private final EnumMap<OIFitsCollectionManagerEventType, EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object>> oiFitsCollectionManagerEventNotifierMap;
@@ -1512,6 +1515,30 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         return this.selectedDataPointer;
     }
 
+    /* --- plot infos handling --------- ---------------------------- */
+    /**
+     * Define the PlotInfos data
+     * @param source event source
+     * @param data PlotInfos data
+     * @return true if the selection changed
+     */
+    public boolean setPlotInfosData(final Object source, final PlotInfosData data) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("setPlotInfos: {}", data);
+        }
+        this.plotInfosData = data;
+
+        // Fire to all listeners:
+        firePlotViewportChanged(source, null);
+        return true;
+    }
+
+    public PlotInfosData getPlotInfosData() {
+        final PlotInfosData data = this.plotInfosData;
+        this.plotInfosData = null; // gc
+        return data;
+    }
+
     // --- EVENTS ----------------------------------------------------------------
     /**
      * Unbind the given listener to ANY event
@@ -1639,6 +1666,14 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     public EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object> getSelectionChangedEventNotifier() {
         return this.oiFitsCollectionManagerEventNotifierMap.get(OIFitsCollectionManagerEventType.SELECTION_CHANGED);
+    }
+
+    /**
+     * Return the PLOT_VIEWPORT_CHANGED event notifier
+     * @return PLOT_VIEWPORT_CHANGED event notifier
+     */
+    public EventNotifier<OIFitsCollectionManagerEvent, OIFitsCollectionManagerEventType, Object> getPlotViewportChangedEventNotifier() {
+        return this.oiFitsCollectionManagerEventNotifierMap.get(OIFitsCollectionManagerEventType.PLOT_VIEWPORT_CHANGED);
     }
 
     /**
@@ -1852,6 +1887,21 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             }
             getSelectionChangedEventNotifier().queueEvent((source != null) ? source : this,
                     new OIFitsCollectionManagerEvent(OIFitsCollectionManagerEventType.SELECTION_CHANGED, null), destination);
+        }
+    }
+
+    /**
+     * This fires a PLOT_VIEWPORT_CHANGED event to given registered listener ASYNCHRONOUSLY !
+     * @param source event source
+     * @param destination destination listener (null means all)
+     */
+    public void firePlotViewportChanged(final Object source, final OIFitsCollectionManagerEventListener destination) {
+        if (enableEvents) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("firePlotViewportChanged TO {}", (destination != null) ? destination : "ALL");
+            }
+            getPlotViewportChangedEventNotifier().queueEvent((source != null) ? source : this,
+                    new OIFitsCollectionManagerEvent(OIFitsCollectionManagerEventType.PLOT_VIEWPORT_CHANGED, null), destination);
         }
     }
 

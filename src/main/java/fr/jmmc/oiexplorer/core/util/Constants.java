@@ -17,8 +17,6 @@ public interface Constants {
     public final static float EPOCH_J2000 = 2000.f;
     /** micrometers to meter */
     public final static double MICRO_METER = 1e-6;
-    /** no value for combo boxes */
-    public static final String NONE = "None";
 
     /* time references */
     /** LST time reference */

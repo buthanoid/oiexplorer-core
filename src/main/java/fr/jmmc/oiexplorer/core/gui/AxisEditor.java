@@ -4,7 +4,9 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmal.AbsorptionLineRange;
+import fr.jmmc.jmcs.gui.component.Disposable;
 import fr.jmmc.jmcs.gui.component.GenericListModel;
+import fr.jmmc.jmcs.service.RecentValuesManager;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
@@ -12,12 +14,14 @@ import fr.jmmc.oiexplorer.core.model.plot.AxisRangeMode;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
 import fr.jmmc.oitools.OIFitsConstants;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
+import javax.swing.JPopupMenu;
 import javax.swing.text.NumberFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author mella
  */
-public class AxisEditor extends javax.swing.JPanel {
+public class AxisEditor extends javax.swing.JPanel implements Disposable {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1L;
@@ -47,6 +51,17 @@ public class AxisEditor extends javax.swing.JPanel {
     private final GenericListModel<String> rangeComboBoxModel;
     /** Flag notification of associated plotDefinitionEditor */
     private boolean notify = true;
+    /** Flag indicating a user input */
+    private boolean user_input = true;
+    // recent values keys for min/max:
+    private String keyMin = null;
+    private String keyMax = null;
+    // listener references (alive until this editor is dead or axis changes):
+    private ActionListener popupListenerMin = null;
+    private ActionListener popupListenerMax = null;
+    // popup menus in action (alive until this editor is dead or axis changes):
+    private JPopupMenu popupMenuMin = null;
+    private JPopupMenu popupMenuMax = null;
 
     /** 
      * Creates the new AxisEditor form.
@@ -97,6 +112,21 @@ public class AxisEditor extends javax.swing.JPanel {
         this(null);
     }
 
+    /**
+     * Free any ressource or reference to this instance :
+     */
+    @Override
+    public void dispose() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("AxisEditor[{}]: dispose", axisToEdit.getName());
+        }
+        reset();
+    }
+
+    public void reset() {
+        setAxis(null, null);
+    }
+
     /** 
      * Initialize widgets according to given axis 
      * 
@@ -106,24 +136,70 @@ public class AxisEditor extends javax.swing.JPanel {
     public void setAxis(final Axis axis, final List<String> axisChoices) {
         axisToEdit = axis;
         nameComboBoxModel.clear();
+
         if (axis == null) {
             // TODO push in a reset state
+            keyMin = keyMax = null;
+            // dispose popup menus:
+            jFieldMin.setComponentPopupMenu(null);
+            jFieldMax.setComponentPopupMenu(null);
+            popupListenerMin = popupListenerMax = null;
+            popupMenuMin = popupMenuMax = null;
             return;
         }
         try {
-            notify = false;
+            notify = user_input = false;
+            final String axisName = axis.getName();
+
             nameComboBoxModel.add(axisChoices);
-            nameComboBox.setSelectedItem(axis.getName());
+            nameComboBox.setSelectedItem(axisName);
 
             includeZeroCheckBox.setSelected(axis.isIncludeZero());
             logScaleCheckBox.setSelected(axis.isLogScale());
 
-            updateRangeEditor(axis.getRange(), axis.getRangeModeOrDefault());
+            // Add popup menus to min/max fields:
+            keyMin = axisName + ".min";
+            keyMax = axisName + ".max";
 
+            // create new listeners to release previous listeners / popup menus:
+            popupListenerMin = new FieldSetter(jFieldMin);
+            popupListenerMax = new FieldSetter(jFieldMax);
+
+            popupMenuMin = RecentValuesManager.getMenu(keyMin, popupListenerMin);
+            popupMenuMax = RecentValuesManager.getMenu(keyMax, popupListenerMax);
+
+            // enable or disable popup menus:
+            updateRangeEditor(axis.getRange(), axis.getRangeModeOrDefault(), true);
             updateRangeList();
+
         } finally {
-            notify = true;
+            notify = user_input = true;
         }
+    }
+
+    public boolean setAxisRange(final double min, final double max) {
+        logger.debug("setAxisRange: [{} - {}]", min, max);
+        
+        boolean changed = false;
+        try {
+            notify = user_input = false;
+
+            changed |= setFieldValue(jFieldMin, min);
+            changed |= setFieldValue(jFieldMax, max);
+        } finally {
+            notify = user_input = true;
+        }
+        return changed;
+    }
+
+    private boolean setFieldValue(final JFormattedTextField field, final double value) {
+        final Object newValue = Double.valueOf(value);
+        final Object prev = field.getValue();
+        if (ObjectUtils.areEquals(prev, newValue)) {
+            return false;
+        }
+        field.setValue(newValue);
+        return true;
     }
 
     private void updateRangeList() {
@@ -157,9 +233,15 @@ public class AxisEditor extends javax.swing.JPanel {
                     }
                 }
             }
-            jRadioModeFixed.doClick();
-            jFieldMin.setValue(isFinite(min) ? min : null);
-            jFieldMax.setValue(isFinite(max) ? max : null);
+            try {
+                user_input = false;
+
+                jFieldMin.setValue(isFinite(min) ? Double.valueOf(min) : null);
+                jFieldMax.setValue(isFinite(max) ? Double.valueOf(max) : null);
+                jRadioModeFixed.doClick();
+            } finally {
+                user_input = true;
+            }
         }
     }
 
@@ -168,12 +250,18 @@ public class AxisEditor extends javax.swing.JPanel {
     }
 
     private void updateRangeEditor(final Range range, final AxisRangeMode mode) {
-        if (range == null) {
-            jFieldMin.setValue(null);
-            jFieldMax.setValue(null);
-        } else {
-            jFieldMin.setValue(isFinite(range.getMin()) ? range.getMin() : null);
-            jFieldMax.setValue(isFinite(range.getMax()) ? range.getMax() : null);
+        updateRangeEditor(range, mode, false);
+    }
+
+    private void updateRangeEditor(final Range range, final AxisRangeMode mode, final boolean setRange) {
+        if (setRange) {
+            if (range == null) {
+                jFieldMin.setValue(null);
+                jFieldMax.setValue(null);
+            } else {
+                jFieldMin.setValue(isFinite(range.getMin()) ? Double.valueOf(range.getMin()) : null);
+                jFieldMax.setValue(isFinite(range.getMax()) ? Double.valueOf(range.getMax()) : null);
+            }
         }
         switch (mode) {
             case AUTO:
@@ -190,6 +278,10 @@ public class AxisEditor extends javax.swing.JPanel {
         final boolean enable = (mode == AxisRangeMode.RANGE);
         jFieldMin.setEnabled(enable);
         jFieldMax.setEnabled(enable);
+
+        // enable or disable popup menus:
+        enablePopupMenu(jFieldMin, popupMenuMin);
+        enablePopupMenu(jFieldMax, popupMenuMax);
     }
 
     private Range getFieldRange() {
@@ -210,16 +302,27 @@ public class AxisEditor extends javax.swing.JPanel {
         final boolean minFinite = isFinite(min);
         final boolean maxFinite = isFinite(max);
 
+        Range range = null;
+
         if ((minFinite != maxFinite)
                 || (minFinite && maxFinite && (min < max))) {
 
-            final Range range = new Range();
+            range = new Range();
             range.setMin(min);
             range.setMax(max);
-
-            return range;
         }
-        return null;
+
+        // Do not store values set programmatically:
+        if (user_input && jRadioModeFixed.isSelected()) {
+            // Update recent values:
+            if (keyMin != null) {
+                RecentValuesManager.addValue(keyMin, (minFinite) ? Double.toString(min) : null);
+            }
+            if (keyMax != null) {
+                RecentValuesManager.addValue(keyMax, (maxFinite) ? Double.toString(max) : null);
+            }
+        }
+        return range;
     }
 
     /** 
@@ -369,6 +472,10 @@ public class AxisEditor extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void actionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_actionPerformed
+        if (axisToEdit == null) {
+            // disposed:
+            return;
+        }
         boolean forceRefreshPlotDefNames = false;
 
         if (evt.getSource() == includeZeroCheckBox) {
@@ -397,18 +504,28 @@ public class AxisEditor extends javax.swing.JPanel {
             updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
         } else if (evt.getSource() == jRadioModeFixed) {
             axisToEdit.setRangeMode(AxisRangeMode.RANGE);
+            // hack to initialize range from plot values:
+            final Range r = getFieldRange();
+            axisToEdit.setRange(r);
+
             updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
         } else if (evt.getSource() == jFieldMin) {
-            final Range r = getFieldRange();
-            axisToEdit.setRange(r);
-            if (r == null) {
-                jFieldMin.requestFocus();
+            // only update edited axis when the mode is RANGE ie Enabled:
+            if (jFieldMin.isEnabled()) {
+                final Range r = getFieldRange();
+                axisToEdit.setRange(r);
+                if (r == null) {
+                    jFieldMin.requestFocus();
+                }
             }
         } else if (evt.getSource() == jFieldMax) {
-            final Range r = getFieldRange();
-            axisToEdit.setRange(r);
-            if (r == null) {
-                jFieldMax.requestFocus();
+            // only update edited axis when the mode is RANGE ie Enabled:
+            if (jFieldMax.isEnabled()) {
+                final Range r = getFieldRange();
+                axisToEdit.setRange(r);
+                if (r == null) {
+                    jFieldMax.requestFocus();
+                }
             }
         } else if (evt.getSource() == rangeListComboBox) {
             handleRangeListSelection();
@@ -466,5 +583,30 @@ public class AxisEditor extends javax.swing.JPanel {
 
     private static boolean isFinite(final double value) {
         return !(Double.isNaN(value) && !Double.isInfinite(value));
+    }
+
+    private static final class FieldSetter implements ActionListener {
+
+        private final JFormattedTextField textField;
+
+        FieldSetter(final JFormattedTextField textField) {
+            this.textField = textField;
+        }
+
+        @Override
+        public void actionPerformed(final ActionEvent ae) {
+            final String value = ae.getActionCommand();
+            textField.setValue((value != null) ? Double.valueOf(value) : null);
+        }
+    }
+
+    private static void enablePopupMenu(final JComponent component, final JPopupMenu popupMenu) {
+        JPopupMenu enabledPopupMenu = null;
+        if (popupMenu != null) {
+            if (component.isEnabled() && popupMenu.getComponentCount() != 0) {
+                enabledPopupMenu = popupMenu;
+            }
+        }
+        component.setComponentPopupMenu(enabledPopupMenu);
     }
 }
