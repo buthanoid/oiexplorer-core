@@ -248,21 +248,25 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
                     AxisInfo axisInfo = plotInfos[0].xAxisInfo;
 
-                    // TODO: check axis name ?
-                    changed |= xAxisEditor.setAxisRange(axisInfo.plotRange.getLowerBound(), axisInfo.plotRange.getUpperBound());
+                    // check axis name to be sure
+                    if (axisInfo.getColumnMeta().getName().equals(xAxisEditor.getAxis().getName())) {
+                        changed |= xAxisEditor.setAxisRange(axisInfo.plotRange.getLowerBound(), axisInfo.plotRange.getUpperBound());
+                    }
 
-                    // TODO: merge plotInfos with yAxis (in-order):
-                    int i = 0;
-                    for (AxisEditor editor : yAxisEditors.values()) {
-                        axisInfo = plotInfos[i].yAxisInfo;
+                    // Merge plotInfos with yAxis (in-order):
+                    final AxisEditor[] yAxisEditorArray = yAxisEditors.values().toArray(new AxisEditor[yAxisEditors.size()]);
 
-                        if (editor.getAxis().getName().equals(axisInfo.getColumnMeta().getName())) {
+                    // plotInfos may be smaller than yAxisEditors (no data)
+                    for (int idxEditor = 0, idxPlot = 0; idxEditor < yAxisEditorArray.length; idxEditor++) {
+                        final AxisEditor editor = yAxisEditorArray[idxEditor];
+                        axisInfo = plotInfos[idxPlot].yAxisInfo;
+
+                        if (axisInfo.getColumnMeta().getName().equals(editor.getAxis().getName())) {
                             changed |= editor.setAxisRange(axisInfo.plotRange.getLowerBound(), axisInfo.plotRange.getUpperBound());
-                        } else {
-                            logger.warn("TODO: bad match");
-                        }
-                        if (++i >= plotInfos.length) {
-                            break;
+
+                            if (++idxPlot == plotInfos.length) {
+                                break;
+                            }
                         }
                     }
                 } finally {
