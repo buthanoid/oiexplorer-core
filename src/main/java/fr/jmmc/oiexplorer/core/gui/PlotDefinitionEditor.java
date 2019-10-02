@@ -11,6 +11,7 @@ import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType;
 import fr.jmmc.oiexplorer.core.model.PlotDefinitionFactory;
 import fr.jmmc.oiexplorer.core.model.plot.Axis;
+import fr.jmmc.oiexplorer.core.model.plot.AxisRangeMode;
 import fr.jmmc.oiexplorer.core.model.plot.ColorMapping;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.util.ColorMappingListCellRenderer;
@@ -224,6 +225,14 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 checkYAxisActionButtons();
 
                 refreshPlotDefinitionNames(plotDef);
+                
+                // TODO: adjust view mode:
+/*
+        this.jToggleButtonAuto.setSelected(true);
+        this.jToggleButtonDefault.setSelected(false);
+        this.jToggleButtonFixed.setSelected(false);
+*/                
+                
             } finally {
                 notify = true;
             }
@@ -358,6 +367,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
+        refreshButton = new javax.swing.JButton();
+        jToggleButtonAuto = new javax.swing.JToggleButton();
+        jToggleButtonDefault = new javax.swing.JToggleButton();
+        jToggleButtonFixed = new javax.swing.JToggleButton();
         plotDefLabel = new javax.swing.JLabel();
         plotDefinitionComboBox = new javax.swing.JComboBox();
         colorMappingLabel = new javax.swing.JLabel();
@@ -373,20 +386,73 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         delYAxisButton = new javax.swing.JButton();
         xAxisPanel = new javax.swing.JPanel();
         yAxesPanel = new javax.swing.JPanel();
-        refreshButton = new javax.swing.JButton();
         jPanelOtherEditors = new javax.swing.JPanel();
         jToggleButtonExprEditor = new javax.swing.JToggleButton();
 
         setLayout(new java.awt.GridBagLayout());
 
-        plotDefLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-        plotDefLabel.setText("Show");
+        refreshButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/fr/jmmc/jmcs/resource/image/refresh.png"))); // NOI18N
+        refreshButton.setToolTipText("refresh zoom / remove plot selection");
+        refreshButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        refreshButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                refreshButtonActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 4);
+        add(refreshButton, gridBagConstraints);
+
+        jToggleButtonAuto.setText("A");
+        jToggleButtonAuto.setToolTipText("Auto: automatically adjust the viewport to see all data");
+        jToggleButtonAuto.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        jToggleButtonAuto.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButtonAutoActionPerformed(evt);
+            }
+        });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
+        add(jToggleButtonAuto, gridBagConstraints);
+
+        jToggleButtonDefault.setText("D");
+        jToggleButtonDefault.setToolTipText("Default: adjust the viewport to use default data ranges");
+        jToggleButtonDefault.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        jToggleButtonDefault.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButtonDefaultActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        add(jToggleButtonDefault, gridBagConstraints);
+
+        jToggleButtonFixed.setText("F");
+        jToggleButtonFixed.setToolTipText("Fixed: set the viewport according to fixed ranges");
+        jToggleButtonFixed.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        jToggleButtonFixed.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButtonFixedActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
+        add(jToggleButtonFixed, gridBagConstraints);
+
+        plotDefLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        plotDefLabel.setText("Show");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
-        gridBagConstraints.insets = new java.awt.Insets(0, 6, 0, 3);
+        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 2);
         add(plotDefLabel, gridBagConstraints);
 
         plotDefinitionComboBox.setPrototypeDisplayValue("01234567890123456789");
@@ -396,7 +462,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridx = 5;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
@@ -406,11 +472,11 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         colorMappingLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         colorMappingLabel.setText("Color by");
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridx = 6;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
-        gridBagConstraints.insets = new java.awt.Insets(0, 8, 0, 4);
+        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 2);
         add(colorMappingLabel, gridBagConstraints);
 
         colorMappingComboBox.setPrototypeDisplayValue("0123456789");
@@ -420,7 +486,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridx = 7;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
@@ -431,14 +497,15 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridwidth = 2;
         add(plotDefinitionName, gridBagConstraints);
 
-        flaggedDataCheckBox.setText("Skip flagged data");
+        flaggedDataCheckBox.setText("Skip Flagged");
+        flaggedDataCheckBox.setToolTipText("skip flagged data (FLAG=T means the data is invalid)");
         flaggedDataCheckBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 flaggedDataCheckBoxActionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridx = 8;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         add(flaggedDataCheckBox, gridBagConstraints);
@@ -451,7 +518,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 7;
+        gridBagConstraints.gridx = 10;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
@@ -465,7 +532,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridx = 9;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         add(drawLinesCheckBox, gridBagConstraints);
@@ -539,31 +606,16 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = 9;
+        gridBagConstraints.gridwidth = 12;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 0, 0);
         add(extendedPanel, gridBagConstraints);
-
-        refreshButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/fr/jmmc/jmcs/resource/image/refresh.png"))); // NOI18N
-        refreshButton.setToolTipText("refresh zoom / remove plot selection");
-        refreshButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
-        refreshButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                refreshButtonActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
-        add(refreshButton, gridBagConstraints);
 
         jPanelOtherEditors.setLayout(new java.awt.BorderLayout());
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.gridwidth = 9;
+        gridBagConstraints.gridwidth = 12;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         add(jPanelOtherEditors, gridBagConstraints);
 
@@ -575,7 +627,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 8;
+        gridBagConstraints.gridx = 11;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 0);
         add(jToggleButtonExprEditor, gridBagConstraints);
@@ -680,6 +732,36 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         }
     }//GEN-LAST:event_jToggleButtonExprEditorActionPerformed
 
+    private void jToggleButtonAutoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButtonAutoActionPerformed
+        this.jToggleButtonAuto.setSelected(true);
+        this.jToggleButtonDefault.setSelected(false);
+        this.jToggleButtonFixed.setSelected(false);
+        updateAxesRangeMode(AxisRangeMode.AUTO);
+    }//GEN-LAST:event_jToggleButtonAutoActionPerformed
+
+    private void jToggleButtonDefaultActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButtonDefaultActionPerformed
+        this.jToggleButtonAuto.setSelected(false);
+        this.jToggleButtonDefault.setSelected(true);
+        this.jToggleButtonFixed.setSelected(false);
+        updateAxesRangeMode(AxisRangeMode.DEFAULT);
+    }//GEN-LAST:event_jToggleButtonDefaultActionPerformed
+
+    private void jToggleButtonFixedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButtonFixedActionPerformed
+        this.jToggleButtonAuto.setSelected(false);
+        this.jToggleButtonDefault.setSelected(false);
+        this.jToggleButtonFixed.setSelected(true);
+        updateAxesRangeMode(AxisRangeMode.RANGE);
+    }//GEN-LAST:event_jToggleButtonFixedActionPerformed
+
+    private void updateAxesRangeMode(final AxisRangeMode mode) {
+        xAxisEditor.updateRangeMode(mode);
+
+        for (AxisEditor editor : yAxisEditors.values()) {
+            editor.updateRangeMode(mode);
+        }
+        updateModel();
+    }
+
     /**
      * Return colorMapping Value stored by associated combobox.
      * @return the colorMapping Value stored by associated combobox.
@@ -780,7 +862,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private javax.swing.JPanel extendedPanel;
     private javax.swing.JCheckBox flaggedDataCheckBox;
     private javax.swing.JPanel jPanelOtherEditors;
+    private javax.swing.JToggleButton jToggleButtonAuto;
+    private javax.swing.JToggleButton jToggleButtonDefault;
     private javax.swing.JToggleButton jToggleButtonExprEditor;
+    private javax.swing.JToggleButton jToggleButtonFixed;
     private javax.swing.JLabel plotDefLabel;
     private javax.swing.JComboBox plotDefinitionComboBox;
     private javax.swing.JLabel plotDefinitionName;

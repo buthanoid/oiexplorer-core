@@ -179,7 +179,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
 
     public boolean setAxisRange(final double min, final double max) {
         logger.debug("setAxisRange: [{} - {}]", min, max);
-        
+
         boolean changed = false;
         try {
             notify = user_input = false;
@@ -247,6 +247,17 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
 
     private boolean isWavelengthAxis() {
         return (OIFitsConstants.COLUMN_EFF_WAVE.equalsIgnoreCase((String) nameComboBox.getSelectedItem()));
+    }
+
+    public void updateRangeMode(final AxisRangeMode mode) {
+        axisToEdit.setRangeMode(mode);
+
+        if (mode == AxisRangeMode.RANGE) {
+            // hack to initialize range from plot values:
+            final Range r = getFieldRange();
+            axisToEdit.setRange(r);
+        }
+        updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
     }
 
     private void updateRangeEditor(final Range range, final AxisRangeMode mode) {
@@ -497,18 +508,11 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
                 updateRangeList();
             }
         } else if (evt.getSource() == jRadioModeAuto) {
-            axisToEdit.setRangeMode(AxisRangeMode.AUTO);
-            updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
+            updateRangeMode(AxisRangeMode.AUTO);
         } else if (evt.getSource() == jRadioModeDefault) {
-            axisToEdit.setRangeMode(AxisRangeMode.DEFAULT);
-            updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
+            updateRangeMode(AxisRangeMode.DEFAULT);
         } else if (evt.getSource() == jRadioModeFixed) {
-            axisToEdit.setRangeMode(AxisRangeMode.RANGE);
-            // hack to initialize range from plot values:
-            final Range r = getFieldRange();
-            axisToEdit.setRange(r);
-
-            updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
+            updateRangeMode(AxisRangeMode.RANGE);
         } else if (evt.getSource() == jFieldMin) {
             // only update edited axis when the mode is RANGE ie Enabled:
             if (jFieldMin.isEnabled()) {
