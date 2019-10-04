@@ -4,6 +4,7 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.GenericListModel;
+import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEvent;
@@ -17,6 +18,7 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.util.ColorMappingListCellRenderer;
 import fr.jmmc.oitools.model.OIFitsFile;
 import java.awt.BorderLayout;
+import java.awt.Font;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -135,6 +137,12 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         } else {
             jToggleButtonExprEditor.setVisible(false);
         }
+
+        // Adjust fonts:
+        final Font fixedFont = new Font(Font.MONOSPACED, Font.PLAIN, SwingUtils.adjustUISize(12));
+        this.jToggleButtonAuto.setFont(fixedFont);
+        this.jToggleButtonDefault.setFont(fixedFont);
+        this.jToggleButtonFixed.setFont(fixedFont);
     }
 
     private void resetForm() {
@@ -225,18 +233,34 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 checkYAxisActionButtons();
 
                 refreshPlotDefinitionNames(plotDef);
-                
-                // TODO: adjust view mode:
-/*
-        this.jToggleButtonAuto.setSelected(true);
-        this.jToggleButtonDefault.setSelected(false);
-        this.jToggleButtonFixed.setSelected(false);
-*/                
-                
+
+                refreshRangeModeButtons();
             } finally {
                 notify = true;
             }
         }
+    }
+
+    private void refreshRangeModeButtons() {
+        AxisRangeMode mode = null;
+        final int nAllAxes = 1 + yAxisEditors.size();
+
+        if (countAxisEditors(AxisRangeMode.AUTO) == nAllAxes) {
+            mode = AxisRangeMode.AUTO;
+        } else if (countAxisEditors(AxisRangeMode.DEFAULT) == nAllAxes) {
+            mode = AxisRangeMode.DEFAULT;
+        } else if (countAxisEditors(AxisRangeMode.RANGE) == nAllAxes) {
+            mode = AxisRangeMode.RANGE;
+        }
+        logger.info("refreshForm: mode: {}", mode);
+
+        updateRangeModeButtons(mode);
+    }
+
+    private void updateRangeModeButtons(final AxisRangeMode mode) {
+        this.jToggleButtonAuto.setSelected(mode == AxisRangeMode.AUTO);
+        this.jToggleButtonDefault.setSelected(mode == AxisRangeMode.DEFAULT);
+        this.jToggleButtonFixed.setSelected(mode == AxisRangeMode.RANGE);
     }
 
     /**
@@ -402,7 +426,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 4);
         add(refreshButton, gridBagConstraints);
 
@@ -417,6 +440,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         add(jToggleButtonAuto, gridBagConstraints);
 
         jToggleButtonDefault.setText("D");
@@ -430,6 +454,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         add(jToggleButtonDefault, gridBagConstraints);
 
         jToggleButtonFixed.setText("F");
@@ -443,6 +468,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         add(jToggleButtonFixed, gridBagConstraints);
 
         plotDefLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
@@ -543,6 +569,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         extendedPanel.add(yLabel, gridBagConstraints);
@@ -551,7 +578,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_END;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         extendedPanel.add(xLabel, gridBagConstraints);
@@ -564,11 +591,11 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_END;
-        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 0);
         extendedPanel.add(addYAxisButton, gridBagConstraints);
 
         delYAxisButton.setText("-");
@@ -583,7 +610,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_END;
-        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 0);
         extendedPanel.add(delYAxisButton, gridBagConstraints);
 
         xAxisPanel.setLayout(new java.awt.BorderLayout());
@@ -619,7 +646,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         add(jPanelOtherEditors, gridBagConstraints);
 
-        jToggleButtonExprEditor.setText("expr editor");
+        jToggleButtonExprEditor.setText("Expr editor");
         jToggleButtonExprEditor.setMargin(new java.awt.Insets(0, 0, 0, 0));
         jToggleButtonExprEditor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -629,12 +656,21 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 11;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 0);
         add(jToggleButtonExprEditor, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void addYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addYAxisButtonActionPerformed
         final Axis axis = new Axis();
+
+        if (this.jToggleButtonAuto.isSelected()) {
+            axis.setRangeMode(AxisRangeMode.AUTO);
+        } else if (this.jToggleButtonDefault.isSelected()) {
+            axis.setRangeMode(AxisRangeMode.DEFAULT);
+        } else if (this.jToggleButtonFixed.isSelected()) {
+            axis.setRangeMode(AxisRangeMode.RANGE);
+        }
 
         // Add to PlotDefinition
         addYEditor(axis);
@@ -733,33 +769,39 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }//GEN-LAST:event_jToggleButtonExprEditorActionPerformed
 
     private void jToggleButtonAutoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButtonAutoActionPerformed
-        this.jToggleButtonAuto.setSelected(true);
-        this.jToggleButtonDefault.setSelected(false);
-        this.jToggleButtonFixed.setSelected(false);
         updateAxesRangeMode(AxisRangeMode.AUTO);
     }//GEN-LAST:event_jToggleButtonAutoActionPerformed
 
     private void jToggleButtonDefaultActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButtonDefaultActionPerformed
-        this.jToggleButtonAuto.setSelected(false);
-        this.jToggleButtonDefault.setSelected(true);
-        this.jToggleButtonFixed.setSelected(false);
         updateAxesRangeMode(AxisRangeMode.DEFAULT);
     }//GEN-LAST:event_jToggleButtonDefaultActionPerformed
 
     private void jToggleButtonFixedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButtonFixedActionPerformed
-        this.jToggleButtonAuto.setSelected(false);
-        this.jToggleButtonDefault.setSelected(false);
-        this.jToggleButtonFixed.setSelected(true);
         updateAxesRangeMode(AxisRangeMode.RANGE);
     }//GEN-LAST:event_jToggleButtonFixedActionPerformed
 
     private void updateAxesRangeMode(final AxisRangeMode mode) {
+        updateRangeModeButtons(mode);
+
         xAxisEditor.updateRangeMode(mode);
 
         for (AxisEditor editor : yAxisEditors.values()) {
             editor.updateRangeMode(mode);
         }
         updateModel();
+    }
+
+    private int countAxisEditors(final AxisRangeMode mode) {
+        int count = 0;
+        if (xAxisEditor.getAxis().getRangeMode() == mode) {
+            count++;
+        }
+        for (AxisEditor editor : yAxisEditors.values()) {
+            if (editor.getAxis().getRangeMode() == mode) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**
@@ -775,7 +817,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      * @param yAxis axis to be edited by new yAxisEditor
      */
     private void addYEditor(final Axis yAxis) {
-
         // Link new Editor and Axis
         final AxisEditor yAxisEditor = new AxisEditor(this);
         yAxisEditor.setAxis(yAxis, axisChoices);
@@ -846,6 +887,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 if (forceRefreshPlotDefNames) {
                     refreshPlotDefinitionNames(plotDefCopy);
                 }
+                refreshRangeModeButtons();
             }
 
         } else {
