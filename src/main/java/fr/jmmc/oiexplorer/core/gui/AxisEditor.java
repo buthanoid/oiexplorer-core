@@ -6,6 +6,7 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmal.AbsorptionLineRange;
 import fr.jmmc.jmcs.gui.component.Disposable;
 import fr.jmmc.jmcs.gui.component.GenericListModel;
+import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.jmcs.service.RecentValuesManager;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
@@ -13,6 +14,7 @@ import fr.jmmc.oiexplorer.core.model.plot.Axis;
 import fr.jmmc.oiexplorer.core.model.plot.AxisRangeMode;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
 import fr.jmmc.oitools.OIFitsConstants;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.DecimalFormat;
@@ -70,6 +72,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
      */
     public AxisEditor(final PlotDefinitionEditor parent) {
         initComponents();
+        
         parentToNotify = parent;
         nameComboBoxModel = new GenericListModel<String>(new ArrayList<String>(25), true);
         nameComboBox.setModel(nameComboBoxModel);
@@ -102,6 +105,10 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
                 }
             }
         });
+        
+        // Adjust fonts:
+        final Font fixedFont = new Font(Font.MONOSPACED, Font.PLAIN, SwingUtils.adjustUISize(12));
+        this.nameComboBox.setFont(fixedFont);
     }
 
     /** 
@@ -138,7 +145,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
         nameComboBoxModel.clear();
 
         if (axis == null) {
-            // TODO push in a reset state
+            // reset state
             keyMin = keyMax = null;
             // dispose popup menus:
             jFieldMin.setComponentPopupMenu(null);
