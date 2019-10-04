@@ -252,8 +252,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         } else if (countAxisEditors(AxisRangeMode.RANGE) == nAllAxes) {
             mode = AxisRangeMode.RANGE;
         }
-        logger.info("refreshForm: mode: {}", mode);
-
         updateRangeModeButtons(mode);
     }
 
