@@ -597,6 +597,11 @@
             <name>T3PHIERR</name>
             <logScale>false</logScale>
             <includeZero>true</includeZero>
+            <rangeMode>Range</rangeMode>
+            <range>
+                <min>0.0</min>
+                <max>20.0</max>
+            </range>
         </yAxes>
 
     </plotDefinition>

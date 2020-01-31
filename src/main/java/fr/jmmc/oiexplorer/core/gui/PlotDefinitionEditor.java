@@ -344,9 +344,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         }
 
         for (PlotDefinition plotDefPreset : PlotDefinitionFactory.getInstance().getDefaults()) {
-            sb.setLength(0);
-            sb.append(plotDefPreset.getName());
-            plotDefNames.add(sb.toString());
+            plotDefNames.add(plotDefPreset.getName());
         }
 
         plotDefinitionComboBox.setModel(new GenericListModel<String>(new ArrayList<String>(plotDefNames), true));
@@ -479,6 +477,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 2);
         add(plotDefLabel, gridBagConstraints);
 
+        plotDefinitionComboBox.setName("plotDefinitionComboBox"); // NOI18N
         plotDefinitionComboBox.setPrototypeDisplayValue("01234567890123456789");
         plotDefinitionComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
