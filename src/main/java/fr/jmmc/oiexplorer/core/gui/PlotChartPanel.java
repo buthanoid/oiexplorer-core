@@ -46,8 +46,8 @@ import static fr.jmmc.oiexplorer.core.model.plot.ColorMapping.OBSERVATION_DATE;
 import static fr.jmmc.oiexplorer.core.model.plot.ColorMapping.STATION_INDEX;
 import static fr.jmmc.oiexplorer.core.model.plot.ColorMapping.WAVELENGTH_RANGE;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
-import fr.jmmc.oitools.util.StationNamesComparator;
 import fr.jmmc.oiexplorer.core.util.Constants;
+import fr.jmmc.oiexplorer.core.util.OIDataListHelper;
 import fr.jmmc.oitools.OIFitsConstants;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.DataRange;
@@ -73,7 +73,6 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -455,7 +454,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         if (isHasData()) {
             final Set<String> distinct = new LinkedHashSet<String>();
 
-            final StringBuilder sb = new StringBuilder(32);
+            final StringBuilder sb = new StringBuilder(128);
             AxisInfo axisInfo;
 
             // add Y axes:
@@ -464,7 +463,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 distinct.add((axisInfo.useLog) ? "log_" + axisInfo.columnMeta.getName() : axisInfo.columnMeta.getName());
             }
             if (!distinct.isEmpty()) {
-                toString(distinct, sb, "_", "_");
+                OIDataListHelper.toString(distinct, sb, "_", "_");
             }
 
             sb.append("_vs_");
@@ -476,43 +475,26 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             // Add target name:
             final String altName = StringUtils.replaceNonAlphaNumericCharsByUnderscore(getFilterTargetUID());
-
             sb.append(altName).append('_');
 
             // Add distinct arrNames:
-            final GetOIDataString arrNameOperator = new GetOIDataString() {
-                @Override
-                public String getString(final OIData oiData) {
-                    return oiData.getArrName();
-                }
-            };
-
             distinct.clear();
             for (PlotInfo info : getPlotInfos()) {
-                getDistinct(info.oidataList, distinct, arrNameOperator);
+                OIDataListHelper.getDistinct(info.oidataList, distinct, OIDataListHelper.GET_ARR_NAME);
             }
             if (!distinct.isEmpty()) {
-                toString(distinct, sb, "_", "_", 3, "MULTI_ARRNAME");
+                OIDataListHelper.toString(distinct, sb, "_", "_", 3, "MULTI_ARRNAME");
             }
-
             sb.append('_');
 
             // Add unique insNames:
-            final GetOIDataString insNameOperator = new GetOIDataString() {
-                @Override
-                public String getString(final OIData oiData) {
-                    return oiData.getInsName();
-                }
-            };
-
             distinct.clear();
             for (PlotInfo info : getPlotInfos()) {
-                getDistinct(info.oidataList, distinct, insNameOperator);
+                OIDataListHelper.getDistinct(info.oidataList, distinct, OIDataListHelper.GET_INS_NAME);
             }
             if (!distinct.isEmpty()) {
-                toString(distinct, sb, "_", "_", 3, "MULTI_INSNAME");
+                OIDataListHelper.toString(distinct, sb, "_", "_", 3, "MULTI_INSNAME");
             }
-
             sb.append('_');
 
             // Add unique configurations (FILTERED):
@@ -521,27 +503,18 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 distinct.addAll(info.usedStaConfNames);
             }
             if (!distinct.isEmpty()) {
-                toString(distinct, sb, "-", "_", 3, "MULTI_CONF");
+                OIDataListHelper.toString(distinct, sb, "-", "_", 3, "MULTI_CONF");
             }
-
             sb.append('_');
 
             // Add unique dateObs:
-            final GetOIDataString dateObsOperator = new GetOIDataString() {
-                @Override
-                public String getString(final OIData oiData) {
-                    return oiData.getDateObs();
-                }
-            };
-
             distinct.clear();
             for (PlotInfo info : getPlotInfos()) {
-                getDistinct(info.oidataList, distinct, dateObsOperator);
+                OIDataListHelper.getDistinct(info.oidataList, distinct, OIDataListHelper.GET_DATE_OBS);
             }
             if (!distinct.isEmpty()) {
-                toString(distinct, sb, "_", "_", 3, "MULTI_DATE");
+                OIDataListHelper.toString(distinct, sb, "_", "_", 3, "MULTI_DATE");
             }
-
             sb.append('.').append(fileExtension);
 
             return sb.toString();
@@ -1355,37 +1328,23 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 final StringBuilder sb = new StringBuilder(32);
 
                 // Add distinct arrNames:
-                final GetOIDataString arrNameOperator = new GetOIDataString() {
-                    @Override
-                    public String getString(final OIData oiData) {
-                        return oiData.getArrName();
-                    }
-                };
-
                 distinct.clear();
                 for (PlotInfo info : getPlotInfos()) {
-                    getDistinct(info.oidataList, distinct, arrNameOperator);
+                    OIDataListHelper.getDistinct(info.oidataList, distinct, OIDataListHelper.GET_ARR_NAME);
                 }
                 if (!distinct.isEmpty()) {
-                    toString(distinct, sb, " ", " / ", 3, "MULTI ARRAY");
+                    OIDataListHelper.toString(distinct, sb, " ", " / ", 3, "MULTI ARRAY");
                 }
 
                 sb.append(" - ");
 
                 // Add unique insNames:
-                final GetOIDataString insNameOperator = new GetOIDataString() {
-                    @Override
-                    public String getString(final OIData oiData) {
-                        return oiData.getInsName();
-                    }
-                };
-
                 distinct.clear();
                 for (PlotInfo info : getPlotInfos()) {
-                    getDistinct(info.oidataList, distinct, insNameOperator);
+                    OIDataListHelper.getDistinct(info.oidataList, distinct, OIDataListHelper.GET_INS_NAME);
                 }
                 if (!distinct.isEmpty()) {
-                    toString(distinct, sb, " ", " / ", 3, "MULTI INSTRUMENT");
+                    OIDataListHelper.toString(distinct, sb, " ", " / ", 3, "MULTI INSTRUMENT");
                 }
 
                 sb.append(' ');
@@ -1393,10 +1352,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 // Add wavelength ranges:
                 distinct.clear();
                 for (PlotInfo info : getPlotInfos()) {
-                    getDistinctWaveLengthRange(info.oidataList, distinct);
+                    OIDataListHelper.getDistinctWaveLengthRange(info.oidataList, distinct);
                 }
                 if (!distinct.isEmpty()) {
-                    toString(distinct, sb, " ", " / ", 3, "MULTI WAVELENGTH RANGE");
+                    OIDataListHelper.toString(distinct, sb, " ", " / ", 3, "MULTI WAVELENGTH RANGE");
                 }
 
                 sb.append(" - ");
@@ -1407,7 +1366,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     distinct.addAll(info.usedStaConfNames);
                 }
                 if (!distinct.isEmpty()) {
-                    toString(distinct, sb, " ", " / ", 3, "MULTI CONFIGURATION");
+                    OIDataListHelper.toString(distinct, sb, " ", " / ", 3, "MULTI CONFIGURATION");
                 }
 
                 ChartUtils.addSubtitle(this.chart, sb.toString());
@@ -1417,18 +1376,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 sb.append("Day: ");
 
                 // Add unique dateObs:
-                final GetOIDataString dateObsOperator = new GetOIDataString() {
-                    @Override
-                    public String getString(final OIData oiData) {
-                        return oiData.getDateObs();
-                    }
-                };
                 distinct.clear();
                 for (PlotInfo info : getPlotInfos()) {
-                    getDistinct(info.oidataList, distinct, dateObsOperator);
+                    OIDataListHelper.getDistinct(info.oidataList, distinct, OIDataListHelper.GET_DATE_OBS);
                 }
                 if (!distinct.isEmpty()) {
-                    toString(distinct, sb, " ", " / ", 3, "MULTI DATE");
+                    OIDataListHelper.toString(distinct, sb, " ", " / ", 3, "MULTI DATE");
                 }
 
                 sb.append(" - Source: ").append(getFilterTargetUID());
@@ -1508,12 +1461,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         oixpAttrs.reset();
 
         // Get distinct station indexes from OIFits subset (not filtered):
-        final List<String> distinctStaIndexNames = getDistinctStaNames(oiDataList);
+        final List<String> distinctStaIndexNames = OIDataListHelper.getDistinctStaNames(oiDataList);
 
         // Get distinct station configuration from OIFits subset (not filtered):
-        final List<String> distinctStaConfNames = getDistinctStaConfs(oiDataList);
+        final List<String> distinctStaConfNames = OIDataListHelper.getDistinctStaConfs(oiDataList);
 
-        final Range waveLengthRange = getWaveLengthRange(oiDataList);
+        final Range waveLengthRange = OIDataListHelper.getWaveLengthRange(oiDataList);
 
         logger.debug("distinctStaIndexNames: {}", distinctStaIndexNames);
         logger.debug("distinctStaConfNames: {}", distinctStaConfNames);
@@ -3046,172 +2999,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     public boolean isHasData() {
         return !getPlotInfos().isEmpty();
-    }
-
-
-    /* --- OIFits helper : TODO move elsewhere --- */
-    /**
-     * Return the unique String values from given operator applied on given OIData tables
-     * @param oiDataList OIData tables
-     * @param set set instance to use
-     * @param operator operator to get String values
-     * @return unique String values
-     */
-    private static Set<String> getDistinct(final List<OIData> oiDataList, final Set<String> set, final GetOIDataString operator) {
-        String value;
-        for (OIData oiData : oiDataList) {
-            value = operator.getString(oiData);
-            if (value != null) {
-                logger.debug("getDistinct: {}", value);
-
-                int pos = value.indexOf('_');
-
-                if (pos != -1) {
-                    value = value.substring(0, pos);
-                }
-
-                set.add(value);
-            }
-        }
-        return set;
-    }
-
-    /**
-     * Return the unique staNames values (sorted by name) from given OIData tables
-     * @param oiDataList OIData tables
-     * @return given set instance
-     */
-    private static List<String> getDistinctStaNames(final List<OIData> oiDataList) {
-        Set<String> set = new HashSet<String>(32);
-
-        String staNames;
-        for (OIData oiData : oiDataList) {
-            for (short[] staIndexes : oiData.getDistinctStaIndex()) {
-                staNames = oiData.getStaNames(staIndexes);
-                set.add(staNames);
-            }
-        }
-        // Sort by name (consistent naming & colors):
-        final List<String> sortedList = new ArrayList<String>(set);
-        Collections.sort(sortedList, StationNamesComparator.INSTANCE);
-
-        logger.debug("getDistinctStaNames : {}", sortedList);
-        return sortedList;
-    }
-
-    /**
-     * Return the unique staConfs values from given OIData tables
-     * @param oiDataList OIData tables
-     * @return given set instance
-     */
-    private static List<String> getDistinctStaConfs(final List<OIData> oiDataList) {
-        Set<String> set = new HashSet<String>(32);
-
-        String staNames;
-        for (OIData oiData : oiDataList) {
-            for (short[] staConf : oiData.getDistinctStaConf()) {
-                staNames = oiData.getStaNames(staConf);
-                set.add(staNames);
-            }
-        }
-        // Sort by name (consistent naming & colors):
-        final List<String> sortedList = new ArrayList<String>(set);
-        Collections.sort(sortedList, StationNamesComparator.INSTANCE);
-
-        logger.debug("getDistinctStaConfs : {}", sortedList);
-        return sortedList;
-    }
-
-    /**
-     * Return the unique wave length ranges from given OIData tables
-     * @param oiDataList OIData tables
-     * @param set set instance to use
-     */
-    private static void getDistinctWaveLengthRange(final List<OIData> oiDataList, final Set<String> set) {
-        final StringBuilder sb = new StringBuilder(20);
-
-        String wlenRange;
-        float[] effWaveRange;
-        for (OIData oiData : oiDataList) {
-            effWaveRange = oiData.getEffWaveRange();
-
-            if (effWaveRange != null) {
-                sb.append('[').append(df4.format(ConverterFactory.CONVERTER_MICRO_METER.evaluate(effWaveRange[0]))).append(' ').append(ConverterFactory.CONVERTER_MICRO_METER.getUnit());
-                sb.append(" - ").append(df4.format(ConverterFactory.CONVERTER_MICRO_METER.evaluate(effWaveRange[1]))).append(' ').append(ConverterFactory.CONVERTER_MICRO_METER.getUnit()).append(']');
-
-                wlenRange = sb.toString();
-                sb.setLength(0);
-
-                logger.debug("wlen range : {}", wlenRange);
-
-                set.add(wlenRange);
-            }
-        }
-    }
-
-    /**
-     * Return the largest wave length range from given OIData tables
-     * @param oiDataList OIData tables
-     * @return largest wave length range
-     */
-    private static Range getWaveLengthRange(final List<OIData> oiDataList) {
-        final float[] range = new float[]{Float.NaN, Float.NaN};
-        float[] effWaveRange;
-        for (OIData oiData : oiDataList) {
-            effWaveRange = oiData.getEffWaveRange();
-
-            if (effWaveRange != null) {
-                if (Float.isNaN(range[0]) || range[0] > effWaveRange[0]) {
-                    range[0] = effWaveRange[0];
-                }
-                if (Float.isNaN(range[1]) || range[1] < effWaveRange[1]) {
-                    range[1] = effWaveRange[1];
-                }
-            }
-        }
-        return new Range(range[0], range[1]);
-    }
-
-    private static void toString(final Set<String> set, final StringBuilder sb, final String internalSeparator, final String separator) {
-        toString(set, sb, internalSeparator, separator, Integer.MAX_VALUE);
-    }
-
-    private static void toString(final Set<String> set, final StringBuilder sb, final String internalSeparator, final String separator, final int threshold, final String alternateText) {
-        // hard coded limit:
-        if (set.size() > threshold) {
-            sb.append(alternateText);
-        } else {
-            toString(set, sb, internalSeparator, separator, Integer.MAX_VALUE);
-        }
-    }
-
-    private static void toString(final Set<String> set, final StringBuilder sb, final String internalSeparator, final String separator, final int maxLength) {
-        int n = 0;
-        for (String v : set) {
-            sb.append(StringUtils.replaceWhiteSpaces(v, internalSeparator)).append(separator);
-            n++;
-            if (n > maxLength) {
-                return;
-            }
-        }
-        if (n != 0) {
-            // remove separator at the end:
-            sb.setLength(sb.length() - separator.length());
-
-        }
-    }
-
-    /**
-     * Get String operator applied on any OIData table
-     */
-    private interface GetOIDataString {
-
-        /**
-         * Return a String value (keyword for example) for the given OIData table
-         * @param oiData OIData table
-         * @return String value
-         */
-        public String getString(final OIData oiData);
     }
 
     private Plot getPlot() {
