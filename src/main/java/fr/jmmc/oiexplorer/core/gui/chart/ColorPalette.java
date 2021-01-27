@@ -380,7 +380,6 @@ public class ColorPalette {
             final int ty = (h / 2) + 4;
 
             final StringBuilder sb = (drawLabel) ? new StringBuilder(8) : null;
-            final float[] c4 = (drawLabel) ? new float[4] : null;
 
             int x = 0, x0 = 0;
             int y = h, y0 = 0;
@@ -396,7 +395,7 @@ public class ColorPalette {
 
                 // draw label:
                 if (drawLabel) {
-                    g2d.setColor((ColorUtils.lum(color.getRGB(), c4) > 0.5f) ? Color.BLACK : Color.WHITE);
+                    g2d.setColor((ColorUtils.luminance(color.getRGB()) > 128) ? Color.BLACK : Color.WHITE);
 
                     sb.setLength(0);
                     final String label = ColorPalette.toHexString(color, sb).toString();

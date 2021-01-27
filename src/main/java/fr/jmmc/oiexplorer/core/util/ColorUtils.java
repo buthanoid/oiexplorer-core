@@ -17,11 +17,31 @@ public final class ColorUtils {
         // no-op
     }
 
-    public static float lum(final int rgb) {
-        return lum(rgb, new float[4]);
+    public static float luminance(final int rgba) {
+        final int r = (rgba >> 16) & 0xFF;
+        final int g = (rgba >> 8) & 0xFF;
+        final int b = (rgba) & 0xFF;
+        // TODO: take alpha into account
+        return luminance(r, g, b);
+    }
+    
+    public static int luminance(final int r, final int g, final int b) {
+        // https://ninedegreesbelow.com/photography/srgb-luminance.html
+        /*
+        Adapted:
+Red:   (255*0.2225 +   0*0.7169 +   0*0.0606) / 255 = 0.2225
+Green: ( 0*0.2225  + 255*0.7169 +   0*0.0606) / 255 = 0.7169
+Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
+         */
+        // return r * 0.2225 + g * 0.7169 + b * 0.0606;
+        return (r * 57 + g * 184 + b * 15) >> 8; // round to go up to 256
     }
 
-    public static float lum(final int rgb, final float[] c4) {
+    public static float lumaY(final int rgb) {
+        return lumaY(rgb, new float[4]);
+    }
+
+    public static float lumaY(final int rgb, final float[] c4) {
         // convert sRGB to Lab (float)
         sRGB_to_Lab(rgb, c4);
 
@@ -57,6 +77,14 @@ public final class ColorUtils {
         if (TRACE) {
             System.out.println("mixLCH: " + Arrays.toString(result));
         }
+    }
+
+    public static float[] sRGB_to_OkLab(final int rgba, final float[] Lab) {
+        return f_sRGB_to_OkLab(sRGB_to_f(rgba, Lab));
+    }
+
+    public static int OkLab_to_sRGB(final float[] Lab) {
+        return sRGB_to_i(OkLab_to_f_sRGB(Lab));
     }
 
     public static float[] sRGB_to_Lab(final int rgba, final float[] Lab) {
@@ -129,9 +157,6 @@ public final class ColorUtils {
 
         // divide by white point:
         //CIE XYZ tristimulus values of the reference white point: Observer= 2 degrees, Illuminant= D65
-//        private static final float REF_X_D65 = 95.047f;
-//        private static final float REF_Y_D65 = 100.000f;
-//        private static final float REF_Z_D65 = 108.883f;
         xyz[0] *= (1.0f / 0.95047f);
         xyz[2] *= (1.0f / 1.08883f);
 
@@ -155,7 +180,7 @@ public final class ColorUtils {
     private static float lab_f_to(final float v) {
         return (v > 0.008856f) ? (float) Math.cbrt(v) : 7.787037f * v + (16.0f / 116.0f);
     }
-    private final static float epsilon = 0.20689656f;
+    private final static float epsilon = 0.206896551f;
     private final static float kappa = (24389.0f / 27.0f);
 
     private static float lab_f_inv(float x) {
@@ -192,11 +217,6 @@ public final class ColorUtils {
         if (TRACE) {
             System.out.println("XYZ: " + Arrays.toString(XYZ));
         }
-        /*        
-         float r = 3.1338561f * XYZ[0] - 1.6168667f * XYZ[1] - 0.4906146f * XYZ[2];
-         float g = -0.9787684f * XYZ[0] + 1.9161415f * XYZ[1] + 0.0334540f * XYZ[2];
-         float b = 0.0719453f * XYZ[0] - 0.2289914f * XYZ[1] + 1.4052427f * XYZ[2];
-         */
         float r = 3.2404542f * XYZ[0] - 1.5371385f * XYZ[1] - 0.4985314f * XYZ[2];
         float g = -0.9692660f * XYZ[0] + 1.8760108f * XYZ[1] + 0.0415560f * XYZ[2];
         float b = 0.0556434f * XYZ[0] - 0.2040259f * XYZ[1] + 1.0572252f * XYZ[2];
@@ -277,10 +297,10 @@ public final class ColorUtils {
         if (c >= 1f) {
             return 1f;
         }
-        if (c <= 0.0031308f) {
-            return c * 12.92f;
-        } else {
+        if (c >= 0.0031308f) {
             return 1.055f * ((float) Math.pow(c, 1.0 / 2.4)) - 0.055f;
+        } else {
+            return c * 12.92f;
         }
     }
 
@@ -301,10 +321,10 @@ public final class ColorUtils {
         if (c >= 1f) {
             return 1f;
         }
-        if (c <= 0.04045f) {
-            return c / 12.92f;
-        } else {
+        if (c >= 0.04045f) {
             return (float) (Math.pow((c + 0.055f) / 1.055f, 2.4));
+        } else {
+            return c / 12.92f;
         }
     }
 
@@ -316,6 +336,52 @@ public final class ColorUtils {
             return 255;
         }
         return val;
+    }
+
+// OkLab -> sRGB
+    static float[] OkLab_to_f_sRGB(final float[] lab) {
+        if (TRACE) {
+            System.out.println("OkLab: " + Arrays.toString(lab));
+        }
+        float l = lab[0] + 0.3963377774f * lab[1] + 0.2158037573f * lab[2];
+        float m = lab[0] - 0.1055613458f * lab[1] - 0.0638541728f * lab[2];
+        float s = lab[0] - 0.0894841775f * lab[1] - 1.2914855480f * lab[2];
+
+        l = l * l * l;
+        m = m * m * m;
+        s = s * s * s;
+
+        lab[0] = +4.0767245293f * l - 3.3072168827f * m + 0.2307590544f * s;
+        lab[1] = -1.2681437731f * l + 2.6093323231f * m - 0.3411344290f * s;
+        lab[2] = -0.0041119885f * l - 0.7034763098f * m + 1.7068625689f * s;
+
+        if (TRACE) {
+            System.out.println("sRGB: " + Arrays.toString(lab));
+        }
+        return lab;
+    }
+
+// sRGB -> OkLab
+    static float[] f_sRGB_to_OkLab(final float[] sRGB) {
+        if (TRACE) {
+            System.out.println("sRGB: " + Arrays.toString(sRGB));
+        }
+        float l = 0.4121656120f * sRGB[0] + 0.5362752080f * sRGB[1] + 0.0514575653f * sRGB[2];
+        float m = 0.2118591070f * sRGB[0] + 0.6807189584f * sRGB[1] + 0.1074065790f * sRGB[2];
+        float s = 0.0883097947f * sRGB[0] + 0.2818474174f * sRGB[1] + 0.6302613616f * sRGB[2];
+
+        l = (float) Math.cbrt(l);
+        m = (float) Math.cbrt(m);
+        s = (float) Math.cbrt(s);
+
+        sRGB[0] = 0.2104542553f * l + 0.7936177850f * m - 0.0040720468f * s;
+        sRGB[1] = 1.9779984951f * l - 2.4285922050f * m + 0.4505937099f * s;
+        sRGB[2] = 0.0259040371f * l + 0.7827717662f * m - 0.8086757660f * s;
+
+        if (TRACE) {
+            System.out.println("OkLab: " + Arrays.toString(sRGB));
+        }
+        return sRGB;
     }
 
 }
