@@ -228,6 +228,10 @@ public class ChartUtils {
             // Disable Storage for the chart entities:
             panel.getChartRenderingInfo().setEntityCollection(null);
         }
+        // zoom options :
+        panel.setDomainZoomable(true);
+        panel.setRangeZoomable(true);
+
         return panel;
     }
 
@@ -263,6 +267,10 @@ public class ChartUtils {
             // Disable Storage for the chart entities:
             panel.getChartRenderingInfo().setEntityCollection(null);
         }
+        // zoom options :
+        panel.setDomainZoomable(true);
+        panel.setRangeZoomable(true);
+
         return panel;
     }
 
@@ -511,6 +519,106 @@ public class ChartUtils {
         final FastXYErrorRenderer renderer = new FastXYErrorRenderer();
 
         final XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
+
+        plot.setOrientation(orientation);
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setURLGenerator(new StandardXYURLGenerator());
+        }
+
+        // display axes at [0,0] :
+        plot.setDomainZeroBaselineVisible(true);
+        plot.setRangeZeroBaselineVisible(true);
+
+        return plot;
+    }
+
+    /**
+     * Creates a scatter chart (based on an {@link XYDataset}) with default
+     * settings BUT using a Square data area with consistent zooming in/out
+     *
+     * @param title  the chart title (<code>null</code> permitted).
+     * @param xAxisLabel  a label for the X-axis (<code>null</code> permitted).
+     * @param yAxisLabel  a label for the Y-axis (<code>null</code> permitted).
+     * @param dataset  the dataset for the chart (<code>null</code> permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     (<code>null</code> NOT permitted).
+     * @param legend  a flag specifying whether or not a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return The chart.
+     */
+    public static JFreeChart createSquareScatterChart(final String title,
+                                                     final String xAxisLabel,
+                                                     final String yAxisLabel,
+                                                     final XYDataset dataset,
+                                                     final PlotOrientation orientation,
+                                                     final boolean legend,
+                                                     final boolean tooltips,
+                                                     final boolean urls) {
+
+        if (orientation == null) {
+            throw new IllegalArgumentException("Null 'orientation' argument.");
+        }
+
+        // customized XYPlot to have a square data area :
+        final XYPlot plot = createSquareScatterPlot(title, xAxisLabel, yAxisLabel, dataset, orientation, tooltips, urls);
+
+        final JFreeChart chart = createChart(title, plot, legend);
+
+        if (legend) {
+            chart.getLegend().setPosition(RectangleEdge.RIGHT);
+        }
+
+        // display axes at [0,0] :
+        plot.setDomainZeroBaselineVisible(true);
+        plot.setRangeZeroBaselineVisible(true);
+
+        // update theme at end :
+        org.jfree.chart.ChartUtils.applyCurrentTheme(chart);
+        
+        return chart;
+    }
+
+    /**
+     * Creates a scatter plot (based on an {@link XYDataset}) with default
+     * settings BUT bounded axes
+     *
+     * @param title  the chart title (<code>null</code> permitted).
+     * @param xAxisLabel  a label for the X-axis (<code>null</code> permitted).
+     * @param yAxisLabel  a label for the Y-axis (<code>null</code> permitted).
+     * @param dataset  the dataset for the chart (<code>null</code> permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     (<code>null</code> NOT permitted).
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return The xy plot.
+     */
+    public static XYPlot createSquareScatterPlot(final String title,
+                                                 final String xAxisLabel,
+                                                 final String yAxisLabel,
+                                                 final XYDataset dataset,
+                                                 final PlotOrientation orientation,
+                                                 final boolean tooltips,
+                                                 final boolean urls) {
+
+        if (orientation == null) {
+            throw new IllegalArgumentException("Null 'orientation' argument.");
+        }
+
+        // Axes are bounded to avoid zooming out where there is no data :
+        final BoundedNumberAxis xAxis = createAxis(xAxisLabel);
+        final BoundedNumberAxis yAxis = createAxis(yAxisLabel);
+
+        // only lines are rendered :
+        final FastXYErrorRenderer renderer = new FastXYErrorRenderer();
+
+        // customized XYPlot to have a square data area :
+        final XYPlot plot = new SquareXYPlot(dataset, xAxis, yAxis, renderer);
 
         plot.setOrientation(orientation);
         if (tooltips) {

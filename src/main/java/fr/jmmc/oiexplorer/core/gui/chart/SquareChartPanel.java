@@ -16,6 +16,7 @@ import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.PlotRenderingInfo;
+import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.plot.Zoomable;
 import org.jfree.data.Range;
 import org.slf4j.Logger;
@@ -69,10 +70,10 @@ public final class SquareChartPanel extends EnhancedChartPanel {
      * @since 1.0.13
      */
     public SquareChartPanel(final JFreeChart chart, final int width, final int height,
-            final int minimumDrawWidth, final int minimumDrawHeight, final int maximumDrawWidth,
-            final int maximumDrawHeight, final boolean useBuffer, final boolean properties,
-            final boolean copy, boolean save, final boolean print, final boolean zoom,
-            final boolean tooltips) {
+                            final int minimumDrawWidth, final int minimumDrawHeight, final int maximumDrawWidth,
+                            final int maximumDrawHeight, final boolean useBuffer, final boolean properties,
+                            final boolean copy, boolean save, final boolean print, final boolean zoom,
+                            final boolean tooltips) {
         super(chart, width, height, minimumDrawWidth, minimumDrawHeight, maximumDrawWidth, maximumDrawHeight,
                 useBuffer, properties, copy, save, print, zoom, tooltips);
 
@@ -119,7 +120,7 @@ public final class SquareChartPanel extends EnhancedChartPanel {
             zoomInRange(x, y);
 
             // HACK to get new axis ranges after zoom :
-            fireZoomEvent((SquareXYPlot) plot);
+            fireZoomEvent(plot);
 
         } finally {
             plot.setNotify(savedNotify);
@@ -149,7 +150,7 @@ public final class SquareChartPanel extends EnhancedChartPanel {
             zoomOutRange(x, y);
 
             // HACK to get new axis ranges after zoom :
-            fireZoomEvent((SquareXYPlot) plot);
+            fireZoomEvent(plot);
 
         } finally {
             plot.setNotify(savedNotify);
@@ -213,7 +214,7 @@ public final class SquareChartPanel extends EnhancedChartPanel {
                     }
 
                     // HACK to get new axis ranges after zoom :
-                    fireZoomEvent((SquareXYPlot) plot);
+                    fireZoomEvent(plot);
 
                 } finally {
                     plot.setNotify(savedNotify);
@@ -246,7 +247,7 @@ public final class SquareChartPanel extends EnhancedChartPanel {
             ((SquareXYPlot) plot).restoreAxesBounds();
 
             // HACK to get new axis ranges after zoom :
-            fireZoomEvent((SquareXYPlot) plot);
+            fireZoomEvent(plot);
 
         } finally {
             plot.setNotify(savedNotify);
@@ -257,32 +258,32 @@ public final class SquareChartPanel extends EnhancedChartPanel {
      * This method fires a Zoom event
      * @param plot plot that causes the event
      */
-    private void fireZoomEvent(final SquareXYPlot plot) {
-        final ValueAxis domainAxis = plot.getDomainAxis(0);
-        final ValueAxis rangeAxis = plot.getRangeAxis(0);
+    private void fireZoomEvent(final Plot plot) {
+        if (this.zoomListener != null && (plot instanceof XYPlot)) {
+            final XYPlot xyPlot = (XYPlot) plot;
+            final ValueAxis domainAxis = xyPlot.getDomainAxis(0);
+            final ValueAxis rangeAxis = xyPlot.getRangeAxis(0);
 
-        double domainLowerBound = 0d;
-        double domainUpperBound = 0d;
-        double rangeLowerBound = 0d;
-        double rangeUpperBound = 0d;
+            double domainLowerBound = 0d;
+            double domainUpperBound = 0d;
+            double rangeLowerBound = 0d;
+            double rangeUpperBound = 0d;
 
-        if (domainAxis != null) {
-            final Range xRange = domainAxis.getRange();
+            if (domainAxis != null) {
+                final Range xRange = domainAxis.getRange();
 
-            domainLowerBound = xRange.getLowerBound();
-            domainUpperBound = xRange.getUpperBound();
-        }
+                domainLowerBound = xRange.getLowerBound();
+                domainUpperBound = xRange.getUpperBound();
+            }
 
-        if (rangeAxis != null) {
-            final Range yRange = rangeAxis.getRange();
+            if (rangeAxis != null) {
+                final Range yRange = rangeAxis.getRange();
 
-            rangeLowerBound = yRange.getLowerBound();
-            rangeUpperBound = yRange.getUpperBound();
-        }
+                rangeLowerBound = yRange.getLowerBound();
+                rangeUpperBound = yRange.getUpperBound();
+            }
 
-        if (this.zoomListener != null) {
             final ZoomEvent ze = new ZoomEvent(domainLowerBound, domainUpperBound, rangeLowerBound, rangeUpperBound);
-
             logger.debug("fireZoomEvent: {}", ze);
 
             this.zoomListener.chartChanged(ze);
@@ -395,7 +396,7 @@ public final class SquareChartPanel extends EnhancedChartPanel {
                 }
 
                 // HACK to get new axis ranges after zoom :
-                fireZoomEvent((SquareXYPlot) plot);
+                fireZoomEvent(plot);
 
             } finally {
                 plot.setNotify(savedNotify);

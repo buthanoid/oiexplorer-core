@@ -62,8 +62,8 @@ public final class FastXYErrorRenderer extends FastXYLineAndShapeRenderer {
      */
     public FastXYErrorRenderer() {
         super(false, true);
-        this.drawXError = true;
-        this.drawYError = true;
+        this.drawXError = false;
+        this.drawYError = false;
         this.errorPaint = null;
         this.errorStroke = null;
         setCapLength(4d);

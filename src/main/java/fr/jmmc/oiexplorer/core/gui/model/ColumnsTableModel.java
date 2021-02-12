@@ -4,12 +4,10 @@
 package fr.jmmc.oiexplorer.core.gui.model;
 
 import fr.jmmc.jmcs.util.NumberUtils;
-import fr.jmmc.oitools.OIFitsConstants;
 import fr.jmmc.oitools.fits.FitsTable;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import javax.swing.table.AbstractTableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +26,9 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
     /** ROW_INDEX derived column as int[] */
     private final static String COLUMN_ROW_INDEX = "ROW_INDEX";
+
+    /** COL_INDEX derived column as int[][] */
+    private final static String COLUMN_COL_INDEX = "COL_INDEX";
 
     /** Derived ROW_INDEX column definition */
     private final static ColumnMeta COLUMN_META_ROW_INDEX = new ColumnMeta(COLUMN_ROW_INDEX, "row index", Types.TYPE_INT, 1);
@@ -115,13 +116,25 @@ public final class ColumnsTableModel extends AbstractTableModel {
         if (expandRows) {
             // Fix nbRows:
             if (columnDims[1] != 0) {
-                nbRows *= columnDims[1];
+                final int repeat = columnDims[1];
+                nbRows *= repeat;
+                
+                final ColumnMeta colMetaColIndex = new ColumnMeta(COLUMN_COL_INDEX, "column index", Types.TYPE_INT, repeat);
+                
+                // Prepare column index column:
+                table.addDerivedColumnMeta(colMetaColIndex);
+                getColumnIndex(table, repeat); // compute column index
+                addColumns(colMetaColIndex, true, 1); // second col
             }
         }
         logger.debug("column mapping: {}", columnMap);
     }
 
     private void addColumns(final ColumnMeta meta, final boolean isDerived) {
+        addColumns(meta, isDerived, -1);
+    }
+    
+    private void addColumns(final ColumnMeta meta, final boolean isDerived, final int index) {
         ColumnMapping col = null;
 
         final String name = meta.getName();
@@ -163,7 +176,11 @@ public final class ColumnsTableModel extends AbstractTableModel {
         if (col == null) {
             col = new ColumnMapping(meta, isDerived, name, String.class);
         }
-        columnMap.add(col);
+        if (index != -1) {
+            columnMap.add(index, col);
+        } else {
+            columnMap.add(col);
+        }
     }
 
     private Class<?> getType(final Types type) {
@@ -486,4 +503,32 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
         return rowIndex;
     }
+
+    /**
+     * Return the column index column of the given table
+     *
+     * @param table FitsTable to process
+     * @param repeat second dimension (repeat)
+     * @return the computed row index
+     */
+    public static int[][] getColumnIndex(final FitsTable table, final int repeat) {
+        // lazy:
+        int[][] colIndex = table.getColumnDerivedInts(COLUMN_COL_INDEX);
+
+        if (colIndex == null) {
+            final int nRows = table.getNbRows();
+            colIndex = new int[nRows][repeat];
+
+            for (int i = 0; i < nRows; i++) {
+                for (int j = 0; j < repeat; j++) {
+                    colIndex[i][j] = j;
+                }
+            }
+
+            table.setColumnDerivedValue(COLUMN_COL_INDEX, colIndex);
+        }
+
+        return colIndex;
+    }
+    
 }

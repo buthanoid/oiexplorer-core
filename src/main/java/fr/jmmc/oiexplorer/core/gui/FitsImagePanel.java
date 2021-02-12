@@ -613,10 +613,6 @@ public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressL
         this.chart.addProgressListener(this);
         this.chartPanel = ChartUtils.createSquareChartPanel(this.chart);
 
-        // zoom options :
-        this.chartPanel.setDomainZoomable(Constants.ENABLE_ZOOM);
-        this.chartPanel.setRangeZoomable(Constants.ENABLE_ZOOM);
-
         // define zoom listener :
         this.chartPanel.setZoomEventListener(this);
 

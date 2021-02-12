@@ -9,9 +9,6 @@ package fr.jmmc.oiexplorer.core.util;
  */
 public interface Constants {
 
-    /** chart : enables the zoom in / out */
-    public final static boolean ENABLE_ZOOM = true;
-
     /* ASTRO constants */
     /** EPOCH J2000 */
     public final static float EPOCH_J2000 = 2000.f;

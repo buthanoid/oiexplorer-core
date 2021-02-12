@@ -57,10 +57,6 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
 
         final ChartPanel chartPanel = ChartUtils.createChartPanel(chart, false);
 
-        // zoom options :
-        chartPanel.setDomainZoomable(Constants.ENABLE_ZOOM);
-        chartPanel.setRangeZoomable(Constants.ENABLE_ZOOM);
-
         // enable mouse wheel:
         chartPanel.setMouseWheelEnabled(true);
 

@@ -574,10 +574,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         this.chart.addProgressListener(this);
         this.chartPanel = ChartUtils.createChartPanel(this.chart, false);
 
-        // zoom options :
-        this.chartPanel.setDomainZoomable(Constants.ENABLE_ZOOM);
-        this.chartPanel.setRangeZoomable(Constants.ENABLE_ZOOM);
-
         // enable mouse wheel:
         this.chartPanel.setMouseWheelEnabled(true);
 
@@ -665,10 +661,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private static XYPlot createScientificScatterPlot(final String xAxisLabel, final String yAxisLabel, final boolean usePlotCrossHairSupport) {
 
         final XYPlot xyPlot = ChartUtils.createScatterPlot(null, xAxisLabel, yAxisLabel, null, PlotOrientation.VERTICAL, false, false);
-
-        // display axes at [0,0] :
-        xyPlot.setDomainZeroBaselineVisible(true);
-        xyPlot.setRangeZeroBaselineVisible(true);
 
         configureCrosshair(xyPlot, usePlotCrossHairSupport);
 
