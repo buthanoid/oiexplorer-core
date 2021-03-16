@@ -566,6 +566,53 @@
     </plotDefinition>
 
     <plotDefinition>
+        <id>V_V2_T3_ERR/EFF_WAVE</id>
+        <name>Errors on V2, Vis and T3phi vs wavelength</name>
+        <skipFlaggedData>true</skipFlaggedData>
+        <drawLine>true</drawLine>
+        <xAxis>
+            <name>EFF_WAVE</name>
+            <logScale>false</logScale>
+            <includeZero>false</includeZero>
+            <converter>MICRO_METER</converter>
+        </xAxis>
+
+        <yAxes>
+            <name>VIS2ERR</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+
+        <yAxes>
+            <name>VISAMPERR</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+        </yAxes>
+        <yAxes>
+            <name>VISPHIERR</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+            <rangeMode>Range</rangeMode>
+            <range>
+                <min>0.0</min>
+                <max>30.0</max>
+            </range>
+        </yAxes>
+
+        <yAxes>
+            <name>T3PHIERR</name>
+            <logScale>false</logScale>
+            <includeZero>true</includeZero>
+            <rangeMode>Range</rangeMode>
+            <range>
+                <min>0.0</min>
+                <max>30.0</max>
+            </range>
+        </yAxes>
+
+    </plotDefinition>
+
+    <plotDefinition>
         <id>V2_T3_SNR/EFF_WAVE</id>
         <name>SNR on V2, sqCorr, phot and T3phi vs wavelength</name>
         <skipFlaggedData>true</skipFlaggedData>
