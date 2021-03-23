@@ -3,7 +3,6 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui;
 
-import fr.jmmc.jmcs.Bootstrapper;
 import fr.jmmc.jmcs.gui.component.BasicTableSorter;
 import fr.jmmc.jmcs.gui.util.AutofitTableColumns;
 import fr.jmmc.jmcs.gui.util.SwingUtils;
@@ -12,38 +11,28 @@ import fr.jmmc.oiexplorer.core.gui.model.ColumnsTableModel;
 import fr.jmmc.oiexplorer.core.gui.model.KeywordsTableModel;
 import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.fits.FitsTable;
-import fr.jmmc.oitools.model.DataModel;
-import fr.jmmc.oitools.model.OIFitsFile;
-import fr.jmmc.oitools.model.OIFitsLoader;
-import fr.nom.tam.fits.FitsException;
-import java.awt.Dimension;
-import java.io.IOException;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author bourgesl
  */
-public final class FitsTableViewer extends javax.swing.JPanel {
+public final class FitsTableViewerPanel extends javax.swing.JPanel {
 
     private static final long serialVersionUID = 1L;
-    /** Class logger */
-    private static final Logger logger = LoggerFactory.getLogger(FitsTableViewer.class.getName());
 
     private static final TableCellRenderer RDR_NUM_INSTANCE = new TableCellNumberRenderer();
 
+    /* members */
     private final KeywordsTableModel keywordsModel;
     private final BasicTableSorter keywordsTableSorter;
     private final ColumnsTableModel columnsModel;
     private final BasicTableSorter columnsTableSorter;
 
     /** Creates new form FitsTableViewer */
-    public FitsTableViewer() {
+    public FitsTableViewerPanel() {
         this.keywordsModel = new KeywordsTableModel();
         this.columnsModel = new ColumnsTableModel();
 
@@ -66,10 +55,17 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         jTableColumns.setDefaultRenderer(Double.class, RDR_NUM_INSTANCE);
     }
 
+    public void setViewerOptions(boolean includeDerivedColumns, boolean expandRows) {
+        columnsModel.setIncludeDerivedColumns(includeDerivedColumns);
+        columnsModel.setExpandRows(expandRows);
+    }
+
     // Display Table
-    private FitsTableViewer setHdu(final FitsHDU hdu) {
+    public void setHdu(final FitsHDU hdu) {
         keywordsModel.setFitsHdu(hdu);
-        columnsModel.setFitsHdu((hdu instanceof FitsTable) ? (FitsTable) hdu : null);
+
+        final FitsTable table = (hdu instanceof FitsTable) ? (FitsTable) hdu : null;
+        columnsModel.setFitsHdu(table);
 
         if (jTableKeywords.getRowCount() != 0) {
             AutofitTableColumns.autoResizeTable(jTableKeywords);
@@ -78,7 +74,13 @@ public final class FitsTableViewer extends javax.swing.JPanel {
             AutofitTableColumns.autoResizeTable(jTableColumns);
         }
 
-        return this;
+        if (table != null) {
+            jScrollPaneColumns.setVisible(true);
+            jSplitPaneVert.setDividerLocation(0.25);
+        } else {
+            jScrollPaneColumns.setVisible(false);
+            jSplitPaneVert.setDividerLocation(1.0);
+        }
     }
 
     /** This method is called from within the constructor to
@@ -103,10 +105,9 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         jSplitPaneVert.setName("jSplitPaneVert"); // NOI18N
 
         jScrollPaneKeywords.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        jScrollPaneKeywords.setColumnHeaderView(null);
+        jScrollPaneKeywords.setAutoscrolls(true);
         jScrollPaneKeywords.setName("jScrollPaneKeywords"); // NOI18N
         jScrollPaneKeywords.setPreferredSize(new java.awt.Dimension(300, 300));
-        jScrollPaneKeywords.setViewportView(null);
 
         jTableKeywords.setModel(keywordsModel);
         jTableKeywords.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
@@ -120,7 +121,6 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         jScrollPaneColumns.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPaneColumns.setName("jScrollPaneColumns"); // NOI18N
         jScrollPaneColumns.setPreferredSize(new java.awt.Dimension(300, 300));
-        jScrollPaneColumns.setViewportView(null);
 
         jTableColumns.setModel(columnsModel);
         jTableColumns.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
@@ -141,17 +141,6 @@ public final class FitsTableViewer extends javax.swing.JPanel {
     private javax.swing.JTable jTableColumns;
     private javax.swing.JTable jTableKeywords;
     // End of variables declaration//GEN-END:variables
-
-    private static void showHDU(final FitsHDU hdu) {
-        final JFrame frame = new JFrame("HDU: " + hdu.toString());
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        frame.setMinimumSize(new Dimension(800, 800));
-
-        frame.add(new FitsTableViewer().setHdu(hdu));
-        frame.pack();
-        frame.setVisible(true);
-    }
 
     /**
      * Used to format numbers in cells.
@@ -195,31 +184,4 @@ public final class FitsTableViewer extends javax.swing.JPanel {
         }
     }
 
-    public static void main(String[] args) {
-        if (args.length == 0) {
-            System.err.println("No file location given in arguments.");
-            System.exit(1);
-        }
-        // invoke Bootstrapper method to initialize logback now:
-        Bootstrapper.getState();
-
-        DataModel.setOiVisComplexSupport(true);
-        try {
-            OIFitsFile oiFitsFile = OIFitsLoader.loadOIFits(args[0]);
-            oiFitsFile.analyze();
-
-            if (oiFitsFile.getPrimaryImageHDU() != null) {
-                showHDU(oiFitsFile.getPrimaryImageHDU());
-            }
-
-            for (FitsTable table : oiFitsFile.getOITableList()) {
-                showHDU(table);
-            }
-
-        } catch (IOException ioe) {
-            logger.error("IO exception occured:", ioe);
-        } catch (FitsException fe) {
-            logger.error("Fits exception occured:", fe);
-        }
-    }
 }

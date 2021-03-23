@@ -7,6 +7,7 @@ import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oitools.fits.FitsTable;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.Types;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import javax.swing.table.AbstractTableModel;
 import org.slf4j.Logger;
@@ -34,31 +35,38 @@ public final class ColumnsTableModel extends AbstractTableModel {
     private final static ColumnMeta COLUMN_META_ROW_INDEX = new ColumnMeta(COLUMN_ROW_INDEX, "row index", Types.TYPE_INT, 1);
 
     /* members */
-    /** FITS table reference */
-    private FitsTable table = null;
+    /** FITS table (weak) reference */
+    private WeakReference<FitsTable> tableRef = null;
     /** flag to include derived columns */
     private boolean includeDerivedColumns = true;
     /** flag to expand or not arrays (2D only) as columns */
-    private boolean expandArrays = false;
-    /** flag to expand or not arrays (2D only) as columns */
     private boolean expandRows = true;
+    /** flag to expand or not arrays (2D only) as columns  (deprecated ?) */
+    private boolean expandArrays = false;
     /** column mapping */
     private final ArrayList<ColumnMapping> columnMap = new ArrayList<ColumnMapping>();
     /** column dimensions */
-    private final int[] columnDims = new int[2]; // 2d max
+    private final int[] columnDims2d = new int[2]; // 2d max
     /** number of (virtual) rows */
     private int nbRows = 0;
     /* temporary buffer */
-    private final StringBuilder sb = new StringBuilder();
+    private final StringBuilder sb = new StringBuilder(1024);
 
     public ColumnsTableModel() {
         super();
     }
 
     public void setFitsHdu(final FitsTable table) {
-        this.table = table;
-        init();
+        this.tableRef = new WeakReference<FitsTable>(table);
+        initialize();
         fireTableStructureChanged();
+    }
+
+    public FitsTable getTable() {
+        if (this.tableRef != null) {
+            return this.tableRef.get();
+        }
+        return null;
     }
 
     public boolean isIncludeDerivedColumns() {
@@ -69,14 +77,6 @@ public final class ColumnsTableModel extends AbstractTableModel {
         this.includeDerivedColumns = includeDerivedColumns;
     }
 
-    public boolean isExpandArrays() {
-        return expandArrays;
-    }
-
-    public void setExpandArrays(boolean expandArrays) {
-        this.expandArrays = expandArrays;
-    }
-
     public boolean isExpandRows() {
         return expandRows;
     }
@@ -85,18 +85,32 @@ public final class ColumnsTableModel extends AbstractTableModel {
         this.expandRows = expandRows;
     }
 
-    private void init() {
+    public boolean isExpandArrays() {
+        return expandArrays;
+    }
+
+    public void setExpandArrays(boolean expandArrays) {
+        this.expandArrays = expandArrays;
+    }
+
+    public void reset() {
         columnMap.clear();
         nbRows = 0;
-        columnDims[0] = 0;
-        columnDims[1] = 0;
+        columnDims2d[0] = 0;
+        columnDims2d[1] = 0;
+    }
+
+    private void initialize() {
+        reset();
+
+        final FitsTable table = this.getTable();
         if (table == null) {
             return;
         }
 
         // columnDims[0] = nbRows
         nbRows = table.getNbRows();
-        columnDims[0] = nbRows;
+        columnDims2d[0] = nbRows;
 
         // Prepare row index column:
         table.addDerivedColumnMeta(COLUMN_META_ROW_INDEX);
@@ -115,12 +129,12 @@ public final class ColumnsTableModel extends AbstractTableModel {
         }
         if (expandRows) {
             // Fix nbRows:
-            if (columnDims[1] != 0) {
-                final int repeat = columnDims[1];
+            if (columnDims2d[1] != 0) {
+                final int repeat = columnDims2d[1];
                 nbRows *= repeat;
-                
+
                 final ColumnMeta colMetaColIndex = new ColumnMeta(COLUMN_COL_INDEX, "column index", Types.TYPE_INT, repeat);
-                
+
                 // Prepare column index column:
                 table.addDerivedColumnMeta(colMetaColIndex);
                 getColumnIndex(table, repeat); // compute column index
@@ -133,7 +147,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
     private void addColumns(final ColumnMeta meta, final boolean isDerived) {
         addColumns(meta, isDerived, -1);
     }
-    
+
     private void addColumns(final ColumnMeta meta, final boolean isDerived, final int index) {
         ColumnMapping col = null;
 
@@ -157,13 +171,13 @@ public final class ColumnsTableModel extends AbstractTableModel {
                         }
                     } else if (expandRows) {
                         // 2d
-                        if (columnDims[1] == 0) {
-                            columnDims[1] = repeat;
+                        if (columnDims2d[1] == 0) {
+                            columnDims2d[1] = repeat;
                         } else {
                             // check consistency ?
-                            if (columnDims[1] != repeat) {
-                                logger.warn("Bad dimensions for 2D column: {} expected: {}", repeat, columnDims[1]);
-                                columnDims[1] = Math.min(columnDims[1], repeat);
+                            if (columnDims2d[1] != repeat) {
+                                logger.warn("Bad dimensions for 2D column: {} expected: {}", repeat, columnDims2d[1]);
+                                columnDims2d[1] = Math.min(columnDims2d[1], repeat);
                             }
                         }
                         col = new ColumnMapping(meta, isDerived, name, type, 1); // index == 1 means 2D
@@ -183,7 +197,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
         }
     }
 
-    private Class<?> getType(final Types type) {
+    private static Class<?> getType(final Types type) {
         switch (type) {
             case TYPE_CHAR:
                 return String.class;
@@ -227,6 +241,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
     @Override
     public Object getValueAt(final int rowIndex, final int columnIndex) {
+        final FitsTable table = this.getTable();
         if (table == null) {
             return null;
         }
@@ -249,6 +264,10 @@ public final class ColumnsTableModel extends AbstractTableModel {
     }
 
     private Object getColumnValue(final ColumnMapping mapping, final int row) {
+        final FitsTable table = this.getTable();
+        if (table == null) {
+            return null;
+        }
         final ColumnMeta column = mapping.meta;
 
         // compute real row:
@@ -257,10 +276,10 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
         // compute real column:
         if (expandRows) {
-            if (columnDims[1] != 0) {
-                rowIndex = row / columnDims[1];
+            if (columnDims2d[1] != 0) {
+                rowIndex = row / columnDims2d[1];
                 if (mapping.hasIndex()) {
-                    columnIndex = row % columnDims[1];
+                    columnIndex = row % columnDims2d[1];
                 }
             }
         } else if (mapping.hasIndex()) {
@@ -530,5 +549,5 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
         return colIndex;
     }
-    
+
 }

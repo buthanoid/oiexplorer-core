@@ -10,6 +10,9 @@ import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEvent;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
+import fr.jmmc.oitools.model.OIFitsFile;
+import java.lang.ref.WeakReference;
+import javax.swing.JPanel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +27,8 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
     private static final long serialVersionUID = 1;
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(PlotView.class.getName());
+    /** use new OIFITS table browser instead of HTML viewer */
+    private static final boolean USE_OIFITS_BROWSER = true;
 
     /* members */
     /** OIFitsCollectionManager singleton reference */
@@ -32,6 +37,10 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
     private final String plotId;
     /** last version of the subset of the plot */
     private IdentifiableVersion lastSubsetVersion = null;
+    /** former html panel */
+    private OIFitsHtmlPanel oiFitsHtmlPanel = null;
+    /** former table browser panel */
+    private OIFitsTableBrowser oiFitsBrowserPanel = null;
 
     /**
      * Creates new form PlotView
@@ -42,7 +51,7 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
 
         // Build GUI
         initComponents();
-
+        
         this.plotId = plotId;
 
         // Finish init
@@ -59,7 +68,7 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
         if (logger.isDebugEnabled()) {
             logger.debug("dispose: {}", ObjectUtils.getObjectInfo(this));
         }
-
+        
         ocm.unbind(this);
 
         // forward dispose() to child components:
@@ -77,14 +86,24 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
     private void postInit() {
         plotChartPanel.setPlotId(plotId);
         plotDefinitionEditor.setPlotId(plotId);
+        
+        final JPanel dataPanel;
+        
+        if (USE_OIFITS_BROWSER) {
+            oiFitsBrowserPanel = new OIFitsTableBrowser();
+            dataPanel = oiFitsBrowserPanel;
+        } else {
+            oiFitsHtmlPanel = new OIFitsHtmlPanel();
+            dataPanel = oiFitsHtmlPanel;
+        }
+        jTabbedPaneViews.addTab("data", dataPanel);
     }
 
     /**
-     * Refresh the HTML view
+     * Refresh the data view
      * @param subsetDefinition subset definition
      */
-    private void updateHtmlView(final SubsetDefinition subsetDefinition) {
-
+    private void updateDataView(final SubsetDefinition subsetDefinition) {
         if (logger.isDebugEnabled()) {
             logger.debug("updateHtmlView: lastSubsetVersion {} vs subsetVersion {}", this.lastSubsetVersion,
                     (subsetDefinition != null) ? subsetDefinition.getIdentifiableVersion() : null);
@@ -92,11 +111,18 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
 
         // compare last version with the subset itself (see IdentifiableVersion.equals):
         if (!ObjectUtils.areEquals(this.lastSubsetVersion, subsetDefinition)) {
-
+            
             this.lastSubsetVersion = (subsetDefinition != null) ? subsetDefinition.getIdentifiableVersion() : null;
             logger.debug("subsetVersion changed: {}", this.lastSubsetVersion);
-
-            this.oIFitsHtmlPanel.updateOIFits(subsetDefinition.getOIFitsSubset());
+            
+            final OIFitsFile oiFitsFile = (subsetDefinition != null) ? subsetDefinition.getOIFitsSubset() : null;
+            
+            if (oiFitsBrowserPanel != null) {
+                this.oiFitsBrowserPanel.setOiFitsFileRef(new WeakReference<OIFitsFile>(oiFitsFile));
+            }
+            if (oiFitsHtmlPanel != null) {
+                this.oiFitsHtmlPanel.updateOIFits(oiFitsFile);
+            }
         }
     }
 
@@ -114,7 +140,6 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
         plotPanel = new javax.swing.JPanel();
         plotChartPanel = new fr.jmmc.oiexplorer.core.gui.PlotChartPanel();
         plotDefinitionEditor = new fr.jmmc.oiexplorer.core.gui.PlotDefinitionEditor();
-        oIFitsHtmlPanel = new fr.jmmc.oiexplorer.core.gui.OIFitsHtmlPanel();
 
         setLayout(new java.awt.BorderLayout());
 
@@ -137,13 +162,11 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
         plotPanel.add(plotDefinitionEditor, gridBagConstraints);
 
         jTabbedPaneViews.addTab("plot", plotPanel);
-        jTabbedPaneViews.addTab("data", oIFitsHtmlPanel);
 
         add(jTabbedPaneViews, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTabbedPane jTabbedPaneViews;
-    private fr.jmmc.oiexplorer.core.gui.OIFitsHtmlPanel oIFitsHtmlPanel;
     private fr.jmmc.oiexplorer.core.gui.PlotChartPanel plotChartPanel;
     private fr.jmmc.oiexplorer.core.gui.PlotDefinitionEditor plotDefinitionEditor;
     private javax.swing.JPanel plotPanel;
@@ -190,10 +213,10 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
     @Override
     public void onProcess(final OIFitsCollectionManagerEvent event) {
         logger.debug("onProcess {}", event);
-
+        
         switch (event.getType()) {
             case PLOT_CHANGED:
-                updateHtmlView(event.getPlot().getSubsetDefinition());
+                updateDataView(event.getPlot().getSubsetDefinition());
                 break;
             default:
         }
