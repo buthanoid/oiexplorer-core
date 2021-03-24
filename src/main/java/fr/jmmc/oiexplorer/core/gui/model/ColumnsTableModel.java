@@ -23,13 +23,11 @@ public final class ColumnsTableModel extends AbstractTableModel {
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(ColumnsTableModel.class.getName());
 
-    private static final boolean USE_STRING_FOR_BOOLEAN = true;
-
     /** ROW_INDEX derived column as int[] */
-    private final static String COLUMN_ROW_INDEX = "ROW_INDEX";
+    public final static String COLUMN_ROW_INDEX = "ROW_INDEX";
 
     /** COL_INDEX derived column as int[][] */
-    private final static String COLUMN_COL_INDEX = "COL_INDEX";
+    public final static String COLUMN_COL_INDEX = "COL_INDEX";
 
     /** Derived ROW_INDEX column definition */
     private final static ColumnMeta COLUMN_META_ROW_INDEX = new ColumnMeta(COLUMN_ROW_INDEX, "row index", Types.TYPE_INT, 1);
@@ -159,10 +157,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
         } else {
             final Class<?> type = getType(meta.getDataType());
             if (meta.isArray()) {
-                // TODO: handle complex properly !
-                if (meta.getDataType() != Types.TYPE_COMPLEX
-                        && meta.getDataType() != Types.TYPE_SHORT) {
-
+                if (meta.getDataType() != Types.TYPE_SHORT) {
                     final int repeat = meta.getRepeat();
 
                     if (expandArrays) {
@@ -208,13 +203,11 @@ public final class ColumnsTableModel extends AbstractTableModel {
             case TYPE_DBL:
                 return Double.class;
             case TYPE_COMPLEX:
+                return String.class;
             case TYPE_REAL:
                 return Float.class;
             case TYPE_LOGICAL:
-                if (USE_STRING_FOR_BOOLEAN) {
-                    return String.class;
-                }
-                return Boolean.class;
+                return String.class;
         }
         return null;
     }
@@ -394,12 +387,17 @@ public final class ColumnsTableModel extends AbstractTableModel {
                         final float[][] rowValues = cValues[rowIndex];
                         // append values :
                         sb.setLength(0);
-                        for (int i = 0, len = rowValues.length; i < len; i++) {
-                            if (i > 0) {
-                                sb.append(' ');
-                            }
+                        if (columnIndex >= 0) {
                             // real,img pattern for complex values :
-                            sb.append(NumberUtils.format(rowValues[i][0])).append(',').append(NumberUtils.format(rowValues[i][1]));
+                            sb.append(NumberUtils.format(rowValues[columnIndex][0])).append(',').append(NumberUtils.format(rowValues[columnIndex][1]));
+                        } else {
+                            for (int i = 0, len = rowValues.length; i < len; i++) {
+                                if (i > 0) {
+                                    sb.append(' ');
+                                }
+                                // real,img pattern for complex values :
+                                sb.append(NumberUtils.format(rowValues[i][0])).append(',').append(NumberUtils.format(rowValues[i][1]));
+                            }
                         }
                         return sb.toString();
                     }
@@ -415,16 +413,26 @@ public final class ColumnsTableModel extends AbstractTableModel {
                         final boolean[][] rowValues = bValues[rowIndex];
                         // append values :
                         sb.setLength(0);
-                        for (int i = 0, lenI = rowValues.length; i < lenI; i++) {
-                            if (i > 0) {
-                                sb.append(' ');
-                            }
-                            final boolean[] cellValues = rowValues[i];
+                        if (columnIndex >= 0) {
+                            final boolean[] cellValues = rowValues[columnIndex];
                             for (int j = 0, lenJ = cellValues.length; j < lenJ; j++) {
                                 if (j > 0) {
                                     sb.append(',');
                                 }
                                 sb.append(cellValues[j] ? 'T' : 'F');
+                            }
+                        } else {
+                            for (int i = 0, lenI = rowValues.length; i < lenI; i++) {
+                                if (i > 0) {
+                                    sb.append(' ');
+                                }
+                                final boolean[] cellValues = rowValues[i];
+                                for (int j = 0, lenJ = cellValues.length; j < lenJ; j++) {
+                                    if (j > 0) {
+                                        sb.append(',');
+                                    }
+                                    sb.append(cellValues[j] ? 'T' : 'F');
+                                }
                             }
                         }
                         return sb.toString();
@@ -436,10 +444,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
                     if (bValues != null) {
                         final boolean[] rowValues = bValues[rowIndex];
                         if (columnIndex >= 0) {
-                            if (USE_STRING_FOR_BOOLEAN) {
-                                return (rowValues[columnIndex] ? 'T' : 'F');
-                            }
-                            return Boolean.valueOf(rowValues[columnIndex]);
+                            return (rowValues[columnIndex] ? 'T' : 'F');
                         } else {
                             // append values :
                             sb.setLength(0);

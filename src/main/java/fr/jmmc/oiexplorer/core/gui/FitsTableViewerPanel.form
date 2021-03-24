@@ -59,6 +59,7 @@
                   <Dimension value="[50, 50]"/>
                 </Property>
                 <Property name="name" type="java.lang.String" value="jTableKeywords" noResource="true"/>
+                <Property name="selectionMode" type="int" value="0"/>
               </Properties>
             </Component>
           </SubComponents>
@@ -90,6 +91,7 @@
                   <Dimension value="[50, 50]"/>
                 </Property>
                 <Property name="name" type="java.lang.String" value="jTableColumns" noResource="true"/>
+                <Property name="selectionMode" type="int" value="0"/>
               </Properties>
             </Component>
           </SubComponents>

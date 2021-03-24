@@ -8,12 +8,16 @@ import fr.jmmc.jmcs.gui.util.AutofitTableColumns;
 import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oiexplorer.core.gui.model.ColumnsTableModel;
+import static fr.jmmc.oiexplorer.core.gui.model.ColumnsTableModel.COLUMN_COL_INDEX;
+import static fr.jmmc.oiexplorer.core.gui.model.ColumnsTableModel.COLUMN_ROW_INDEX;
 import fr.jmmc.oiexplorer.core.gui.model.KeywordsTableModel;
 import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.fits.FitsTable;
 import javax.swing.JLabel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -22,6 +26,8 @@ import javax.swing.table.TableCellRenderer;
 public final class FitsTableViewerPanel extends javax.swing.JPanel {
 
     private static final long serialVersionUID = 1L;
+    /** Class logger */
+    private static final Logger logger = LoggerFactory.getLogger(FitsTableViewerPanel.class.getName());
 
     private static final TableCellRenderer RDR_NUM_INSTANCE = new TableCellNumberRenderer();
 
@@ -83,6 +89,60 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         }
     }
 
+    public void setSelection(final int row, final int col) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("setSelection (row, col) = ({}, {})", row, col);
+        }
+        final int nRows = jTableColumns.getRowCount();
+
+        if (nRows != 0) {
+            final int rowColIdx = columnsTableSorter.findColumn(COLUMN_ROW_INDEX);
+            final int colColIdx = (col != -1) ? columnsTableSorter.findColumn(COLUMN_COL_INDEX) : -1;
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("rowColIdx: {}", rowColIdx);
+                logger.debug("colColIdx: {}", colColIdx);
+            }
+
+            int rowIdx = -1;
+
+            // Iterate on rows:
+            for (int i = 0; i < nRows; i++) {
+                final Integer rowValue = (Integer) columnsTableSorter.getValueAt(i, rowColIdx);
+
+                // check row first:
+                if ((rowValue != null) && (rowValue == row)) {
+                    if (colColIdx != -1) {
+                        final Integer colValue = (Integer) columnsTableSorter.getValueAt(i, colColIdx);
+
+                        // check col:
+                        if ((colValue != null) && (colValue != col)) {
+                            // skip row:
+                            continue;
+                        }
+                    }
+                    // match row (and optionally col):
+                    rowIdx = i;
+                    // exit loop (first match)
+                    break;
+                }
+            }
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("rowIdx: {}", rowIdx);
+            }
+
+            if (rowIdx != -1) {
+                jTableColumns.getSelectionModel().setSelectionInterval(rowIdx, rowIdx);
+
+                // Move view to show found row
+                jTableColumns.scrollRectToVisible(jTableColumns.getCellRect(rowIdx, 0, true));
+            } else {
+                jTableColumns.getSelectionModel().clearSelection();
+            }
+        }
+    }
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -113,6 +173,7 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         jTableKeywords.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
         jTableKeywords.setMinimumSize(new java.awt.Dimension(50, 50));
         jTableKeywords.setName("jTableKeywords"); // NOI18N
+        jTableKeywords.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         jScrollPaneKeywords.setViewportView(jTableKeywords);
 
         jSplitPaneVert.setLeftComponent(jScrollPaneKeywords);
@@ -126,6 +187,7 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         jTableColumns.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
         jTableColumns.setMinimumSize(new java.awt.Dimension(50, 50));
         jTableColumns.setName("jTableColumns"); // NOI18N
+        jTableColumns.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         jScrollPaneColumns.setViewportView(jTableColumns);
 
         jSplitPaneVert.setRightComponent(jScrollPaneColumns);

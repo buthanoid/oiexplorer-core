@@ -8,9 +8,16 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmcs.Bootstrapper;
 import fr.jmmc.jmcs.gui.component.GenericListModel;
 import fr.jmmc.jmcs.gui.util.SwingUtils;
+import fr.jmmc.jmcs.util.ObjectUtils;
+import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEvent;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventListener;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType;
 import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.model.DataModel;
 import fr.jmmc.oitools.model.OIArray;
+import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.jmmc.oitools.model.OITable;
@@ -31,11 +38,14 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-public class OIFitsTableBrowser extends javax.swing.JPanel {
+public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFitsCollectionManagerEventListener {
 
     private static final long serialVersionUID = 1L;
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(OIFitsTableBrowser.class.getName());
+
+    /** OIFitsCollectionManager singleton */
+    private final static OIFitsCollectionManager ocm = OIFitsCollectionManager.getInstance();
 
     /* members */
     /** table viewer panel */
@@ -49,6 +59,23 @@ public class OIFitsTableBrowser extends javax.swing.JPanel {
 
         this.tableViewer = new FitsTableViewerPanel();
         postInit();
+
+        ocm.getSelectionChangedEventNotifier().register(this);
+    }
+
+    /**
+     * Free any resource or reference to this instance :
+     * remove this instance from OIFitsCollectionManager event notifiers
+     * dispose also child components
+     */
+    @Override
+    public void dispose() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("dispose: {}", ObjectUtils.getObjectInfo(this));
+        }
+        ocm.unbind(this);
+
+        reset();
     }
 
     private void postInit() {
@@ -59,6 +86,82 @@ public class OIFitsTableBrowser extends javax.swing.JPanel {
         this.jListTables.clearSelection();
         this.tableViewer.setHdu(null);
         this.oiFitsFileRef = null;
+    }
+
+    /*
+     * OIFitsCollectionManagerEventListener implementation
+     */
+    /**
+     * Return the optional subject id i.e. related object id that this listener accepts
+     * @param type event type
+     * @return subject id (null means accept any event) or DISCARDED_SUBJECT_ID to discard event
+     */
+    @Override
+    public String getSubjectId(final OIFitsCollectionManagerEventType type) {
+        return DISCARDED_SUBJECT_ID;
+    }
+
+    /**
+     * Handle the given OIFits collection event
+     * @param event OIFits collection event
+     */
+    @Override
+    public void onProcess(final OIFitsCollectionManagerEvent event) {
+        logger.debug("onProcess {}", event);
+
+        switch (event.getType()) {
+            case SELECTION_CHANGED:
+                updateSelection(event.getSelection());
+                break;
+            default:
+        }
+        logger.debug("onProcess {} - done", event);
+    }
+
+    private void updateSelection(final DataPointer ptr) {
+        logger.debug("updateSelection: {}", ptr);
+
+        final OIData oiData = ptr.getOiData();
+
+        // lazy resolve HDU:
+        final OIFitsFile oiFitsFile = getOIFitsFile();
+
+        if (oiFitsFile != null) {
+            logger.debug("oiFitsFile: {}", oiFitsFile);
+
+            final GenericListModel<HduRef> listModel = (GenericListModel<HduRef>) this.jListTables.getModel();
+
+            for (int i = 0, len = listModel.getSize(); i < len; i++) {
+                final HduRef hduRef = listModel.get(i);
+
+                final FitsHDU hdu;
+
+                if (hduRef.isTable()) {
+                    hdu = oiFitsFile.getOITableList().get(hduRef.getIndex());
+                } else {
+                    hdu = oiFitsFile.getFitsImageHDUs().get(hduRef.getIndex());
+                }
+                if (oiData == hdu) {
+                    // table found:
+                    logger.debug("hdu found: {}", hdu);
+
+                    if (this.jListTables.getSelectedIndex() != i) {
+                        if (logger.isDebugEnabled())
+                        logger.debug("change selected index: {}", i);
+                        this.jListTables.setSelectedIndex(i);
+                    }
+
+                    // use invokeLater (if jListTables changed)
+                    SwingUtils.invokeLaterEDT(new Runnable() {
+                        @Override
+                        public void run() {
+                            tableViewer.setSelection(ptr.getRow(), ptr.getCol());
+                        }
+                    });
+                    break;
+                }
+            }
+        }
     }
 
     public void setOiFitsFileRef(final WeakReference<OIFitsFile> oiFitsFileRef) {
@@ -88,7 +191,7 @@ public class OIFitsTableBrowser extends javax.swing.JPanel {
 
             // no hard reference to FITS HDU:
             this.jListTables.setModel(new GenericListModel<HduRef>(hduRefs));
-            
+
             if (!hduRefs.isEmpty()) {
                 // ensure selection:
                 this.jListTables.setSelectedIndex(0);
@@ -137,15 +240,18 @@ public class OIFitsTableBrowser extends javax.swing.JPanel {
             logger.debug("hdu: {}", hdu);
 
             final boolean includeDerivedColumns = true;
-            final boolean expandRows;
-            if (hdu instanceof OIArray) {
-                expandRows = false;
-            } else {
-                expandRows = true;
-            }
+            final boolean expandRows = isTableRowsExpanded(hdu);
+
             this.tableViewer.setViewerOptions(includeDerivedColumns, expandRows);
             this.tableViewer.setHdu(hdu);
         }
+    }
+
+    private boolean isTableRowsExpanded(final FitsHDU hdu) {
+        if (hdu instanceof OIArray) {
+            return false;
+        }
+        return true;
     }
 
     /** This method is called from within the constructor to
