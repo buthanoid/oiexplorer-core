@@ -29,7 +29,6 @@ import fr.jmmc.oiexplorer.core.gui.chart.SquareChartPanel;
 import fr.jmmc.oiexplorer.core.gui.chart.SquareXYPlot;
 import fr.jmmc.oiexplorer.core.gui.chart.ZoomEvent;
 import fr.jmmc.oiexplorer.core.gui.chart.ZoomEventListener;
-import fr.jmmc.oiexplorer.core.util.Constants;
 import fr.jmmc.oiexplorer.core.util.FitsImageUtils;
 import static fr.jmmc.oiexplorer.core.util.FitsImageUtils.checkBounds;
 import fr.jmmc.oitools.image.FitsImage;
@@ -77,8 +76,8 @@ import org.slf4j.LoggerFactory;
  * This panel represents a FitsImage plot
  * @author bourgesl
  */
-public class FitsImagePanel extends javax.swing.JPanel implements ChartProgressListener, ZoomEventListener,
-                                                                  Observer, DocumentExportable, Disposable {
+public class FitsImagePanel extends javax.swing.JPanel  implements Disposable, ChartProgressListener, ZoomEventListener,
+                                                                  Observer, DocumentExportable {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1L;

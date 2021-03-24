@@ -111,7 +111,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author bourgesl
  */
-public final class PlotChartPanel extends javax.swing.JPanel implements ChartProgressListener, EnhancedChartMouseListener, ChartMouseSelectionListener,
+public final class PlotChartPanel extends javax.swing.JPanel implements ChartProgressListener,
+                                                                        EnhancedChartMouseListener, ChartMouseSelectionListener,
                                                                         DocumentExportable, OIFitsCollectionManagerEventListener {
 
     /** default serial UID for Serializable interface */

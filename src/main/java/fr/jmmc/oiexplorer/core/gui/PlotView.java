@@ -51,7 +51,7 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
 
         // Build GUI
         initComponents();
-        
+
         this.plotId = plotId;
 
         // Finish init
@@ -68,7 +68,7 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
         if (logger.isDebugEnabled()) {
             logger.debug("dispose: {}", ObjectUtils.getObjectInfo(this));
         }
-        
+
         ocm.unbind(this);
 
         // forward dispose() to child components:
@@ -78,6 +78,9 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
         if (plotDefinitionEditor != null) {
             plotDefinitionEditor.dispose();
         }
+        if (USE_OIFITS_BROWSER) {
+            oiFitsBrowserPanel.dispose();
+        }
     }
 
     /**
@@ -86,9 +89,9 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
     private void postInit() {
         plotChartPanel.setPlotId(plotId);
         plotDefinitionEditor.setPlotId(plotId);
-        
+
         final JPanel dataPanel;
-        
+
         if (USE_OIFITS_BROWSER) {
             oiFitsBrowserPanel = new OIFitsTableBrowser();
             dataPanel = oiFitsBrowserPanel;
@@ -111,12 +114,12 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
 
         // compare last version with the subset itself (see IdentifiableVersion.equals):
         if (!ObjectUtils.areEquals(this.lastSubsetVersion, subsetDefinition)) {
-            
+
             this.lastSubsetVersion = (subsetDefinition != null) ? subsetDefinition.getIdentifiableVersion() : null;
             logger.debug("subsetVersion changed: {}", this.lastSubsetVersion);
-            
+
             final OIFitsFile oiFitsFile = (subsetDefinition != null) ? subsetDefinition.getOIFitsSubset() : null;
-            
+
             if (oiFitsBrowserPanel != null) {
                 this.oiFitsBrowserPanel.setOiFitsFileRef(new WeakReference<OIFitsFile>(oiFitsFile));
             }
@@ -213,7 +216,7 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
     @Override
     public void onProcess(final OIFitsCollectionManagerEvent event) {
         logger.debug("onProcess {}", event);
-        
+
         switch (event.getType()) {
             case PLOT_CHANGED:
                 updateDataView(event.getPlot().getSubsetDefinition());

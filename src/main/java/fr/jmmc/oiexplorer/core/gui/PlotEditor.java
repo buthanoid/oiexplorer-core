@@ -71,7 +71,6 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
 
         // TODO: this can be done automatically when this instance registers !
         // => fire initial events !
-
         // fire PLOT_DEFINITION_LIST_CHANGED event to initialize correctly the widget:
         ocm.firePlotDefinitionListChanged(null, this); // null forces different source
 
@@ -139,7 +138,7 @@ public final class PlotEditor extends javax.swing.JPanel implements OIFitsCollec
         final Plot plotCopy = getPlot();
         if (plotCopy != null) {
             plotCopy.setSubsetDefinition(ocm.getSubsetDefinitionRef(subsetId));
-            
+
             ocm.updatePlot(this, plotCopy);
         }
     }//GEN-LAST:event_subsetComboBoxActionPerformed
