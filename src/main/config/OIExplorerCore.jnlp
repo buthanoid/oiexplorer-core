@@ -20,10 +20,11 @@
 
         <!-- Libraries -->
         <!-- JEL (oitools) -->
-        <jar href="@SHARED@/JEL-2.1.1-jdk5.jar" />
+        <jar href="@SHARED@/JEL-2.1.2.jar" />
 
         <!-- JFreeChart -->
-        <jar href="@SHARED@/jfreechart-1.5.0.jar" />
+        <jar href="@SHARED@/jfreechart-1.5.2.jar" />
+        <jar href="@SHARED@/jfreesvg-3.4.jar" />
 
         <!-- PDF -->
         <jar href="@SHARED@/itext-2.1.5.jar" />
