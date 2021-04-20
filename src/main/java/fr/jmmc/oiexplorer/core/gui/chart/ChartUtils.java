@@ -3,6 +3,7 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core.gui.chart;
 
+import fr.jmmc.jmcs.data.preference.CommonPreferences;
 import fr.jmmc.jmcs.gui.util.SwingUtils;
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oiexplorer.core.util.TimeFormat;
@@ -82,14 +83,13 @@ public class ChartUtils {
     /** larger draw stroke */
     public static final BasicStroke VERY_LARGE_STROKE = createStroke(3.0f);
     /** dotted stroke */
-    public static final BasicStroke DOTTED_STROKE = new BasicStroke(0.75f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 4.0f,
-            new float[]{4.0f}, 0.0f);
+    public static final BasicStroke DOTTED_STROKE = createStroke(0.75f, new float[]{4.0f});
     /** zero insets */
     public final static RectangleInsets ZERO_INSETS = RectangleInsets.ZERO_INSETS;
     /** default tick label rectangle insets */
-    public final static RectangleInsets TICK_LABEL_INSETS = new RectangleInsets(2.0, 2.0, 2.0, 2.0);
+    public final static RectangleInsets TICK_LABEL_INSETS = new RectangleInsets(scaleUI(2.0), scaleUI(2.0), scaleUI(2.0), scaleUI(2.0));
     /** normal plot insets (10px on left, 20px on right side) to have last displayed value */
-    public static final RectangleInsets NORMAL_PLOT_INSETS = new RectangleInsets(2d, 10d, 2d, 20d);
+    public static final RectangleInsets NORMAL_PLOT_INSETS = new RectangleInsets(scaleUI(2.0), scaleUI(10.0), scaleUI(2.0), scaleUI(20.0));
     /** custom chart theme */
     public final static StandardChartTheme CHART_THEME;
     /** The default panel width. */
@@ -160,8 +160,8 @@ public class ChartUtils {
             throw new IllegalStateException("Unsupported chart theme : " + ChartFactory.getChartTheme());
         }
 
-        int t = -45;
-        final int s = 5;
+        int t = -scaleUI(45);
+        final int s = scaleUI(5);
         Polygon p;
         p = new Polygon();
         p.addPoint(t + 0, 0);
@@ -175,7 +175,7 @@ public class ChartUtils {
         p.addPoint(t + s, -s);
         ARROW_DOWN = p;
 
-        t = 30;
+        t = scaleUI(30);
         p = new Polygon();
         p.addPoint(0, t + 0);
         p.addPoint(-s, t + -s);
@@ -188,7 +188,7 @@ public class ChartUtils {
         p.addPoint(s, t + s);
         ARROW_LEFT = p;
 
-        LEGEND_SHAPE = new Rectangle2D.Double(-3.0, -5.0, 6.0, 10.0);
+        LEGEND_SHAPE = new Rectangle2D.Double(scaleUI(-3.0), scaleUI(-5.0), scaleUI(6.0), scaleUI(10.0));
     }
 
     private static void adjustChartThemeFonts() {
@@ -198,11 +198,6 @@ public class ChartUtils {
         CHART_THEME.setLargeFont(DEFAULT_TITLE_FONT);
         CHART_THEME.setRegularFont(DEFAULT_FONT);
         CHART_THEME.setSmallFont(DEFAULT_TEXT_SMALL_FONT);
-    }
-
-    public static BasicStroke createStroke(final float size) {
-        //return new BasicStroke(scaleUI(size));
-        return new BasicStroke(size);
     }
 
     /**
@@ -324,13 +319,11 @@ public class ChartUtils {
         do {
             f = ChartUtils.getFont(size);
 
-//      logger.info("font      : {}", f);
             fm = g2d.getFontMetrics(f);
 
             // get pixel width of the given text with the current font :
             width = TextUtils.getTextBounds(text, g2d, fm).getWidth();
 
-//      logger.info("width     : {}", width);
             size--;
 
         } while (width > maxWidth && size >= minFontSize);
@@ -366,13 +359,11 @@ public class ChartUtils {
         do {
             f = ChartUtils.getFont(size);
 
-//      logger.info("font      : {}", f);
             fm = g2d.getFontMetrics(f);
 
             // get pixel height of the given text with the current font :
             height = TextUtils.getTextBounds(text, g2d, fm).getHeight();
 
-//      logger.info("height     : {}", height);
             size--;
 
         } while (height > maxHeight && size >= minFontSize);
@@ -552,13 +543,13 @@ public class ChartUtils {
      * @return The chart.
      */
     public static JFreeChart createSquareScatterChart(final String title,
-                                                     final String xAxisLabel,
-                                                     final String yAxisLabel,
-                                                     final XYDataset dataset,
-                                                     final PlotOrientation orientation,
-                                                     final boolean legend,
-                                                     final boolean tooltips,
-                                                     final boolean urls) {
+                                                      final String xAxisLabel,
+                                                      final String yAxisLabel,
+                                                      final XYDataset dataset,
+                                                      final PlotOrientation orientation,
+                                                      final boolean legend,
+                                                      final boolean tooltips,
+                                                      final boolean urls) {
 
         if (orientation == null) {
             throw new IllegalArgumentException("Null 'orientation' argument.");
@@ -579,7 +570,7 @@ public class ChartUtils {
 
         // update theme at end :
         org.jfree.chart.ChartUtils.applyCurrentTheme(chart);
-        
+
         return chart;
     }
 
@@ -952,11 +943,53 @@ public class ChartUtils {
         return jmmcAnnotation;
     }
 
-    public static int scaleUI(final int size) {
-        return SwingUtils.adjustUISize(size);
+    public static BasicStroke createStroke(final float size) {
+        // TODO: LBO
+        return new BasicStroke((float) scalePen(size));
+        // return new BasicStroke(size);
     }
 
-    public static float scaleUI(final float size) {
-        return SwingUtils.adjustUISize(size);
+    public static BasicStroke createStroke(final float width, final float dashes[]) {
+        // TODO: LBO
+        // scale dashes:
+        if (dashes != null) {
+            for (int i = 0; i < dashes.length; i++) {
+                dashes[i] = (float) scalePen(dashes[i]);
+            }
+        }
+        return new BasicStroke((float) scalePen(width), BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 4.0f, dashes, 0.0f);
     }
+
+    public static int scaleUI(final int size) {
+        return (int) Math.round(scaleUI((double) size));
+    }
+
+    public static double scaleUI(final double size) {
+        return roundToSubPixels(SwingUtils.adjustUISize(size));
+    }
+
+    public static int scalePen(final int size) {
+        return (int) Math.round(scalePen((double) size));
+    }
+
+    public final static double PEN_SCALE_GAIN = 25.0 / 100.0; // less gain than GUI
+
+    public static double scalePen(final double size) {
+        double uiScale = CommonPreferences.getInstance().getUIScale();
+        if (uiScale == 1.0) {
+            return size;
+        }
+        if (uiScale > 1.0) {
+            uiScale = 1.0 + (uiScale - 1.0) * PEN_SCALE_GAIN;
+        } else {
+            uiScale = 1.0 - (1.0 - uiScale) * PEN_SCALE_GAIN;
+        }
+        return roundToSubPixels(size * uiScale);
+    }
+
+    private static double roundToSubPixels(final double size) {
+        // round to (1/8) pixel (AA):
+        return Math.round(size * 8.0) / 8.0;
+    }
+
 }

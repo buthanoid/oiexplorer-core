@@ -56,6 +56,7 @@ import fr.jmmc.oitools.model.NightId;
 import fr.jmmc.oitools.model.NightIdMatcher;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
+import fr.jmmc.oitools.model.StaNamesDir;
 import fr.jmmc.oitools.model.TargetIdMatcher;
 import fr.jmmc.oitools.model.TargetManager;
 import java.awt.BorderLayout;
@@ -188,7 +189,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     private static int scale(final int v) {
-        return Math.round(ChartUtils.scaleUI(v));
+        return ChartUtils.scalePen(v);
     }
 
     /** OIFitsCollectionManager singleton */
@@ -1443,18 +1444,25 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // selected OIData tables matching filters
         // TODO: preserve selection results in SelectorResult (data structures) ...
         final List<OIData> oiDataList = getOiFitsSubset().getOiDataList();
-        final PlotDefinition plotDef = getPlotDefinition();
+        final Map<String, StaNamesDir> usedStaNamesMap = getOiFitsSubset().getUsedStaNamesMap();
 
+        final PlotDefinition plotDef = getPlotDefinition();
         final Axis xAxis = plotDef.getXAxis();
 
         // Get Global SharedSeriesAttributes:
         final SharedSeriesAttributes oixpAttrs = SharedSeriesAttributes.INSTANCE_OIXP;
 
-        // TODO: handle reset (depending on the previous view usages)
-        oixpAttrs.reset();
+        if (true) {
+            // TODO: handle reset (depending on the previous view usages)
+            // use case: consistent colors accross views (muti-view with UV plane + V2/T3PHI 
+            // => same baseline should have matching colors)
+            oixpAttrs.reset();
+        }
+
+        logger.debug("updateChart: plot {} oixpAttrs: {} IN", this.plotId, oixpAttrs);
 
         // Get distinct station indexes from OIFits subset (not filtered):
-        final List<String> distinctStaIndexNames = OIDataListHelper.getDistinctStaNames(oiDataList);
+        final List<String> distinctStaIndexNames = OIDataListHelper.getDistinctStaNames(oiDataList, usedStaNamesMap);
 
         // Get distinct station configuration from OIFits subset (not filtered):
         final List<String> distinctStaConfNames = OIDataListHelper.getDistinctStaConfs(oiDataList);
@@ -1508,13 +1516,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 int tableIndex = 0;
 
-                // Use symmetry for spatial frequencies:
-                if (useSymmetry(xAxis, yAxis)) {
-                    xConverter = yConverter = ConverterFactory.CONVERTER_REFLECT;
+                // Use symmetry for coordinates:
+                final boolean useSymmetryX = useSymmetry(xAxis);
+                final boolean useSymmetryY = useSymmetry(yAxis);
+
+                if (useSymmetryX && useSymmetryY) {
+                    xConverter = (useSymmetryX) ? ConverterFactory.CONVERTER_REFLECT : null;
+                    yConverter = (useSymmetryY) ? ConverterFactory.CONVERTER_REFLECT : null;
 
                     for (OIData oiData : oiDataList) {
                         // process data and add data series into given dataset:
-                        updatePlot(xyPlot, oiData, tableIndex, plotDef, i, dataset, xConverter, yConverter, info, drawLines);
+                        updatePlot(xyPlot, info, oiData, tableIndex, usedStaNamesMap, plotDef, i, dataset, xConverter, yConverter, drawLines);
 
                         tableIndex++;
                     }
@@ -1523,7 +1535,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 for (OIData oiData : oiDataList) {
                     // process data and add data series into given dataset:
-                    updatePlot(xyPlot, oiData, tableIndex, plotDef, i, dataset, xConverter, yConverter, info, drawLines);
+                    updatePlot(xyPlot, info, oiData, tableIndex, usedStaNamesMap, plotDef, i, dataset, xConverter, yConverter, drawLines);
 
                     tableIndex++;
                 }
@@ -1632,6 +1644,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         if (nShowPlot == 0) {
             return;
         }
+
+        logger.debug("updateChart: plot {} usedStaNamesMap: {} OUT", this.plotId, usedStaNamesMap);
 
         boolean useWaveLengths = false;
         AxisInfo xCombinedAxisInfo = null;
@@ -1785,13 +1799,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
                 legendCollection = new LegendItemCollection();
             }
-        } else // other cases:
-        /*
-            case WAVELENGTH_RANGE:
-            // wavelength is default:
-            case OBSERVATION_DATE:
-            // not implemented still
-         */ if (useWaveLengths && waveLengthRange.getLength() > LAMBDA_EPSILON) {
+        } else if (useWaveLengths && waveLengthRange.getLength() > LAMBDA_EPSILON) {
             final double min = NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(waveLengthRange.getLowerBound()) - 1e-3D); // microns
             final double max = NumberUtils.trimTo3Digits(ConverterFactory.CONVERTER_MICRO_METER.evaluate(waveLengthRange.getUpperBound()) + 1e-3D); // microns
 
@@ -1814,6 +1822,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             mapLegend.setPadding(10d, 25d, 10d, 25d);
 
             this.chart.addSubtitle(mapLegend);
+        } else {
+            // other cases:
+            /*
+            case OBSERVATION_DATE:
+            // not implemented still
+             */
         }
 
         this.combinedXYPlot.setFixedLegendItems(legendCollection);
@@ -2013,6 +2027,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param plot XYPlot to update (dataset, renderer, axes)
      * @param oiData OIData table to use as data source
      * @param tableIndex table index to ensure serie uniqueness among collection
+     * @param usedStaNamesMap (shared) used StaNames map
      * @param plotDef plot definition to use
      * @param yAxisIndex yAxis index to use in plot definition
      * @param dataset FastIntervalXYDataset to fill
@@ -2021,11 +2036,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      * @param info plot information to update
      * @param drawLines flag indicating to build series for line representation (along wavelength axis)
      */
-    private void updatePlot(final XYPlot plot, final OIData oiData, final int tableIndex,
+    private void updatePlot(final XYPlot plot, final PlotInfo info,
+                            final OIData oiData, final int tableIndex,
+                            final Map<String, StaNamesDir> usedStaNamesMap,
                             final PlotDefinition plotDef, final int yAxisIndex,
                             final FastIntervalXYDataset<OITableSerieKey, OITableSerieKey> dataset,
                             final Converter initialXConverter, final Converter initialYConverter,
-                            final PlotInfo info, final boolean drawLines) {
+                            final boolean drawLines) {
 
         final boolean isLogDebug = logger.isDebugEnabled();
 
@@ -2064,6 +2081,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final boolean doScaleY = (yConverter != null);
 
         final boolean isYData2D = yMeta.isArray();
+        final boolean isYDataOrDep = yMeta.isOrientationDependent();
         final double[] yData1D;
         final double[] yData1DErr;
         final double[][] yData2D;
@@ -2118,6 +2136,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final boolean doScaleX = (xConverter != null);
 
         final boolean isXData2D = xMeta.isArray();
+        final boolean isXDataOrDep = xMeta.isOrientationDependent();
         final double[] xData1D;
         final double[] xData1DErr;
         final double[][] xData2D;
@@ -2243,8 +2262,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
             final double wlRange = info.waveLengthRange.getLength();
 
-            final float[] effWaveRange = oiData.getEffWaveRange();
-            if (!useWaveLengths || (wlRange <= LAMBDA_EPSILON) || (effWaveRange == null)) {
+            if (!useWaveLengths || (wlRange <= LAMBDA_EPSILON) || (oiData.getNWave() <= 1)) {
                 // single channel or Undefined range: use black:
                 Arrays.fill(mappingWaveLengthColors, Color.BLACK);
             } else {
@@ -2319,6 +2337,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         OITableSerieKey serieKey;
 
         short[] currentStaIndex;
+        StaNamesDir currentSortedStaNamesDir;
+        StaNamesDir refStaNamesDir;
+        boolean isOtherOrientation;
         short[] currentStaConf;
 
         String staIndexName, staConfName;
@@ -2340,6 +2361,23 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             // get the sta index array:
             currentStaIndex = distinctStaIndexes[k];
             currentStaConf = null;
+
+            // resolve sorted StaNames (reference) to get its orientation:
+            currentSortedStaNamesDir = oiData.getSortedStaNamesDir(currentStaIndex);
+
+            // reset (should not happen):
+            isOtherOrientation = false;
+            refStaNamesDir = null;
+
+            if (currentSortedStaNamesDir != null) {
+                // find the previous (real) baseline corresponding to the sorted StaNames (stable):
+                refStaNamesDir = usedStaNamesMap.get(currentSortedStaNamesDir.getStaNames());
+                if (refStaNamesDir == null) {
+                    logger.warn("bad usedStaNamesMap: {} missing !", currentSortedStaNamesDir.getStaNames());
+                } else {
+                    isOtherOrientation = (refStaNamesDir.isOrientation() != currentSortedStaNamesDir.isOrientation());
+                }
+            }
 
             // 1 serie per baseline and per spectral channel:
             if (recycleArray) {
@@ -2427,6 +2465,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         y = yData1D[i];
                     }
 
+                    if (isYDataOrDep && isOtherOrientation) {
+                        y = -y;
+                    }
+
                     if (yUseLog && (y <= 0.0)) {
                         // keep only strictly positive data:
                         y = NaN;
@@ -2446,6 +2488,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                             x = xData2D[i][l];
                         } else {
                             x = xData1D[i];
+                        }
+
+                        if (isXDataOrDep && isOtherOrientation) {
+                            x = -x;
                         }
 
                         if (xUseLog && (x <= 0.0)) {
@@ -2646,7 +2692,11 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     itemPaints = extract(itemPaints, idx);
                 }
 
-                staIndexName = oiData.getStaNames(currentStaIndex); // cached
+                if (refStaNamesDir != null) {
+                    staIndexName = refStaNamesDir.getStaNames();
+                } else {
+                    staIndexName = oiData.getStaNames(currentStaIndex); // cached
+                }
                 staConfName = oiData.getStaNames(currentStaConf); // cached
                 serieKey = new OITableSerieKey(tableIndex, ptr, k, staIndexName, staConfName); // baselines (k)
 
@@ -2681,7 +2731,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 renderer.setItemShapes(serieIdx, itemShapes);
 
                 // define paint per item in serie:
-                renderer.setItemPaints(serieIdx, itemPaints);
+                renderer.setItemPaints(serieIdx, itemPaints); // TODO: check is null
 
                 // Add staIndex into the unique used station indexes anyway:
                 info.usedStaIndexNames.add(staIndexName);
@@ -3098,14 +3148,29 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     /**
-     * Return true (use symmetry) if both axis use MegaLambda converter (ie 'are' both spatial frequencies)
-     * @param xAxis x axis
-     * @param yAxis y axis
-     * @return true (use symmetry) if both axis 'are' both spatial frequencies
+     * Return true (use symmetry) if given axis use MegaLambda converter (is spatial frequencies)
+     * @param axis x axis
+     * @return true (use symmetry) if given axis 'is' spatial frequencies
      */
-    private boolean useSymmetry(final Axis xAxis, final Axis yAxis) {
-        return ConverterFactory.KEY_MEGA_LAMBDA.equals(xAxis.getConverter())
-                && ConverterFactory.KEY_MEGA_LAMBDA.equals(yAxis.getConverter());
+    private boolean useSymmetry(final Axis axis) {
+        if (true) {
+            return COLUMNS_SYMETRY.contains(axis.getName());
+        }
+        return ConverterFactory.KEY_MEGA_LAMBDA.equals(axis.getConverter());
     }
 
+    private final static List<String> COLUMNS_SYMETRY = Arrays.asList(new String[]{
+        OIFitsConstants.COLUMN_UCOORD,
+        OIFitsConstants.COLUMN_VCOORD,
+        OIFitsConstants.COLUMN_UCOORD_SPATIAL,
+        OIFitsConstants.COLUMN_VCOORD_SPATIAL,
+        OIFitsConstants.COLUMN_U1COORD,
+        OIFitsConstants.COLUMN_V1COORD,
+        OIFitsConstants.COLUMN_U2COORD,
+        OIFitsConstants.COLUMN_V2COORD,
+        OIFitsConstants.COLUMN_U1COORD_SPATIAL,
+        OIFitsConstants.COLUMN_V1COORD_SPATIAL,
+        OIFitsConstants.COLUMN_U2COORD_SPATIAL,
+        OIFitsConstants.COLUMN_V2COORD_SPATIAL
+    });
 }

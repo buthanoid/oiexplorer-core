@@ -6,6 +6,7 @@ package fr.jmmc.oiexplorer.core.util;
 import fr.jmmc.jmcs.util.StringUtils;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oitools.model.OIData;
+import fr.jmmc.oitools.model.StaNamesDir;
 import fr.jmmc.oitools.util.StationNamesComparator;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.jfree.data.Range;
 import org.slf4j.Logger;
@@ -116,15 +118,17 @@ public final class OIDataListHelper {
     /**
      * Return the unique staNames values (sorted by name) from given OIData tables
      * @param oiDataList OIData tables
+     * @param usedStaNamesMap Map of used staNames to StaNamesDir (reference StaNames / orientation)
      * @return given set instance
      */
-    public static List<String> getDistinctStaNames(final List<OIData> oiDataList) {
-        Set<String> set = new HashSet<String>(32);
+    public static List<String> getDistinctStaNames(final List<OIData> oiDataList,
+                                                   final Map<String, StaNamesDir> usedStaNamesMap) {
 
-        String staNames;
-        for (OIData oiData : oiDataList) {
-            for (short[] staIndexes : oiData.getDistinctStaIndex()) {
-                staNames = oiData.getStaNames(staIndexes);
+        final Set<String> set = new HashSet<String>(32);
+
+        for (final OIData oiData : oiDataList) {
+            for (final short[] staIndexes : oiData.getDistinctStaIndex()) {
+                final String staNames = oiData.getRealStaNames(usedStaNamesMap, staIndexes);
                 set.add(staNames);
             }
         }
@@ -132,7 +136,6 @@ public final class OIDataListHelper {
         final List<String> sortedList = new ArrayList<String>(set);
         Collections.sort(sortedList, StationNamesComparator.INSTANCE);
 
-        logger.debug("getDistinctStaNames : {}", sortedList);
         return sortedList;
     }
 
@@ -142,12 +145,11 @@ public final class OIDataListHelper {
      * @return given set instance
      */
     public static List<String> getDistinctStaConfs(final List<OIData> oiDataList) {
-        Set<String> set = new HashSet<String>(32);
+        final Set<String> set = new HashSet<String>(32);
 
-        String staNames;
         for (OIData oiData : oiDataList) {
             for (short[] staConf : oiData.getDistinctStaConf()) {
-                staNames = oiData.getStaNames(staConf);
+                final String staNames = oiData.getStaNames(staConf);
                 set.add(staNames);
             }
         }
@@ -167,18 +169,17 @@ public final class OIDataListHelper {
     public static void getDistinctWaveLengthRange(final List<OIData> oiDataList, final Set<String> set) {
         final StringBuilder sb = new StringBuilder(20);
 
-        String wlenRange;
-        float[] effWaveRange;
         for (OIData oiData : oiDataList) {
-            effWaveRange = oiData.getEffWaveRange();
+            final fr.jmmc.oitools.model.range.Range effWaveRange = oiData.getEffWaveRange();
 
-            if (effWaveRange != null) {
-                sb.append('[').append(df4.format(ConverterFactory.CONVERTER_MICRO_METER.evaluate(effWaveRange[0]))).append(' ').append(ConverterFactory.CONVERTER_MICRO_METER.getUnit());
-                sb.append(" - ").append(df4.format(ConverterFactory.CONVERTER_MICRO_METER.evaluate(effWaveRange[1]))).append(' ').append(ConverterFactory.CONVERTER_MICRO_METER.getUnit()).append(']');
+            if (effWaveRange.isFinite()) {
+                sb.append('[').append(df4.format(ConverterFactory.CONVERTER_MICRO_METER.evaluate(effWaveRange.getMin())))
+                        .append(' ').append(ConverterFactory.CONVERTER_MICRO_METER.getUnit());
+                sb.append(" - ").append(df4.format(ConverterFactory.CONVERTER_MICRO_METER.evaluate(effWaveRange.getMax())))
+                        .append(' ').append(ConverterFactory.CONVERTER_MICRO_METER.getUnit()).append(']');
 
-                wlenRange = sb.toString();
+                final String wlenRange = sb.toString();
                 sb.setLength(0);
-
                 logger.debug("wlen range : {}", wlenRange);
 
                 set.add(wlenRange);
@@ -192,21 +193,20 @@ public final class OIDataListHelper {
      * @return largest wave length range
      */
     public static Range getWaveLengthRange(final List<OIData> oiDataList) {
-        final float[] range = new float[]{Float.NaN, Float.NaN};
-        float[] effWaveRange;
-        for (OIData oiData : oiDataList) {
-            effWaveRange = oiData.getEffWaveRange();
+        double min = Double.POSITIVE_INFINITY;
+        double max = Double.NEGATIVE_INFINITY;
 
-            if (effWaveRange != null) {
-                if (Float.isNaN(range[0]) || range[0] > effWaveRange[0]) {
-                    range[0] = effWaveRange[0];
-                }
-                if (Float.isNaN(range[1]) || range[1] < effWaveRange[1]) {
-                    range[1] = effWaveRange[1];
-                }
+        for (OIData oiData : oiDataList) {
+            final fr.jmmc.oitools.model.range.Range effWaveRange = oiData.getEffWaveRange();
+
+            if (effWaveRange.getMin() < min) {
+                min = effWaveRange.getMin();
+            }
+            if (effWaveRange.getMax() > max) {
+                max = effWaveRange.getMax();
             }
         }
-        return new Range(range[0], range[1]);
+        return new Range(min, max);
     }
 
     public static void toString(final Set<String> set, final StringBuilder sb, final String internalSeparator, final String separator) {

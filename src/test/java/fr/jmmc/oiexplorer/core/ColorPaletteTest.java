@@ -4,6 +4,7 @@
 package fr.jmmc.oiexplorer.core;
 
 import fr.jmmc.oiexplorer.core.gui.chart.ColorPalette;
+import static fr.jmmc.oiexplorer.core.gui.chart.ColorPalette.SORT_DIVERGING;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -215,6 +216,10 @@ public class ColorPaletteTest {
     @Test
     public void test() {
         try {
+            ColorPalette.checkLabRange();
+
+            savePalette("64", DEFAULT_COLORS_64);
+
             savePalette("initial", INITIAL_COLORS);
             savePalette("adjust", ADJUST_COLORS);
 
@@ -228,26 +233,25 @@ public class ColorPaletteTest {
 
             ColorPalette otherPalette = ColorPalette.load("/fr/jmmc/oiexplorer/core/resource/palette/ColorPalette_initial.pal");
             savePalette("ColorPalette_initial", otherPalette.getColors());
-            
+
             otherPalette = ColorPalette.load("/fr/jmmc/oiexplorer/core/resource/palette/ColorPalette_fixed.pal");
             savePalette("ColorPalette_fixed", otherPalette.getColors());
-            
+
             otherPalette = ColorPalette.load("/fr/jmmc/oiexplorer/core/resource/palette/ColorPalette_Armytage.pal");
             savePalette("ColorPalette_Armytage", otherPalette.getColors());
-            
+
             otherPalette = ColorPalette.load("/fr/jmmc/oiexplorer/core/resource/palette/ColorPalette_Kelly.pal");
             savePalette("ColorPalette_Kelly", otherPalette.getColors());
 
             otherPalette = ColorPalette.load("/fr/jmmc/oiexplorer/core/resource/palette/ColorPalette_gilles.pal");
             savePalette("ColorPalette_gilles", otherPalette.getColors());
-            
+
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
     }
 
     private static void savePalette(final String name, final Color[] colors) throws IOException {
-
         if (colors.length == 0) {
             return;
         }
@@ -260,34 +264,52 @@ public class ColorPaletteTest {
 
         // 64px to fit labels:
         BufferedImage image = palette.createImage(maxWidth, w, h, true);
-        saveImage("label-" + name, image);
+        saveImage(name + "-label", image);
+
+        final String suffix = SORT_DIVERGING ? "dvg" : "sort";
+
+        System.out.println("Mode: " + suffix);
 
         ColorPalette sortedPalette;
 
-        sortedPalette = palette.sortByLuminance();
-        image = sortedPalette.createImage(maxWidth, w, h, true);
-        saveImage("sortL-" + name, image);
-
-        sortedPalette = palette.sortByChroma();
-        image = sortedPalette.createImage(maxWidth, w, h, true);
-        saveImage("sortC-" + name, image);
-
-        sortedPalette = palette.sortByHue();
-        image = sortedPalette.createImage(maxWidth, w, h, true);
-        saveImage("sortH-" + name, image);
-
-        sortedPalette = palette.sortByDeltaE();
-        image = sortedPalette.createImage(maxWidth, w, h, true);
-        saveImage("sortDeltaE-" + name, image);
+        if (true) {
+            sortedPalette = palette.sortByLuminance();
+            image = sortedPalette.createImage(maxWidth, w, h, true, 0);
+            saveImage(name + "-" + suffix + "L", image);
+        }
+        if (false) {
+            sortedPalette = palette.sortByChroma();
+            image = sortedPalette.createImage(maxWidth, w, h, true, 1);
+            saveImage(name + "-" + suffix + "C", image);
+        }
+        if (false) {
+            sortedPalette = palette.sortByHue();
+            image = sortedPalette.createImage(maxWidth, w, h, true, 2);
+            saveImage(name + "-" + suffix + "H", image);
+        }
+        if (true) {
+            sortedPalette = palette.sortByDeltaE();
+            image = sortedPalette.createImage(maxWidth, w, h, true);
+            saveImage(name + "-" + suffix + "DeltaE", image);
+        }
+        if (false) {
+            sortedPalette = palette.sortByBest();
+            image = sortedPalette.createImage(maxWidth, w, h, true);
+            saveImage(name + "-" + suffix + "Best", image);
+        }
 
         image = palette.createImage();
-        saveImage("raw-" + name, image);
+        saveImage(name + "-raw", image);
 
         image = sortedPalette.createImage();
-        saveImage("raw-sortDeltaE-" + name, image);
+        saveImage(name + "-raw-" + suffix + "DeltaE", image);
 
         // Write palette file:        
-        File palFile = new File("./target/ColorPalette_" + name + "-hex.pal");
+        File palFile = new File("./target/ColorPalette_" + name + "-" + suffix + ".pal");
+        ColorPalette.write(sortedPalette, palFile);
+
+        // Write palette file:        
+        palFile = new File("./target/ColorPalette_" + name + "-hex.pal");
         ColorPalette.write(palette, palFile);
 
         // Reload palette:

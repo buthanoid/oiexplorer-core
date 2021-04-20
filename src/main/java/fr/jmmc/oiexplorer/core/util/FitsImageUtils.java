@@ -186,7 +186,7 @@ public final class FitsImageUtils {
         return imgFitsFile;
     }
 
-    public static void prepareAllImages(final List<FitsImageHDU> hdus) {
+    public static void prepareAllImages(final List<FitsImageHDU> hdus) throws IllegalArgumentException {
         if (hdus != null) {
             for (FitsImageHDU hdu : hdus) {
                 for (FitsImage fitsImage : hdu.getFitsImages()) {
@@ -218,6 +218,8 @@ public final class FitsImageUtils {
             logger.info("Image size: {} x {}", nbRows, nbCols);
 
             // 1 - Ignore negative values:
+            
+            // TODO: fix special case: image is [0] !
             if (fitsImage.getDataMax() <= 0d) {
                 throw new IllegalArgumentException("Fits image [" + fitsImage.getFitsImageIdentifier() + "] has only negative data !");
             }
@@ -315,7 +317,7 @@ public final class FitsImageUtils {
         }
     }
 
-    public static void changeViewportImages(final FitsImageHDU hdu, final Rectangle2D.Double newArea) {
+    public static void changeViewportImages(final FitsImageHDU hdu, final Rectangle2D.Double newArea) throws IllegalArgumentException {
         if (newArea == null || newArea.isEmpty()) {
             throw new IllegalStateException("Invalid area: " + newArea);
         }
@@ -401,7 +403,7 @@ public final class FitsImageUtils {
         }
     }
 
-    public static void resampleImages(final FitsImageHDU hdu, final int newSize, final Filter filter) {
+    public static void resampleImages(final FitsImageHDU hdu, final int newSize, final Filter filter) throws IllegalArgumentException {
         if (newSize < 1) {
             throw new IllegalStateException("Invalid size: " + newSize);
         }
@@ -455,7 +457,7 @@ public final class FitsImageUtils {
         }
     }
 
-    public static void rescaleImages(final FitsImageHDU hdu, final double incCol, final double incRow) {
+    public static void rescaleImages(final FitsImageHDU hdu, final double incCol, final double incRow) throws IllegalArgumentException {
         if (Double.isNaN(incCol) || NumberUtils.equals(incCol, 0.0, MAS_EPSILON)) {
             throw new IllegalStateException("Invalid column increment: " + incCol);
         }

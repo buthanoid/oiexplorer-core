@@ -76,7 +76,7 @@ import org.slf4j.LoggerFactory;
  * This panel represents a FitsImage plot
  * @author bourgesl
  */
-public class FitsImagePanel extends javax.swing.JPanel  implements Disposable, ChartProgressListener, ZoomEventListener,
+public class FitsImagePanel extends javax.swing.JPanel implements Disposable, ChartProgressListener, ZoomEventListener,
                                                                   Observer, DocumentExportable {
 
     /** default serial UID for Serializable interface */
@@ -750,6 +750,8 @@ public class FitsImagePanel extends javax.swing.JPanel  implements Disposable, C
             try {
                 FitsImageUtils.resampleImages(fitsImage.getFitsImageHDU(), newSize, filter);
                 ok = true;
+            } catch (IllegalArgumentException iae) {
+                MessagePane.showErrorMessage("Unable to resample image", iae);
             } catch (IllegalStateException ise) {
                 MessagePane.showErrorMessage("Unable to resample image", ise);
             }
@@ -786,6 +788,8 @@ public class FitsImagePanel extends javax.swing.JPanel  implements Disposable, C
                 try {
                     FitsImageUtils.rescaleImages(fitsImage.getFitsImageHDU(), inc, inc);
                     ok = true;
+                } catch (IllegalArgumentException iae) {
+                    MessagePane.showErrorMessage("Unable to rescale image", iae);
                 } catch (IllegalStateException ise) {
                     MessagePane.showErrorMessage("Unable to rescale image", ise);
                 }
@@ -840,6 +844,8 @@ public class FitsImagePanel extends javax.swing.JPanel  implements Disposable, C
                 try {
                     FitsImageUtils.changeViewportImages(fitsImage.getFitsImageHDU(), newArea);
                     ok = true;
+                } catch (IllegalArgumentException iae) {
+                    MessagePane.showErrorMessage("Unable to change image viewport", iae);
                 } catch (IllegalStateException ise) {
                     MessagePane.showErrorMessage("Unable to change image viewport", ise);
                 }

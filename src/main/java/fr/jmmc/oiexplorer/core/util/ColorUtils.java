@@ -24,7 +24,7 @@ public final class ColorUtils {
         // TODO: take alpha into account
         return luminance(r, g, b);
     }
-    
+
     public static int luminance(final int r, final int g, final int b) {
         // https://ninedegreesbelow.com/photography/srgb-luminance.html
         /*
@@ -49,7 +49,7 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
         return L_to_Y(c4[0]);
     }
 
-    static void blend_LCH(float[] c1, float[] c2, float ratio, float[] result) {
+    static void blend_LCH(final float[] c1, final float[] c2, final float ratio, final float[] result) {
 
         if (TRACE) {
             System.out.println("c1: " + Arrays.toString(c1));
@@ -63,13 +63,7 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
         result[1] = (c2[1] + ratio * (c1[1] - c2[1]));
 
         // H(Lch) angle combination:
-        float d = c1[2] - c2[2];
-        if (d > 180f) {
-            d -= 360f;
-        } else if (d < -180f) {
-            d += 360f;
-        }
-        result[2] = (c2[2] + ratio * d);
+        result[2] = (c2[2] + ratio * distanceAngle(c1[2] - c2[2]));
 
         // mix alpha ?
         result[3] = 1f;
@@ -77,6 +71,31 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
         if (TRACE) {
             System.out.println("mixLCH: " + Arrays.toString(result));
         }
+    }
+
+    public static float distanceHue(final float delta) {
+        if ((delta < 0f)) {
+            if (delta == -360f) {
+                return 360f;
+            }
+            return delta + 360f;
+        }
+        // [0; 360]
+        return delta;
+    }
+
+    public static float distanceAngle(final float delta) {
+        if (delta > 180f) {
+            return (delta - 360f);
+        } else if (delta < -180f) {
+            return (delta + 360f);
+        }
+        return delta;
+    }
+
+    public static float[] sRGB_to_OkLabCH(final int rgba, final float[] Lab) {
+        // in [0..100] range for (L,C), in [0..360] for (H)
+        return Lab_to_LCH(sRGB_to_OkLab(rgba, Lab), 1.0f);
     }
 
     public static float[] sRGB_to_OkLab(final int rgba, final float[] Lab) {
@@ -96,30 +115,31 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
     }
 
     public static float[] sRGB_to_LCH(final int rgba, final float[] LCH) {
-        return Lab_to_LCH(XYZ_to_Lab(sRGB_to_XYZ(sRGB_to_f(rgba, LCH))));
+        // in [0..100] range for (L,C), in [0..360] for (H)
+        return Lab_to_LCH(XYZ_to_Lab(sRGB_to_XYZ(sRGB_to_f(rgba, LCH))), 1.28f);
     }
 
     public static int LCH_to_sRGB(final float[] LCH) {
         return sRGB_to_i(XYZ_to_sRGB(Lab_to_XYZ(LCH_to_Lab(LCH))));
     }
 
-    public static float[] Lab_to_LCH(float[] Lab) {
+    public static float[] Lab_to_LCH(final float[] Lab, final float normC) {
         if (TRACE) {
             System.out.println("Lab: " + Arrays.toString(Lab));
         }
+        float C = (float) Math.sqrt(Lab[1] * Lab[1] + Lab[2] * Lab[2]);
+        if (normC != 1f) {
+            C /= normC;
+        }
         float H = (float) (Math.atan2(Lab[2], Lab[1]));
 
-        if (H > 0f) {
-            H = (float) ((H / Math.PI) * 180.0);
+        if (H >= 0f) {
+            H = (float) (H * (180.0 / Math.PI));
         } else {
-            H = (float) (360.0 - (Math.abs(H) / Math.PI) * 180.0);
+            H = (float) (H * (180.0 / Math.PI) + 360.0);
         }
 
-        float L = Lab[0];
-        // in [0..100]
-        float C = (float) Math.sqrt(Lab[1] * Lab[1] + Lab[2] * Lab[2]) / 1.28f;
-
-        Lab[0] = L;
+        // Lab[0] = Lab[0];
         Lab[1] = C;
         Lab[2] = H;
         if (TRACE) {
@@ -128,7 +148,7 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
         return Lab;
     }
 
-    public static float[] LCH_to_Lab(float[] LCH) {
+    public static float[] LCH_to_Lab(final float[] LCH) {
         if (TRACE) {
             System.out.println("LCH: " + Arrays.toString(LCH));
         }
@@ -146,11 +166,11 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
         return LCH;
     }
 
-    public static float Y_to_L(float Y) {
+    public static float Y_to_L(final float Y) {
         return 116.0f * lab_f_to(Y) - 16.0f;
     }
 
-    public static float[] XYZ_to_Lab(float[] xyz) {
+    public static float[] XYZ_to_Lab(final float[] xyz) {
         if (TRACE) {
             System.out.println("XYZ: " + Arrays.toString(xyz));
         }
@@ -183,15 +203,15 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
     private final static float epsilon = 0.206896551f;
     private final static float kappa = (24389.0f / 27.0f);
 
-    private static float lab_f_inv(float x) {
+    private static float lab_f_inv(final float x) {
         return (x > epsilon) ? x * x * x : (116.0f * x - 16.0f) / kappa;
     }
 
-    public static float L_to_Y(float L) {
+    public static float L_to_Y(final float L) {
         return lab_f_inv((L + 16.0f) / 116.0f);
     }
 
-    public static float[] Lab_to_XYZ(float[] Lab) {
+    public static float[] Lab_to_XYZ(final float[] Lab) {
         if (TRACE) {
             System.out.println("Lab: " + Arrays.toString(Lab));
         }
@@ -213,7 +233,7 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
     }
 
 // XYZ -> sRGB matrix, D65
-    public static float[] XYZ_to_sRGB(float[] XYZ) {
+    public static float[] XYZ_to_sRGB(final float[] XYZ) {
         if (TRACE) {
             System.out.println("XYZ: " + Arrays.toString(XYZ));
         }
@@ -235,7 +255,7 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
     }
 
 // sRGB -> XYZ matrix, D65
-    public static float[] sRGB_to_XYZ(float[] sRGB) {
+    public static float[] sRGB_to_XYZ(final float[] sRGB) {
         if (TRACE) {
             System.out.println("sRGB: " + Arrays.toString(sRGB));
         }
@@ -282,7 +302,7 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
         return rgba;
     }
 
-    public static int RGB_to_sRGBi(float val) {
+    public static int RGB_to_sRGBi(final float val) {
         int c = Math.round(255f * RGB_to_sRGB(val));
         if (TRACE) {
             System.out.println("val: " + val + " c: " + c);
@@ -290,7 +310,7 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
         return c;
     }
 
-    public static float RGB_to_sRGB(float c) {
+    public static float RGB_to_sRGB(final float c) {
         if (c <= 0f) {
             return 0f;
         }
@@ -304,7 +324,7 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
         }
     }
 
-    public static float sRGBi_to_RGB(int val8b) {
+    public static float sRGBi_to_RGB(final int val8b) {
         float c = sRGB_to_RGB(val8b / 255f);
         if (TRACE) {
             System.out.println("val: " + val8b + " c: " + c);
@@ -312,7 +332,7 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
         return c;
     }
 
-    public static float sRGB_to_RGB(float c) {
+    public static float sRGB_to_RGB(final float c) {
         // Convert non-linear RGB coordinates to linear ones,
         //  numbers from the w3 spec.
         if (c <= 0f) {
@@ -383,5 +403,4 @@ Blue:  ( 0*0.2225  +   0*0.7169 + 255*0.0606) / 255 = 0.0606
         }
         return sRGB;
     }
-
 }

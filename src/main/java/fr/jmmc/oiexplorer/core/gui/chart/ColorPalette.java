@@ -35,6 +35,12 @@ public class ColorPalette {
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(ColorPalette.class.getName());
 
+    private final static boolean USE_LCH = true;
+
+    public final static boolean SORT_DIVERGING = false;
+
+    public final static double REJECT_TOO_CLOSE = 0.001;
+
     /** default opacity = 80% */
     public final static float DEFAULT_OPACITY = 0.80f;
 
@@ -61,7 +67,9 @@ public class ColorPalette {
         "ColorPalette_Kelly.pal",
         "ColorPalette_gilles.pal",
         "ColorPalette_fixed.pal",
-        "ColorPalette_initial.pal"
+        "ColorPalette_initial.pal",
+        "ColorPalette_64-sort.pal",
+        "ColorPalette_64-dvg.pal"
     };
     private final static String CLASS_PATH = "/fr/jmmc/oiexplorer/core/resource/palette/";
 
@@ -279,7 +287,7 @@ public class ColorPalette {
 
         final String lines = sb.toString();
 
-        logger.debug("write:\n{}", lines);
+        logger.debug("write [{}]:\n{}", outputFile, lines);
 
         FileUtils.writeFile(outputFile, lines);
     }
@@ -325,7 +333,7 @@ public class ColorPalette {
         final int len = colors.length;
         final Color[] alphaColors = new Color[len];
 
-        final int alphaMask = Math.round(255 * alpha) << 24;
+        final int alphaMask = Math.round(255f * alpha) << 24;
 
         for (int i = 0; i < len; i++) {
             alphaColors[i] = new Color(colors[i].getRGB() & 0x00ffffff | alphaMask, true);
@@ -356,6 +364,13 @@ public class ColorPalette {
     public BufferedImage createImage(final int maxWidth,
                                      final int w, final int h,
                                      final boolean drawLabel) {
+        return createImage(maxWidth, w, h, drawLabel, -1);
+    }
+
+    public BufferedImage createImage(final int maxWidth,
+                                     final int w, final int h,
+                                     final boolean drawLabel,
+                                     final int comp) {
 
         final int len = colors.length;
 
@@ -376,8 +391,12 @@ public class ColorPalette {
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
         try {
+            final int hw = w / 2;
             final int tx = 2;
             final int ty = (h / 2) + 4;
+
+            // TODO: simplify API to convert colors
+            final ColorDistances colDist = (comp != -1) ? new ColorDistances(1.0, 1.0, 1.0) : null;
 
             final StringBuilder sb = (drawLabel) ? new StringBuilder(8) : null;
 
@@ -391,7 +410,29 @@ public class ColorPalette {
                 g2d.setColor(color);
 
                 x += w;
-                g2d.fillRect(x0, y0, x, y);
+
+                g2d.fillRect(x0, y0, w, h);
+
+                if (comp != -1) {
+                    colDist.computeRef(color);
+                    float compValue = colDist.getRef()[comp];
+                    // normalize to [0..1]:
+                    if (USE_LCH) {
+                        // Fix angle:
+                        if (comp == 2) {
+                            compValue /= 360f;
+                        }
+                    } else {
+                        // Fix A/B [-1..1]:
+                        if (comp > 0) {
+                            compValue /= 2f;
+                        }
+                    }
+                    final int v = Math.round(255f * compValue);
+                    // paint color:
+                    g2d.setColor(new Color(v, v, v));
+                    g2d.fillRect(x0 + hw, y0, hw, h);
+                }
 
                 // draw label:
                 if (drawLabel) {
@@ -421,10 +462,6 @@ public class ColorPalette {
         return image;
     }
 
-    public ColorPalette sortByDeltaE() {
-        return sortByDistance(0.5, 0.5, 1.0);
-    }
-
     public ColorPalette sortByLuminance() {
         return sortByDistance(1.0, 0.0, 0.0);
     }
@@ -437,6 +474,154 @@ public class ColorPalette {
         return sortByDistance(0.0, 0.0, 1.0);
     }
 
+    public ColorPalette sortByDeltaE() {
+        return sortByDistance(1.0, 1.0, 1.0);
+    }
+
+    public ColorPalette sortByBest() {
+        return sortByDistance(1.0, 1.0, 50.0);
+    }
+
+    public static void checkLabRange() {
+        /*
+            Fast range:
+                vals: [0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 255]
+        
+        OkLAB:
+            Fast range:
+            L  range: [0.0, 0.99998826]
+            A range:  [-0.2339203, 0.2762803]
+            B range:  [-0.31161994, 0.19849062]
+        
+            Full range:
+            L  range: [0.0, 0.99998826]
+            C1 range: [-0.2339203, 0.2762803]
+            C2 range: [-0.31161994, 0.19849062]        
+        
+        OkLCH:
+            Fast range:
+            L  range: [0.0, 0.99998826]
+            C range:  [0.0, 0.3226086]
+            H range:  [0.0, 359.9851]     
+        
+            Full range:
+            L  range: [0.0, 0.99998826]
+            C1 range: [0.0, 0.3226086]
+            C2 range: [0.0, 359.99997]        
+         */
+        final int[] vals;
+        if (false) {
+            vals = new int[256];
+            for (int i = 0; i < 256; i++) {
+                vals[i] = i;
+            }
+        } else {
+            vals = new int[1 + (256 / 16)];
+            for (int i = 0, n = 0; i <= 256; i += 16) {
+                vals[n++] = (i > 0xFF) ? 0xFF : i;
+            }
+        }
+        System.out.println("vals: " + Arrays.toString(vals));
+
+        ColorDistances colDist = new ColorDistances(1.0, 1.0, 1.0, false);
+
+        final float[] compL = new float[2];
+        final float[] comp1 = new float[2];
+        final float[] comp2 = new float[2];
+
+        compL[0] = Float.POSITIVE_INFINITY;
+        compL[1] = Float.NEGATIVE_INFINITY;
+        comp1[0] = Float.POSITIVE_INFINITY;
+        comp1[1] = Float.NEGATIVE_INFINITY;
+        comp2[0] = Float.POSITIVE_INFINITY;
+        comp2[1] = Float.NEGATIVE_INFINITY;
+
+        for (int ri = 0; ri < vals.length; ri++) {
+            final int r = vals[ri];
+
+            for (int gi = 0; gi < vals.length; gi++) {
+                final int g = vals[gi];
+
+                for (int bi = 0; bi < vals.length; bi++) {
+                    final int b = vals[bi];
+
+                    final Color color = new Color(r, g, b);
+                    colDist.computeRef(color);
+
+                    final float[] fvals = colDist.getRef();
+
+                    float c = fvals[0];
+                    if (c < compL[0]) {
+                        compL[0] = c;
+                    }
+                    if (c > compL[1]) {
+                        compL[1] = c;
+                    }
+
+                    c = fvals[1];
+                    if (c < comp1[0]) {
+                        comp1[0] = c;
+                    }
+                    if (c > comp1[1]) {
+                        comp1[1] = c;
+                    }
+
+                    c = fvals[2];
+                    if (c < comp2[0]) {
+                        comp2[0] = c;
+                    }
+                    if (c > comp2[1]) {
+                        comp2[1] = c;
+                    }
+                }
+            }
+        }
+
+        System.out.println("L  range: " + Arrays.toString(compL));
+        System.out.println("C1 range: " + Arrays.toString(comp1));
+        System.out.println("C2 range: " + Arrays.toString(comp2));
+
+        colDist = new ColorDistances(1.0, 1.0, 1.0, true); // normalize
+        final float[] ref = colDist.getRef();
+        final float[] other = colDist.getOther();
+
+        // L:
+        Arrays.fill(ref, 0f);
+        Arrays.fill(other, 0f);
+        ref[0] = 1f;
+        System.out.println("L(1.0) distance range: " + colDist.testDistance()); // 0 - 1
+        ref[0] = 0.5f;
+        System.out.println("L(0.5) distance range: " + colDist.testDistance()); // 0 - 1
+        // C:
+        Arrays.fill(ref, 0f);
+        Arrays.fill(other, 0f);
+        ref[1] = 1f;
+        System.out.println("C(1.0) distance range: " + colDist.testDistance()); // 0 - 1
+        ref[1] = 0.5f;
+        System.out.println("C(0.5) distance range: " + colDist.testDistance()); // 0 - 1
+
+        // H:
+        Arrays.fill(ref, 0f);
+        Arrays.fill(other, 0f);
+        ref[2] = 360f;
+        System.out.println("H(360-0) distance range: " + colDist.testDistance()); // 0 - 360 deg
+
+        Arrays.fill(ref, 0f);
+        Arrays.fill(other, 0f);
+        ref[2] = 180f;
+        System.out.println("H(180-0) distance range: " + colDist.testDistance()); // 0 - 360 deg
+
+        Arrays.fill(ref, 0f);
+        Arrays.fill(other, 0f);
+        other[2] = 360f;
+        System.out.println("H(0-360) distance range: " + colDist.testDistance()); // 0 - 360 deg
+
+        Arrays.fill(ref, 0f);
+        Arrays.fill(other, 0f);
+        other[2] = 180f;
+        System.out.println("H(0-180) distance range: " + colDist.testDistance()); // 0 - 360 deg
+    }
+
     public ColorPalette sortByDistance(final double wL, final double wC, final double wH) {
         final int len = colors.length;
         final List<Color> sortedColors = new ArrayList<Color>(len);
@@ -445,230 +630,303 @@ public class ColorPalette {
 
         final ColorDistances colDist = new ColorDistances(wL, wC, wH);
 
-        // Find minimum:
-        double min = Double.POSITIVE_INFINITY;
-        Color c1 = null;
-        Color c2 = null;
+        final double thReject = colDist.scaleDistance(REJECT_TOO_CLOSE);
+        System.out.println("thReject: " + thReject);
+
+        // Find the darkest color or any other criteria ?
+        Color current = null;
+
+        double lMin = Double.POSITIVE_INFINITY;
 
         for (int i = 0, size = cols.size(); i < size; i++) {
             final Color color = cols.get(i);
 
-            colDist.computeDistances(color, cols);
+            colDist.computeRef(color);
 
-            if (colDist.getDistMin() < min) {
-                min = colDist.getDistMin();
-                if ((colDist.getDiffL() >= 0.0)) {
-                    c1 = colDist.getColorMin(); // darkest
-                    c2 = colDist.getColor(); // lightest
-                } else {
-                    c1 = colDist.getColor(); // darkest
-                    c2 = colDist.getColorMin(); // lightest
-                }
+            final double l = colDist.getRef()[0];
+
+            if (l < lMin) {
+                lMin = l;
+                current = color;
             }
         }
 
         if (logger.isDebugEnabled()) {
-            logger.debug("global min: {} from {} to {}", min, c1, c2);
+            logger.debug("global L min: ({} for {})", lMin, current);
         }
 
-        Color ref1 = c1; // darkest before
-        sortedColors.add(ref1);
-        cols.remove(ref1);
-
-        Color ref2 = c2; // lightest after
-        sortedColors.add(ref2);
-        cols.remove(ref2);
+        sortedColors.add(current);
+        cols.remove(current);
 
         while (!cols.isEmpty()) {
+            // Find extremas from current:
+            colDist.computeDistances(current, cols);
 
-            // Find minimum:
-            // Follow chain from ref1:
-            colDist.computeDistances(ref1, cols);
+            final double dist;
+            final Color next;
 
-            min = colDist.getDistMin();
-            c1 = colDist.getColorMin();
-            c2 = ref1;
-
-            // Follow chain from ref2:
-            colDist.computeDistances(ref2, cols);
-
-            if (colDist.getDistMin() < min) {
-                min = colDist.getDistMin();
-                c1 = colDist.getColorMin();
-                c2 = ref2;
-            }
-
-            // c1 is new closest match
-            // c2 is ref
-            if (logger.isDebugEnabled()) {
-                logger.debug("global min: {} from {} to {}", min, c2, c1);
-            }
-
-            if (c2 == ref1) {
-                // closest to before side:
-                sortedColors.add(0, c1);
-                cols.remove(c1);
-                ref1 = c1;
+            if (SORT_DIVERGING) {
+                dist = colDist.getDistMax();
+                next = colDist.getColMax();
             } else {
-                // closest to after side:
-                sortedColors.add(c1);
-                cols.remove(c1);
-                ref2 = c1;
+                dist = colDist.getDistMin();
+                next = colDist.getColMin();
+            }
+
+            // Reject too close colors (looks bad):
+            if (dist < thReject) {
+                logger.info("Reject: {} distance from {} : {}  to {}", SORT_DIVERGING ? "max" : "min", current, dist, next);
+                cols.remove(next);
+            } else {
+                // next is new closest match
+                if (logger.isDebugEnabled()) {
+                    logger.debug("{} distance from {} : {}  to {}", SORT_DIVERGING ? "max" : "min", current, dist, next);
+                }
+
+                sortedColors.add(next);
+                cols.remove(next);
+                current = next;
             }
         }
 
-        return new ColorPalette(sortedColors.toArray(new Color[len]));
-    }
+        // final check:
+        Color prev = sortedColors.get(0);
 
-    /*
-    function sortColors(colors) {
-        // Calculate distance between each color
-        var distances = [];
-        for (var i = 0; i < colors.length; i++) {
-            distances[i] = [];
-            for (var j = 0; j < i; j++)
-                distances.push([colors[i], colors[j], colorDistance(colors[i], colors[j])]);
-        }
-        distances.sort(function(a, b) {
-            return a[2] - b[2];
-        });
+        for (int i = 1, size = sortedColors.size(); i < size; i++) {
+            final Color color = sortedColors.get(i);
 
-        // Put each color into separate cluster initially
-        var colorToCluster = {};
-        for (var i = 0; i < colors.length; i++)
-            colorToCluster[colors[i]] = [colors[i]];
+            final double dist = colDist.computeDistance(prev, color);
 
-        // Merge clusters, starting with lowest distances
-        var lastCluster;
-        for (var i = 0; i < distances.length; i++) {
-            var color1 = distances[i][0];
-            var color2 = distances[i][1];
-            var cluster1 = colorToCluster[color1];
-            var cluster2 = colorToCluster[color2];
-            if (!cluster1 || !cluster2 || cluster1 == cluster2)
-                continue;
-
-            // Make sure color1 is at the end of its cluster and
-            // color2 at the beginning.
-            if (color1 != cluster1[cluster1.length - 1])
-                cluster1.reverse();
-            if (color2 != cluster2[0])
-                cluster2.reverse();
-
-            // Merge cluster2 into cluster1
-            cluster1.push.apply(cluster1, cluster2);
-            delete colorToCluster[color1];
-            delete colorToCluster[color2];
-            colorToCluster[cluster1[0]] = cluster1;
-            colorToCluster[cluster1[cluster1.length - 1]] = cluster1;
-            lastCluster = cluster1;
+            if (logger.isDebugEnabled()) {
+                logger.debug("distance[{}]: {} from {} to {}", i, dist, prev, color);
+            }
+            prev = color;
         }
 
-        // By now all colors should be in one cluster
-        return lastCluster;
+        logger.info("Sorted Colors ({}) vs initial ({})", sortedColors.size(), len);
+
+        return new ColorPalette(sortedColors.toArray(new Color[sortedColors.size()]));
     }
-     */
+
     public static final class ColorDistances {
 
         // members:
-        private Color color;
-        private Color colorMin;
+        private Color colMin;
+        private Color colMax;
         private double distMin;
-        private double distMean;
-        private double diffL;
+        private double distMax;
+        private final double[] deltasMin = new double[3];
+        private final double[] deltasMax = new double[3];
         // temporary:
-        private final float[] c4_1 = new float[4];
-        private final float[] c4_2 = new float[4];
+        private final double[] deltas = new double[3];
+        private final float[] cRef = new float[4];
+        private final float[] cOther = new float[4];
 
-        private final double wL;
-        private final double wC;
-        private final double wH;
-
-        private double dL;
-        private double dC;
-        private double dH;
+        private final boolean doNorm;
+        private final double w2L;
+        private final double w2C;
+        private final double w2H;
 
         ColorDistances(final double wL, final double wC, final double wH) {
-            this.wL = wL;
-            this.wC = wC;
-            this.wH = wH;
+            this(wL, wC, wH, true);
         }
 
-        void computeDistances(final Color color, final List<Color> colors) {
-            this.color = color;
+        ColorDistances(final double wL, final double wC, final double wH, final boolean doNorm) {
+            this.doNorm = doNorm;
+            this.w2L = wL * wL;
+            this.w2C = wC * wC;
+            this.w2H = wH * wH;
+            reset();
+        }
 
-            // convert sRGB (float)
-            ColorUtils.sRGB_to_Lab(color.getRGB(), c4_1);
+        void reset() {
+            colMin = null;
+            colMax = null;
+            distMin = Double.POSITIVE_INFINITY;
+            distMax = Double.NEGATIVE_INFINITY;
+            Arrays.fill(deltasMin, Double.NaN);
+            Arrays.fill(deltasMax, Double.NaN);
+        }
+
+        void computeDistances(final Color ref, final List<Color> colors) {
+            reset();
+            convert(ref, cRef);
 
             // Compute distances:
             final int len = colors.size();
-            double min = Double.POSITIVE_INFINITY;
+            distMin = Double.POSITIVE_INFINITY;
+            distMax = Double.NEGATIVE_INFINITY;
             double total = 0.0;
-            Color cmin = null;
-            double deltaL = 0.0;
 
             for (int i = 0; i < len; i++) {
                 final Color other = colors.get(i);
 
-                final double dist = (color != other) ? distanceLab(other) : Double.POSITIVE_INFINITY;
+                if (ref != other) {
+                    convert(other, cOther);
+                    final double dist = distance();
 
-                if (dist != Double.POSITIVE_INFINITY) {
-                    if (dist < min) {
-                        min = dist;
-                        cmin = other;
-                        deltaL = dL; // luminosity
+                    if (dist < distMin) {
+                        distMin = dist;
+                        colMin = other;
+                        System.arraycopy(deltas, 0, deltasMin, 0, 3);
+                    }
+                    if (dist > distMax) {
+                        distMax = dist;
+                        colMax = other;
+                        System.arraycopy(deltas, 0, deltasMax, 0, 3);
                     }
                     total += dist;
                 }
             }
-            this.distMean = total / len;
-            this.colorMin = cmin;
-            this.distMin = min;
-            this.diffL = deltaL;
+            final double distMean = total / len;
 
             if (logger.isDebugEnabled()) {
-                logger.debug("Color: {} - distance mean = {} min = {} to {} dL = {}", color, distMean, distMin, colorMin, diffL);
+                logger.debug("Color {} {} distance mean = {}, min = {} at  {} {} ({}), max = {} at  {} {} ({})",
+                        Integer.toHexString(ref.getRGB()), Arrays.toString(cRef), distMean,
+                        distMin, Integer.toHexString(colMin.getRGB()), Arrays.toString(convert(colMin, cOther)), Arrays.toString(deltasMin),
+                        distMax, Integer.toHexString(colMax.getRGB()), Arrays.toString(convert(colMax, cOther)), Arrays.toString(deltasMax)
+                );
             }
         }
 
-        private double distanceLab(final Color other) {
-            // convert sRGB (float)
-            ColorUtils.sRGB_to_Lab(other.getRGB(), c4_2);
-
-            // Luminance:
-            dL = c4_1[0] - c4_2[0];
-            // C:
-            final double C1 = MathUtils.carthesianNorm(c4_1[1], c4_1[2]);
-            final double C2 = MathUtils.carthesianNorm(c4_2[1], c4_2[2]);
-            dC = (C1 - C2) / (1.0 + 0.045 * C1);
-            // H:
-            final double dA = c4_1[1] - c4_2[1];
-            final double dB = c4_1[2] - c4_2[2];
-            dH = Math.sqrt(dA * dA + dB * dB - dC * dC) / (1.0 + 0.015 * C2);
-
-            return wL * dL * dL + wC * dC * dC + wH * dH * dH;
+        void computeRef(final Color ref) {
+            convert(ref, cRef);
         }
 
-        public Color getColor() {
-            return color;
+        double computeDistance(final Color ref, final Color other) {
+            convert(ref, cRef);
+
+            final double dist;
+            if (ref == other) {
+                dist = Double.POSITIVE_INFINITY;
+            } else {
+                convert(other, cOther);
+                dist = distance();
+            }
+            return dist;
+        }
+
+        private final static boolean DO_CHECK_NORM_BOUNDS = false;
+
+        private float[] convert(final Color color, final float[] Lab) {
+            // convert sRGB color into OK Lab (better & simple perceptual color space in 2021):
+            if (USE_LCH) {
+                ColorUtils.sRGB_to_OkLabCH(color.getRGB(), Lab);
+            } else {
+                ColorUtils.sRGB_to_OkLab(color.getRGB(), Lab);
+            }
+            // System.out.println("OkLab ref[" + Integer.toHexString(color.getRGB()) + "]: " + Arrays.toString(Lab));
+            if (doNorm) {
+                if (USE_LCH) {
+                    /*
+                    OkLCH:
+                    Fast range:
+                    L  range: [0.0, 0.99998826]
+                    C range:  [0.0, 0.3226086]
+                    H range:  [0.0, 359.9851]     
+                     */
+                    // Fix C:
+                    Lab[1] /= 0.3226086f;
+
+                    if (DO_CHECK_NORM_BOUNDS) {
+                        if (Lab[1] > 1f) {
+                            System.out.println("C Out of bounds: " + Lab[1]);
+                        }
+                    }
+                } else {
+                    /*
+                    OkLAB:
+                    Fast range:
+                    L  range: [0.0, 0.99998826]
+                    A range:  [-0.2339203, 0.2762803]
+                    B range:  [-0.31161994, 0.19849062]
+                     */
+                    // Fix A/B:
+                    Lab[1] /= (Lab[1] >= 0f) ? 0.2762803f : 0.2339203f;
+                    Lab[2] /= (Lab[2] >= 0f) ? 0.19849062f : 0.31161994f;
+
+                    if (DO_CHECK_NORM_BOUNDS) {
+                        if (Math.abs(Lab[1]) > 1f) {
+                            System.out.println("A out of bounds: " + Lab[1]);
+                        }
+                        if (Math.abs(Lab[2]) > 1f) {
+                            System.out.println("B out of bounds: " + Lab[2]);
+                        }
+                    }
+                }
+                // System.out.println("OkLab ref[" + Integer.toHexString(color.getRGB()) + "] normalized: " + Arrays.toString(Lab));
+            }
+            return Lab;
+        }
+
+        private double distance() {
+            // Luminance (L):
+            deltas[0] = cRef[0] - cOther[0]; // in [0..1]
+
+            if (USE_LCH) {
+                // Lab in LCH form: see https://bottosson.github.io/posts/oklab/
+                // Chroma (C): SQRT(a^2 + b^2):
+                deltas[1] = cRef[1] - cOther[1];
+
+                // Hue (H): atan2(b,a)
+                // Keep boundaries at H=0 and H=360 to preserve color wheel orientation:
+                // deltas[2] = ColorUtils.distanceAngle(cRef[2] - cOther[2]) / 180.0; // in [-1..1]
+                deltas[2] = ColorUtils.distanceHue(cRef[2] - cOther[2]) / 360.0; // in [-1..1]
+                // System.out.println("dH: " + deltas[2] + " for angles: " + cRef[2] + " - " + cOther[2]);
+            } else {
+                // Chroma (C): SQRT(a^2 + b^2):
+                final double C1 = MathUtils.carthesianNorm(cRef[1], cRef[2]);
+                final double C2 = MathUtils.carthesianNorm(cOther[1], cOther[2]);
+                deltas[1] = C1 - C2;
+
+                // Hue (H): 
+                final double dA = cRef[1] - cOther[1];
+                final double dB = cRef[2] - cOther[2];
+                deltas[2] = Math.sqrt(Math.max(0.0, dA * dA + dB * dB - deltas[1] * deltas[1]));
+            }
+            // use squared distance (no sqrt):
+            return (w2L * (deltas[0] * deltas[0]) + w2C * (deltas[1] * deltas[1]) + w2H * (deltas[2] * deltas[2]));
+        }
+
+        public double scaleDistance(final double delta) {
+            return (w2L + w2C + w2H) * (delta * delta);
+        }
+
+        double testDistance() {
+            return distance();
+        }
+
+        public Color getColMin() {
+            return colMin;
+        }
+
+        public Color getColMax() {
+            return colMax;
         }
 
         public double getDistMin() {
             return distMin;
         }
 
-        public double getDistMean() {
-            return distMean;
+        public double getDistMax() {
+            return distMax;
         }
 
-        public Color getColorMin() {
-            return colorMin;
+        public double[] getDeltasMin() {
+            return deltasMin;
         }
 
-        public double getDiffL() {
-            return diffL;
+        public double[] getDeltasMax() {
+            return deltasMax;
         }
 
+        public float[] getRef() {
+            return cRef;
+        }
+
+        public float[] getOther() {
+            return cOther;
+        }
     }
 
 }

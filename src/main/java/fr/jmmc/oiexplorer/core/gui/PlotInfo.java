@@ -28,21 +28,21 @@ public final class PlotInfo {
     /** y axis index in plot definition */
     int yAxisIndex = -1;
     /** list of OIData tables used */
-    List<OIData> oidataList;
+    final List<OIData> oidataList;
     /** all distinct station indexes from OIData tables (not filtered) */
     List<String> distinctStaIndexNames;
     /** used distinct station indexes in the plot (filtered) */
-    Set<String> usedStaIndexNames;
+    final Set<String> usedStaIndexNames;
     /** all distinct station configuration from OIData tables (not filtered) */
     List<String> distinctStaConfNames;
     /** used distinct station configuration in the plot (filtered) */
-    Set<String> usedStaConfNames;
+    final Set<String> usedStaConfNames;
     /** largest wave length range (not filtered) */
     Range waveLengthRange = null;
     /** x axis information */
-    AxisInfo xAxisInfo;
+    final AxisInfo xAxisInfo;
     /** y axis information */
-    AxisInfo yAxisInfo;
+    final AxisInfo yAxisInfo;
 
     PlotInfo() {
         oidataList = new ArrayList<OIData>();

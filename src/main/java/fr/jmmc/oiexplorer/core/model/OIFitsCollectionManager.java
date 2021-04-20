@@ -1051,10 +1051,13 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             oiFitsSubset = null;
         } else {
             // TODO: use Merger directly LATER ?
-
             // Or keep SelectorResult (selection results are more rich than the OIFits data structure)
+
             // create a new fake OIFitsFile:
             oiFitsSubset = new OIFitsFile(OIFitsStandard.VERSION_1);
+
+            // Copy used StaNames (all files):
+            oiFitsSubset.getUsedStaNamesMap().putAll(oiFitsCollection.getUsedStaNamesMap());
 
             // add all tables:
             for (OIData oiData : result.getSortedOIDatas()) {
@@ -1083,6 +1086,10 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
     }
 
+    /**
+     * Export current subset as a single OIFITS file (Merger in action)
+     * @return 
+     */
     public OIFitsFile createOIFitsFromCurrentSubsetDefinition() {
         final SubsetDefinition subsetDefinition = getCurrentSubsetDefinitionRef();
 
