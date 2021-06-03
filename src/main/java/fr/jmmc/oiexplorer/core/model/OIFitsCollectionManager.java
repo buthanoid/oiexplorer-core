@@ -1712,7 +1712,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     /**
      * This fires an COLLECTION_CHANGED event to given registered listeners ASYNCHRONOUSLY !
      */
-    private void fireOIFitsCollectionChanged() {
+    public void fireOIFitsCollectionChanged() {
         fireOIFitsCollectionChanged(this, null);
     }
 

@@ -9,6 +9,8 @@ import fr.jmmc.jmal.image.ImageUtils;
 import fr.jmmc.jmal.image.ImageUtils.ImageInterpolation;
 import fr.jmmc.jmcs.data.preference.PreferencesException;
 import fr.jmmc.oiexplorer.core.gui.chart.ColorPalette;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
+import fr.jmmc.oitools.model.Target;
 import java.util.Observable;
 import java.util.Observer;
 import org.slf4j.Logger;
@@ -35,6 +37,8 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
     public final static String MODEL_IMAGE_INTERPOLATION = "model.image.interpolation";
     /** Preference : Color palette to use in the charts / plots */
     public final static String CHART_PALETTE = "chart.palette";
+    /** Preference : target matcher distance (as) */
+    public final static String TARGET_MATCHER_SEPARATION = "target.matcher.sep";
 
     /**
      * Creates a new Preferences object.
@@ -70,6 +74,8 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
         setDefaultPreference(MODEL_IMAGE_INTERPOLATION, ImageInterpolation.Bicubic.toString());
         // Color palette:
         setDefaultPreference(CHART_PALETTE, DEFAULT_COLOR_PALETTE);
+
+        setDefaultPreference(TARGET_MATCHER_SEPARATION, Double.valueOf(1.0));
     }
 
     /**
@@ -109,6 +115,10 @@ public abstract class Preferences extends fr.jmmc.jmcs.data.preference.Preferenc
             ColorPalette.setColorPalettes(getPreference(CHART_PALETTE));
 
             ImageUtils.setImageInterpolation(getImageInterpolation());
+
+            if (Target.MATCHER_LIKE.setSeparationInArcsec(getPreferenceAsDouble(Preferences.TARGET_MATCHER_SEPARATION))) {
+                OIFitsCollectionManager.getInstance().fireOIFitsCollectionChanged();
+            }
         }
 
     }
