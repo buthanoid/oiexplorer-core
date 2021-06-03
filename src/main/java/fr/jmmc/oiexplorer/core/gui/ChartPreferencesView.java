@@ -76,16 +76,12 @@ public class ChartPreferencesView extends javax.swing.JPanel implements Observer
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        jPanelChart = new javax.swing.JPanel();
         jLabelBrowser = new javax.swing.JLabel();
         jButtonBrowserSelector = new javax.swing.JButton();
         jComboBoxColorPalette = new javax.swing.JComboBox();
-        filler = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 32767));
 
+        setBorder(javax.swing.BorderFactory.createTitledBorder("Chart"));
         setLayout(new java.awt.GridBagLayout());
-
-        jPanelChart.setBorder(javax.swing.BorderFactory.createTitledBorder("Chart"));
-        jPanelChart.setLayout(new java.awt.GridBagLayout());
 
         jLabelBrowser.setText("Color palette:");
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -93,7 +89,7 @@ public class ChartPreferencesView extends javax.swing.JPanel implements Observer
         gridBagConstraints.gridy = 0;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(4, 4, 4, 4);
-        jPanelChart.add(jLabelBrowser, gridBagConstraints);
+        add(jLabelBrowser, gridBagConstraints);
 
         jButtonBrowserSelector.setText("Select...");
         jButtonBrowserSelector.addActionListener(new java.awt.event.ActionListener() {
@@ -105,7 +101,7 @@ public class ChartPreferencesView extends javax.swing.JPanel implements Observer
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.insets = new java.awt.Insets(4, 4, 4, 4);
-        jPanelChart.add(jButtonBrowserSelector, gridBagConstraints);
+        add(jButtonBrowserSelector, gridBagConstraints);
 
         jComboBoxColorPalette.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -118,18 +114,7 @@ public class ChartPreferencesView extends javax.swing.JPanel implements Observer
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         gridBagConstraints.weightx = 0.1;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        jPanelChart.add(jComboBoxColorPalette, gridBagConstraints);
-
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        add(jPanelChart, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
-        add(filler, gridBagConstraints);
+        add(jComboBoxColorPalette, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButtonBrowserSelectorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonBrowserSelectorActionPerformed
@@ -164,11 +149,9 @@ public class ChartPreferencesView extends javax.swing.JPanel implements Observer
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.Box.Filler filler;
     private javax.swing.JButton jButtonBrowserSelector;
     private javax.swing.JComboBox jComboBoxColorPalette;
     private javax.swing.JLabel jLabelBrowser;
-    private javax.swing.JPanel jPanelChart;
     // End of variables declaration//GEN-END:variables
 
     /**
