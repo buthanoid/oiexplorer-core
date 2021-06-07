@@ -5,6 +5,7 @@ package fr.jmmc.oiexplorer.core.gui.model;
 
 import fr.jmmc.jmcs.util.NumberUtils;
 import fr.jmmc.oitools.fits.FitsTable;
+import fr.jmmc.oitools.meta.ArrayColumnMeta;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.Types;
 import java.lang.ref.WeakReference;
@@ -94,8 +95,8 @@ public final class ColumnsTableModel extends AbstractTableModel {
     public void reset() {
         columnMap.clear();
         nbRows = 0;
-        columnDims2d[0] = 0;
-        columnDims2d[1] = 0;
+        columnDims2d[0] = -1;
+        columnDims2d[1] = -1;
     }
 
     private void initialize() {
@@ -127,11 +128,13 @@ public final class ColumnsTableModel extends AbstractTableModel {
         }
         if (expandRows) {
             // Fix nbRows:
-            if (columnDims2d[1] != 0) {
+            if (columnDims2d[1] != -1) {
                 final int repeat = columnDims2d[1];
-                nbRows *= repeat;
-
-                final ColumnMeta colMetaColIndex = new ColumnMeta(COLUMN_COL_INDEX, "column index", Types.TYPE_INT, repeat);
+                if (repeat > 1) {
+                    nbRows *= repeat;
+                }
+                // Use ArrayColumnMeta to ensure 2D column even if repeat = 0:
+                final ArrayColumnMeta colMetaColIndex = new ArrayColumnMeta(COLUMN_COL_INDEX, "column index", Types.TYPE_INT, repeat, false);
 
                 // Prepare column index column:
                 table.addDerivedColumnMeta(colMetaColIndex);
@@ -166,7 +169,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
                         }
                     } else if (expandRows) {
                         // 2d
-                        if (columnDims2d[1] == 0) {
+                        if (columnDims2d[1] == -1) {
                             columnDims2d[1] = repeat;
                         } else {
                             // check consistency ?
@@ -269,7 +272,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
         // compute real column:
         if (expandRows) {
-            if (columnDims2d[1] != 0) {
+            if (columnDims2d[1] > 0) {
                 rowIndex = row / columnDims2d[1];
                 if (mapping.hasIndex()) {
                     columnIndex = row % columnDims2d[1];
