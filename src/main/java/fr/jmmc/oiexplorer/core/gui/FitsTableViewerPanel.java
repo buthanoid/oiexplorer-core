@@ -173,7 +173,7 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         jTableKeywords.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
         jTableKeywords.setMinimumSize(new java.awt.Dimension(50, 50));
         jTableKeywords.setName("jTableKeywords"); // NOI18N
-        jTableKeywords.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jTableKeywords.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_INTERVAL_SELECTION);
         jScrollPaneKeywords.setViewportView(jTableKeywords);
 
         jSplitPaneVert.setLeftComponent(jScrollPaneKeywords);
@@ -187,7 +187,7 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         jTableColumns.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
         jTableColumns.setMinimumSize(new java.awt.Dimension(50, 50));
         jTableColumns.setName("jTableColumns"); // NOI18N
-        jTableColumns.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jTableColumns.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_INTERVAL_SELECTION);
         jScrollPaneColumns.setViewportView(jTableColumns);
 
         jSplitPaneVert.setRightComponent(jScrollPaneColumns);
