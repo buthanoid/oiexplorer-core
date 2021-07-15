@@ -559,7 +559,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
 
     private void jToggleButtonRulerItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jToggleButtonRulerItemStateChanged
         if (evt.getStateChange() == ItemEvent.SELECTED) {
-            this.rulerOverlay = new RulerOverlay(chartPanel);
+            this.rulerOverlay = new RulerOverlay(this, chartPanel);
             setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
             chartPanel.addOverlay(rulerOverlay);            
         } else {
@@ -1433,6 +1433,14 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
                 }
             }
         }
+    }
+    
+    /**
+    * Returns the current FitsUnit used by the plot
+    * @return current FitsUnit used by the plot
+    */
+    public FitsUnit getCurrentAxisUnit() {
+        return this.lastAxisUnit;
     }
 
     private Rectangle2D.Double getCurrentZoomRect() {

@@ -41,8 +41,6 @@ public class EnhancedChartPanel extends ChartPanel {
     private boolean redirectZoomEvent = false;
     /** ChartMouseSelectionListener which handles rectangular mouse selection event */
     private ChartMouseSelectionListener mouseRectangularSelectionEventListener = null;
-    /** flag to redirect mouse events */
-    private boolean redirectMouseEvents = false;
 
     /**
      * Constructs an enhanced JFreeChart panel.
