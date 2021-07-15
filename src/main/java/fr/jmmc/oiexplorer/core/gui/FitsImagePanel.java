@@ -1009,10 +1009,9 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         logger.debug("plot : {}", this.fitsImage);
 
         // check if fits image is available :
-        if (this.fitsImage == null) {
+        if (this.fitsImage == null || this.fitsImage.getImageCount() == 0) {
             resetPlot();
         } else {
-
             // Use model image Preferences :
             final IndexColorModel colorModel = ColorModels.getColorModel((String) this.jComboBoxLUT.getSelectedItem());
             final ColorScale colorScale = (ColorScale) this.jComboBoxColorScale.getSelectedItem();
