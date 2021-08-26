@@ -21,7 +21,7 @@
     <!-- plot spatial(UCOORD VCOORD) -->
     <plotDefinition>
         <id>VCOORD_SPATIAL/UCOORD_SPATIAL</id>
-        <name>Spatial UCOORD - VCOORD coverage</name>
+        <name>UV coverage</name>
         <skipFlaggedData>true</skipFlaggedData>
         <drawLine>false</drawLine>
         <xAxis>
