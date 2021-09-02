@@ -167,7 +167,7 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         jScrollPaneKeywords.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPaneKeywords.setAutoscrolls(true);
         jScrollPaneKeywords.setName("jScrollPaneKeywords"); // NOI18N
-        jScrollPaneKeywords.setPreferredSize(new java.awt.Dimension(300, 300));
+        jScrollPaneKeywords.setPreferredSize(new java.awt.Dimension(100, 100));
 
         jTableKeywords.setModel(keywordsModel);
         jTableKeywords.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
@@ -181,7 +181,7 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         jScrollPaneColumns.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
         jScrollPaneColumns.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPaneColumns.setName("jScrollPaneColumns"); // NOI18N
-        jScrollPaneColumns.setPreferredSize(new java.awt.Dimension(300, 300));
+        jScrollPaneColumns.setPreferredSize(new java.awt.Dimension(100, 100));
 
         jTableColumns.setModel(columnsModel);
         jTableColumns.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
