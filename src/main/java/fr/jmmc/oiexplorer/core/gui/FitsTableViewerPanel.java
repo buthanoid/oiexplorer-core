@@ -14,6 +14,8 @@ import fr.jmmc.oiexplorer.core.gui.model.KeywordsTableModel;
 import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.fits.FitsTable;
 import javax.swing.JLabel;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import org.slf4j.Logger;
@@ -37,6 +39,9 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     private final ColumnsTableModel columnsModel;
     private final BasicTableSorter columnsTableSorter;
 
+    private int lastSelRow = -1;
+    private int lastSelCol = -1;
+
     /** Creates new form FitsTableViewer */
     public FitsTableViewerPanel() {
         this.keywordsModel = new KeywordsTableModel();
@@ -46,9 +51,45 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
 
         // Configure table sorting
         keywordsTableSorter = new BasicTableSorter(keywordsModel, jTableKeywords.getTableHeader());
+
+        // Process the listeners last to first, so register before jtable, not after:
+        keywordsTableSorter.addTableModelListener(new TableModelListener() {
+
+            @Override
+            public void tableChanged(final TableModelEvent e) {
+                // If the table structure has changed, reapply the custom renderer/editor on columns + auto-fit
+                if ((e.getSource() != keywordsTableSorter)
+                        || (e.getFirstRow() == TableModelEvent.HEADER_ROW)) {
+
+                    if (jTableKeywords.getRowCount() != 0) {
+                        AutofitTableColumns.autoResizeTable(jTableKeywords);
+                    }
+                }
+            }
+        });
         jTableKeywords.setModel(keywordsTableSorter);
 
         columnsTableSorter = new BasicTableSorter(columnsModel, jTableColumns.getTableHeader());
+
+        // Process the listeners last to first, so register before jtable, not after:
+        columnsTableSorter.addTableModelListener(new TableModelListener() {
+
+            @Override
+            public void tableChanged(final TableModelEvent e) {
+                // If the table structure has changed, reapply the custom renderer/editor on columns + auto-fit
+                if ((e.getSource() != columnsTableSorter)
+                        || (e.getFirstRow() == TableModelEvent.HEADER_ROW)) {
+
+                    if (jTableColumns.getRowCount() != 0) {
+                        AutofitTableColumns.autoResizeTable(jTableColumns);
+                    }
+                }
+                if (e.getSource() == columnsTableSorter) {
+                    // sorting changed, restore selection:
+                    restoreSelection();
+                }
+            }
+        });
         jTableColumns.setModel(columnsTableSorter);
 
         // Fix row height:
@@ -68,17 +109,14 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
 
     // Display Table
     public void setHdu(final FitsHDU hdu) {
+        // reset selection:
+        lastSelRow = -1;
+        lastSelCol = -1;
+
         keywordsModel.setFitsHdu(hdu);
 
         final FitsTable table = (hdu instanceof FitsTable) ? (FitsTable) hdu : null;
         columnsModel.setFitsHdu(table);
-
-        if (jTableKeywords.getRowCount() != 0) {
-            AutofitTableColumns.autoResizeTable(jTableKeywords);
-        }
-        if (jTableColumns.getRowCount() != 0) {
-            AutofitTableColumns.autoResizeTable(jTableColumns);
-        }
 
         if (table != null) {
             jScrollPaneColumns.setVisible(true);
@@ -86,6 +124,12 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         } else {
             jScrollPaneColumns.setVisible(false);
             jSplitPaneVert.setDividerLocation(1.0);
+        }
+    }
+
+    void restoreSelection() {
+        if (lastSelRow != -1 && lastSelCol != -1) {
+            setSelection(lastSelRow, lastSelCol);
         }
     }
 
@@ -133,6 +177,10 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
             }
 
             if (rowIdx != -1) {
+                // Item found so preserve this selection:
+                lastSelRow = row;
+                lastSelCol = col;
+
                 jTableColumns.getSelectionModel().setSelectionInterval(rowIdx, rowIdx);
 
                 // Move view to show found row
