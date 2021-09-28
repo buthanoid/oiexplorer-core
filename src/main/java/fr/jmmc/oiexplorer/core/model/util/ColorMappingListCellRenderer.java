@@ -8,6 +8,8 @@ import java.awt.Component;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
 import javax.swing.ListCellRenderer;
+import javax.swing.ListModel;
+import javax.swing.ListSelectionModel;
 
 /**
  *
@@ -46,14 +48,14 @@ public final class ColorMappingListCellRenderer {
                 final int index,
                 final boolean isSelected,
                 final boolean cellHasFocus) {
-            
+
             final String val;
             if (value == null) {
                 val = null;
-            } else if (value instanceof ColorMapping) {                
+            } else if (value instanceof ColorMapping) {
                 val = displayValue((ColorMapping) value);
             } else {
-                val = value.getClass().getName();
+                val = value.toString();
             }
             return super.getListCellRendererComponent(list, val, index, isSelected, cellHasFocus);
         }
@@ -62,12 +64,11 @@ public final class ColorMappingListCellRenderer {
     public static ListCellRenderer getListCellRenderer() {
         return renderer;
     }
-    
+
     private ColorMappingListCellRenderer() {
         // utility class
     }
-         
-    
+
     /**
      * Return a textual value (e.g. to fill comboboxes ) for the given color mapping.
      * @param c input color mapping 
@@ -86,5 +87,5 @@ public final class ColorMappingListCellRenderer {
         }
         return null;
     }
-    
+
 }

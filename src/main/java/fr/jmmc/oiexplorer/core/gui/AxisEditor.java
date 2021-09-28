@@ -72,7 +72,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
      */
     public AxisEditor(final PlotDefinitionEditor parent) {
         initComponents();
-        
+
         parentToNotify = parent;
         nameComboBoxModel = new GenericListModel<String>(new ArrayList<String>(25), true);
         nameComboBox.setModel(nameComboBoxModel);
@@ -105,7 +105,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
                 }
             }
         });
-        
+
         // Adjust fonts:
         final Font fixedFont = new Font(Font.MONOSPACED, Font.PLAIN, SwingUtils.adjustUISize(12));
         this.nameComboBox.setFont(fixedFont);
@@ -375,6 +375,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
 
         setLayout(new java.awt.GridBagLayout());
 
+        nameComboBox.setPrototypeDisplayValue("XXXX");
         nameComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
@@ -384,7 +385,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weightx = 0.8;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(nameComboBox, gridBagConstraints);
 
@@ -449,7 +450,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
         gridBagConstraints.gridy = 0;
         jPanelBounds.add(jRadioModeFixed, gridBagConstraints);
 
-        jFieldMin.setColumns(10);
+        jFieldMin.setColumns(4);
         jFieldMin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
@@ -459,10 +460,11 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.2;
         gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 2);
         jPanelBounds.add(jFieldMin, gridBagConstraints);
 
-        jFieldMax.setColumns(10);
+        jFieldMax.setColumns(4);
         jFieldMax.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
@@ -472,19 +474,24 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
         gridBagConstraints.gridx = 4;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.2;
         jPanelBounds.add(jFieldMax, gridBagConstraints);
 
+        rangeListComboBox.setPrototypeDisplayValue("XXXX");
         rangeListComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 rangeListComboBoxActionPerformed(evt);
             }
         });
-        jPanelBounds.add(rangeListComboBox, new java.awt.GridBagConstraints());
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.weightx = 0.2;
+        jPanelBounds.add(rangeListComboBox, gridBagConstraints);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.2;
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         add(jPanelBounds, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents

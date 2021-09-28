@@ -271,7 +271,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         jPanelInfos = new javax.swing.JPanel();
         jPanelCrosshair = new javax.swing.JPanel();
         jButtonHideCrossHair = new javax.swing.JButton();
+        jPanelCrosshairInfos = new javax.swing.JPanel();
         jLabelCrosshairInfos = new javax.swing.JLabel();
+        fillerHz = new javax.swing.Box.Filler(new java.awt.Dimension(0, 0), new java.awt.Dimension(0, 0), new java.awt.Dimension(32767, 0));
+        fillerRigid = new javax.swing.Box.Filler(new java.awt.Dimension(1, 0), new java.awt.Dimension(1, 0), new java.awt.Dimension(1, 0));
         jSeparatorHoriz = new javax.swing.JSeparator();
         jPanelMouseInfos = new javax.swing.JPanel();
         jLabelInfos = new javax.swing.JLabel();
@@ -308,21 +311,23 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelCrosshair.add(jButtonHideCrossHair, gridBagConstraints);
 
+        jPanelCrosshairInfos.setLayout(new javax.swing.BoxLayout(jPanelCrosshairInfos, javax.swing.BoxLayout.LINE_AXIS));
+
         jLabelCrosshairInfos.setText("tooltip");
         jLabelCrosshairInfos.setOpaque(true);
+        jPanelCrosshairInfos.add(jLabelCrosshairInfos);
+        jPanelCrosshairInfos.add(fillerHz);
+        jPanelCrosshairInfos.add(fillerRigid);
+
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        gridBagConstraints.weightx = 0.1;
-        gridBagConstraints.insets = new java.awt.Insets(2, 6, 2, 2);
-        jPanelCrosshair.add(jLabelCrosshairInfos, gridBagConstraints);
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        jPanelCrosshair.add(jPanelCrosshairInfos, gridBagConstraints);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         jPanelCrosshair.add(jSeparatorHoriz, gridBagConstraints);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -337,15 +342,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         jLabelInfos.setText("Infos:");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jLabelInfos, gridBagConstraints);
 
         jLabelPoints.setText("points");
+        jLabelPoints.setPreferredSize(new java.awt.Dimension(50, 10));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         gridBagConstraints.weightx = 0.1;
@@ -355,37 +361,37 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.weightx = 0.05;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jSeparator1, gridBagConstraints);
 
         jLabelDataRange.setText("data");
+        jLabelDataRange.setPreferredSize(new java.awt.Dimension(100, 10));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        gridBagConstraints.weightx = 0.2;
+        gridBagConstraints.weightx = 0.3;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jLabelDataRange, gridBagConstraints);
 
         jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 4;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.weightx = 0.05;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jSeparator2, gridBagConstraints);
 
         jLabelDataErrRange.setText("data+error");
+        jLabelDataErrRange.setPreferredSize(new java.awt.Dimension(100, 10));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 5;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         gridBagConstraints.weightx = 0.3;
@@ -395,18 +401,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         jSeparator3.setOrientation(javax.swing.SwingConstants.VERTICAL);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 6;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
-        gridBagConstraints.weightx = 0.05;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMouseInfos.add(jSeparator3, gridBagConstraints);
 
         jLabelMouse.setText("[mouse]");
+        jLabelMouse.setPreferredSize(new java.awt.Dimension(50, 10));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 7;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = java.awt.GridBagConstraints.REMAINDER;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         gridBagConstraints.weightx = 0.1;
@@ -2847,6 +2852,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.Box.Filler fillerHz;
+    private javax.swing.Box.Filler fillerRigid;
     private javax.swing.JButton jButtonHideCrossHair;
     private javax.swing.JLabel jLabelCrosshairInfos;
     private javax.swing.JLabel jLabelDataErrRange;
@@ -2856,6 +2863,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private javax.swing.JLabel jLabelNoData;
     private javax.swing.JLabel jLabelPoints;
     private javax.swing.JPanel jPanelCrosshair;
+    private javax.swing.JPanel jPanelCrosshairInfos;
     private javax.swing.JPanel jPanelInfos;
     private javax.swing.JPanel jPanelMouseInfos;
     private javax.swing.JSeparator jSeparator1;

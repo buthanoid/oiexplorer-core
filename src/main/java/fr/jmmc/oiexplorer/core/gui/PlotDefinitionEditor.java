@@ -395,10 +395,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         plotDefinitionComboBox = new javax.swing.JComboBox();
         colorMappingLabel = new javax.swing.JLabel();
         colorMappingComboBox = new javax.swing.JComboBox();
-        plotDefinitionName = new javax.swing.JLabel();
         flaggedDataCheckBox = new javax.swing.JCheckBox();
-        detailledToggleButton = new javax.swing.JToggleButton();
         drawLinesCheckBox = new javax.swing.JCheckBox();
+        detailledToggleButton = new javax.swing.JToggleButton();
+        jToggleButtonExprEditor = new javax.swing.JToggleButton();
         extendedPanel = new javax.swing.JPanel();
         yLabel = new javax.swing.JLabel();
         xLabel = new javax.swing.JLabel();
@@ -407,7 +407,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         xAxisPanel = new javax.swing.JPanel();
         yAxesPanel = new javax.swing.JPanel();
         jPanelOtherEditors = new javax.swing.JPanel();
-        jToggleButtonExprEditor = new javax.swing.JToggleButton();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -478,7 +477,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         add(plotDefLabel, gridBagConstraints);
 
         plotDefinitionComboBox.setName("plotDefinitionComboBox"); // NOI18N
-        plotDefinitionComboBox.setPrototypeDisplayValue("01234567890123456789");
+        plotDefinitionComboBox.setPrototypeDisplayValue("XXXXXXXX");
         plotDefinitionComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 plotDefinitionComboBoxActionPerformed(evt);
@@ -489,7 +488,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
-        gridBagConstraints.weightx = 0.2;
+        gridBagConstraints.weightx = 0.4;
         add(plotDefinitionComboBox, gridBagConstraints);
 
         colorMappingLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
@@ -502,7 +501,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 2);
         add(colorMappingLabel, gridBagConstraints);
 
-        colorMappingComboBox.setPrototypeDisplayValue("0123456789");
+        colorMappingComboBox.setPrototypeDisplayValue("XXXX");
         colorMappingComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 colorMappingComboBoxActionPerformed(evt);
@@ -513,12 +512,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.weightx = 0.1;
         add(colorMappingComboBox, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = 2;
-        add(plotDefinitionName, gridBagConstraints);
 
         flaggedDataCheckBox.setText("Skip Flagged");
         flaggedDataCheckBox.setToolTipText("skip flagged data (FLAG=T means the data is invalid)");
@@ -532,6 +527,18 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         add(flaggedDataCheckBox, gridBagConstraints);
+
+        drawLinesCheckBox.setText("Draw lines");
+        drawLinesCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                drawLinesCheckBoxActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 9;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
+        add(drawLinesCheckBox, gridBagConstraints);
 
         detailledToggleButton.setText("...");
         detailledToggleButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
@@ -548,17 +555,19 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         add(detailledToggleButton, gridBagConstraints);
 
-        drawLinesCheckBox.setText("Draw lines");
-        drawLinesCheckBox.addActionListener(new java.awt.event.ActionListener() {
+        jToggleButtonExprEditor.setText("Expr editor");
+        jToggleButtonExprEditor.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        jToggleButtonExprEditor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                drawLinesCheckBoxActionPerformed(evt);
+                jToggleButtonExprEditorActionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 9;
+        gridBagConstraints.gridx = 11;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
-        add(drawLinesCheckBox, gridBagConstraints);
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 0);
+        add(jToggleButtonExprEditor, gridBagConstraints);
 
         extendedPanel.setLayout(new java.awt.GridBagLayout());
 
@@ -638,24 +647,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         jPanelOtherEditors.setLayout(new java.awt.BorderLayout());
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 3;
         gridBagConstraints.gridwidth = 12;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         add(jPanelOtherEditors, gridBagConstraints);
-
-        jToggleButtonExprEditor.setText("Expr editor");
-        jToggleButtonExprEditor.setMargin(new java.awt.Insets(0, 0, 0, 0));
-        jToggleButtonExprEditor.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jToggleButtonExprEditorActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 11;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
-        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 0);
-        add(jToggleButtonExprEditor, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void addYAxisButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addYAxisButtonActionPerformed
@@ -907,7 +902,6 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     private javax.swing.JToggleButton jToggleButtonFixed;
     private javax.swing.JLabel plotDefLabel;
     private javax.swing.JComboBox plotDefinitionComboBox;
-    private javax.swing.JLabel plotDefinitionName;
     private javax.swing.JButton refreshButton;
     private javax.swing.JPanel xAxisPanel;
     private javax.swing.JLabel xLabel;

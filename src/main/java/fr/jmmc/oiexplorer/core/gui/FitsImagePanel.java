@@ -465,9 +465,10 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
 
         jLabelLutTable.setText("LUT table");
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 6);
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         jPanelOptions.add(jLabelLutTable, gridBagConstraints);
 
+        jComboBoxLUT.setPrototypeDisplayValue("XXXX");
         jComboBoxLUT.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxLUTActionPerformed(evt);
@@ -475,22 +476,23 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        gridBagConstraints.weightx = 0.5;
         jPanelOptions.add(jComboBoxLUT, gridBagConstraints);
 
         jLabelColorScale.setText("Color scale");
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.insets = new java.awt.Insets(0, 6, 0, 6);
+        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 2);
         jPanelOptions.add(jLabelColorScale, gridBagConstraints);
 
+        jComboBoxColorScale.setPrototypeDisplayValue("XXXX");
         jComboBoxColorScale.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxColorScaleActionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.insets = new java.awt.Insets(2, 8, 2, 2);
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.3;
         jPanelOptions.add(jComboBoxColorScale, gridBagConstraints);
 
         jButtonDisplayKeywords.setText("Display keywords");
@@ -500,16 +502,19 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.insets = new java.awt.Insets(0, 10, 0, 0);
+        gridBagConstraints.insets = new java.awt.Insets(0, 4, 0, 2);
         jPanelOptions.add(jButtonDisplayKeywords, gridBagConstraints);
 
         jToggleButtonRuler.setText("Ruler");
+        jToggleButtonRuler.setToolTipText("Use the ruler to measure distance and angle on the image");
         jToggleButtonRuler.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jToggleButtonRulerItemStateChanged(evt);
             }
         });
-        jPanelOptions.add(jToggleButtonRuler, new java.awt.GridBagConstraints());
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
+        jPanelOptions.add(jToggleButtonRuler, gridBagConstraints);
 
         add(jPanelOptions, java.awt.BorderLayout.PAGE_END);
     }// </editor-fold>//GEN-END:initComponents
@@ -561,7 +566,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         if (evt.getStateChange() == ItemEvent.SELECTED) {
             this.rulerOverlay = new RulerOverlay(this, chartPanel);
             setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
-            chartPanel.addOverlay(rulerOverlay);            
+            chartPanel.addOverlay(rulerOverlay);
         } else {
             chartPanel.removeOverlay(rulerOverlay);
             rulerOverlay.dispose();
@@ -1433,11 +1438,11 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
             }
         }
     }
-    
+
     /**
-    * Returns the current FitsUnit used by the plot
-    * @return current FitsUnit used by the plot
-    */
+     * Returns the current FitsUnit used by the plot
+     * @return current FitsUnit used by the plot
+     */
     public FitsUnit getCurrentAxisUnit() {
         return this.lastAxisUnit;
     }
