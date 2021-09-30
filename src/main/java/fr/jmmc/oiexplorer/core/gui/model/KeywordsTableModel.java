@@ -58,8 +58,7 @@ public final class KeywordsTableModel extends AbstractTableModel {
     public int getRowCount() {
         final FitsHDU hdu = this.getHdu();
         if (hdu != null) {
-            final int nHeaderCards = hdu.hasHeaderCards() ? hdu.getHeaderCards().size() : 0;
-            return nHeaderCards + hdu.getKeywordsDesc().size();
+            return hdu.getKeywordsDesc().size() + (hdu.hasHeaderCards() ? hdu.getHeaderCards().size() : 0);
         }
         return 0;
     }
@@ -70,27 +69,12 @@ public final class KeywordsTableModel extends AbstractTableModel {
         if (hdu == null) {
             return null;
         }
-        final int nHeaderCards = hdu.hasHeaderCards() ? hdu.getHeaderCards().size() : 0;
+        // First keywords:
+        final int nKeywords = hdu.getKeywordsDesc().size();
 
-        if (rowIndex < nHeaderCards) {
-            final List<FitsHeaderCard> headerCards = hdu.getHeaderCards();
-            // header cards first
-            final FitsHeaderCard headerCard = headerCards.get(rowIndex);
-            switch (columnIndex) {
-                case 0:
-                    return headerCard.getKey();
-                case 1:
-                    return headerCard.getValue();
-                case 2:
-                    return headerCard.getComment();
-                default:
-                    break;
-            }
-        } else {
-            // keywords
-            final int keywordIndex = rowIndex - nHeaderCards;
-
-            final KeywordMeta meta = hdu.getKeywordDesc(keywordIndex);
+        if (rowIndex < nKeywords) {
+            // keywords first
+            final KeywordMeta meta = hdu.getKeywordDesc(rowIndex);
             final String key = meta.getName();
             switch (columnIndex) {
                 case 0:
@@ -102,7 +86,23 @@ public final class KeywordsTableModel extends AbstractTableModel {
                 default:
                     break;
             }
+        } else {
+            final int cardIndex = rowIndex - nKeywords;
+
+            final List<FitsHeaderCard> headerCards = hdu.getHeaderCards();
+            // header cards first
+            final FitsHeaderCard headerCard = headerCards.get(cardIndex);
+            switch (columnIndex) {
+                case 0:
+                    return headerCard.getKey();
+                case 1:
+                    return headerCard.getValue();
+                case 2:
+                    return headerCard.getComment();
+                default:
+                    break;
+            }
         }
-        return "?Undefined?";
+        return null;
     }
 }
