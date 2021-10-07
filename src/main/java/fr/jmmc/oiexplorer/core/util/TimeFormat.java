@@ -55,16 +55,25 @@ public final class TimeFormat extends DateFormat {
      */
     @Override
     public StringBuffer format(final Date date, final StringBuffer toAppendTo,
-            final FieldPosition fieldPosition) {
+                               final FieldPosition fieldPosition) {
 
         final Calendar cal = getCalendar();
         cal.setTime(date);
 
         int h = cal.get(Calendar.HOUR_OF_DAY);
-        final int m = cal.get(Calendar.MINUTE);
+        int m = cal.get(Calendar.MINUTE);
 
         if (useHA) {
             h -= 12;
+            if ((h < 0) && (m != 0)) {
+                // inverse minutes
+                m = 60 - m;
+                h++;
+                if (h == 0) {
+                    // preserve sign of negative HA: 
+                    toAppendTo.append('-');
+                }
+            }
         } else {
             if (h < 10) {
                 toAppendTo.append('0');
