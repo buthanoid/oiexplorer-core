@@ -531,7 +531,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         if (this.fitsImage != null) {
             FitsImageHDU fitsImageHDU = this.fitsImage.getFitsImageHDU();
             // note: only possible with one Fits image or one Fits cube (single HDU):
-            final String hduHeader = "ImageHDU#" + fitsImageHDU.getExtNb() + " has " + fitsImageHDU.getImageCount() + " images.\n\n" + fitsImageHDU.getHeaderCardsAsString("\n");
+            final String hduHeader = "ImageHDU#" + fitsImageHDU.getExtNb() + " has " + fitsImageHDU.getImageCount() + " images.\n\n" + fitsImageHDU.getHeaderAsString("\n");
             MessagePane.showMessage(hduHeader);
         } else {
             MessagePane.showMessage("Sorry, no associated Fits HDU to display.");
