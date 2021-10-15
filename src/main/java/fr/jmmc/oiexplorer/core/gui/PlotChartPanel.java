@@ -1865,8 +1865,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 minTen -= 1;
             }
 
-            bmin = Math.pow(10.0, minTen); // lower power of ten
-            bmax = Math.pow(10.0, maxTen); // upper power of ten
+            bmin = (0.999 * Math.pow(10.0, minTen)); // lower power of ten
+            bmax = (1.001 * Math.pow(10.0, maxTen)); // upper power of ten
 
             // view range:
             minTen = Math.floor(Math.log10(vmin) * 2.0);
@@ -1876,8 +1876,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 minTen -= 1;
             }
 
-            vmin = Math.pow(10.0, 0.5 * minTen); // lower power of ten
-            vmax = Math.pow(10.0, 0.5 * maxTen); // upper power of ten
+            vmin = (0.999 * Math.pow(10.0, 0.5 * minTen)); // lower power of ten
+            vmax = (1.001 * Math.pow(10.0, 0.5 * maxTen)); // upper power of ten
 
         } else {
             boolean fix_bmin = false;

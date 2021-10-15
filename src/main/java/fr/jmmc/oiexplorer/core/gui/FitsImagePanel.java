@@ -1089,20 +1089,34 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
             }
 
             final ColorScale usedColorScale;
-            if (colorScale == ColorScale.LOGARITHMIC
-                    && (min <= 0f || max <= 0f || min == max || Float.isInfinite(min) || Float.isInfinite(max))) {
-                usedColorScale = ColorScale.LINEAR;
+            if (colorScale == ColorScale.LOGARITHMIC) {
+                // For log scale, always enlarge the upper / lower bounds to next power of 10
 
-                // update min/max:
-                FitsImageUtils.updateDataRange(fitsImage);
-                min = (float) this.fitsImage.getDataMin();
-                max = (float) this.fitsImage.getDataMax();
-
-                if (min == max) {
-                    max = min + 1f;
+                if ((min <= 0f) || (max <= 0f) || (min == max) || Float.isInfinite(min) || Float.isInfinite(max)) {
+                    // update min/max without zero:
+                    FitsImageUtils.updateDataRangeExcludingZero(fitsImage);
+                    min = (float) this.fitsImage.getDataMin();
+                    max = (float) this.fitsImage.getDataMax();
                 }
-            } else if (colorScale == ColorScale.LINEAR
-                    && (min <= 0f || max <= 0f || min == max || Float.isInfinite(min) || Float.isInfinite(max))) {
+
+                if (min <= 0f || max <= 0f) {
+                    usedColorScale = ColorScale.LINEAR;
+                } else {
+                    usedColorScale = ColorScale.LOGARITHMIC;
+
+                    // bounds:
+                    double minTen = Math.floor(Math.log10(min));
+                    double maxTen = Math.ceil(Math.log10(max));
+
+                    if (maxTen == minTen) {
+                        minTen -= 1.0;
+                    }
+
+                    min = (float) (0.999 * Math.pow(10.0, minTen)); // lower power of ten
+                    max = (float) (1.001 * Math.pow(10.0, maxTen)); // upper power of ten
+                }
+            } else if ((colorScale == ColorScale.LINEAR)
+                    && ((min <= 0f) || (max <= 0f) || (min == max) || Float.isInfinite(min) || Float.isInfinite(max))) {
                 usedColorScale = ColorScale.LINEAR;
 
                 // update min/max:
@@ -1110,12 +1124,14 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
                 min = (float) this.fitsImage.getDataMin();
                 max = (float) this.fitsImage.getDataMax();
 
-                if (min == max) {
+                if (min >= max) {
                     max = min + 1f;
                 }
             } else {
                 usedColorScale = colorScale;
             }
+
+            logger.debug("computeInBackground: image range [{} - {}]", min, max);
 
             // throws InterruptedJobException if the current thread is interrupted (cancelled):
             final BufferedImage image = ImageUtils.createImage(this.fitsImage.getNbCols(), this.fitsImage.getNbRows(),
