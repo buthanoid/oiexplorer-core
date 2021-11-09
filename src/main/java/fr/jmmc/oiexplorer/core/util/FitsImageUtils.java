@@ -13,13 +13,14 @@ import fr.jmmc.oitools.image.FitsImage;
 import fr.jmmc.oitools.image.FitsImageFile;
 import fr.jmmc.oitools.image.FitsImageHDU;
 import fr.jmmc.oitools.image.FitsImageLoader;
+import fr.jmmc.oitools.image.FitsUnit;
 import fr.jmmc.oitools.processing.Resampler;
 import fr.jmmc.oitools.processing.Resampler.Filter;
 import fr.jmmc.oitools.util.ArrayConvert;
 import fr.nom.tam.fits.FitsException;
+import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,9 @@ public final class FitsImageUtils {
 
     /** Smallest positive number used in double comparisons (rounding). */
     public final static double MAS_EPSILON = 1e-6d * ALX.MILLI_ARCSEC_IN_DEGREES;
+
+    /** default resampling filter */
+    public final static Filter DEFAULT_FILTER = Filter.FILTER_LANCZOS2;
 
     /**
      * Forbidden constructor
@@ -186,14 +190,17 @@ public final class FitsImageUtils {
         return imgFitsFile;
     }
 
-    public static void prepareAllImages(final List<FitsImageHDU> hdus) throws IllegalArgumentException {
-        if (hdus != null) {
-            for (FitsImageHDU hdu : hdus) {
-                for (FitsImage fitsImage : hdu.getFitsImages()) {
-                    // note: fits image instance can be modified by image preparation:
-                    // can throw IllegalArgumentException if image has invalid keyword(s) / data:
-                    FitsImageUtils.prepareImage(fitsImage);
-                }
+    /** 
+     * Call prepareImage for each FitsImage of the given FitsImageHDU. 
+     * @param fitsImageHDU (can be null but then the function do nothing)
+     * @throws IllegalArgumentException 
+     */
+    public static void prepareImages(final FitsImageHDU fitsImageHDU) throws IllegalArgumentException {
+        if (fitsImageHDU != null) {
+            for (FitsImage fitsImage : fitsImageHDU.getFitsImages()) {
+                // note: fits image instance can be modified by image preparation:
+                // can throw IllegalArgumentException if image has invalid keyword(s) / data:
+                FitsImageUtils.prepareImage(fitsImage);
             }
         }
     }
@@ -218,7 +225,6 @@ public final class FitsImageUtils {
             logger.info("Image size: {} x {}", nbRows, nbCols);
 
             // 1 - Ignore negative values:
-            
             // TODO: fix special case: image is [0] !
             if (fitsImage.getDataMax() <= 0d) {
                 throw new IllegalArgumentException("Fits image [" + fitsImage.getFitsImageIdentifier() + "] has only negative data !");
@@ -317,90 +323,237 @@ public final class FitsImageUtils {
         }
     }
 
-    public static void changeViewportImages(final FitsImageHDU hdu, final Rectangle2D.Double newArea) throws IllegalArgumentException {
+    public static boolean changeViewportImages(final FitsImageHDU hdu, final Rectangle2D.Double newArea) throws IllegalArgumentException {
         if (newArea == null || newArea.isEmpty()) {
             throw new IllegalStateException("Invalid area: " + newArea);
         }
+        boolean changed = false;
+
         if (hdu != null && hdu.hasImages()) {
             for (FitsImage fitsImage : hdu.getFitsImages()) {
                 // First modify image:
-                changeViewportImage(fitsImage, newArea);
-
-                // note: fits image instance can be modified by image preparation:
-                // can throw IllegalArgumentException if image has invalid keyword(s) / data:
-                FitsImageUtils.prepareImage(fitsImage);
+                changed |= changeViewportImage(fitsImage, newArea);
             }
         }
+        return changed;
     }
 
-    private static void changeViewportImage(final FitsImage fitsImage, final Rectangle2D.Double newArea) {
+    public static final class ImageSize {
+
+        public double fov; // unit MAS.
+        public int nbPixels;
+        public double inc; // unit MAS.
+    }
+
+    /** 
+     * Foresee the ImageSize resulting from modifyImage().
+     * @param fitsImage required.
+     * @param newFov required. unit MAS.
+     * @param newInc required. unit MAS.
+     * @return the fov, the nb of pixels, and the inc that would result from applying modifyImage(). null if cannot foresee for some reason.
+     */
+    public static ImageSize foreseeModifyImage(final FitsImage fitsImage, double newFov, double newInc) {
+
+        if ((newFov <= 0.0) || (newInc <= 0.0) || (newFov <= newInc)) {
+            logger.debug("Could not modify image because wrong values for newFov ({}) or newInc ({})",
+                    newFov, newInc);
+            return null;
+        }
+        // VIEWPORT
+        // computing the new area that we get with new fov
+        Rectangle2D.Double newArea = computeNewArea(fitsImage.getArea(), newFov);
+        if (newArea == null) {
+            return null;
+        }
+
+        final double inc = FitsUnit.ANGLE_RAD.convert(fitsImage.getIncCol(), FitsUnit.ANGLE_MILLI_ARCSEC);
+        final ImageSize newImageSize = new ImageSize();
+
+        // get the width in number of pixels that we get with the new area
+        newImageSize.nbPixels = computeAreaRectangle(fitsImage, newArea).width;
+        // adjusting fov
+        newImageSize.fov = inc * newImageSize.nbPixels;
+
+        // RESAMPLE
+        newImageSize.nbPixels = computeNewNbPixels(newImageSize.nbPixels, inc, newInc);
+
+        // adjusting inc
+        newImageSize.inc = newImageSize.fov / newImageSize.nbPixels;
+
+        return newImageSize;
+    }
+
+    /** 
+     * Change viewPort with newFov, then resample with newInc (with a computation of nb of pixel).
+     * @param fitsImage required. will be modified. data field will be copied before modified.
+     * @param newFov required. unit MAS.
+     * @param newInc required. unit MAS.
+     * @return true of successfully modified FitsImage. false if something wrong happened.
+     */
+    public static boolean modifyImage(final FitsImage fitsImage, double newFov, double newInc) {
+        // change viewport
+        final Rectangle2D.Double newArea = computeNewArea(fitsImage.getArea(), newFov);
+        if (newArea == null) {
+            logger.info("Could not modifyImage because could not compute new area.");
+            return false;
+        }
+        boolean changed = changeViewportImages(fitsImage.getFitsImageHDU(), newArea);
+
+        // resample
+        final int nbPixels = fitsImage.getNbCols();
+        final double inc = FitsUnit.ANGLE_RAD.convert(fitsImage.getIncCol(), FitsUnit.ANGLE_MILLI_ARCSEC);
+
+        final int newNbPixels = computeNewNbPixels(nbPixels, inc, newInc);
+
+        if (newNbPixels != nbPixels) {
+            resampleImages(fitsImage.getFitsImageHDU(), newNbPixels, DEFAULT_FILTER);
+            changed = true;
+        }
+        return changed;
+    }
+
+    /** 
+     * Compute the Area resulting from a fov change.
+     * it starts from center of the current fov, and extend to the new fov.
+     * @param area required.
+     * @param newFov unit MAS. should be positive.
+     * @return new area in RAD. null if params were wrong.
+     */
+    public static Rectangle2D.Double computeNewArea(final Rectangle2D.Double area, final double newFov) {
+        if ((area == null) || (newFov <= 0.0d)) {
+            return null;
+        }
+
+        // convert to radians because it is the unit used in areas
+        final double newFovRad = FitsUnit.ANGLE_MILLI_ARCSEC.convert(newFov, FitsUnit.ANGLE_RAD);
+
+        final double centerX = area.getCenterX();
+        final double centerY = area.getCenterY();
+        final double halfNewFovRad = newFovRad / 2.0d;
+
+        // Starting from center, define top-left corner and bottom-right corner
+        final Rectangle2D.Double newArea = new Rectangle2D.Double();
+        newArea.setFrameFromDiagonal(centerX - halfNewFovRad, centerY - halfNewFovRad,
+                centerX + halfNewFovRad, centerY + halfNewFovRad);
+
+        return newArea;
+    }
+
+    /** 
+     * Compute rectangle of the image [x,y,w,h] in number of pixels, resulting from a change of area.
+     * @param fitsImage the original image.
+     * @param newArea the new area for the image.
+     * @return Rectangle containing sizes in number of pixels.
+     */
+    private static Rectangle computeAreaRectangle(final FitsImage fitsImage, final Rectangle2D.Double newArea) {
+        final int nbRows = fitsImage.getNbRows();
+        final int nbCols = fitsImage.getNbCols();
+
+        // area reference :
+        final Rectangle2D.Double areaRef = fitsImage.getArea();
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("image area     = {}", newArea);
+            logger.debug("image area REF = {}", areaRef);
+            logger.debug("image REF      = [{} x {}]", nbCols, nbRows);
+        }
+
+        final double pixRatioX = ((double) nbCols) / areaRef.getWidth();
+        final double pixRatioY = ((double) nbRows) / areaRef.getHeight();
+
+        // note : floor/ceil to be sure to have at least 1x1 pixel image
+        int x = (int) Math.floor(pixRatioX * (newArea.getX() - areaRef.getX()));
+        int y = (int) Math.floor(pixRatioY * (newArea.getY() - areaRef.getY()));
+        int w = (int) Math.ceil(pixRatioX * newArea.getWidth());
+        int h = (int) Math.ceil(pixRatioY * newArea.getHeight());
+
+        // check bounds:
+        w = checkBounds(w, 1, MAX_IMAGE_SIZE);
+        h = checkBounds(h, 1, MAX_IMAGE_SIZE);
+
+        // Keep it square and even to avoid any black border (not present originally):
+        final int newSize = Math.max(w, h);
+        w = h = (newSize % 2 != 0) ? newSize + 1 : newSize;
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("new image [{}, {} - {}, {}]", new Object[]{x, y, w, h});
+        }
+
+        return new Rectangle(x, y, w, h);
+    }
+
+    private static boolean changeViewportImage(final FitsImage fitsImage, final Rectangle2D.Double newArea) {
         if (fitsImage != null) {
-            final float[][] data = fitsImage.getData();
             final int nbRows = fitsImage.getNbRows();
             final int nbCols = fitsImage.getNbCols();
 
-            // area reference :
-            final Rectangle2D.Double areaRef = fitsImage.getArea();
+            final Rectangle sizes = computeAreaRectangle(fitsImage, newArea);
+            final int x = sizes.x, y = sizes.y, w = sizes.width, h = sizes.height;
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("image area     = {}", newArea);
-                logger.debug("image area REF = {}", areaRef);
-                logger.debug("image REF      = [{} x {}]", nbCols, nbRows);
+            if ((x != 0) || (y != 0) || (w != nbCols) || (h != nbRows)) {
+                final float[][] data = fitsImage.getData();
+
+                final float[][] newData = new float[w][h];
+
+                final int sx0 = Math.max(0, x);
+                final int swx = Math.min(x + w, nbCols) - sx0;
+                if (logger.isDebugEnabled()) {
+                    logger.debug("sx [{} - {}]", sx0, swx);
+                }
+
+                final int sy0 = Math.max(0, y);
+                final int sy1 = Math.min(y + h, nbRows);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("sy [{} - {}]", sy0, sy1);
+                }
+
+                final int offX = (x < 0) ? -x : 0;
+                final int offY = (y < 0) ? -y : -sy0;
+                if (logger.isDebugEnabled()) {
+                    logger.debug("off [{} - {}]", offX, offY);
+                }
+
+                for (int j = sy0; j < sy1; j++) {
+                    System.arraycopy(data[j], sx0, newData[j + offY], offX, swx);
+                }
+
+                updateFitsImage(fitsImage, newData);
+
+                // update ref pixel:
+                fitsImage.setPixRefCol(fitsImage.getPixRefCol() - x);
+                fitsImage.setPixRefRow(fitsImage.getPixRefRow() - y);
+
+                logger.debug("changeViewportImage: updated image: {}", fitsImage);
+                return true;
             }
-
-            final double pixRatioX = ((double) nbCols) / areaRef.getWidth();
-            final double pixRatioY = ((double) nbRows) / areaRef.getHeight();
-
-            // note : floor/ceil to be sure to have at least 1x1 pixel image
-            int x = (int) Math.floor(pixRatioX * (newArea.getX() - areaRef.getX()));
-            int y = (int) Math.floor(pixRatioY * (newArea.getY() - areaRef.getY()));
-            int w = (int) Math.ceil(pixRatioX * newArea.getWidth());
-            int h = (int) Math.ceil(pixRatioY * newArea.getHeight());
-
-            // check bounds:
-            w = checkBounds(w, 1, MAX_IMAGE_SIZE);
-            h = checkBounds(h, 1, MAX_IMAGE_SIZE);
-
-            // Keep it square and even to avoid any black border (not present originally):
-            final int newSize = Math.max(w, h);
-            w = h = (newSize % 2 != 0) ? newSize + 1 : newSize;
-
-            if (logger.isDebugEnabled()) {
-                logger.debug("new image [{}, {} - {}, {}]", new Object[]{x, y, w, h});
-            }
-
-            final float[][] newData = new float[w][h];
-
-            final int sx0 = Math.max(0, x);
-            final int swx = Math.min(x + w, nbCols) - sx0;
-            if (logger.isDebugEnabled()) {
-                logger.debug("sx [{} - {}]", sx0, swx);
-            }
-
-            final int sy0 = Math.max(0, y);
-            final int sy1 = Math.min(y + h, nbRows);
-            if (logger.isDebugEnabled()) {
-                logger.debug("sy [{} - {}]", sy0, sy1);
-            }
-
-            final int offX = (x < 0) ? -x : 0;
-            final int offY = (y < 0) ? -y : -sy0;
-            if (logger.isDebugEnabled()) {
-                logger.debug("off [{} - {}]", offX, offY);
-            }
-
-            for (int j = sy0; j < sy1; j++) {
-                System.arraycopy(data[j], sx0, newData[j + offY], offX, swx);
-            }
-
-            updateFitsImage(fitsImage, newData);
-
-            // update ref pixel:
-            fitsImage.setPixRefCol(fitsImage.getPixRefCol() - x);
-            fitsImage.setPixRefRow(fitsImage.getPixRefRow() - y);
-
-            logger.debug("changeViewportImage: updated image: {}", fitsImage);
         }
+        return false;
+    }
+
+    /** 
+     * Compute number of pixels, resulting from a change of inc.
+     * field of view is kept constant and number of pixels is modified.
+     * FOV = nbPixels * inc
+     * image must be a square.
+     * @param nbPixels number of pixels.
+     * @param inc size of a pixel in mas.
+     * @param newInc new size of a pixel in mas.
+     * @return new nb of pixel. always even, never zero.
+     */
+    public static int computeNewNbPixels(final int nbPixels, final double inc, final double newInc) {
+        // minimal difference to actually modify the number of pixels.
+        // this permits the GUI to use only 3 digits precision numbers
+        if (Math.abs(newInc - inc) < 1e-3) {
+            return nbPixels;
+        }
+
+        int newSize = (int) Math.ceil(nbPixels * (inc / newInc));
+
+        // check bounds:
+        newSize = checkBounds(newSize, 1, MAX_IMAGE_SIZE);
+
+        // Keep it square and even to avoid any black border (not present originally):
+        return (newSize % 2 != 0) ? newSize + 1 : newSize;
     }
 
     public static void resampleImages(final FitsImageHDU hdu, final int newSize, final Filter filter) throws IllegalArgumentException {
@@ -411,10 +564,6 @@ public final class FitsImageUtils {
             for (FitsImage fitsImage : hdu.getFitsImages()) {
                 // First modify image:
                 resampleImage(fitsImage, newSize, filter);
-
-                // note: fits image instance can be modified by image preparation:
-                // can throw IllegalArgumentException if image has invalid keyword(s) / data:
-                FitsImageUtils.prepareImage(fitsImage);
             }
         }
     }
@@ -468,10 +617,6 @@ public final class FitsImageUtils {
             for (FitsImage fitsImage : hdu.getFitsImages()) {
                 // First modify image:
                 rescaleImage(fitsImage, incCol, incRow);
-
-                // note: fits image instance can be modified by image preparation:
-                // can throw IllegalArgumentException if image has invalid keyword(s) / data:
-                FitsImageUtils.prepareImage(fitsImage);
             }
         }
     }
