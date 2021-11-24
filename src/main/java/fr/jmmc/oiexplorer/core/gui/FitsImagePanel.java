@@ -607,7 +607,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
 
         jFormattedTextFieldCreateImageFOV.setColumns(12);
         jFormattedTextFieldCreateImageFOV.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.000"))));
-        jFormattedTextFieldCreateImageFOV.setText("100.000");
+        jFormattedTextFieldCreateImageFOV.setText("50");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
@@ -618,7 +618,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
 
         jFormattedTextFieldCreateImageInc.setColumns(12);
         jFormattedTextFieldCreateImageInc.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.000"))));
-        jFormattedTextFieldCreateImageInc.setText("5.000");
+        jFormattedTextFieldCreateImageInc.setText("1");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
@@ -638,7 +638,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
 
         jFormattedTextFieldCreateImageFWHM.setColumns(12);
         jFormattedTextFieldCreateImageFWHM.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("#0.000"))));
-        jFormattedTextFieldCreateImageFWHM.setText("42");
+        jFormattedTextFieldCreateImageFWHM.setText("10");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 3;
