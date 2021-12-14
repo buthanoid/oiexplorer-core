@@ -122,7 +122,7 @@ public final class OIDataListHelper {
      * @return given set instance
      */
     public static List<String> getDistinctStaNames(final List<OIData> oiDataList,
-                                                   final Map<String, StaNamesDir> usedStaNamesMap) {
+            final Map<String, StaNamesDir> usedStaNamesMap) {
 
         final Set<String> set = new HashSet<String>(32);
 
@@ -190,7 +190,7 @@ public final class OIDataListHelper {
     /**
      * Return the largest wave length range from given OIData tables
      * @param oiDataList OIData tables
-     * @return largest wave length range
+     * @return largest wave length range or null when nothing found
      */
     public static Range getWaveLengthRange(final List<OIData> oiDataList) {
         double min = Double.POSITIVE_INFINITY;
@@ -198,6 +198,10 @@ public final class OIDataListHelper {
 
         for (OIData oiData : oiDataList) {
             final fr.jmmc.oitools.model.range.Range effWaveRange = oiData.getEffWaveRange();
+
+            if (effWaveRange == null) {
+                return null;
+            }
 
             if (effWaveRange.getMin() < min) {
                 min = effWaveRange.getMin();
