@@ -8,6 +8,7 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmcs.Bootstrapper;
 import fr.jmmc.jmcs.gui.component.GenericListModel;
 import fr.jmmc.jmcs.gui.util.SwingUtils;
+import fr.jmmc.jmcs.gui.util.WindowUtils;
 import fr.jmmc.jmcs.util.ObjectUtils;
 import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
@@ -146,8 +147,9 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
                     logger.debug("hdu found: {}", hdu);
 
                     if (this.jListTables.getSelectedIndex() != i) {
-                        if (logger.isDebugEnabled())
-                        logger.debug("change selected index: {}", i);
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("change selected index: {}", i);
+                        }
                         this.jListTables.setSelectedIndex(i);
                     }
 
@@ -351,7 +353,7 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
             if (!DEBUG_MEMORY) {
                 LOADED_OIFITS_FILE = oiFitsFile;
             }
-            showFitsBrowser(oiFitsFile);
+            OIFitsTableBrowser.showFitsBrowser(oiFitsFile);
 
             if (DEBUG_MEMORY) {
                 SwingUtils.invokeEDT(new Runnable() {
@@ -380,23 +382,32 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
         }
     }
 
-    private static void showFitsBrowser(final OIFitsFile oiFitsFile) {
+    public static void showFitsBrowser(final OIFitsFile oiFitsFile) {
         final WeakReference<OIFitsFile> oiFitsFileRef = new WeakReference<OIFitsFile>(oiFitsFile);
         final String oiFitsFileName = oiFitsFile.getFileName();
 
         SwingUtils.invokeEDT(new Runnable() {
             @Override
             public void run() {
-                final JFrame frame = new JFrame("File: " + oiFitsFileName);
-                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                frame.setMinimumSize(new Dimension(800, 800));
-
                 final OIFitsTableBrowser fb = new OIFitsTableBrowser();
                 fb.setOiFitsFileRef(oiFitsFileRef);
 
+                final JFrame frame = new JFrame("File: " + oiFitsFileName) {
+                    @Override
+                    public void dispose() {
+                        super.dispose();
+                        fb.dispose();
+                    }
+                };
+                frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                frame.setMinimumSize(new Dimension(800, 800));
+
                 frame.add(fb);
 
+                WindowUtils.setClosingKeyboardShortcuts(frame);
                 frame.pack();
+                WindowUtils.centerOnMainScreen(frame);
+
                 frame.setVisible(true);
             }
         });
