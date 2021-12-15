@@ -1030,7 +1030,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         boolean ok = false;
 
         // Display the dialog with the form, and returns true if users confirms the form (async):
-        if (MessagePane.showDialogPanel("Resample Image", this.jPanelResample)
+        if (MessagePane.showDialogPanel("Resample image", this.jPanelResample)
                 && !jFormattedTextFieldNewSize.getText().isEmpty()) {
 
             final int newSize = (int) Math.round(parseDouble(jFormattedTextFieldNewSize.getText()));
@@ -1108,7 +1108,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
      * and the width of the image in number of pixels.
      * @return true if changed image succesfully. false otherwise.
      */
-    public boolean dialogModifyImage() {
+    public boolean modifyFitsImage() {
         // some checks
         if (fitsImage == null) {
             return false;
@@ -1126,13 +1126,10 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         final double inc = FitsUnit.ANGLE_RAD.convert(fitsImageDialogRef.getIncCol(), FitsUnit.ANGLE_MILLI_ARCSEC);
         jFormattedTextFieldModifyImageInc.setValue(inc);
 
-        // Display the dialog with the form, and returns true if users confirms the form (async):
-        final boolean userConfirm = MessagePane.showDialogPanel("Modify image", jPanelModifyImage);
-
         boolean ok = false;
-
-        // if the user confirmed, actually modify the image
-        if (userConfirm) {
+        
+        // Display the dialog with the form, and returns true if users confirms the form (async):
+        if (MessagePane.showDialogPanel("Modify image", jPanelModifyImage)) {
             final double newFov = parseDouble(jFormattedTextFieldModifyImageFOV.getText()); // unit MAS
             final double newInc = parseDouble(jFormattedTextFieldModifyImageInc.getText()); // unit MAS
 
@@ -1153,12 +1150,10 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
     /** Display a form to create a gaussian image.
      * @return the FitsImageHDU containing the gaussian image.
      */
-    public FitsImageHDU dialogCreateImage() {
+    public FitsImageHDU createFitsImage() {
 
         // Display the dialog with the form, and returns true if users confirms the form (async):
-        final boolean userConfirm = MessagePane.showDialogPanel("Create image", jPanelCreateImage);
-
-        if (userConfirm) {
+        if (MessagePane.showDialogPanel("Create image", jPanelCreateImage)) {
             final double fov = parseDouble(jFormattedTextFieldCreateImageFOV.getText());
             final double inc = parseDouble(jFormattedTextFieldCreateImageInc.getText());
             final double fwhm = parseDouble(jFormattedTextFieldCreateImageFWHM.getText());
@@ -1202,7 +1197,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         boolean ok = false;
 
         // Display the dialog with the form, and returns true if users confirms the form (async):
-        if (MessagePane.showDialogPanel("Rescale Image", this.jPanelRescale)
+        if (MessagePane.showDialogPanel("Rescale image", this.jPanelRescale)
                 && !jFormattedTextFieldScaleX.getText().isEmpty()) {
 
             final double value = parseDouble(jFormattedTextFieldScaleX.getText());
@@ -1262,7 +1257,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         boolean ok = false;
 
         // Display the dialog with the form, and returns true if users confirms the form (async):
-        if (MessagePane.showDialogPanel("Change Image viewport", this.jPanelViewport)) {
+        if (MessagePane.showDialogPanel("Change viewport", this.jPanelViewport)) {
             final Rectangle2D.Double newArea = getEditedViewportArea();
             logger.debug("changeViewportFitsImage: newArea: {}", newArea);
 
