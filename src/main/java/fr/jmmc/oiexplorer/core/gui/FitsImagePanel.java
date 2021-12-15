@@ -106,6 +106,8 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
     final Task task;
     /** fits image to plot */
     private FitsImage fitsImage = null;
+    /** fits image used by modification dialogs */
+    private FitsImage fitsImageDialogRef = null;
     /** preference singleton */
     private final Preferences myPreferences;
     /** flag to enable / disable the automatic refresh of the plot when any swing component changes */
@@ -1008,15 +1010,26 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         return this.fitsImage;
     }
 
+    private void setFitsImageDialogRef(final FitsImage fitsImageDialogRef) {
+        this.fitsImageDialogRef = fitsImageDialogRef;
+    }
+
     public boolean resampleFitsImage() {
         if (this.fitsImage == null) {
             return false;
         }
+
+        // defensive copy to ensure consistency in the dialog processing:
+        setFitsImageDialogRef(this.fitsImage);
+
         // initialise the form:
-        final int nbRows = fitsImage.getNbRows();
+        final int nbRows = fitsImageDialogRef.getNbRows();
         this.jLabelOldSize.setText(String.valueOf(nbRows));
         this.jFormattedTextFieldNewSize.setValue(nbRows);
 
+        boolean ok = false;
+
+        // Display the dialog with the form, and returns true if users confirms the form (async):
         if (MessagePane.showDialogPanel("Resample Image", this.jPanelResample)
                 && !jFormattedTextFieldNewSize.getText().isEmpty()) {
 
@@ -1026,19 +1039,18 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
                 final Filter filter = (Filter) jComboBoxFilter.getSelectedItem();
                 logger.debug("resampleImages: newSize: {} - filter: {}", newSize, filter);
 
-                boolean ok = false;
                 try {
-                    FitsImageUtils.resampleImages(fitsImage.getFitsImageHDU(), newSize, filter);
+                    FitsImageUtils.resampleImages(fitsImageDialogRef.getFitsImageHDU(), newSize, filter);
                     ok = true;
                 } catch (IllegalArgumentException iae) {
                     MessagePane.showErrorMessage("Unable to resample image", iae);
                 } catch (IllegalStateException ise) {
                     MessagePane.showErrorMessage("Unable to resample image", ise);
                 }
-                return ok;
             }
         }
-        return false;
+        setFitsImageDialogRef(null);
+        return ok;
     }
 
     /** 
@@ -1055,7 +1067,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
             return;
         }
 
-        ImageSize newImageSize = FitsImageUtils.foreseeModifyImage(fitsImage, newFov, newInc);
+        ImageSize newImageSize = FitsImageUtils.foreseeModifyImage(fitsImageDialogRef, newFov, newInc);
         if (newImageSize == null) {
             return;
         }
@@ -1101,39 +1113,41 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         if (fitsImage == null) {
             return false;
         }
+        // defensive copy to ensure consistency in the dialog processing:
+        setFitsImageDialogRef(this.fitsImage);
 
         // initialise the form
         // write initial fov in input field
-        final Rectangle2D.Double area = fitsImage.getArea();
+        final Rectangle2D.Double area = fitsImageDialogRef.getArea();
         final double fov = FitsUnit.ANGLE_RAD.convert(area.getWidth(), FitsUnit.ANGLE_MILLI_ARCSEC);
         jFormattedTextFieldModifyImageFOV.setValue(fov);
 
         // write initial inc in input field
-        final double inc = FitsUnit.ANGLE_RAD.convert(fitsImage.getIncCol(), FitsUnit.ANGLE_MILLI_ARCSEC);
+        final double inc = FitsUnit.ANGLE_RAD.convert(fitsImageDialogRef.getIncCol(), FitsUnit.ANGLE_MILLI_ARCSEC);
         jFormattedTextFieldModifyImageInc.setValue(inc);
 
-        // Display the dialog with the form, and returns true if users confirms the form.
+        // Display the dialog with the form, and returns true if users confirms the form (async):
         final boolean userConfirm = MessagePane.showDialogPanel("Modify image", jPanelModifyImage);
+
+        boolean ok = false;
 
         // if the user confirmed, actually modify the image
         if (userConfirm) {
-
             final double newFov = parseDouble(jFormattedTextFieldModifyImageFOV.getText()); // unit MAS
             final double newInc = parseDouble(jFormattedTextFieldModifyImageInc.getText()); // unit MAS
 
             if ((newFov != fov) || (newInc != inc)) {
-                boolean ok = false;
                 try {
-                    ok = FitsImageUtils.modifyImage(fitsImage, newFov, newInc);
+                    ok = FitsImageUtils.modifyImage(fitsImageDialogRef, newFov, newInc);
                 } catch (IllegalArgumentException iae) {
                     MessagePane.showErrorMessage("Unable to modify image", iae);
                 } catch (IllegalStateException ise) {
                     MessagePane.showErrorMessage("Unable to modify image", ise);
                 }
-                return ok;
             }
         }
-        return false;
+        setFitsImageDialogRef(null);
+        return ok;
     }
 
     /** Display a form to create a gaussian image.
@@ -1141,6 +1155,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
      */
     public FitsImageHDU dialogCreateImage() {
 
+        // Display the dialog with the form, and returns true if users confirms the form (async):
         final boolean userConfirm = MessagePane.showDialogPanel("Create image", jPanelCreateImage);
 
         if (userConfirm) {
@@ -1174,13 +1189,19 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
             return false;
         }
 
+        // defensive copy to ensure consistency in the dialog processing:
+        setFitsImageDialogRef(this.fitsImage);
+
         // initialise the form:
         // TODO: handle X/Y ie col/row increments (not linked) ?
         // update the form:
         this.jLabelRescale.setText("Enter increments in " + axisUnit.getStandardRepresentation());
-        this.jFormattedTextFieldScaleX.setValue(FitsUnit.ANGLE_RAD.convert(fitsImage.getIncCol(), axisUnit));
+        this.jFormattedTextFieldScaleX.setValue(FitsUnit.ANGLE_RAD.convert(fitsImageDialogRef.getIncCol(), axisUnit));
         updateFovInRescaleForm();
 
+        boolean ok = false;
+
+        // Display the dialog with the form, and returns true if users confirms the form (async):
         if (MessagePane.showDialogPanel("Rescale Image", this.jPanelRescale)
                 && !jFormattedTextFieldScaleX.getText().isEmpty()) {
 
@@ -1188,20 +1209,18 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
             if (value > 0.0) {
                 final double inc = axisUnit.convert(value, FitsUnit.ANGLE_RAD);
                 logger.debug("rescaleFitsImage: inc: {}", inc);
-
-                boolean ok = false;
                 try {
-                    FitsImageUtils.rescaleImages(fitsImage.getFitsImageHDU(), inc, inc);
+                    FitsImageUtils.rescaleImages(fitsImageDialogRef.getFitsImageHDU(), inc, inc);
                     ok = true;
                 } catch (IllegalArgumentException iae) {
                     MessagePane.showErrorMessage("Unable to rescale image", iae);
                 } catch (IllegalStateException ise) {
                     MessagePane.showErrorMessage("Unable to rescale image", ise);
                 }
-                return ok;
             }
         }
-        return false;
+        setFitsImageDialogRef(null);
+        return ok;
     }
 
     private void updateFovInRescaleForm() {
@@ -1209,8 +1228,8 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         if (axisUnit == null) {
             return;
         }
-        final int nbRows = fitsImage.getNbRows();
-        final int nbCols = fitsImage.getNbCols();
+        final int nbRows = fitsImageDialogRef.getNbRows();
+        final int nbCols = fitsImageDialogRef.getNbCols();
 
         final double value = parseDouble(jFormattedTextFieldScaleX.getText());
         if (value > 0.0) {
@@ -1225,8 +1244,7 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
     }
 
     private void updateRescaleFormFov(final double fov, final FitsUnit axisUnit) {
-        this.jFormattedTextFieldRescaleFov.setValue(FitsUnit.ANGLE_RAD.convert(
-                fov, axisUnit));
+        this.jFormattedTextFieldRescaleFov.setValue(FitsUnit.ANGLE_RAD.convert(fov, axisUnit));
     }
 
     public boolean changeViewportFitsImage() {
@@ -1235,28 +1253,33 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
         if (this.fitsImage == null || axisUnit == null) {
             return false;
         }
+        // defensive copy to ensure consistency in the dialog processing:
+        setFitsImageDialogRef(this.fitsImage);
+
         // initialise the form:
         setCurrentViewportForm();
 
+        boolean ok = false;
+
+        // Display the dialog with the form, and returns true if users confirms the form (async):
         if (MessagePane.showDialogPanel("Change Image viewport", this.jPanelViewport)) {
             final Rectangle2D.Double newArea = getEditedViewportArea();
             logger.debug("changeViewportFitsImage: newArea: {}", newArea);
 
-            if (newArea == null || !newArea.intersects(fitsImage.getArea())) {
+            if (newArea == null || !newArea.intersects(fitsImageDialogRef.getArea())) {
                 MessagePane.showMessage("Invalid coordinate ranges, no data !");
             } else {
-                boolean ok = false;
                 try {
-                    ok = FitsImageUtils.changeViewportImages(fitsImage.getFitsImageHDU(), newArea);
+                    ok = FitsImageUtils.changeViewportImages(fitsImageDialogRef.getFitsImageHDU(), newArea);
                 } catch (IllegalArgumentException iae) {
                     MessagePane.showErrorMessage("Unable to change image viewport", iae);
                 } catch (IllegalStateException ise) {
                     MessagePane.showErrorMessage("Unable to change image viewport", ise);
                 }
-                return ok;
             }
         }
-        return false;
+        setFitsImageDialogRef(null);
+        return ok;
     }
 
     private Rectangle2D.Double getEditedViewportArea() {
@@ -1285,10 +1308,10 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
     private void setOriginalViewportForm() {
         final FitsUnit axisUnit = this.lastAxisUnit;
 
-        if (this.fitsImage == null || axisUnit == null) {
+        if (this.fitsImageDialogRef == null || axisUnit == null) {
             return;
         }
-        final Rectangle2D.Double area = fitsImage.getArea();
+        final Rectangle2D.Double area = fitsImageDialogRef.getArea();
         logger.debug("setOriginalViewportForm: original area: {}", area);
 
         // update the form:
