@@ -16,6 +16,8 @@ import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEvent;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType;
 import fr.jmmc.oitools.fits.FitsHDU;
+import fr.jmmc.oitools.image.FitsImageHDU;
+import fr.jmmc.oitools.image.ImageOiParam;
 import fr.jmmc.oitools.model.DataModel;
 import fr.jmmc.oitools.model.OIArray;
 import fr.jmmc.oitools.model.OIData;
@@ -135,13 +137,8 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
             for (int i = 0, len = listModel.getSize(); i < len; i++) {
                 final HduRef hduRef = listModel.get(i);
 
-                final FitsHDU hdu;
+                final FitsHDU hdu = getFitsHdu(hduRef, oiFitsFile);
 
-                if (hduRef.isTable()) {
-                    hdu = oiFitsFile.getOITableList().get(hduRef.getIndex());
-                } else {
-                    hdu = oiFitsFile.getFitsImageHDUs().get(hduRef.getIndex());
-                }
                 if (oiData == hdu) {
                     // table found:
                     logger.debug("hdu found: {}", hdu);
@@ -187,6 +184,25 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
                 for (int i = 0, len = oiTables.size(); i < len; i++) {
                     hduRefs.add(getHduRef(i, oiTables.get(i)));
                 }
+
+                // Add remaining Image HDUs:
+                final int nbImageHDus = oiFitsFile.getImageHDUCount();
+                if (nbImageHDus > 1) {
+                    final List<FitsImageHDU> fitsImageHDUs = oiFitsFile.getFitsImageHDUs();
+
+                    for (int i = 1; i < nbImageHDus; i++) {
+                        final FitsImageHDU fitsImageHDU = fitsImageHDUs.get(i);
+
+                        hduRefs.add(getHduRef(i, fitsImageHDU));
+                    }
+                }
+
+                // Add IMAGE-OI table if any
+                if (oiFitsFile.getExistingImageOiData() != null) {
+                    hduRefs.add(getHduRef(0, oiFitsFile.getExistingImageOiData().getInputParam()));
+                    hduRefs.add(getHduRef(1, oiFitsFile.getExistingImageOiData().getOutputParam()));
+                }
+
             } else {
                 hduRefs = new ArrayList<HduRef>(0);
             }
@@ -199,6 +215,26 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
                 this.jListTables.setSelectedIndex(0);
             }
         }
+    }
+
+    private FitsHDU getFitsHdu(final HduRef hduRef, final OIFitsFile oiFitsFile) {
+        switch (hduRef.getHduType()) {
+            case OI_TABLE:
+                return oiFitsFile.getOITableList().get(hduRef.getIndex());
+            case IMAGE_OI_PARAM:
+                switch (hduRef.getIndex()) {
+                    case 0:
+                        return oiFitsFile.getExistingImageOiData().getInputParam();
+                    case 1:
+                        return oiFitsFile.getExistingImageOiData().getOutputParam();
+                    default:
+                }
+                break;
+            case HDU:
+                return oiFitsFile.getFitsImageHDUs().get(hduRef.getIndex());
+            default:
+        }
+        return null;
     }
 
     private OIFitsFile getOIFitsFile() {
@@ -232,13 +268,8 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
             if (oiFitsFile == null) {
                 hdu = null;
             } else {
-                if (hduRef.isTable()) {
-                    hdu = oiFitsFile.getOITableList().get(hduRef.getIndex());
-                } else {
-                    hdu = oiFitsFile.getFitsImageHDUs().get(hduRef.getIndex());
-                }
+                hdu = getFitsHdu(hduRef, oiFitsFile);
             }
-
             logger.debug("hdu: {}", hdu);
 
             final boolean includeDerivedColumns = true;
@@ -290,18 +321,33 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
     }//GEN-LAST:event_jListTablesValueChanged
 
     private final static HduRef getHduRef(final int index, final FitsHDU hdu) {
-        return new HduRef(index, (hdu instanceof OITable), (hdu != null) ? hdu.idToString() : null);
+        return new HduRef(index, getHduType(hdu), (hdu != null) ? hdu.idToString() : null);
+    }
+
+    private final static HduType getHduType(final FitsHDU hdu) {
+        if (hdu instanceof OITable) {
+            return HduType.OI_TABLE;
+        } else if (hdu instanceof ImageOiParam) {
+            return HduType.IMAGE_OI_PARAM;
+        }
+        return HduType.HDU;
+    }
+
+    private enum HduType {
+        OI_TABLE,
+        IMAGE_OI_PARAM,
+        HDU
     }
 
     private final static class HduRef {
 
         private final int index;
-        private final boolean isTable;
+        private final HduType hduType;
         private final String label;
 
-        HduRef(final int index, final boolean isTable, final String label) {
+        HduRef(final int index, final HduType hduType, final String label) {
             this.index = index;
-            this.isTable = isTable;
+            this.hduType = hduType;
             this.label = label;
         }
 
@@ -309,8 +355,8 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
             return index;
         }
 
-        public boolean isTable() {
-            return isTable;
+        public HduType getHduType() {
+            return hduType;
         }
 
         public String getLabel() {
