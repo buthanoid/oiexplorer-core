@@ -545,13 +545,29 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 // Add new OIDataFile in collection
                 final OIDataFile dataFile = new OIDataFile();
 
-                final String id = StringUtils.replaceNonAlphaNumericCharsByUnderscore(oiFitsFile.getFileName());
+                String id = StringUtils.replaceNonAlphaNumericCharsByUnderscore(oiFitsFile.getFileName());
 
-                // TODO: make it unique !!
+                // make the id unique with a _bisN suffix
+                final String idSuffix = "_bis";
+
+                while (Identifiable.hasIdentifiable(id, getOIDataFileList())) {
+                    int index = id.lastIndexOf(idSuffix);
+                    int number = 1;
+                    if (index != -1) {
+                        String strNumber = id.substring(index + idSuffix.length());
+                        id = id.substring(0, index);
+                        try {
+                            number = Integer.parseInt(strNumber);
+                            number++;
+                        } catch (NumberFormatException nfe) {
+                            logger.debug("Unable to parse '{}'", strNumber);
+                        }
+                    }
+                    id += idSuffix + number;
+                }
+
                 dataFile.setId(id);
-
                 dataFile.setName(oiFitsFile.getFileName());
-
                 dataFile.setFile(oiFitsFile.getAbsoluteFilePath());
                 // checksum !
 
