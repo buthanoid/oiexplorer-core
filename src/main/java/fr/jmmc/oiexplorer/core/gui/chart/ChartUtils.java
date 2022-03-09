@@ -66,7 +66,7 @@ public class ChartUtils {
     private final static Map<Integer, Font> cachedFonts = new HashMap<Integer, Font>(32);
     /** The default font for titles. */
     public static final Font DEFAULT_TITLE_FONT = getFont(14, Font.BOLD);
-    /** The default font for titles. */
+    /** The default font for axis tick labels, legend items. */
     public static final Font DEFAULT_FONT = getFont(12);
     /** The default font for medium texxts. */
     public static final Font DEFAULT_FONT_MEDIUM = getFont(10);
@@ -285,11 +285,22 @@ public class ChartUtils {
      * @return annotation font
      */
     private static Font getFont(final int size, final int style) {
+        return getFont(Font.SANS_SERIF, size, style);
+    }
+
+    /**
+     * Return the font (SansSerif / Plain) for the given size (cached)
+     * @param name the font name.
+     * @param size font size
+     * @param style font style
+     * @return annotation font
+     */
+    private static Font getFont(final String name, final int size, final int style) {
         final int scaledSize = scaleUI(size);
         final Integer key = NumberUtils.valueOf(scaledSize);
         Font f = cachedFonts.get(key);
         if (f == null) {
-            f = new Font(Font.SANS_SERIF, style, scaledSize);
+            f = new Font(name, style, scaledSize);
             cachedFonts.put(key, f);
         }
         return f;
