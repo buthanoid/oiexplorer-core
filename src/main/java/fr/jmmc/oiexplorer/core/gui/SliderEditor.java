@@ -24,6 +24,7 @@ public class SliderEditor extends javax.swing.JFrame {
      * @param sliderPanel
      */
     public SliderEditor(int imagesCount, SliderPanel sliderPanel) {
+        super();
         initComponents();
 
         this.imagesCount = imagesCount;
@@ -55,7 +56,6 @@ public class SliderEditor extends javax.swing.JFrame {
         jSpinnerMinimum = new javax.swing.JSpinner();
         jSpinnerMaximum = new javax.swing.JSpinner();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Range selector");
         getContentPane().setLayout(new java.awt.GridBagLayout());
 
