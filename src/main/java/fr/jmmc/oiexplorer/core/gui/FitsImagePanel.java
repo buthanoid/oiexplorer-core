@@ -951,14 +951,12 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
             final GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
             gridBagConstraints.insets = new java.awt.Insets(0, 6, 0, 6);
             this.jPanelOptions.add(optionPanel, gridBagConstraints);
-            this.jPanelOptions.revalidate();
         }
     }
 
     public void removeOptionPanel(final JPanel optionPanel) {
         if (this.showOptions && optionPanel != null) {
             this.jPanelOptions.remove(optionPanel);
-            this.jPanelOptions.revalidate();
         }
     }
 
@@ -1496,8 +1494,8 @@ public class FitsImagePanel extends javax.swing.JPanel implements Disposable, Ch
                     && ((min <= 0f) || (max <= 0f) || (min == max) || Float.isInfinite(min) || Float.isInfinite(max))) {
                 usedColorScale = ColorScale.LINEAR;
 
-                // update min/max:
-                FitsImageUtils.updateDataRange(fitsImage);
+                // update min/max without zero:
+                FitsImageUtils.updateDataRangeExcludingZero(fitsImage);
                 min = (float) this.fitsImage.getDataMin();
                 max = (float) this.fitsImage.getDataMax();
 

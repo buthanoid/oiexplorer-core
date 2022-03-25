@@ -202,6 +202,8 @@ public final class FitsImageUtils {
                 // can throw IllegalArgumentException if image has invalid keyword(s) / data:
                 FitsImageUtils.prepareImage(fitsImage);
             }
+            // update min/max range to be consistent accross the cube:
+            updateDataRange(fitsImageHDU);
         }
     }
 
@@ -278,12 +280,29 @@ public final class FitsImageUtils {
         }
     }
 
-    /** 
-     * Update the data Min/Max of the given fitsImage
-     * @param fitsImage fitsImage to process and update
-     */
-    public static void updateDataRange(final FitsImage fitsImage) {
-        updateDataRange(fitsImage, false);
+    public static void updateDataRange(final FitsImageHDU fitsImageHDU) {
+        if ((fitsImageHDU != null) && (fitsImageHDU.isFitsCube())) {
+            // Get min/max over all images
+            double min = Double.POSITIVE_INFINITY;
+            double max = Double.NEGATIVE_INFINITY;
+
+            for (FitsImage fitsImage : fitsImageHDU.getFitsImages()) {
+                if (fitsImage.getDataMin() < min) {
+                    min = fitsImage.getDataMin();
+                }
+                if (fitsImage.getDataMax() > max) {
+                    max = fitsImage.getDataMax();
+                }
+            }
+            logger.debug("updateDataRange = [{} - {}]", min, max);
+
+            if (Double.isFinite(min) && Double.isFinite(max)) {
+                for (FitsImage fitsImage : fitsImageHDU.getFitsImages()) {
+                    fitsImage.setDataMin(min);
+                    fitsImage.setDataMax(max);
+                }
+            }
+        }
     }
 
     /** 
@@ -716,8 +735,8 @@ public final class FitsImageUtils {
         final double[] weights = new double[nbPixels];
 
         final double f = -GAUSS_CST / (fwhm * fwhm);
-        
-        double gauss_sum =0.0;
+
+        double gauss_sum = 0.0;
 
         for (int i = 0; i < nbPixels; i++) {
             final double dist = Math.abs(half - i - 0.5) * inc;
@@ -737,16 +756,16 @@ public final class FitsImageUtils {
                 gauss_sum += row[c];
             }
         }
-        
+
         // normalization to 1.
-        double normalization = 1.0/gauss_sum; 
+        double normalization = 1.0 / gauss_sum;
         for (int r = 0; r < nbPixels; r++) {
             // iterate on columns:
             for (int c = 0; c < nbPixels; c++) {
                 data[r][c] *= normalization;
             }
         }
-            
+
         return data;
     }
 
