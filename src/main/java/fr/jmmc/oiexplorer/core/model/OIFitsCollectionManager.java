@@ -521,17 +521,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /**
-     * Remove all OIDataFiles
-     */
-    public void removeAllOIFitsFiles() {
-        this.oiFitsCollection.clear();
-
-        getOIDataFileList().clear();
-
-        fireOIFitsCollectionChanged();
-    }
-
-    /**
      * Add an OIDataFile given its corresponding OIFits structure
      * @param oiFitsFile OIFits structure
      * @return true if an OIDataFile was added
@@ -587,9 +576,10 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     /**
      * Remove the OIDataFile given its corresponding OIFits structure (filePath matching)
      * @param oiFitsFile OIFits structure
+     * @param fireEvent if true, an event will be fired
      * @return removed OIDataFile or null if not found
      */
-    public OIFitsFile removeOIFitsFile(final OIFitsFile oiFitsFile) {
+    public OIFitsFile removeOIFitsFile(final OIFitsFile oiFitsFile, final boolean fireEvent) {
         final OIFitsFile previous = this.oiFitsCollection.removeOIFitsFile(oiFitsFile);
 
         if (previous != null) {
@@ -606,9 +596,52 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 }
             }
 
-            fireOIFitsCollectionChanged();
+            if (fireEvent) {
+                fireOIFitsCollectionChanged();
+            }
         }
         return previous;
+    }
+
+    /**
+     * alias of removeOIFitsFile with fireEvent set to true. Remove the OIDataFile given its corresponding OIFits
+     * structure (filePath matching)
+     *
+     * @param oiFitsFile OIFits structure
+     * @return removed OIDataFile or null if not found
+     */
+    public OIFitsFile removeOIFitsFile(final OIFitsFile oiFitsFile) {
+        return removeOIFitsFile(oiFitsFile, true);
+    }
+
+    /**
+     * removes from collection every OIFits file of the given list. Then fires an event.
+     *
+     * @param listOIfitsfiles list of OIFits files to remove
+     * @return list of deleted OIFits file or null elements (null when the file was not found)
+     */
+    public List<OIFitsFile> removeListOIFitsFile(final List<OIFitsFile> listOIfitsfiles) {
+        final List<OIFitsFile> listPrevious = new ArrayList<>(listOIfitsfiles.size());
+
+        for (OIFitsFile oiFitsFile : listOIfitsfiles) {
+            listPrevious.add(removeOIFitsFile(oiFitsFile, false));
+        }
+
+        fireOIFitsCollectionChanged();
+
+        return listPrevious;
+    }
+
+
+    /**
+     * Remove all OIDataFiles
+     */
+    public void removeAllOIFitsFiles() {
+        this.oiFitsCollection.clear();
+
+        getOIDataFileList().clear();
+
+        fireOIFitsCollectionChanged();
     }
 
     /**
