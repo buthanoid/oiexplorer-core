@@ -228,10 +228,10 @@ public final class FitsImageUtils {
 
             // 1 - Ignore negative values:
             // TODO: fix special case: image is [0] !
-            if (fitsImage.getDataMax() <= 0d) {
+            if (fitsImage.getDataMax() <= 0.0) {
                 throw new IllegalArgumentException("Fits image [" + fitsImage.getFitsImageIdentifier() + "] has only negative data !");
             }
-            if (fitsImage.getDataMin() < 0d) {
+            if (fitsImage.getDataMin() < 0.0) {
                 final float threshold = 0f;
 
                 final ImageLowerThresholdJob thresholdJob = new ImageLowerThresholdJob(data, nbCols, nbRows, threshold, 0f);
@@ -246,7 +246,7 @@ public final class FitsImageUtils {
             }
 
             // 2 - Normalize data (total flux):
-            if (!NumberUtils.equals(fitsImage.getSum(), 1.0, 1e-3)) {
+            if (fitsImage.getSum() > 0.0 && !NumberUtils.equals(fitsImage.getSum(), 1.0, 1e-3)) {
                 final double normFactor = 1d / fitsImage.getSum();
 
                 final ImageNormalizeJob normJob = new ImageNormalizeJob(data, nbCols, nbRows, normFactor);
@@ -736,8 +736,6 @@ public final class FitsImageUtils {
 
         final double f = -GAUSS_CST / (fwhm * fwhm);
 
-        double gauss_sum = 0.0;
-
         for (int i = 0; i < nbPixels; i++) {
             final double dist = Math.abs(half - i - 0.5) * inc;
 
@@ -746,6 +744,7 @@ public final class FitsImageUtils {
 
         // iterate on rows:
         float[] row;
+        double sum = 0.0;
 
         for (int r = 0, c; r < nbPixels; r++) {
             row = data[r];
@@ -753,19 +752,21 @@ public final class FitsImageUtils {
             // iterate on columns:
             for (c = 0; c < nbPixels; c++) {
                 row[c] = (float) (weights[r] * weights[c]);
-                gauss_sum += row[c];
+                sum += row[c];
             }
         }
 
-        // normalization to 1.
-        double normalization = 1.0 / gauss_sum;
-        for (int r = 0; r < nbPixels; r++) {
-            // iterate on columns:
-            for (int c = 0; c < nbPixels; c++) {
-                data[r][c] *= normalization;
+        if (sum > 0.0) {
+            // normalization to 1:
+            final double normalization = 1.0 / sum;
+
+            for (int r = 0; r < nbPixels; r++) {
+                // iterate on columns:
+                for (int c = 0; c < nbPixels; c++) {
+                    data[r][c] *= normalization;
+                }
             }
         }
-
         return data;
     }
 
