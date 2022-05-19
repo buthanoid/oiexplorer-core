@@ -56,7 +56,7 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
     /* may detect widgets waiting for events on LOST subject objects ?? */
     private final CopyOnWriteArrayList<WeakReference<GenericEventListener<K, V, O>>> listeners = new CopyOnWriteArrayList<WeakReference<GenericEventListener<K, V, O>>>();
     /** queued events and contexts delivered asap by EDT (ordered by insertion order) */
-    private final Map<K, EventContext<K, V, O>> eventQueue = new LinkedHashMap<K, EventContext<K, V, O>>();
+    private final Map<K, EventContext<K, V, O>> eventQueue = new LinkedHashMap<K, EventContext<K, V, O>>(32);
 
     /** 
      * Public Constructor
@@ -378,6 +378,15 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
     }
 
     /**
+     * Return true if there is at least one event to be processed
+     *
+     * @return true if there is at least one event to be processed
+     */
+    public static boolean isBusy() {
+        return globalController.isBusy();
+    }
+
+    /**
      * Add callback executed once all queued events are fired
      * @param callback runnable task
      */
@@ -391,16 +400,16 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
     private final static class EventNotifierController implements Runnable {
 
         /* members */
+        /** flag indicating that the controller is busy (processing event notifiers) */
+        private boolean busy = false;
         /** flag indicating that this task is registered in EDT */
         private boolean registeredEDT = false;
-        /** immediate event notifiers (ordered by insertion order) */
-        private final Set<EventNotifier<?, ?, ?>> immediateNotifiers = new LinkedHashSet<EventNotifier<?, ?, ?>>();
         /** queued event notifiers (ordered by insertion order) */
-        private final Set<EventNotifier<?, ?, ?>> queuedNotifiers = new LinkedHashSet<EventNotifier<?, ?, ?>>();
+        private final Set<EventNotifier<?, ?, ?>> queuedNotifiers = new LinkedHashSet<EventNotifier<?, ?, ?>>(32);
         /** callback list */
         private final List<Runnable> callbacks = new ArrayList<Runnable>(4);
         /** temporary storage for queuedNotifiers */
-        private final List<EventNotifier<?, ?, ?>> queuedNotifiersCopy = new ArrayList<EventNotifier<?, ?, ?>>();
+        private final List<EventNotifier<?, ?, ?>> queuedNotifiersCopy = new ArrayList<EventNotifier<?, ?, ?>>(32);
 
         /**
          * Private constructor
@@ -410,32 +419,22 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
         }
 
         /**
+         * Return true if there is at least one event to be processed
+         *
+         * @return true if there is at least one event to be processed
+         */
+        public boolean isBusy() {
+            return busy;
+        }
+
+        /**
          * Queue the given event notifier
          * @param eventNotifier event notifier to queue
          */
         void queueEventNotifier(final EventNotifier<?, ?, ?> eventNotifier) {
             queuedNotifiers.add(eventNotifier);
             registerEDT();
-        }
-
-        /**
-         * Executes the given event notifier
-         * @param eventNotifier event notifier to queue
-         */
-        void callEventNotifier(final EventNotifier<?, ?, ?> eventNotifier) {
-            immediateNotifiers.add(eventNotifier);
-
-            if (DEBUG_FIRE_EVENT) {
-                logger.warn("CONTROLLER EXECUTED BY EDT (invokeLater)");
-            }
-            // fire synchronous events:
-            boolean done = false;
-            while (!done) {
-                done = fireImmediateNotifiers();
-            }
-
-            // run callbacks once all queued notifiers / events are fired:
-            runCallbacks();
+            this.busy = true;
         }
 
         /**
@@ -480,17 +479,10 @@ public final class EventNotifier<K extends GenericEvent<V, O>, V, O> implements 
                 // register EDT
                 registerEDT();
             } else {
+                this.busy = false;
                 // run callbacks once all queued notifiers / events are fired:
                 runCallbacks();
             }
-        }
-
-        /**
-         * Fire immediate notifiers immediately (sync)
-         * @return true if queuedNotifiers is empty i.e. done
-         */
-        private boolean fireImmediateNotifiers() {
-            return fireNotifiers(immediateNotifiers);
         }
 
         /**
