@@ -579,7 +579,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @param fireEvent if true, an event will be fired
      * @return removed OIDataFile or null if not found
      */
-    public OIFitsFile removeOIFitsFile(final OIFitsFile oiFitsFile, final boolean fireEvent) {
+    private OIFitsFile removeOIFitsFile(final OIFitsFile oiFitsFile, final boolean fireEvent) {
         final OIFitsFile previous = this.oiFitsCollection.removeOIFitsFile(oiFitsFile);
 
         if (previous != null) {
@@ -618,13 +618,16 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * removes from collection every OIFits file of the given list. Then fires an event.
      *
      * @param listOIfitsfiles list of OIFits files to remove
-     * @return list of deleted OIFits file or null elements (null when the file was not found)
+     * @return list of effectively deleted OIFits files
      */
-    public List<OIFitsFile> removeListOIFitsFile(final List<OIFitsFile> listOIfitsfiles) {
+    public List<OIFitsFile> removeOIFitsFileList(final List<OIFitsFile> listOIfitsfiles) {
         final List<OIFitsFile> listPrevious = new ArrayList<>(listOIfitsfiles.size());
 
         for (OIFitsFile oiFitsFile : listOIfitsfiles) {
-            listPrevious.add(removeOIFitsFile(oiFitsFile, false));
+            final OIFitsFile removed = removeOIFitsFile(oiFitsFile, false);
+            if (removed != null) {
+                listPrevious.add(removed);
+            }
         }
 
         fireOIFitsCollectionChanged();
