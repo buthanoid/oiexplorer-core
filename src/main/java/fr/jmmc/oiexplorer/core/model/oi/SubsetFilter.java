@@ -215,6 +215,29 @@ public class SubsetFilter
             sb.append('}');
         }
     }
+
+    /**
+     * returns a short String representation. used for logging for example
+     *
+     * @return a short string representation.
+     */
+    public String toShortString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("(").append(targetUID == null ? "null-target" : targetUID);
+        sb.append(",").append(insModeUID == null ? "null-insmode" : insModeUID);
+        sb.append(",").append(nightID == null ? "null-night" : nightID);
+        if (tables == null) {
+            sb.append(",null-tables)");
+        } else {
+            sb.append(",[");
+            for (int i = 0, s = tables.size(); i < s; i++) {
+                sb.append(i == 0 ? "" : ",");
+                tables.get(i).appendShortString(sb);
+            }
+            sb.append("])");
+        }
+        return sb.toString();
+    }
 //--simple--preserve
 
 }

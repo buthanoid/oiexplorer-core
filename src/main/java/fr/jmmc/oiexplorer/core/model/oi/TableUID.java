@@ -8,6 +8,7 @@ import javax.xml.bind.annotation.XmlIDREF;
 import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import fr.jmmc.oiexplorer.core.model.OIBase;
+import java.io.File;
 
 
 /**
@@ -208,6 +209,31 @@ public class TableUID
             sb.append(", extNb=").append(this.extNb);
         }
         sb.append('}');
+    }
+
+    /**
+     * appends a short String representation. used for logging for example
+     *
+     * @param sb StringBuilder to which to appends the string representation
+     */
+    public void appendShortString(final StringBuilder sb) {
+        sb.append("(").append(extName == null ? "null-extname" : extName);
+        sb.append(",").append(extNb == null ? "null-extnb" : extNb);
+        sb.append(",");
+        if (file == null) {
+            sb.append("null-file");
+        } else {
+            // we want a string not longer than 40 characters, to keep it short
+            final String filename = new File(file.getFile()).getName();
+            final int filenameLength = filename.length();
+            if (filenameLength > 40) {
+                sb.append(filename.substring(0, 17)).append("...");
+                sb.append(filename.substring(filenameLength - 20));
+            } else {
+                sb.append(filename);
+            }
+        }
+        sb.append(")");
     }
 //--simple--preserve
 
