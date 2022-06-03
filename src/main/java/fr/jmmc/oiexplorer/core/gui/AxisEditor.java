@@ -225,9 +225,9 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
     }
 
     private void handleRangeListSelection() {
-        final String selected = (String) rangeListComboBox.getSelectedItem();
-
         if (isWavelengthAxis()) {
+            final String selected = (String) rangeListComboBox.getSelectedItem();
+
             double min = Double.NaN;
             double max = Double.NaN;
 
@@ -241,14 +241,19 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
                     }
                 }
             }
-            try {
-                user_input = false;
 
-                jFieldMin.setValue(isFinite(min) ? Double.valueOf(min) : null);
-                jFieldMax.setValue(isFinite(max) ? Double.valueOf(max) : null);
-                jRadioModeFixed.doClick();
-            } finally {
-                user_input = true;
+            if (isFinite(min) || isFinite(max)) {
+                try {
+                    user_input = false;
+
+                    jFieldMin.setValue(Double.valueOf(min));
+                    jFieldMax.setValue(Double.valueOf(max));
+
+                    // switch this axis in Fixed mode:
+                    jRadioModeFixed.doClick();
+                } finally {
+                    user_input = true;
+                }
             }
         }
     }
@@ -335,13 +340,22 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
         if (user_input && jRadioModeFixed.isSelected()) {
             // Update recent values:
             if (keyMin != null) {
-                RecentValuesManager.addValue(keyMin, (minFinite) ? Double.toString(min) : null);
+                RecentValuesManager.addValue(keyMin, (minFinite) ? parseField(this.jFieldMin.getFormatter(), min) : null);
             }
             if (keyMax != null) {
-                RecentValuesManager.addValue(keyMax, (maxFinite) ? Double.toString(max) : null);
+                RecentValuesManager.addValue(keyMax, (maxFinite) ? parseField(this.jFieldMax.getFormatter(), min) : null);
             }
         }
         return range;
+    }
+
+    private static String parseField(final JFormattedTextField.AbstractFormatter fmt, final double value) {
+        try {
+            return fmt.valueToString(value);
+        } catch (ParseException pe) {
+            logger.info("parseField: value = {}", value, pe);
+        }
+        return Double.toString(value);
     }
 
     /** 
@@ -465,6 +479,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
         jPanelBounds.add(jRadioModeFixed, gridBagConstraints);
 
         jFieldMin.setColumns(4);
+        jFieldMin.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("###0.####"))));
         jFieldMin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
@@ -479,6 +494,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable {
         jPanelBounds.add(jFieldMin, gridBagConstraints);
 
         jFieldMax.setColumns(4);
+        jFieldMax.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("###0.####"))));
         jFieldMax.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AxisEditor.this.actionPerformed(evt);
