@@ -114,6 +114,47 @@ public class Plot
         }
         sb.append('}');
     }
+
+    /**
+     * Check bad references and update SubsetDefinition and PlotDefinition references
+     * @param mapIdSubsetDefs Map<ID, SubsetDefinition> index
+     * @param mapIdPlotDefs Map<ID, PlotDefinition> index
+     */
+    protected void checkReferences(final java.util.Map<String, SubsetDefinition> mapIdSubsetDefs,
+                                   final java.util.Map<String, PlotDefinition> mapIdPlotDefs) {
+
+        if (getSubsetDefinition() != null) {
+            final SubsetDefinition prev = getSubsetDefinition();
+
+            final SubsetDefinition updated = (mapIdSubsetDefs != null) ? mapIdSubsetDefs.get(prev.getId()) : null;
+            if (updated != null) {
+                if (updated != prev) {
+                    setSubsetDefinition(updated);
+                }
+            } else {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Removing missing SubsetDefinition reference: {}", prev.getId());
+                }
+                setSubsetDefinition(null); // TODO: remove invalid Plot ?
+            }
+        }
+
+        if (getPlotDefinition() != null) {
+            final PlotDefinition prev = getPlotDefinition();
+
+            final PlotDefinition updated = (mapIdPlotDefs != null) ? mapIdPlotDefs.get(prev.getId()) : null;
+            if (updated != null) {
+                if (updated != prev) {
+                    setPlotDefinition(updated);
+                }
+            } else {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Removing missing PlotDefinition reference: {}", prev.getId());
+                }
+                setPlotDefinition(null); // TODO: remove invalid Plot ?
+            }
+        }
+    }
 //--simple--preserve
 
 }

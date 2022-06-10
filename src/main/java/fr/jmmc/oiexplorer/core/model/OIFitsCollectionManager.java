@@ -43,12 +43,12 @@ import fr.jmmc.oitools.processing.SelectorResult;
 import fr.nom.tam.fits.FitsException;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.httpclient.auth.AuthenticationException;
@@ -187,17 +187,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     private void postLoadOIFitsCollection(final File file, final OiDataCollection oiDataCollection, final OIFitsChecker checker) {
 
         // TODO: check missing files !
-        // TODO what about user plot definitions ...
         // add them but should be check for consistency related to loaded files (errors can occur while loading):
+        // check and update references in OiDataCollection:
+        oiDataCollection.checkReferences();
+
         // then add SubsetDefinition:
         for (SubsetDefinition subsetDefinition : oiDataCollection.getSubsetDefinitions()) {
-            // fix OIDataFile reference:
-            for (SubsetFilter filter : subsetDefinition.getFilters()) {
-                for (TableUID tableUID : filter.getTables()) {
-                    tableUID.setFile(getOIDataFile(tableUID.getFile().getId()));
-                    // if missing, remove ?
-                }
-            }
             addSubsetDefinitionRef(subsetDefinition);
         }
 
@@ -245,6 +240,18 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
         // add given file to Open recent menu
         RecentFilesManager.addFile(file);
+    }
+
+    public String dumpOIFitsCollection() throws IllegalStateException {
+
+        final OiDataCollection savedUserCollection = getUserCollection();
+
+        OIDataCollectionFileProcessor.onSave(savedUserCollection);
+
+        final StringWriter w = new StringWriter(4096);
+        JAXBUtils.saveObject(w, savedUserCollection, this.jf);
+
+        return w.toString();
     }
 
     /**
@@ -527,7 +534,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     public boolean addOIFitsFile(final OIFitsFile oiFitsFile) {
         if (oiFitsFile != null) {
-
             // check if already present in collection:
             if (oiFitsCollection.addOIFitsFile(oiFitsFile) == null) {
 
@@ -557,18 +563,27 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
                 dataFile.setId(id);
                 dataFile.setName(oiFitsFile.getFileName());
-                dataFile.setFile(oiFitsFile.getAbsoluteFilePath());
+                dataFile.setFile(OIFitsCollection.getFilePath(oiFitsFile));
                 // checksum !
 
                 // store oiFitsFile reference:
                 dataFile.setOIFitsFile(oiFitsFile);
 
                 addOIDataFileRef(dataFile);
+            } else {
+                // OIFitsFile updated:
+                final OIDataFile dataFile = getOIDataFile(oiFitsFile);
+                if (dataFile != null) {
+                    // checksum !
 
-                fireOIFitsCollectionChanged();
-
-                return true;
+                    // update oiFitsFile reference:
+                    dataFile.setOIFitsFile(oiFitsFile);
+                }
             }
+
+            fireOIFitsCollectionChanged();
+
+            return true;
         }
         return false;
     }
@@ -584,19 +599,16 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
         if (previous != null) {
             // Remove OiDataFile from user collection
-            final String filePath = oiFitsFile.getAbsoluteFilePath();
+            final OIDataFile dataFile = getOIDataFile(oiFitsFile);
+            if (dataFile != null) {
+                // reset oiFitsFile reference:
+                dataFile.setOIFitsFile(null);
 
-            for (final Iterator<OIDataFile> it = getOIDataFileList().iterator(); it.hasNext();) {
-                final OIDataFile dataFile = it.next();
-                if (filePath.equals(dataFile.getFile())) {
-                    // reset oiFitsFile reference:
-                    dataFile.setOIFitsFile(null);
-
-                    it.remove();
-                }
+                removeOIDataFile(dataFile.getId());
             }
 
             if (fireEvent) {
+                // collection changed event will remove remaining OIDataFile references:
                 fireOIFitsCollectionChanged();
             }
         }
@@ -630,11 +642,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             }
         }
 
-        fireOIFitsCollectionChanged();
-
+        if (!listPrevious.isEmpty()) {
+            // collection changed event will remove remaining OIDataFile references:
+            fireOIFitsCollectionChanged();
+        }
         return listPrevious;
     }
-
 
     /**
      * Remove all OIDataFiles
@@ -902,8 +915,10 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      * @return OIDataFile or null if not found
      */
     public OIDataFile getOIDataFile(final OIFitsFile oiFitsFile) {
+        final String filePath = OIFitsCollection.getFilePath(oiFitsFile);
+
         for (OIDataFile dataFile : getOIDataFileList()) {
-            if (oiFitsFile == dataFile.getOIFitsFile()) {
+            if (filePath.equals(dataFile.getFile())) {
                 return dataFile;
             }
         }
@@ -1133,7 +1148,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         // find dependencies:
         for (Plot plot : getPlotList()) {
             if (plot.getSubsetDefinition() != null && plot.getSubsetDefinition().getId().equals(subsetDefinition.getId())) {
-                // match
+                // update subset definition reference:
                 plot.setSubsetDefinition(subsetDefinition);
 
                 // update plot version and fire events (PlotChanged):
@@ -1358,7 +1373,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         // find dependencies:
         for (Plot plot : getPlotList()) {
             if (plot.getPlotDefinition() != null && plot.getPlotDefinition().getId().equals(plotDefinition.getId())) {
-                // match
+                // update plot definition reference:
                 plot.setPlotDefinition(plotDefinition);
 
                 // update plot version and fire events (PlotChanged):
@@ -1462,10 +1477,43 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         Plot p = Identifiable.removeIdentifiable(id, getPlotList());
         if (p != null) {
             // try to cleanup associated elements
-            // TODO check if some element are shared when available
-            // See also ObservationSetting.checkReferences()
-            removePlotDefinition(p.getPlotDefinition().getId());
-            removeSubsetDefinition(p.getSubsetDefinition().getId());
+            final SubsetDefinition subsetDefinition = p.getSubsetDefinition();
+
+            if (subsetDefinition != null) {
+                boolean found = false;
+                // find dependencies:
+                for (Plot plot : getPlotList()) {
+                    if (plot.getSubsetDefinition() != null && plot.getSubsetDefinition().getId().equals(subsetDefinition.getId())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // remove orphans:
+                    removeSubsetDefinition(subsetDefinition.getId());
+                }
+            }
+            final PlotDefinition plotDefinition = p.getPlotDefinition();
+
+            if (plotDefinition != null) {
+                boolean found = false;
+                // find dependencies:
+                for (Plot plot : getPlotList()) {
+                    if (plot.getPlotDefinition() != null && plot.getPlotDefinition().getId().equals(plotDefinition.getId())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // remove orphans:
+                    removePlotDefinition(plotDefinition.getId());
+                }
+            }
+
+            // check and update references in OiDataCollection:
+            // initialize current objects: subsetDefinition, plotDefinition, plot if NOT PRESENT:
+            checkReferences();
+
             firePlotListChanged();
             return true;
         }
@@ -2010,10 +2058,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 // update collection analysis:
                 oiFitsCollection.analyzeCollection();
 
-                // TODO: see if the "GUI" manager decide to create objects itself ?
-                // TODO: remove ASAP:
+                // check and update references in OiDataCollection:
                 // initialize current objects: subsetDefinition, plotDefinition, plot if NOT PRESENT:
-                getCurrentPlotRef();
+                checkReferences();
 
                 // CASCADE EVENTS:
                 // SubsetDefinition:
@@ -2034,4 +2081,21 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
         logger.debug("onProcess {} - done", event);
     }
+
+    /**
+     * Check bad references
+     */
+    private void checkReferences() {
+
+        // check and update references in OiDataCollection:
+        this.userCollection.checkReferences();
+
+        // TODO: see if the "GUI" manager decide to create objects itself ?
+        // TODO: remove ASAP:
+        // initialize current objects: subsetDefinition, plotDefinition, plot if NOT PRESENT:
+        getCurrentPlotRef();
+
+        logger.debug("checkReferences: userCollection = {}", userCollection);
+    }
+
 }

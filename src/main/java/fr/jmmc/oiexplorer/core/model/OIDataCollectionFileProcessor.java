@@ -46,9 +46,6 @@ public final class OIDataCollectionFileProcessor {
             // model conversion is needed :
             convertModel(collection, revision);
         }
-
-        // TODO check and update references
-        //collection.checkReferences();
     }
 
     /**
@@ -59,9 +56,6 @@ public final class OIDataCollectionFileProcessor {
         logger.debug("onSave: {}", collection);
 
         collection.setSchemaVersion(OIExplorerModelVersion.getCurrentVersion().getVersion());
-
-        // TODO check and update references :
-        //collection.checkReferences();
     }
 
     /**

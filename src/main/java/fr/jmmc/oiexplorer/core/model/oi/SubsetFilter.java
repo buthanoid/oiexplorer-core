@@ -153,9 +153,8 @@ public class SubsetFilter
         }
         return this.tables;
     }
-    
-//--simple--preserve
 
+//--simple--preserve
     /**
      * Perform a deep-copy of the given other instance into this instance
      * 
@@ -238,6 +237,33 @@ public class SubsetFilter
         }
         return sb.toString();
     }
-//--simple--preserve
 
+    /**
+     * Check bad references and update OIDataFile references
+     * @param tableUIDs list of TableUID to process
+     * @param mapIdOiDataFiles Map<ID, OIDataFile> index
+     */
+    protected static void updateOIDataFileReferences(final java.util.List<TableUID> tableUIDs,
+                                                     final java.util.Map<String, OIDataFile> mapIdOiDataFiles) {
+        if (tableUIDs != null) {
+            for (final java.util.ListIterator<TableUID> it = tableUIDs.listIterator(); it.hasNext();) {
+                final TableUID tableUID = it.next();
+                final OIDataFile prev = tableUID.getFile();
+
+                final OIDataFile updated = (mapIdOiDataFiles != null) ? mapIdOiDataFiles.get(prev.getId()) : null;
+                if (updated != null) {
+                    if (updated != prev) {
+                        tableUID.setFile(updated);
+                    }
+                } else {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Removing missing OIDataFile reference: {}", prev.getId());
+                    }
+                    it.remove();
+                }
+            }
+        }
+    }
+
+//--simple--preserve
 }

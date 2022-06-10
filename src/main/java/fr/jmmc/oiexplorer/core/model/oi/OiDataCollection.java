@@ -219,6 +219,58 @@ public class OiDataCollection
             sb.append('}');
         }
     }
+
+    /**
+     * Check bad references
+     */
+    public void checkReferences() {
+
+        // create the Map<ID, OIDataFile> index for files:
+        final java.util.Map<String, OIDataFile> mapIdOiDataFiles
+                                                = (java.util.Map<String, OIDataFile>) createIndex(getFiles());
+
+        logger.debug("checkReferences: mapIdOiDataFiles = {}", mapIdOiDataFiles);
+
+        // update reference in subset filter's tables:
+        for (SubsetDefinition subsetDefinition : getSubsetDefinitions()) {
+            subsetDefinition.checkReferences(mapIdOiDataFiles);
+        }
+
+        // create the Map<ID, SubsetDefinition> index for subsetDefinitions:
+        final java.util.Map<String, SubsetDefinition> mapIdSubsetDefs
+                                                      = (java.util.Map<String, SubsetDefinition>) createIndex(getSubsetDefinitions());
+
+        logger.debug("checkReferences: mapIdSubsetDefs = {}", mapIdSubsetDefs);
+
+        // create the Map<ID, PlotDefinition> index for plotDefinitions:
+        final java.util.Map<String, PlotDefinition> mapIdPlotDefs
+                                                    = (java.util.Map<String, PlotDefinition>) createIndex(getPlotDefinitions());
+
+        logger.debug("checkReferences: mapIdPlotDefs = {}", mapIdPlotDefs);
+
+        // update references in plot's subset and plot defs:
+        for (Plot plot : getPlots()) {
+            plot.checkReferences(mapIdSubsetDefs, mapIdPlotDefs);
+        }
+        logger.debug("checkReferences: done");
+    }
+
+    /**
+     * Return the Map<ID, Identifiable> index
+     * @param list
+     * @return Map<ID, Target> index
+     */
+    static java.util.Map<String, ? extends Identifiable> createIndex(final List<? extends Identifiable> list) {
+        // create the Map<ID, Target> index:
+        if (list == null) {
+            return java.util.Collections.emptyMap();
+        }
+        final java.util.Map<String, Identifiable> mapIDs = new java.util.HashMap<String, Identifiable>(list.size());
+        for (Identifiable i : list) {
+            mapIDs.put(i.getId(), i);
+        }
+        return mapIDs;
+    }
 //--simple--preserve
 
 }

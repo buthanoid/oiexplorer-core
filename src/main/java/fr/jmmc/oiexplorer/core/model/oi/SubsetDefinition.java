@@ -74,9 +74,9 @@ public class SubsetDefinition
     
 //--simple--preserve
     /**
-    * Return the first SubsetFilter (or create a new instance)
-    * @return SubsetFilter instance
-    */
+     * Return the first SubsetFilter (or create a new instance)
+     * @return SubsetFilter instance
+     */
     public SubsetFilter getFilter() {
         final SubsetFilter filter;
         if (filters == null || filters.isEmpty()) {
@@ -87,7 +87,7 @@ public class SubsetDefinition
         }
         return filter;
     }
-    
+
     /**
      * Perform a deep-copy EXCEPT Identifiable attributes of the given other instance into this instance
      * 
@@ -147,6 +147,16 @@ public class SubsetDefinition
             fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.filters);
         }
         sb.append('}');
+    }
+
+    /**
+     * Check bad references and update OIDataFile references in subset filter's tables
+     * @param mapIdOiDataFiles Map<ID, OIDataFile> index
+     */
+    protected void checkReferences(final java.util.Map<String, OIDataFile> mapIdOiDataFiles) {
+        for (SubsetFilter filter : getFilters()) {
+            SubsetFilter.updateOIDataFileReferences(filter.getTables(), mapIdOiDataFiles);
+        }
     }
 //--simple--preserve
 
