@@ -34,7 +34,7 @@ import javax.xml.bind.annotation.XmlType;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "SubsetDefinition", propOrder = {
-    "filters"
+    "filters", "genericFilters"
 })
 public class SubsetDefinition
     extends Identifiable
@@ -42,6 +42,12 @@ public class SubsetDefinition
 
     @XmlElement(name = "filter", required = true)
     protected List<SubsetFilter> filters;
+
+    /**
+     * The generic filters that will be applied to the data of this subsetDefinition.
+     */
+    @XmlElement(name = "genericFilter")
+    private List<GenericFilter> genericFilters;
 
     /**
      * Gets the value of the filters property.
@@ -89,6 +95,16 @@ public class SubsetDefinition
     }
 
     /**
+     * @return the genericFilters. returns a new list if null
+     */
+    public List<GenericFilter> getGenericFilters() {
+        if (genericFilters == null) {
+            genericFilters = new ArrayList<>();
+        }
+        return genericFilters;
+    }
+
+    /**
      * Perform a deep-copy EXCEPT Identifiable attributes of the given other instance into this instance
      * 
      * Note: to be overriden in child class to perform deep-copy of class fields
@@ -101,6 +117,7 @@ public class SubsetDefinition
 
         // deep copy filters:
         this.filters = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.getFilters());
+        this.genericFilters = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.getGenericFilters());
     }
 
     @Override
@@ -110,6 +127,10 @@ public class SubsetDefinition
         }
         final SubsetDefinition other = (SubsetDefinition) obj;
         if (this.filters != other.filters && (this.filters == null || !this.filters.equals(other.filters))) {
+            return false;
+        }
+        if ((this.genericFilters != other.genericFilters)
+                && ((this.genericFilters == null) || (this.genericFilters.equals(other.genericFilters)))) {
             return false;
         }
         return true;
@@ -145,6 +166,8 @@ public class SubsetDefinition
         if (full) {
             sb.append(", filters=");
             fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.filters);
+            sb.append(", genericFilters=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.genericFilters);
         }
         sb.append('}');
     }

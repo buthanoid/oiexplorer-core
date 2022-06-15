@@ -167,7 +167,6 @@ public class Identifiable
     /**
      * Perform a deep-copy of the given other instance into this instance
      * 
-     * Note: to be overriden in child class to perform deep-copy of class fields
      * @see OIBase#clone() 
      * 
      * @param other other instance
