@@ -12,7 +12,6 @@ import fr.jmmc.oiexplorer.core.export.DocumentExportable;
 import fr.jmmc.oiexplorer.core.export.DocumentMode;
 import fr.jmmc.oiexplorer.core.export.DocumentOptions;
 import fr.jmmc.oiexplorer.core.export.Writer;
-import fr.jmmc.oiexplorer.core.gui.chart.ChartUtils;
 import java.io.File;
 import java.io.IOException;
 import org.slf4j.Logger;

@@ -3,7 +3,6 @@
  ******************************************************************************/
 package fr.jmmc.oiexplorer.core;
 
-import fr.jmmc.jmal.image.ColorScale;
 import fr.jmmc.jmcs.data.preference.PreferencesException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -9,7 +9,6 @@ import fr.jmmc.oiexplorer.core.export.DocumentExportable;
 import fr.jmmc.oiexplorer.core.export.DocumentOptions;
 import fr.jmmc.oiexplorer.core.gui.action.ExportDocumentAction;
 import fr.jmmc.oiexplorer.core.gui.chart.ChartUtils;
-import fr.jmmc.oiexplorer.core.util.Constants;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Plot view implementation
+ * Global view implementation
  *
  * @author Jean-Philippe GROS.
  */
@@ -33,13 +32,13 @@ public final class GlobalView extends javax.swing.JPanel implements DocumentExpo
     private static final long serialVersionUID = 1;
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(GlobalView.class.getName());
-    
+
     /* members */
     /** List of charts */
     private final List<ChartPanel> chartPanelList;
 
     /**
-     * Creates new form PlotView
+     * Creates new GlobalView
      */
     public GlobalView() {
         chartPanelList = new ArrayList<ChartPanel>();
