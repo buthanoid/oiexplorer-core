@@ -1,207 +1,230 @@
-/** *****************************************************************************
- * JMMC project ( http://www.jmmc.fr ) - Copyright (C) CNRS.
- ***************************************************************************** */
+
 package fr.jmmc.oiexplorer.core.model.oi;
 
-import fr.jmmc.jmcs.util.ObjectUtils;
-import fr.jmmc.oiexplorer.core.model.OIBase;
-import fr.jmmc.oiexplorer.core.model.plot.Range;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
+import fr.jmmc.oiexplorer.core.model.plot.Range;
+
 
 /**
- * Describes a filter for one column in a OITable. Defines a list of accepted values (for string values), or a list of
- * accepted ranges (for numeric values). The actual filtering does not happen in this class.
+ * 
+ *                 This type describes a subset filter.
+ *             
+ * 
+ * <p>Java class for GenericFilter complex type.
+ * 
+ * <p>The following schema fragment specifies the expected content contained within this class.
+ * 
+ * <pre>
+ * &lt;complexType name="GenericFilter"&gt;
+ *   &lt;complexContent&gt;
+ *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-base/0.1}Identifiable"&gt;
+ *       &lt;sequence&gt;
+ *         &lt;element name="columnName" type="{http://www.w3.org/2001/XMLSchema}string"/&gt;
+ *         &lt;element name="dataType" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}DataType"/&gt;
+ *         &lt;element name="acceptedValues" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="acceptedRanges" type="{http://www.jmmc.fr/oiexplorer-core-plot-definition/0.1}Range" maxOccurs="unbounded" minOccurs="0"/&gt;
+ *         &lt;element name="enabled" type="{http://www.w3.org/2001/XMLSchema}boolean"/&gt;
+ *       &lt;/sequence&gt;
+ *     &lt;/extension&gt;
+ *   &lt;/complexContent&gt;
+ * &lt;/complexType&gt;
+ * </pre>
+ * 
+ * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "GenericFilter", propOrder = {
-    "columnName", "dataType", "acceptedValues", "acceptedRanges", "enabled"})
-public class GenericFilter extends Identifiable {
+    "columnName",
+    "dataType",
+    "acceptedValues",
+    "acceptedRanges",
+    "enabled"
+})
+public class GenericFilter
+    extends Identifiable
+{
 
-    /**
-     * Constant for string data.
-     */
-    public static final String DATATYPE_STRING = "STRING";
-
-    /**
-     * Constant for numeric data.
-     */
-    public static final String DATATYPE_NUMERIC = "NUMERIC";
-
-    /**
-     * Name of the column concerned by this filter. Example: OIFitsConstants.COLUMN_UCOORD
-     */
     @XmlElement(required = true)
-    private String columnName;
-
-    /**
-     * DataType of the column concerned by this filter. Must be either DATATYPE_STRING or DATATYPE_NUMERIC
-     */
+    protected String columnName;
     @XmlElement(required = true)
-    private String dataType;
+    @XmlSchemaType(name = "string")
+    protected DataType dataType;
+    protected List<String> acceptedValues;
+    protected List<Range> acceptedRanges;
+    protected boolean enabled;
 
     /**
-     * List of accepted String values for the column. Only used when dataType is DATATYPE_STRING. When empty, it means
-     * every value is accepted
-     */
-    @XmlElement(name = "acceptedValue")
-    private List<String> acceptedValues;
-
-    /**
-     * List of accepted ranges of double values for the column. Only used when dataType is DATATYPE_NUMERIC. When empty,
-     * it means every value is accepted
-     */
-    @XmlElement(name = "acceptedRange")
-    private List<Range> acceptedRanges;
-
-    /**
-     * When true, the filter is used. If false, the filter is unused (but still exported in the XML)
-     */
-    @XmlElement(required = true)
-    private boolean enabled;
-
-    /**
-     * @return the columnName
+     * Gets the value of the columnName property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link String }
+     *     
      */
     public String getColumnName() {
         return columnName;
     }
 
     /**
-     * @return the dataType. Can be either DATATYPE_STRING or DATATYPE_NUMERIC
+     * Sets the value of the columnName property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link String }
+     *     
      */
-    public String getDataType() {
+    public void setColumnName(String value) {
+        this.columnName = value;
+    }
+
+    /**
+     * Gets the value of the dataType property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link DataType }
+     *     
+     */
+    public DataType getDataType() {
         return dataType;
     }
 
     /**
-     * @return the acceptedValues. Use only if this.dataType is DATATYPE_STRING
+     * Sets the value of the dataType property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link DataType }
+     *     
+     */
+    public void setDataType(DataType value) {
+        this.dataType = value;
+    }
+
+    /**
+     * Gets the value of the acceptedValues property.
+     * 
+     * <p>
+     * This accessor method returns a reference to the live list,
+     * not a snapshot. Therefore any modification you make to the
+     * returned list will be present inside the JAXB object.
+     * This is why there is not a <CODE>set</CODE> method for the acceptedValues property.
+     * 
+     * <p>
+     * For example, to add a new item, do as follows:
+     * <pre>
+     *    getAcceptedValues().add(newItem);
+     * </pre>
+     * 
+     * 
+     * <p>
+     * Objects of the following type(s) are allowed in the list
+     * {@link String }
+     * 
+     * 
      */
     public List<String> getAcceptedValues() {
-        return acceptedValues;
+        if (acceptedValues == null) {
+            acceptedValues = new ArrayList<String>();
+        }
+        return this.acceptedValues;
     }
 
     /**
-     * @return the acceptedRanges. Use only if this.dataType is DATATYPE_NUMERIC
+     * Gets the value of the acceptedRanges property.
+     * 
+     * <p>
+     * This accessor method returns a reference to the live list,
+     * not a snapshot. Therefore any modification you make to the
+     * returned list will be present inside the JAXB object.
+     * This is why there is not a <CODE>set</CODE> method for the acceptedRanges property.
+     * 
+     * <p>
+     * For example, to add a new item, do as follows:
+     * <pre>
+     *    getAcceptedRanges().add(newItem);
+     * </pre>
+     * 
+     * 
+     * <p>
+     * Objects of the following type(s) are allowed in the list
+     * {@link Range }
+     * 
+     * 
      */
     public List<Range> getAcceptedRanges() {
-        return acceptedRanges;
+        if (acceptedRanges == null) {
+            acceptedRanges = new ArrayList<Range>();
+        }
+        return this.acceptedRanges;
     }
 
     /**
-     * @return the enabled
+     * Gets the value of the enabled property.
+     * 
      */
     public boolean isEnabled() {
         return enabled;
     }
 
     /**
-     * @param columnName the columnName to set
+     * Sets the value of the enabled property.
+     * 
      */
-    public void setColumnName(String columnName) {
-        this.columnName = columnName;
+    public void setEnabled(boolean value) {
+        this.enabled = value;
     }
-
+    
+//--simple--preserve
     /**
-     * @param dataType the dataType to set. Must be either DATATYPE_STRING or DATATYPE_NUMERIC
-     */
-    public void setDataType(String dataType) {
-        this.dataType = dataType;
-    }
-
-    /**
-     * @param acceptedValues the acceptedValues to set. Use only if this.dataType is DATATYPE_STRING
-     */
-    public void setAcceptedValues(List<String> acceptedValues) {
-        this.acceptedValues = acceptedValues;
-    }
-
-    /**
-     * @param acceptedRanges the acceptedRanges to set. Use only if this.dataType is DATATYPE_NUMERIC
-     */
-    public void setAcceptedRanges(List<Range> acceptedRanges) {
-        this.acceptedRanges = acceptedRanges;
-    }
-
-    /**
-     * @param enabled the enabled to set
-     */
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    /**
-     * Perform a deep-copy EXCEPT Identifiable attributes of the given other instance into this instance. To be
-     * overriden in child class to perform deep-copy of class fields.
-     *
-     * @param otherOIBase other instance whose values will be copied
-     * @throws ClassCastException when otherOIBase is not a GenericFilter
+     * Perform a deep-copy EXCEPT Identifiable attributes of the given other instance into this instance
+     * 
+     * Note: to be overriden in child class to perform deep-copy of class fields
+     * 
+     * @param other other instance
      */
     @Override
-    public void copyValues(final OIBase otherOIBase) {
+    public void copyValues(final fr.jmmc.oiexplorer.core.model.OIBase other) {
+        final GenericFilter filter = (GenericFilter) other;
 
-        // super.copyValues(otherOIBase); no need to call Identifiable.copyValues
+        // copy columnName, dataType, enabled:
+        this.columnName = filter.getColumnName();
+        this.dataType = filter.getDataType();
+        this.enabled = filter.isEnabled();
 
-        final GenericFilter other = (GenericFilter) otherOIBase;
-
-        this.columnName = other.columnName;
-        this.dataType = other.dataType;
-
-        // set null if other is null
-        if (other.acceptedValues == null) {
-            this.acceptedValues = null;
-        }
-        else if (this.acceptedValues == null) {
-            this.acceptedValues = new ArrayList<>(other.acceptedValues);
-        }
-        else { // reuse the local list container if it exists
-            this.acceptedValues.clear();
-            this.acceptedValues.addAll(other.acceptedValues);
-        }
-
-        if (other.acceptedRanges == null) {
-            this.acceptedRanges = null;
-        }
-        else {
-            if (this.acceptedRanges == null) {
-                this.acceptedRanges = new ArrayList<>(other.acceptedRanges.size());
-            }
-            else {
-                this.acceptedRanges.clear();
-            }
-            for (Range otherRange : other.acceptedRanges) { // clone each Range
-                this.acceptedRanges.add((Range) otherRange.clone());
-            }
-        }
-
-        this.enabled = other.enabled;
+        // deep copy acceptedValues, acceptedRanges:
+        this.acceptedValues = fr.jmmc.jmcs.util.ObjectUtils.copyList(filter.acceptedValues);
+        this.acceptedRanges = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(filter.acceptedRanges);
     }
 
-    /**
-     * Deep comparison.
-     *
-     * @param otherObject to compare. False if its class is not strictly GenericFilter
-     * @return true or false
-     */
     @Override
-    public boolean equals(Object otherObject) {
-
-        if (!super.equals(otherObject)) {
+    public boolean equals(final Object obj) {
+        if (!super.equals(obj)) { // Identifiable
             return false;
         }
-
-        GenericFilter other = (GenericFilter) otherObject;
-
-        return Objects.equals(this.columnName, other.columnName)
-                && Objects.equals(this.dataType, other.dataType)
-                && (this.enabled == other.enabled)
-                && Objects.equals(this.acceptedValues, other.acceptedValues)
-                && Objects.equals(this.acceptedRanges, other.acceptedRanges);
+        final GenericFilter other = (GenericFilter) obj;
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.columnName, other.getColumnName())) {
+            return false;
+        }
+        if (this.dataType != other.dataType) {
+            return false;
+        }
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.acceptedValues, other.acceptedValues)) {
+            return false;
+        }
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.acceptedRanges, other.acceptedRanges)) {
+            return false;
+        }
+        if (this.enabled != other.enabled) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -217,13 +240,14 @@ public class GenericFilter extends Identifiable {
             sb.append(", columnName=").append(columnName);
             sb.append(", dataType=").append(dataType);
             sb.append(", acceptedValues=");
-            ObjectUtils.toString(sb, full, acceptedValues);
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, acceptedValues);
             sb.append(", acceptedRanges=");
-            ObjectUtils.toString(sb, full, acceptedRanges);
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, acceptedRanges);
             sb.append(", enabled=").append(enabled);
         }
 
         sb.append(" }");
     }
+//--simple--preserve
 
 }

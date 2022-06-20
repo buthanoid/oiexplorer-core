@@ -8,7 +8,6 @@ import javax.xml.bind.annotation.XmlIDREF;
 import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import fr.jmmc.oiexplorer.core.model.OIBase;
-import java.io.File;
 
 
 /**
@@ -183,13 +182,13 @@ public class TableUID
             return false;
         }
         final TableUID other = (TableUID) obj;
-        if (this.file != other.file && (this.file == null || !this.file.equals(other.file))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.file, other.file)) {
             return false;
         }
-        if ((this.extName == null) ? (other.extName != null) : !this.extName.equals(other.extName)) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.extName, other.extName)) {
             return false;
         }
-        if (this.extNb != other.extNb && (this.extNb == null || !this.extNb.equals(other.extNb))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.extNb, other.extNb)) {
             return false;
         }
         return true;
@@ -224,7 +223,7 @@ public class TableUID
             sb.append("null-file");
         } else {
             // we want a string not longer than 40 characters, to keep it short
-            final String filename = new File(file.getFile()).getName();
+            final String filename = new java.io.File(file.getFile()).getName();
             final int filenameLength = filename.length();
             if (filenameLength > 40) {
                 sb.append(filename.substring(0, 17)).append("...");

@@ -24,6 +24,7 @@ import javax.xml.bind.annotation.XmlType;
  *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-base/0.1}Identifiable"&gt;
  *       &lt;sequence&gt;
  *         &lt;element name="filter" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}SubsetFilter" maxOccurs="unbounded"/&gt;
+ *         &lt;element name="genericFilter" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}GenericFilter" maxOccurs="unbounded" minOccurs="0"/&gt;
  *       &lt;/sequence&gt;
  *     &lt;/extension&gt;
  *   &lt;/complexContent&gt;
@@ -34,7 +35,8 @@ import javax.xml.bind.annotation.XmlType;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "SubsetDefinition", propOrder = {
-    "filters", "genericFilters"
+    "filters",
+    "genericFilters"
 })
 public class SubsetDefinition
     extends Identifiable
@@ -42,12 +44,8 @@ public class SubsetDefinition
 
     @XmlElement(name = "filter", required = true)
     protected List<SubsetFilter> filters;
-
-    /**
-     * The generic filters that will be applied to the data of this subsetDefinition.
-     */
     @XmlElement(name = "genericFilter")
-    private List<GenericFilter> genericFilters;
+    protected List<GenericFilter> genericFilters;
 
     /**
      * Gets the value of the filters property.
@@ -77,6 +75,35 @@ public class SubsetDefinition
         }
         return this.filters;
     }
+
+    /**
+     * Gets the value of the genericFilters property.
+     * 
+     * <p>
+     * This accessor method returns a reference to the live list,
+     * not a snapshot. Therefore any modification you make to the
+     * returned list will be present inside the JAXB object.
+     * This is why there is not a <CODE>set</CODE> method for the genericFilters property.
+     * 
+     * <p>
+     * For example, to add a new item, do as follows:
+     * <pre>
+     *    getGenericFilters().add(newItem);
+     * </pre>
+     * 
+     * 
+     * <p>
+     * Objects of the following type(s) are allowed in the list
+     * {@link GenericFilter }
+     * 
+     * 
+     */
+    public List<GenericFilter> getGenericFilters() {
+        if (genericFilters == null) {
+            genericFilters = new ArrayList<GenericFilter>();
+        }
+        return this.genericFilters;
+    }
     
 //--simple--preserve
     /**
@@ -95,16 +122,6 @@ public class SubsetDefinition
     }
 
     /**
-     * @return the genericFilters. returns a new list if null
-     */
-    public List<GenericFilter> getGenericFilters() {
-        if (genericFilters == null) {
-            genericFilters = new ArrayList<>();
-        }
-        return genericFilters;
-    }
-
-    /**
      * Perform a deep-copy EXCEPT Identifiable attributes of the given other instance into this instance
      * 
      * Note: to be overriden in child class to perform deep-copy of class fields
@@ -116,8 +133,8 @@ public class SubsetDefinition
         final SubsetDefinition subset = (SubsetDefinition) other;
 
         // deep copy filters:
-        this.filters = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.getFilters());
-        this.genericFilters = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.getGenericFilters());
+        this.filters = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.filters);
+        this.genericFilters = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.genericFilters);
     }
 
     @Override
@@ -126,15 +143,15 @@ public class SubsetDefinition
             return false;
         }
         final SubsetDefinition other = (SubsetDefinition) obj;
-        if (this.filters != other.filters && (this.filters == null || !this.filters.equals(other.filters))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.filters, other.filters)) {
             return false;
         }
-        if ((this.genericFilters != other.genericFilters)
-                && ((this.genericFilters == null) || (this.genericFilters.equals(other.genericFilters)))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.genericFilters, other.genericFilters)) {
             return false;
         }
         return true;
     }
+
     /** subset oiFitsFile structure (read only) */
     @javax.xml.bind.annotation.XmlTransient
     private fr.jmmc.oitools.model.OIFitsFile oiFitsSubset = null;

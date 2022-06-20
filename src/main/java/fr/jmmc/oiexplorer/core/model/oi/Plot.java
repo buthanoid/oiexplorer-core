@@ -81,7 +81,7 @@ public class Plot
     @Override
     public void copyValues(final fr.jmmc.oiexplorer.core.model.OIBase other) {
         super.copyValues(other); // View
-        
+
         final Plot plot = (Plot) other;
 
         // copy plotDefinition (reference):
@@ -94,7 +94,7 @@ public class Plot
             return false;
         }
         final Plot other = (Plot) obj;
-        if (this.plotDefinition != other.getPlotDefinition() && (this.plotDefinition == null || !this.plotDefinition.equals(other.getPlotDefinition()))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.plotDefinition, other.getPlotDefinition())) {
             return false;
         }
         return true;

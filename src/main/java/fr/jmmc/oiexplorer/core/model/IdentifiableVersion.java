@@ -57,7 +57,7 @@ public final class IdentifiableVersion implements ToStringable {
         if (IdentifiableVersion.class == obj.getClass()) {
             final IdentifiableVersion other = (IdentifiableVersion) obj;
 
-            if ((this.id == null) ? (other.getId() != null) : !this.id.equals(other.getId())) {
+            if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.id, other.getId())) {
                 return false;
             }
             if (this.version != other.getVersion()) {
@@ -67,7 +67,7 @@ public final class IdentifiableVersion implements ToStringable {
         } else if (Identifiable.class.isAssignableFrom(obj.getClass())) {
             final Identifiable other = (Identifiable) obj;
 
-            if ((this.id == null) ? (other.getId() != null) : !this.id.equals(other.getId())) {
+            if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.id, other.getId())) {
                 return false;
             }
             if (this.version != other.getVersion()) {

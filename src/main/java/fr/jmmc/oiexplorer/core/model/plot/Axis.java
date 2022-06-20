@@ -4,6 +4,7 @@ package fr.jmmc.oiexplorer.core.model.plot;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import fr.jmmc.oiexplorer.core.model.OIBase;
 
@@ -236,7 +237,7 @@ public class Axis
         }
         return rangeMode;
     }
-    
+
     /**
      * Perform a deep-copy of the given other instance into this instance
      * 
@@ -274,7 +275,7 @@ public class Axis
             return false;
         }
         final Axis other = (Axis) obj;
-        if ((this.name == null) ? (other.name != null) : !this.name.equals(other.name)) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.name, other.getName())) {
             return false;
         }
         if (this.logScale != other.logScale) {
@@ -283,16 +284,16 @@ public class Axis
         if (this.includeZero != other.includeZero) {
             return false;
         }
-        if ((this.includeDataRange == null) ? (other.includeDataRange != null) : !this.includeDataRange.equals(other.includeDataRange)) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.includeDataRange, other.isIncludeDataRange())) {
             return false;
         }
-        if ((this.rangeMode == null) ? (other.rangeMode != null) : !this.rangeMode.equals(other.rangeMode)) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.rangeMode, other.getRangeMode())) {
             return false;
         }
-        if ((this.range == null) ? (other.range != null) : !this.range.equals(other.range)) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.range, other.getRange())) {
             return false;
         }
-        if ((this.converter == null) ? (other.converter != null) : !this.converter.equals(other.converter)) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.converter, other.getConverter())) {
             return false;
         }
         return true;
