@@ -1198,6 +1198,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             // Query OIData matching criteria:
             result = this.oiFitsCollection.findOIData(selector, result);
         }
+
+        subsetDefinition.setSelectorResult(result);
         return result;
     }
 

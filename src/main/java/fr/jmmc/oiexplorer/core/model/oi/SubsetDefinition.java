@@ -106,6 +106,19 @@ public class SubsetDefinition
     }
     
 //--simple--preserve
+
+    /**
+     * subset oiFitsFile structure (read only)
+     */
+    @javax.xml.bind.annotation.XmlTransient
+    private fr.jmmc.oitools.model.OIFitsFile oiFitsSubset = null;
+
+    /**
+     * SelectorResult containing the result of the filters
+     */
+    @javax.xml.bind.annotation.XmlTransient
+    private fr.jmmc.oitools.processing.SelectorResult selectorResult = null;
+
     /**
      * Return the first SubsetFilter (or create a new instance)
      * @return SubsetFilter instance
@@ -152,10 +165,6 @@ public class SubsetDefinition
         return true;
     }
 
-    /** subset oiFitsFile structure (read only) */
-    @javax.xml.bind.annotation.XmlTransient
-    private fr.jmmc.oitools.model.OIFitsFile oiFitsSubset = null;
-
     /**
      * Return the subset oiFitsFile structure
      * @return subset oiFitsFile structure
@@ -185,6 +194,8 @@ public class SubsetDefinition
             fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.filters);
             sb.append(", genericFilters=");
             fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.genericFilters);
+            sb.append(", SelectorResult=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, selectorResult);
         }
         sb.append('}');
     }
@@ -198,6 +209,21 @@ public class SubsetDefinition
             SubsetFilter.updateOIDataFileReferences(filter.getTables(), mapIdOiDataFiles);
         }
     }
+
+    /**
+     * @return the selectorResult
+     */
+    public fr.jmmc.oitools.processing.SelectorResult getSelectorResult() {
+        return selectorResult;
+    }
+
+    /**
+     * @param selectorResult the selectorResult to set
+     */
+    public void setSelectorResult(fr.jmmc.oitools.processing.SelectorResult selectorResult) {
+        this.selectorResult = selectorResult;
+    }
+
 //--simple--preserve
 
 }
