@@ -52,13 +52,16 @@ import fr.jmmc.oitools.OIFitsConstants;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
+import fr.jmmc.oitools.model.IndexMask;
 import fr.jmmc.oitools.model.NightId;
 import fr.jmmc.oitools.model.NightIdMatcher;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
+import fr.jmmc.oitools.model.OIWavelength;
 import fr.jmmc.oitools.model.StaNamesDir;
 import fr.jmmc.oitools.model.TargetIdMatcher;
 import fr.jmmc.oitools.model.TargetManager;
+import fr.jmmc.oitools.processing.SelectorResult;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -2056,6 +2059,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final int nRows = oiData.getNbRows();
         final int nWaves = oiData.getNWave();
 
+        // get the wavelength mask for this OIData
+        // if we can find no SelectorResult or no OIWavelength we use the FULL mask (show everything)
+        // else we use the mask registered in SelectorResult
+        // if the latter is null, it means we must hide everything
+        final SelectorResult selectorResult = getSelectorResult();
+        final OIWavelength oiWavelength = oiData.getOiWavelength();
+        final IndexMask wavelengthMask
+                = (selectorResult == null || oiWavelength == null)
+                        ? IndexMask.FULL
+                        : selectorResult.getMask(oiWavelength);
+
         if (isLogDebug) {
             logger.debug("nRows - nWaves : {} - {}", nRows, nWaves);
         }
@@ -2351,7 +2365,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         String staIndexName, staConfName;
 
-        int nSkipFlag = 0, nSkipTarget = 0, nSkipNight = 0;
+        int nSkipFlag = 0, nSkipTarget = 0, nSkipNight = 0, nSkipWavelength = 0;
         boolean isFlag, isXErrValid, isYErrValid, useXErrInBounds, useYErrInBounds;
 
         int nData = 0;
@@ -2465,6 +2479,22 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     // it will reduce the number of if statements => better performance and simpler code
                     // such data stream could also perform conversion on the fly
                     // and maybe handle symetry (u, -u) (v, -v) ...
+
+                    // Wavelength masks:
+                    // null wavelength mask means hide everything
+                    if (wavelengthMask == null) {
+                        nSkipWavelength++;
+                        continue;
+                    }
+                    else if (wavelengthMask == IndexMask.FULL) {
+                        // nothing to do, FULL means show everything
+                    }
+                    else if (wavelengthMask.isRow(l, false)) {
+                        // if bit is false for this row, we hide this row
+                        nSkipWavelength++;
+                        continue;
+                    }
+
                     // Process Y value if not yData is not null:
                     if (isYData2D) {
                         y = yData2D[i][l];
@@ -2762,6 +2792,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             }
             if (nSkipNight != 0) {
                 logger.debug("Nb SkipNight: {}", nSkipNight);
+            }
+            if (nSkipWavelength != 0) {
+                logger.debug("Nb SkipWavelength: {}", nSkipWavelength);
             }
         }
 
@@ -3091,6 +3124,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             return null;
         }
         return getPlot().getSubsetDefinition().getOIFitsSubset();
+    }
+
+    private SelectorResult getSelectorResult() {
+        if (getPlot() == null || getPlot().getSubsetDefinition() == null) {
+            return null;
+        }
+        else {
+            return getPlot().getSubsetDefinition().getSelectorResult();
+        }
     }
 
     // reuse Selector Result instead ?
