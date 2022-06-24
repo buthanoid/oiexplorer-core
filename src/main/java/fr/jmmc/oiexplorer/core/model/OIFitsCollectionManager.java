@@ -20,6 +20,8 @@ import fr.jmmc.oiexplorer.core.gui.OIExplorerTaskRegistry;
 import fr.jmmc.oiexplorer.core.gui.PlotInfosData;
 import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
+import fr.jmmc.oiexplorer.core.model.oi.DataType;
+import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
 import fr.jmmc.oiexplorer.core.model.oi.OiDataCollection;
@@ -28,6 +30,7 @@ import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetFilter;
 import fr.jmmc.oiexplorer.core.model.oi.TableUID;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
+import static fr.jmmc.oitools.OIFitsConstants.COLUMN_EFF_WAVE;
 import fr.jmmc.oitools.meta.OIFitsStandard;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
@@ -1176,6 +1179,27 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         final Selector selector = new Selector();
         SelectorResult result = null;
 
+        // translate SubsetDefinition's generic filters into Selector's wavelength ranges
+        final List<fr.jmmc.oitools.model.range.Range> wavelengthRanges = new ArrayList<>();
+        for (GenericFilter genericFilter : subsetDefinition.getGenericFilters()) {
+
+            if (!genericFilter.isEnabled()) {
+                continue; // skip disabled generic filters
+            }
+
+            if (COLUMN_EFF_WAVE.equals(genericFilter.getColumnName())) {
+                if (DataType.NUMERIC.equals(genericFilter.getDataType())) {
+
+                    for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
+                        wavelengthRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
+                    }
+                }
+                else {
+                    logger.error("Generic Filter discarded because bad DataType for EFF_WAVE.");
+                }
+            }
+        }
+
         for (SubsetFilter filter : subsetDefinition.getFilters()) {
             selector.reset();
 
@@ -1194,6 +1218,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                     selector.addTable(tableUID.getFile().getFile(), tableUID.getExtNb());
                 }
             }
+
+            selector.setWavelengthRanges(wavelengthRanges);
 
             // Query OIData matching criteria:
             result = this.oiFitsCollection.findOIData(selector, result);
