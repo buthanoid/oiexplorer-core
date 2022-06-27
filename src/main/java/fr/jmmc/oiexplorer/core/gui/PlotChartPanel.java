@@ -3126,6 +3126,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         return getPlot().getSubsetDefinition().getOIFitsSubset();
     }
 
+    /**
+     * @return the SelectorResult of the SubsetDefinition of the Plot, or null if one of them is null.
+     */
     private SelectorResult getSelectorResult() {
         if (getPlot() == null || getPlot().getSubsetDefinition() == null) {
             return null;
