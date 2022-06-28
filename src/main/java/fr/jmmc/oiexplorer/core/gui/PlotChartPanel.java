@@ -447,7 +447,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     public boolean canExportPlotFile() {
-        return (getOiFitsSubset() != null && isHasData());
+        return (getSelectorResult()!= null && isHasData());
     }
 
     /**
@@ -1288,7 +1288,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     private void updatePlot() {
         // check subset:
-        if (getOiFitsSubset() == null || getPlotDefinition() == null) {
+        if (getSelectorResult()== null || getPlotDefinition() == null) {
             resetPlot();
             return;
         }
@@ -1451,7 +1451,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // selected OIData tables matching filters
         // TODO: preserve selection results in SelectorResult (data structures) ...
-        final List<OIData> oiDataList = getOiFitsSubset().getOiDataList();
+        final List<OIData> oiDataList = getSelectorResult().getSortedOIDatas();
         final Map<String, StaNamesDir> usedStaNamesMap = getOiFitsSubset().getUsedStaNamesMap();
 
         final PlotDefinition plotDef = getPlotDefinition();
