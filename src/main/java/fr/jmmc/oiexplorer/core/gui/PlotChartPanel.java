@@ -447,7 +447,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     public boolean canExportPlotFile() {
-        return (getSelectorResult()!= null && isHasData());
+        return (getSelectorResult() != null && isHasData());
     }
 
     /**
@@ -1288,7 +1288,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     private void updatePlot() {
         // check subset:
-        if (getSelectorResult()== null || getPlotDefinition() == null) {
+        if (getSelectorResult() == null || getPlotDefinition() == null) {
             resetPlot();
             return;
         }
@@ -1845,7 +1845,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final boolean modeAuto = (axis.getRangeModeOrDefault() == AxisRangeMode.AUTO);
         final boolean modeRange = (axis.getRangeModeOrDefault() == AxisRangeMode.RANGE);
-        
+
         final boolean includeDataRange = axis.isIncludeDataRangeOrDefault();
 
         // bounds = data+err range:
@@ -2059,17 +2059,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final int nRows = oiData.getNbRows();
         final int nWaves = oiData.getNWave();
 
-        // get the wavelength mask for this OIData
-        // if we can find no SelectorResult or no OIWavelength we use the FULL mask (show everything)
-        // else we use the mask registered in SelectorResult
-        // if the latter is null, it means we must hide everything
-        final SelectorResult selectorResult = getSelectorResult();
-        final OIWavelength oiWavelength = oiData.getOiWavelength();
-        final IndexMask wavelengthMask
-                = (selectorResult == null || oiWavelength == null)
-                        ? IndexMask.FULL
-                        : selectorResult.getMask(oiWavelength);
-
         if (isLogDebug) {
             logger.debug("nRows - nWaves : {} - {}", nRows, nWaves);
         }
@@ -2258,6 +2247,21 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final int[] nightIds = (nightIdMatcher != null) ? oiData.getNightId() : null;
 
+        // get the wavelength mask for this OIData:
+        final IndexMask wavelengthMask;
+        {
+            final SelectorResult selectorResult = getSelectorResult();
+            final OIWavelength oiWavelength = oiData.getOiWavelength();
+
+            wavelengthMask = (selectorResult == null || oiWavelength == null)
+                    ? IndexMask.FULL : selectorResult.getMask(oiWavelength);
+        }
+        final boolean checkWavelengthMask = (wavelengthMask != null && !wavelengthMask.isFull());
+
+        if (isLogDebug) {
+            logger.debug("checkWavelengthMask: {}", checkWavelengthMask);
+            logger.debug("wavelengthMask:      {}", wavelengthMask);
+        }
         // Get Global SharedSeriesAttributes:
         final SharedSeriesAttributes oixpAttrs = SharedSeriesAttributes.INSTANCE_OIXP;
 
@@ -2470,31 +2474,22 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         isFlag = true;
                     }
 
-                    // staConf corresponds to the baseline also:
-                    currentStaConf = staConfs[i];
-
-                    // TODO: filter data (wavelength, baseline, configuration, time ...)
-                    // TODO: support function (min, max, mean) applied to array data (2D)
-                    // Idea: use custom data consumer (2D, 1D, log or not, error or not)
-                    // it will reduce the number of if statements => better performance and simpler code
-                    // such data stream could also perform conversion on the fly
-                    // and maybe handle symetry (u, -u) (v, -v) ...
-
-                    // Wavelength masks:
-                    // null wavelength mask means hide everything
-                    if (wavelengthMask == null) {
-                        nSkipWavelength++;
-                        continue;
-                    }
-                    else if (wavelengthMask == IndexMask.FULL) {
-                        // nothing to do, FULL means show everything
-                    }
-                    else if (wavelengthMask.isRow(l, false)) {
+                    // check optional wavelength mask:
+                    if (checkWavelengthMask && !wavelengthMask.isRow(l)) {
                         // if bit is false for this row, we hide this row
                         nSkipWavelength++;
                         continue;
                     }
 
+                    // staConf corresponds to the baseline also:
+                    currentStaConf = staConfs[i];
+
+                    // TODO: filter data (baseline, configuration, time ...)
+                    // TODO: support function (min, max, mean) applied to array data (2D)
+                    // Idea: use custom data consumer (2D, 1D, log or not, error or not)
+                    // it will reduce the number of if statements => better performance and simpler code
+                    // such data stream could also perform conversion on the fly
+                    // and maybe handle symetry (u, -u) (v, -v) ...
                     // Process Y value if not yData is not null:
                     if (isYData2D) {
                         y = yData2D[i][l];
@@ -3132,8 +3127,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private SelectorResult getSelectorResult() {
         if (getPlot() == null || getPlot().getSubsetDefinition() == null) {
             return null;
-        }
-        else {
+        } else {
             return getPlot().getSubsetDefinition().getSelectorResult();
         }
     }
