@@ -16,7 +16,9 @@ import fr.jmmc.oiexplorer.core.model.plot.AxisRangeMode;
 import fr.jmmc.oiexplorer.core.model.plot.ColorMapping;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.util.ColorMappingListCellRenderer;
-import fr.jmmc.oitools.model.OIFitsFile;
+import fr.jmmc.oitools.OIFitsConstants;
+import fr.jmmc.oitools.model.OIData;
+import fr.jmmc.oitools.processing.SelectorResult;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.util.ArrayList;
@@ -169,9 +171,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      * Fill axes combo boxes with all distinct columns present in the available
      * tables.
      * @param plotDef plot definition to use
-     * @param oiFitsSubset OIFits structure coming from plot's subset definition
+     * @param selectorResult Selector result from plot's subset definition
      */
-    private void refreshForm(final PlotDefinition plotDef, final OIFitsFile oiFitsSubset) {
+    private void refreshForm(final PlotDefinition plotDef, final SelectorResult selectorResult) {
         logger.debug("refreshForm : plotDefId = {} - plotDef {}", plotDefId, plotDef);
 
         if (plotDef == null) {
@@ -183,10 +185,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
 
                 // Add column present in associated subset if any
                 // TODO generate one synthetic OiFitsSubset to give all available choices
-                if (oiFitsSubset != null) {
+                if (selectorResult != null) {
                     // Get whole available columns
-// TODO: use SelectorResult tables instead:                    
-                    final Set<String> columns = getDistinctColumns(oiFitsSubset);
+                    final Set<String> columns = getDistinctColumns(selectorResult);
 
                     // Clear all content
                     axisChoices.clear();
@@ -353,27 +354,42 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }
 
     /**
-     * Return the set of distinct columns available in the table of given OIFitsFile.
-     * @param oiFitsFile oifitsFile to search data into
+     * Return the set of distinct columns available in tables of the given SelectorResult.
+     * @param selectorResult Selector result from plot's subset definition
      * @return a Set of Strings with every distinct column names
      */
-    private Set<String> getDistinctColumns(final OIFitsFile oiFitsFile) {
+    private Set<String> getDistinctColumns(final SelectorResult selectorResult) {
         final Set<String> columns = new LinkedHashSet<String>(32);
 
-        // Add every column of every tables for given target into ordered sets
-        if (oiFitsFile.hasOiVis2()) {
-            oiFitsFile.getOiVis2()[0].getNumericalColumnsNames(columns);
-        }
-        if (oiFitsFile.hasOiVis()) {
-            oiFitsFile.getOiVis()[0].getNumericalColumnsNames(columns);
-        }
-        if (oiFitsFile.hasOiT3()) {
-            oiFitsFile.getOiT3()[0].getNumericalColumnsNames(columns);
-        }
-        if (oiFitsFile.hasOiFlux()) {
-            oiFitsFile.getOiFlux()[0].getNumericalColumnsNames(columns);
-        }
+        final List<OIData> oiDatas = selectorResult.getSortedOIDatas();
 
+        // Add every column of every data tables (first only) for the given result:
+        // OIVis2:
+        for (OIData oiData : oiDatas) {
+            if (OIFitsConstants.TABLE_OI_VIS2.equals(oiData.getExtName())) {
+                oiData.getNumericalColumnsNames(columns);
+                break;
+            }
+        }
+        // OIVis:
+        for (OIData oiData : oiDatas) {
+            if (OIFitsConstants.TABLE_OI_VIS.equals(oiData.getExtName())) {
+                oiData.getNumericalColumnsNames(columns);
+                break;
+            }
+        }
+        for (OIData oiData : oiDatas) {
+            if (OIFitsConstants.TABLE_OI_T3.equals(oiData.getExtName())) {
+                oiData.getNumericalColumnsNames(columns);
+                break;
+            }
+        }
+        for (OIData oiData : oiDatas) {
+            if (OIFitsConstants.TABLE_OI_FLUX.equals(oiData.getExtName())) {
+                oiData.getNumericalColumnsNames(columns);
+                break;
+            }
+        }
         return columns;
     }
 
@@ -1060,7 +1076,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 // define id of associated plotDefinition
                 _setPlotDefId(plotDef.getId());
 
-                refreshForm(plotDef, event.getPlot().getSubsetDefinition().getOIFitsSubset()); // TODO: use selector result
+                refreshForm(plotDef, event.getPlot().getSubsetDefinition().getSelectorResult());
                 break;
             case PLOT_VIEWPORT_CHANGED:
                 final PlotInfosData plotInfosData = event.getPlotInfosData();
