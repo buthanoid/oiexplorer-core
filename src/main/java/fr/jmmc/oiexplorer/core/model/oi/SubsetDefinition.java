@@ -108,18 +108,6 @@ public class SubsetDefinition
 //--simple--preserve
 
     /**
-     * subset oiFitsFile structure (read only)
-     */
-    @javax.xml.bind.annotation.XmlTransient
-    private fr.jmmc.oitools.model.OIFitsFile oiFitsSubset = null;
-
-    /**
-     * SelectorResult containing the result of the filters
-     */
-    @javax.xml.bind.annotation.XmlTransient
-    private fr.jmmc.oitools.processing.SelectorResult selectorResult = null;
-
-    /**
      * Return the first SubsetFilter (or create a new instance)
      * @return SubsetFilter instance
      */
@@ -166,49 +154,40 @@ public class SubsetDefinition
     }
 
     /**
+     * subset oiFitsFile structure (read only)
+     */
+    @javax.xml.bind.annotation.XmlTransient
+    private fr.jmmc.oitools.model.OIFitsFile oiFitsSubset = null;
+
+    /**
      * Return the subset oiFitsFile structure
      * @return subset oiFitsFile structure
      */
     public final fr.jmmc.oitools.model.OIFitsFile getOIFitsSubset() {
+        if (this.oiFitsSubset == null && this.selectorResult != null) {
+            // lazy generate fake OIFitsFile structure (for compatibility)
+            final fr.jmmc.oitools.model.OIFitsFile oiFitsFile;
+
+            // create a new fake OIFitsFile:
+            oiFitsFile = new fr.jmmc.oitools.model.OIFitsFile(fr.jmmc.oitools.meta.OIFitsStandard.VERSION_1);
+
+            // add all tables:
+            for (fr.jmmc.oitools.model.OIData oiData : this.selectorResult.getSortedOIDatas()) {
+                oiFitsFile.addOiTable(oiData);
+            }
+            this.oiFitsSubset = oiFitsFile;
+            
+            if (logger.isDebugEnabled()) {
+                logger.debug("getOIFitsSubset(): {}", this.oiFitsSubset);
+            }
+        }
         return this.oiFitsSubset;
     }
 
-    /**
-     * Return the subset oiFitsFile structure
-     * @param oiFitsSubset subset oiFitsFile structure
-     */
-    public final void setOIFitsSubset(final fr.jmmc.oitools.model.OIFitsFile oiFitsSubset) {
-        this.oiFitsSubset = oiFitsSubset;
-    }
 
-    /**
-     * toString() implementation using string builder
-     * @param sb string builder to append to
-     */
-    @Override
-    public void toString(final StringBuilder sb, final boolean full) {
-        super.toString(sb, full); // Identifiable
-
-        if (full) {
-            sb.append(", filters=");
-            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.filters);
-            sb.append(", genericFilters=");
-            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.genericFilters);
-            sb.append(", SelectorResult=");
-            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, selectorResult);
-        }
-        sb.append('}');
-    }
-
-    /**
-     * Check bad references and update OIDataFile references in subset filter's tables
-     * @param mapIdOiDataFiles Map<ID, OIDataFile> index
-     */
-    protected void checkReferences(final java.util.Map<String, OIDataFile> mapIdOiDataFiles) {
-        for (SubsetFilter filter : getFilters()) {
-            SubsetFilter.updateOIDataFileReferences(filter.getTables(), mapIdOiDataFiles);
-        }
-    }
+    /** SelectorResult containing the result of filters */
+    @javax.xml.bind.annotation.XmlTransient
+    private fr.jmmc.oitools.processing.SelectorResult selectorResult = null;
 
     /**
      * @return the selectorResult
@@ -222,6 +201,35 @@ public class SubsetDefinition
      */
     public void setSelectorResult(fr.jmmc.oitools.processing.SelectorResult selectorResult) {
         this.selectorResult = selectorResult;
+        this.oiFitsSubset = null; // reset
+    }
+
+    /**
+     * toString() implementation using string builder
+     * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
+     */
+    @Override
+    public void toString(final StringBuilder sb, final boolean full) {
+        super.toString(sb, full); // Identifiable
+
+        if (full) {
+            sb.append(", filters=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.filters);
+            sb.append(", genericFilters=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.genericFilters);
+        }
+        sb.append('}');
+    }
+
+    /**
+     * Check bad references and update OIDataFile references in subset filter's tables
+     * @param mapIdOiDataFiles Map<ID, OIDataFile> index
+     */
+    protected void checkReferences(final java.util.Map<String, OIDataFile> mapIdOiDataFiles) {
+        for (SubsetFilter filter : getFilters()) {
+            SubsetFilter.updateOIDataFileReferences(filter.getTables(), mapIdOiDataFiles);
+        }
     }
 
 //--simple--preserve

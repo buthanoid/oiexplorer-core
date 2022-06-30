@@ -56,7 +56,6 @@ import fr.jmmc.oitools.model.IndexMask;
 import fr.jmmc.oitools.model.NightId;
 import fr.jmmc.oitools.model.NightIdMatcher;
 import fr.jmmc.oitools.model.OIData;
-import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIWavelength;
 import fr.jmmc.oitools.model.StaNamesDir;
 import fr.jmmc.oitools.model.TargetIdMatcher;
@@ -1449,10 +1448,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private void updateChart() {
         logger.debug("updateChart: plot {}", this.plotId);
 
+        final SelectorResult selectorResult = getSelectorResult(); // not null
+
         // selected OIData tables matching filters
-        // TODO: preserve selection results in SelectorResult (data structures) ...
-        final List<OIData> oiDataList = getSelectorResult().getSortedOIDatas();
-        final Map<String, StaNamesDir> usedStaNamesMap = getOiFitsSubset().getUsedStaNamesMap();
+        final List<OIData> oiDataList = selectorResult.getSortedOIDatas();
+
+        final Map<String, StaNamesDir> usedStaNamesMap = selectorResult.getUsedStaNamesMap();
 
         final PlotDefinition plotDef = getPlotDefinition();
         final Axis xAxis = plotDef.getXAxis();
@@ -3112,13 +3113,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             return null;
         }
         return getPlot().getPlotDefinition();
-    }
-
-    private OIFitsFile getOiFitsSubset() {
-        if (getPlot() == null || getPlot().getSubsetDefinition() == null) {
-            return null;
-        }
-        return getPlot().getSubsetDefinition().getOIFitsSubset();
     }
 
     /**

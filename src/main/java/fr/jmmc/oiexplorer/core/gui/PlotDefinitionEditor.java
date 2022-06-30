@@ -178,13 +178,14 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
             resetForm();
         } else {
             try {
-                // Leave programatic changes on widgets ignored to prevent model changes
+                // Leave programmatic changes on widgets ignored to prevent model changes
                 notify = false;
 
                 // Add column present in associated subset if any
                 // TODO generate one synthetic OiFitsSubset to give all available choices
                 if (oiFitsSubset != null) {
                     // Get whole available columns
+// TODO: use SelectorResult tables instead:                    
                     final Set<String> columns = getDistinctColumns(oiFitsSubset);
 
                     // Clear all content
@@ -1059,15 +1060,16 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 // define id of associated plotDefinition
                 _setPlotDefId(plotDef.getId());
 
-                refreshForm(plotDef, event.getPlot().getSubsetDefinition().getOIFitsSubset());
+                refreshForm(plotDef, event.getPlot().getSubsetDefinition().getOIFitsSubset()); // TODO: use selector result
                 break;
             case PLOT_VIEWPORT_CHANGED:
                 final PlotInfosData plotInfosData = event.getPlotInfosData();
                 if (this.plotId != null && plotInfosData != null && this.plotId.equals(plotInfosData.getPlotId())) {
                     refreshForm(plotInfosData);
                 }
+                break;
             default:
-                logger.debug("onProcess {} - done", event);
         }
+        logger.debug("onProcess {} - done", event);
     }
 }
