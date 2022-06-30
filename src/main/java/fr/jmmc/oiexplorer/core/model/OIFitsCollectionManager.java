@@ -1151,7 +1151,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     public OIFitsFile createOIFitsFromCurrentSubsetDefinition() {
         final SubsetDefinition subsetDefinition = getCurrentSubsetDefinitionRef();
 
-        final SelectorResult result = findOIData(subsetDefinition);
+        // reuse selector result from current subset definition:
+        final SelectorResult result = subsetDefinition.getSelectorResult();
 
         final OIFitsFile oiFitsFile = Merger.process(result);
         oiFitsFile.analyze();
