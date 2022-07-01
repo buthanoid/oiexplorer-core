@@ -124,10 +124,10 @@ public class View
             return false;
         }
         final View other = (View) obj;
-        if ((this.type == null) ? (other.getType() != null) : !this.type.equals(other.getType())) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.type, other.getType())) {
             return false;
         }
-        if (this.subsetDefinition != other.getSubsetDefinition() && (this.subsetDefinition == null || !this.subsetDefinition.equals(other.getSubsetDefinition()))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.subsetDefinition, other.getSubsetDefinition())) {
             return false;
         }
         return true;

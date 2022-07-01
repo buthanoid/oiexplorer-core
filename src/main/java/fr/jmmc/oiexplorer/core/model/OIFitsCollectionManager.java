@@ -20,6 +20,8 @@ import fr.jmmc.oiexplorer.core.gui.OIExplorerTaskRegistry;
 import fr.jmmc.oiexplorer.core.gui.PlotInfosData;
 import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
+import fr.jmmc.oiexplorer.core.model.oi.DataType;
+import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
 import fr.jmmc.oiexplorer.core.model.oi.OiDataCollection;
@@ -28,7 +30,7 @@ import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetFilter;
 import fr.jmmc.oiexplorer.core.model.oi.TableUID;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
-import fr.jmmc.oitools.meta.OIFitsStandard;
+import static fr.jmmc.oitools.OIFitsConstants.COLUMN_EFF_WAVE;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsCollection;
@@ -1115,32 +1117,17 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
         final SelectorResult result = findOIData(subsetDefinition);
 
-        // Create the OIFitsFile structure:
-        final OIFitsFile oiFitsSubset;
-
-        if (result == null) {
-            oiFitsSubset = null;
-        } else {
-            // TODO: use Merger directly LATER ?
-            // Or keep SelectorResult (selection results are more rich than the OIFits data structure)
-
-            // create a new fake OIFitsFile:
-            oiFitsSubset = new OIFitsFile(OIFitsStandard.VERSION_1);
-
+        if (result != null) {
             // Copy used StaNames (all files):
-            oiFitsSubset.getUsedStaNamesMap().putAll(oiFitsCollection.getUsedStaNamesMap());
-
-            // add all tables:
-            for (OIData oiData : result.getSortedOIDatas()) {
-                oiFitsSubset.addOiTable(oiData);
-            }
+            result.setUsedStaNamesMap(oiFitsCollection.getUsedStaNamesMap());
         }
 
         if (logger.isDebugEnabled()) {
-            logger.debug("updateSubsetDefinitionRef: oiFitsSubset: {}", oiFitsSubset);
+            logger.debug("updateSubsetDefinitionRef: result: {}", result);
         }
 
-        subsetDefinition.setOIFitsSubset(oiFitsSubset);
+        // store selector result in the subset:
+        subsetDefinition.setSelectorResult(result);
         subsetDefinition.incVersion();
 
         fireSubsetDefinitionChanged(source, subsetDefinition.getId());
@@ -1164,7 +1151,8 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     public OIFitsFile createOIFitsFromCurrentSubsetDefinition() {
         final SubsetDefinition subsetDefinition = getCurrentSubsetDefinitionRef();
 
-        final SelectorResult result = findOIData(subsetDefinition);
+        // reuse selector result from current subset definition:
+        final SelectorResult result = subsetDefinition.getSelectorResult();
 
         final OIFitsFile oiFitsFile = Merger.process(result);
         oiFitsFile.analyze();
@@ -1173,8 +1161,31 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     private SelectorResult findOIData(final SubsetDefinition subsetDefinition) {
-        final Selector selector = new Selector();
+
+        // translate SubsetDefinition's generic filters into Selector's wavelength ranges
+        List<fr.jmmc.oitools.model.range.Range> wavelengthRanges = null;
+
+        for (GenericFilter genericFilter : subsetDefinition.getGenericFilters()) {
+            if (!genericFilter.isEnabled()) {
+                continue; // skip disabled generic filters
+            }
+
+            // if the filter is about wavelength and has correct data type
+            if (COLUMN_EFF_WAVE.equals(genericFilter.getColumnName())) {
+                if (DataType.NUMERIC.equals(genericFilter.getDataType())) {
+                    if (wavelengthRanges == null) {
+                        wavelengthRanges = new ArrayList<>(2);
+                    }
+                    // we convert every generic filter's ranges into oitools' ranges
+                    for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
+                        wavelengthRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
+                    }
+                }
+            }
+        }
+
         SelectorResult result = null;
+        final Selector selector = new Selector();
 
         for (SubsetFilter filter : subsetDefinition.getFilters()) {
             selector.reset();
@@ -1193,6 +1204,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 for (TableUID tableUID : filter.getTables()) {
                     selector.addTable(tableUID.getFile().getFile(), tableUID.getExtNb());
                 }
+            }
+
+            // set wavelength ranges from generic filters:
+            if (wavelengthRanges != null) {
+                selector.setWavelengthRanges(wavelengthRanges);
             }
 
             // Query OIData matching criteria:

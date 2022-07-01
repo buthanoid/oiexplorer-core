@@ -52,13 +52,15 @@ import fr.jmmc.oitools.OIFitsConstants;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
+import fr.jmmc.oitools.model.IndexMask;
 import fr.jmmc.oitools.model.NightId;
 import fr.jmmc.oitools.model.NightIdMatcher;
 import fr.jmmc.oitools.model.OIData;
-import fr.jmmc.oitools.model.OIFitsFile;
+import fr.jmmc.oitools.model.OIWavelength;
 import fr.jmmc.oitools.model.StaNamesDir;
 import fr.jmmc.oitools.model.TargetIdMatcher;
 import fr.jmmc.oitools.model.TargetManager;
+import fr.jmmc.oitools.processing.SelectorResult;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -444,7 +446,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     }
 
     public boolean canExportPlotFile() {
-        return (getOiFitsSubset() != null && isHasData());
+        return (getSelectorResult() != null && isHasData());
     }
 
     /**
@@ -1285,7 +1287,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     private void updatePlot() {
         // check subset:
-        if (getOiFitsSubset() == null || getPlotDefinition() == null) {
+        if (getSelectorResult() == null || getPlotDefinition() == null) {
             resetPlot();
             return;
         }
@@ -1446,10 +1448,12 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private void updateChart() {
         logger.debug("updateChart: plot {}", this.plotId);
 
+        final SelectorResult selectorResult = getSelectorResult(); // not null
+
         // selected OIData tables matching filters
-        // TODO: preserve selection results in SelectorResult (data structures) ...
-        final List<OIData> oiDataList = getOiFitsSubset().getOiDataList();
-        final Map<String, StaNamesDir> usedStaNamesMap = getOiFitsSubset().getUsedStaNamesMap();
+        final List<OIData> oiDataList = selectorResult.getSortedOIDatas();
+
+        final Map<String, StaNamesDir> usedStaNamesMap = selectorResult.getUsedStaNamesMap();
 
         final PlotDefinition plotDef = getPlotDefinition();
         final Axis xAxis = plotDef.getXAxis();
@@ -1842,7 +1846,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final boolean modeAuto = (axis.getRangeModeOrDefault() == AxisRangeMode.AUTO);
         final boolean modeRange = (axis.getRangeModeOrDefault() == AxisRangeMode.RANGE);
-        
+
         final boolean includeDataRange = axis.isIncludeDataRangeOrDefault();
 
         // bounds = data+err range:
@@ -2244,6 +2248,21 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         final int[] nightIds = (nightIdMatcher != null) ? oiData.getNightId() : null;
 
+        // get the wavelength mask for this OIData:
+        final IndexMask wavelengthMask;
+        {
+            final SelectorResult selectorResult = getSelectorResult();
+            final OIWavelength oiWavelength = oiData.getOiWavelength();
+
+            wavelengthMask = (selectorResult == null || oiWavelength == null)
+                    ? IndexMask.FULL : selectorResult.getMask(oiWavelength);
+        }
+        final boolean checkWavelengthMask = (wavelengthMask != null && !wavelengthMask.isFull());
+
+        if (isLogDebug) {
+            logger.debug("checkWavelengthMask: {}", checkWavelengthMask);
+            logger.debug("wavelengthMask:      {}", wavelengthMask);
+        }
         // Get Global SharedSeriesAttributes:
         final SharedSeriesAttributes oixpAttrs = SharedSeriesAttributes.INSTANCE_OIXP;
 
@@ -2351,7 +2370,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         String staIndexName, staConfName;
 
-        int nSkipFlag = 0, nSkipTarget = 0, nSkipNight = 0;
+        int nSkipFlag = 0, nSkipTarget = 0, nSkipNight = 0, nSkipWavelength = 0;
         boolean isFlag, isXErrValid, isYErrValid, useXErrInBounds, useYErrInBounds;
 
         int nData = 0;
@@ -2456,10 +2475,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         isFlag = true;
                     }
 
+                    // check optional wavelength mask:
+                    if (checkWavelengthMask && !wavelengthMask.isRow(l)) {
+                        // if bit is false for this row, we hide this row
+                        nSkipWavelength++;
+                        continue;
+                    }
+
                     // staConf corresponds to the baseline also:
                     currentStaConf = staConfs[i];
 
-                    // TODO: filter data (wavelength, baseline, configuration, time ...)
+                    // TODO: filter data (baseline, configuration, time ...)
                     // TODO: support function (min, max, mean) applied to array data (2D)
                     // Idea: use custom data consumer (2D, 1D, log or not, error or not)
                     // it will reduce the number of if statements => better performance and simpler code
@@ -2762,6 +2788,9 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             }
             if (nSkipNight != 0) {
                 logger.debug("Nb SkipNight: {}", nSkipNight);
+            }
+            if (nSkipWavelength != 0) {
+                logger.debug("Nb SkipWavelength: {}", nSkipWavelength);
             }
         }
 
@@ -3086,11 +3115,15 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         return getPlot().getPlotDefinition();
     }
 
-    private OIFitsFile getOiFitsSubset() {
+    /**
+     * @return the SelectorResult of the SubsetDefinition of the Plot, or null if one of them is null.
+     */
+    private SelectorResult getSelectorResult() {
         if (getPlot() == null || getPlot().getSubsetDefinition() == null) {
             return null;
+        } else {
+            return getPlot().getSubsetDefinition().getSelectorResult();
         }
-        return getPlot().getSubsetDefinition().getOIFitsSubset();
     }
 
     // reuse Selector Result instead ?

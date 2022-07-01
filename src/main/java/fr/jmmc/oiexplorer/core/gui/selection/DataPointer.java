@@ -55,7 +55,7 @@ public final class DataPointer extends OIDataPointer {
             return false;
         }
         final DataPointer other = (DataPointer) obj;
-        if (this.oiData != other.getOiData() && (this.oiData == null || !this.oiData.equals(other.getOiData()))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.oiData, other.getOiData())) {
             return false;
         }
         if (this.row != other.getRow()) {

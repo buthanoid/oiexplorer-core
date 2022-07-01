@@ -70,6 +70,14 @@ public class ObjectFactory {
     }
 
     /**
+     * Create an instance of {@link GenericFilter }
+     * 
+     */
+    public GenericFilter createGenericFilter() {
+        return new GenericFilter();
+    }
+
+    /**
      * Create an instance of {@link View }
      * 
      */

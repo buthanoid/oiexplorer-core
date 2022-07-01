@@ -148,7 +148,14 @@
                     <xsd:element name="filter" type="SubsetFilter" minOccurs="1" maxOccurs="unbounded">
                         <xsd:annotation>
                             <xsd:documentation>
-                                data selection filter(s)
+                                data selection filter(s) on granule fields
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element name="genericFilter" type="GenericFilter" minOccurs="0" maxOccurs="unbounded">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                data selection filter(s) on generic fields
                             </xsd:documentation>
                         </xsd:annotation>
                     </xsd:element>
@@ -198,6 +205,64 @@
             </xsd:element>
 
         </xsd:sequence>
+    </xsd:complexType>
+
+
+
+
+    <xsd:complexType name="GenericFilter">
+        <xsd:annotation>
+            <xsd:documentation>
+                This type describes a subset filter.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexContent>
+            <xsd:extension base="b:Identifiable">
+                <xsd:sequence>
+                    <xsd:element name="columnName" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                OIFITS table column name (virtual)
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element name="dataType" type="DataType">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Datatype used to match values (String or numeric)
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:element>
+
+                    <xsd:element name="acceptedValues" type="xsd:string" minOccurs="0" maxOccurs="unbounded">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                accepted String values for the column.
+                                Only used when dataType is DATATYPE_STRING.
+                                When empty, it means every value is accepted
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element name="acceptedRanges" type="p:Range" minOccurs="0" maxOccurs="unbounded">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                List of accepted ranges of double values for the column.
+                                Only used when dataType is DATATYPE_NUMERIC.
+                                When empty, it means every value is accepted
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:element>
+                    <xsd:element name="enabled" type="xsd:boolean">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                True to enable this filter; False otherwise.
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:element>
+
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
     </xsd:complexType>
 
 
@@ -312,6 +377,30 @@
 
         </xsd:sequence>
     </xsd:complexType>
+
+
+
+
+    <!-- DataType -->
+    <xsd:simpleType name="DataType">
+        <xsd:annotation>
+            <xsd:documentation>
+                DataType describes all supported types for Generic Filter (string or numeric)
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="STRING">
+                <xsd:annotation>
+                    <xsd:documentation>String type</xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="NUMERIC">
+                <xsd:annotation>
+                    <xsd:documentation>Numeric type</xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
 
 
 </xsd:schema>

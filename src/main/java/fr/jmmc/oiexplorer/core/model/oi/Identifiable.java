@@ -49,6 +49,7 @@ import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
     OIDataFile.class,
     SubsetDefinition.class,
     PlotDefinition.class,
+    GenericFilter.class,
     View.class
 })
 public class Identifiable
@@ -167,7 +168,6 @@ public class Identifiable
     /**
      * Perform a deep-copy of the given other instance into this instance
      * 
-     * Note: to be overriden in child class to perform deep-copy of class fields
      * @see OIBase#clone() 
      * 
      * @param other other instance
@@ -179,7 +179,7 @@ public class Identifiable
         // skip id to avoid overriding identifier !
         /* this.id = identifiable.getId(); */
         this.version = identifiable.getVersion();
-        
+
         // copy name, description, version:
         this.name = identifiable.getName();
         this.description = identifiable.getDescription();
@@ -187,7 +187,7 @@ public class Identifiable
         // Copy values (overriden by child classes):
         copyValues(other); // values
     }
-    
+
     /**
      * Perform a deep-copy EXCEPT Identifiable attributes of the given other instance into this instance
      * 
@@ -212,24 +212,25 @@ public class Identifiable
             return false;
         }
         final Identifiable other = (Identifiable) obj;
-        if ((this.id == null) ? (other.getId() != null) : !this.id.equals(other.getId())) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.id, other.getId())) {
             return false;
         }
-        if ((this.name == null) ? (other.getName() != null) : !this.name.equals(other.getName())) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.name, other.getName())) {
             return false;
         }
-        if ((this.description == null) ? (other.getDescription() != null) : !this.description.equals(other.getDescription())) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.description, other.getDescription())) {
             return false;
-        }        
+        }
         if (this.version != other.getVersion()) {
             return false;
-        }                
+        }
         return true;
     }
 
     /**
      * toString() implementation using string builder
      * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
      */
     @Override
     public void toString(final StringBuilder sb, final boolean full) {

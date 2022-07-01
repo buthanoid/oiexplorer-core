@@ -24,6 +24,7 @@ import javax.xml.bind.annotation.XmlType;
  *     &lt;extension base="{http://www.jmmc.fr/oiexplorer-base/0.1}Identifiable"&gt;
  *       &lt;sequence&gt;
  *         &lt;element name="filter" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}SubsetFilter" maxOccurs="unbounded"/&gt;
+ *         &lt;element name="genericFilter" type="{http://www.jmmc.fr/oiexplorer-data-collection/0.1}GenericFilter" maxOccurs="unbounded" minOccurs="0"/&gt;
  *       &lt;/sequence&gt;
  *     &lt;/extension&gt;
  *   &lt;/complexContent&gt;
@@ -34,7 +35,8 @@ import javax.xml.bind.annotation.XmlType;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "SubsetDefinition", propOrder = {
-    "filters"
+    "filters",
+    "genericFilters"
 })
 public class SubsetDefinition
     extends Identifiable
@@ -42,6 +44,8 @@ public class SubsetDefinition
 
     @XmlElement(name = "filter", required = true)
     protected List<SubsetFilter> filters;
+    @XmlElement(name = "genericFilter")
+    protected List<GenericFilter> genericFilters;
 
     /**
      * Gets the value of the filters property.
@@ -71,8 +75,38 @@ public class SubsetDefinition
         }
         return this.filters;
     }
+
+    /**
+     * Gets the value of the genericFilters property.
+     * 
+     * <p>
+     * This accessor method returns a reference to the live list,
+     * not a snapshot. Therefore any modification you make to the
+     * returned list will be present inside the JAXB object.
+     * This is why there is not a <CODE>set</CODE> method for the genericFilters property.
+     * 
+     * <p>
+     * For example, to add a new item, do as follows:
+     * <pre>
+     *    getGenericFilters().add(newItem);
+     * </pre>
+     * 
+     * 
+     * <p>
+     * Objects of the following type(s) are allowed in the list
+     * {@link GenericFilter }
+     * 
+     * 
+     */
+    public List<GenericFilter> getGenericFilters() {
+        if (genericFilters == null) {
+            genericFilters = new ArrayList<GenericFilter>();
+        }
+        return this.genericFilters;
+    }
     
 //--simple--preserve
+
     /**
      * Return the first SubsetFilter (or create a new instance)
      * @return SubsetFilter instance
@@ -100,7 +134,8 @@ public class SubsetDefinition
         final SubsetDefinition subset = (SubsetDefinition) other;
 
         // deep copy filters:
-        this.filters = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.getFilters());
+        this.filters = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.filters);
+        this.genericFilters = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(subset.genericFilters);
     }
 
     @Override
@@ -109,12 +144,18 @@ public class SubsetDefinition
             return false;
         }
         final SubsetDefinition other = (SubsetDefinition) obj;
-        if (this.filters != other.filters && (this.filters == null || !this.filters.equals(other.filters))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.filters, other.filters)) {
+            return false;
+        }
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.genericFilters, other.genericFilters)) {
             return false;
         }
         return true;
     }
-    /** subset oiFitsFile structure (read only) */
+
+    /**
+     * subset oiFitsFile structure (read only)
+     */
     @javax.xml.bind.annotation.XmlTransient
     private fr.jmmc.oitools.model.OIFitsFile oiFitsSubset = null;
 
@@ -123,20 +164,50 @@ public class SubsetDefinition
      * @return subset oiFitsFile structure
      */
     public final fr.jmmc.oitools.model.OIFitsFile getOIFitsSubset() {
+        if (this.oiFitsSubset == null && this.selectorResult != null) {
+            // lazy generate fake OIFitsFile structure (for compatibility)
+            final fr.jmmc.oitools.model.OIFitsFile oiFitsFile;
+
+            // create a new fake OIFitsFile:
+            oiFitsFile = new fr.jmmc.oitools.model.OIFitsFile(fr.jmmc.oitools.meta.OIFitsStandard.VERSION_1);
+
+            // add all tables:
+            for (fr.jmmc.oitools.model.OIData oiData : this.selectorResult.getSortedOIDatas()) {
+                oiFitsFile.addOiTable(oiData);
+            }
+            this.oiFitsSubset = oiFitsFile;
+            
+            if (logger.isDebugEnabled()) {
+                logger.debug("getOIFitsSubset(): {}", this.oiFitsSubset);
+            }
+        }
         return this.oiFitsSubset;
     }
 
+
+    /** SelectorResult containing the result of filters */
+    @javax.xml.bind.annotation.XmlTransient
+    private fr.jmmc.oitools.processing.SelectorResult selectorResult = null;
+
     /**
-     * Return the subset oiFitsFile structure
-     * @param oiFitsSubset subset oiFitsFile structure
+     * @return the selectorResult
      */
-    public final void setOIFitsSubset(final fr.jmmc.oitools.model.OIFitsFile oiFitsSubset) {
-        this.oiFitsSubset = oiFitsSubset;
+    public fr.jmmc.oitools.processing.SelectorResult getSelectorResult() {
+        return selectorResult;
+    }
+
+    /**
+     * @param selectorResult the selectorResult to set
+     */
+    public void setSelectorResult(fr.jmmc.oitools.processing.SelectorResult selectorResult) {
+        this.selectorResult = selectorResult;
+        this.oiFitsSubset = null; // reset
     }
 
     /**
      * toString() implementation using string builder
      * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
      */
     @Override
     public void toString(final StringBuilder sb, final boolean full) {
@@ -145,6 +216,8 @@ public class SubsetDefinition
         if (full) {
             sb.append(", filters=");
             fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.filters);
+            sb.append(", genericFilters=");
+            fr.jmmc.jmcs.util.ObjectUtils.toString(sb, full, this.genericFilters);
         }
         sb.append('}');
     }
@@ -158,6 +231,7 @@ public class SubsetDefinition
             SubsetFilter.updateOIDataFileReferences(filter.getTables(), mapIdOiDataFiles);
         }
     }
+
 //--simple--preserve
 
 }

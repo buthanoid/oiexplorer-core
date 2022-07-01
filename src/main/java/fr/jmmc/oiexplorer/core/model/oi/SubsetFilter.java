@@ -153,7 +153,7 @@ public class SubsetFilter
         }
         return this.tables;
     }
-
+    
 //--simple--preserve
     /**
      * Perform a deep-copy of the given other instance into this instance
@@ -167,8 +167,13 @@ public class SubsetFilter
     public final void copy(final OIBase other) {
         final SubsetFilter filter = (SubsetFilter) other;
 
+        // copy targetUID, insModeUID, nightID:
+        this.targetUID = filter.getTargetUID();
+        this.insModeUID = filter.getInsModeUID();
+        this.nightID = filter.getNightID();
+
         // deep copy tables:
-        this.tables = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(filter.getTables());
+        this.tables = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(filter.tables);
     }
 
     @Override
@@ -181,16 +186,16 @@ public class SubsetFilter
             return true;
         }
         final SubsetFilter other = (SubsetFilter) obj;
-        if (this.targetUID != other.targetUID && (this.targetUID == null || !this.targetUID.equals(other.targetUID))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.targetUID, other.targetUID)) {
             return false;
         }
-        if (this.insModeUID != other.insModeUID && (this.insModeUID == null || !this.insModeUID.equals(other.insModeUID))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.insModeUID, other.insModeUID)) {
             return false;
         }
-        if (this.nightID != other.nightID && (this.nightID == null || !this.nightID.equals(other.nightID))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.nightID, other.nightID)) {
             return false;
         }
-        if (this.tables != other.tables && (this.tables == null || !this.tables.equals(other.tables))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.tables, other.tables)) {
             return false;
         }
         return true;
@@ -199,6 +204,7 @@ public class SubsetFilter
     /**
      * toString() implementation using string builder
      * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
      */
     @Override
     public void toString(final StringBuilder sb, final boolean full) {
@@ -264,6 +270,6 @@ public class SubsetFilter
             }
         }
     }
-
 //--simple--preserve
+
 }

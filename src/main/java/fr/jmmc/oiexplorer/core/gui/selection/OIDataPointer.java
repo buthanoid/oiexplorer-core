@@ -42,7 +42,10 @@ public class OIDataPointer {
             return false;
         }
         final OIDataPointer other = (OIDataPointer) obj;
-        return !(this.oiData != other.getOiData() && (this.oiData == null || !this.oiData.equals(other.getOiData())));
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.oiData, other.getOiData())) {
+            return false;
+        }
+        return true;
     }
 
     @Override

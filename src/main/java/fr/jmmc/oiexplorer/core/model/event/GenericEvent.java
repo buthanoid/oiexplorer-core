@@ -95,10 +95,10 @@ public abstract class GenericEvent<V, O> implements ToStringable {
             return false;
         }
         final GenericEvent<?, ?> other = (GenericEvent<?, ?>) obj;
-        if (this.type != other.getType() && !this.type.equals(other.getType())) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.type, other.getType())) {
             return false;
         }
-        if ((this.subjectId == null) ? (other.getSubjectId() != null) : !this.subjectId.equals(other.getSubjectId())) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.subjectId, other.getSubjectId())) {
             return false;
         }
         return true;

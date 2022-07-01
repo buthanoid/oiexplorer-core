@@ -188,7 +188,7 @@ public class PlotDefinition
 
         // deep copy xAxis, yAxes:
         this.xAxis = (plotDef.getXAxis() != null) ? (Axis) plotDef.getXAxis().clone() : null;
-        this.yAxes = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(plotDef.getYAxes());
+        this.yAxes = fr.jmmc.jmcs.util.ObjectUtils.deepCopyList(plotDef.yAxes);
     }
 
     @Override
@@ -206,10 +206,10 @@ public class PlotDefinition
         if (this.colorMapping != other.colorMapping) {
             return false;
         }
-        if (this.xAxis != other.xAxis && (this.xAxis == null || !this.xAxis.equals(other.xAxis))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.xAxis, other.getXAxis())) {
             return false;
         }
-        if (this.yAxes != other.yAxes && (this.yAxes == null || !this.yAxes.equals(other.yAxes))) {
+        if (!fr.jmmc.jmcs.util.ObjectUtils.areEquals(this.yAxes, other.yAxes)) {
             return false;
         }
         return true;
@@ -218,6 +218,7 @@ public class PlotDefinition
     /**
      * toString() implementation using string builder
      * @param sb string builder to append to
+     * @param full true to get complete information; false to get main information (shorter)
      */
     @Override
     public void toString(final StringBuilder sb, final boolean full) {
