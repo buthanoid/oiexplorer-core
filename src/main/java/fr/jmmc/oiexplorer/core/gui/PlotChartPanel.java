@@ -2286,13 +2286,14 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         if (colorMapping == ColorMapping.WAVELENGTH_RANGE) {
             mappingWaveLengthColors = new Color[nWaveChannels];
 
-            final double wlRange = info.waveLengthRange.getLength();
+            final Range waveLengthRange = info.waveLengthRange;
+            final double wlRange = (waveLengthRange != null) ? waveLengthRange.getLength() : 0.0;
 
-            if (!useWaveLengths || (wlRange <= LAMBDA_EPSILON) || (oiData.getNWave() <= 1)) {
+            if (!useWaveLengths || (wlRange <= LAMBDA_EPSILON) || (nWaves <= 1)) {
                 // single channel or Undefined range: use black:
                 Arrays.fill(mappingWaveLengthColors, Color.BLACK);
             } else {
-                final double lower = info.waveLengthRange.getLowerBound();
+                final double lower = (waveLengthRange != null) ? waveLengthRange.getLowerBound() : 0.0;
                 final int iMaxColor = colorModel.getMapSize() - 1;
 
                 final float[] effWaves = oiData.getOiWavelength().getEffWave();
