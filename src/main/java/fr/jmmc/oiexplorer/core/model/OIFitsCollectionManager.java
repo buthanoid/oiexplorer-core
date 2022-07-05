@@ -1155,8 +1155,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         final SelectorResult result = subsetDefinition.getSelectorResult();
 
         final OIFitsFile oiFitsFile = Merger.process(result);
-        oiFitsFile.analyze();
-
+        if (oiFitsFile != null) {
+            oiFitsFile.analyze();
+        }
         return oiFitsFile;
     }
 
