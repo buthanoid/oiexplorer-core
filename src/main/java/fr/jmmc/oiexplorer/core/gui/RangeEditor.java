@@ -425,7 +425,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
                     jFieldMin.setValue(Double.NaN);
                     jFieldMin.requestFocus();
                 } else {
-                    rangeToEdit.copy(r);
+                    rangeToEdit.setMin(r.getMin());
                 }
             }
         } else if (evt.getSource() == jFieldMax) {
@@ -438,7 +438,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
                     jFieldMax.setValue(Double.NaN);
                     jFieldMax.requestFocus();
                 } else {
-                    rangeToEdit.copy(r);
+                    rangeToEdit.setMax(r.getMax());
                 }
             }
         } else if (evt.getSource() == rangeListComboBox) {
