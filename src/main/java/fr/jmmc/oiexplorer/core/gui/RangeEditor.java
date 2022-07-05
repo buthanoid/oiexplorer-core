@@ -20,6 +20,8 @@ import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JPopupMenu;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.text.NumberFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,11 +63,6 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     private final Map<String, double[]> rangeList = new HashMap<>();
 
     /**
-     * RangeEditor.UpdateListener to notify in case of modification
-     */
-    private UpdateListener parentToNotify;
-
-    /**
      * Flag notification of associated UpdateListener
      */
     private boolean notify = true;
@@ -83,13 +80,9 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
 
     /**
      * Creates the new RangeEditor form. Use setRange() to change model to edit.
-     *
-     * @param parent UpdateListener to be notified of changes.
      */
-    public RangeEditor(final UpdateListener parent) {
+    public RangeEditor() {
         initComponents();
-
-        parentToNotify = parent;
 
         rangeComboBoxModel = new GenericListModel<String>(new ArrayList<String>(10), true);
         rangeListComboBox.setModel(rangeComboBoxModel);
@@ -113,14 +106,6 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
         });
     }
 
-    /** 
-     * Creates new form AxisEditor.
-     * This empty constructor leave here for Netbeans GUI builder
-     */
-    public RangeEditor() {
-        this(null);
-    }
-
     /**
      * Free any ressource or reference to this instance :
      */
@@ -128,6 +113,9 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     public void dispose() {
         if (logger.isDebugEnabled()) {
             logger.debug("RangeEditor[{}]: dispose");
+        }
+        for (ChangeListener listener : getChangeListeners()) {
+            removeChangeListener(listener);
         }
         reset();
     }
@@ -459,8 +447,8 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
             throw new IllegalStateException("TODO: handle event from " + evt.getSource());
         }
 
-        if (notify && parentToNotify != null) {
-            parentToNotify.rangeEditorUpdated();
+        if (notify) {
+            fireStateChanged();
         }
     }//GEN-LAST:event_actionPerformed
 
@@ -530,20 +518,36 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     }
 
     /**
-     * @param parentToNotify the UpdateListener to set
+     * Listen to changes to Range.
+     * @param listener listener to notify when changes occur
      */
-    public void setUpdateListener(UpdateListener parentToNotify) {
-        this.parentToNotify = parentToNotify;
+    public void addChangeListener(ChangeListener listener) {
+        listenerList.add(ChangeListener.class, listener);
     }
 
     /**
-     * Interface to be used by the parent object containing this RangeEditor.
-     * The parent implements the method `rangeEditorUpdated`.
-     * The RangeEditor will call `rangeEditorUpdated` when there is an update on the Range.
+     * Stop listening to changes to Range.
+     *
+     * @param listener to stop notifying when changes occur
      */
-    public interface UpdateListener {
-        public void rangeEditorUpdated();
+    public void removeChangeListener(ChangeListener listener) {
+        listenerList.remove(ChangeListener.class, listener);
     }
 
+    /**
+     * @return the list of ChangeListeners
+     */
+    private ChangeListener[] getChangeListeners() {
+        return listenerList.getListeners(ChangeListener.class);
+    }
 
+    /**
+     * Notify listeners that changes occured to Range
+     */
+    protected void fireStateChanged() {
+        ChangeEvent event = new ChangeEvent(this);
+        for (ChangeListener changeListener : getChangeListeners()) {
+            changeListener.stateChanged(event);
+        }
+    }
 }
