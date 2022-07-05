@@ -68,9 +68,8 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     private boolean notify = true;
     /** Flag indicating a user input */
     private boolean user_input = true;
-    // recent values keys for min/max:
-    private String keyMin = null;
-    private String keyMax = null;
+    // alias for the range, also used for RecentValuesManager
+    private String alias;
     // listener references
     private ActionListener popupListenerMin = null;
     private ActionListener popupListenerMax = null;
@@ -84,6 +83,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     public RangeEditor() {
         initComponents();
 
+        alias = "";
         rangeComboBoxModel = new GenericListModel<String>(new ArrayList<String>(10), true);
         rangeListComboBox.setModel(rangeComboBoxModel);
 
@@ -121,22 +121,20 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     }
 
     public void reset() {
-        setRange(null, null, null);
+        setRange(null);
     }
 
     /**
-     * Initialize widgets according to given range
+     * Initialize widgets according to given range. You should call setAlias before calling setRange, because setRange
+     * uses the alias.
      *
      * @param range used to initialize widget states
-     * @param keyMin alias for the popup menu history for min field
-     * @param keyMax alias for the popup menu history for max field
      */
-    public void setRange(final Range range, final String keyMin, final String keyMax) {
+    public void setRange(final Range range) {
         rangeToEdit = range;
 
         if (range == null) {
             // reset state
-            this.keyMin = this.keyMax = null;
             // dispose popup menus:
             jFieldMin.setComponentPopupMenu(null);
             jFieldMax.setComponentPopupMenu(null);
@@ -147,16 +145,12 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
         try {
             notify = user_input = false;
 
-            // Add popup menus to min/max fields:
-            this.keyMin = keyMin;
-            this.keyMax = keyMax;
-
             // create new listeners to release previous listeners / popup menus:
             popupListenerMin = new FieldSetter(jFieldMin);
             popupListenerMax = new FieldSetter(jFieldMax);
 
-            popupMenuMin = RecentValuesManager.getMenu(keyMin, popupListenerMin);
-            popupMenuMax = RecentValuesManager.getMenu(keyMax, popupListenerMax);
+            popupMenuMin = RecentValuesManager.getMenu(alias + ".min", popupListenerMin);
+            popupMenuMax = RecentValuesManager.getMenu(alias + ".max", popupListenerMax);
 
             // enable or disable popup menus:
             updateRangeEditor(range, true);
@@ -308,11 +302,11 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
         // Do not store values set programmatically:
         if (user_input) {
             // Update recent values:
-            if (keyMin != null) {
-                RecentValuesManager.addValue(keyMin, (minFinite) ? parseField(this.jFieldMin.getFormatter(), min) : null);
+            if (popupMenuMin != null) { // only store value if popup menu has been initialized
+                RecentValuesManager.addValue(alias + ".min", (minFinite) ? parseField(this.jFieldMin.getFormatter(), min) : null);
             }
-            if (keyMax != null) {
-                RecentValuesManager.addValue(keyMax, (maxFinite) ? parseField(this.jFieldMax.getFormatter(), max) : null);
+            if (popupMenuMax != null) { // only store value if popup menu has been initialized
+                RecentValuesManager.addValue(alias + ".max", (maxFinite) ? parseField(this.jFieldMax.getFormatter(), max) : null);
             }
         }
         return range;
@@ -350,6 +344,19 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
         this.rangeListComboBox.setEnabled(enabled);
     }
 
+    /**
+     * Sets the alias for the range.
+     *
+     * @param alias new alias for the range. if null, replaced by empty string.
+     */
+    public void setAlias(final String alias) {
+        if (alias == null) {
+            this.alias = "";
+        } else {
+            this.alias = alias;
+        }
+    }
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -360,7 +367,6 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        buttonGroupRangeModes = new javax.swing.ButtonGroup();
         jFieldMin = new JFormattedTextField(getNumberFieldFormatter());
         jFieldMax = new JFormattedTextField(getNumberFieldFormatter());
         rangeListComboBox = new javax.swing.JComboBox();
@@ -457,7 +463,6 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     }//GEN-LAST:event_rangeListComboBoxActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.ButtonGroup buttonGroupRangeModes;
     private javax.swing.JFormattedTextField jFieldMax;
     private javax.swing.JFormattedTextField jFieldMin;
     private javax.swing.JComboBox rangeListComboBox;
