@@ -104,7 +104,8 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable, Change
         nameComboBoxModel.clear();
 
         if (axis == null) {
-            rangeEditor.setRange(null, null, null);
+            rangeEditor.setAlias(null);
+            rangeEditor.setRange(null);
             return;
         }
         try {
@@ -118,7 +119,8 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable, Change
             logScaleCheckBox.setSelected(axis.isLogScale());
             includeDataRangeCheckBox.setSelected(axis.isIncludeDataRangeOrDefault());
 
-            rangeEditor.setRange(axis.getRange(), axisName + ".min", axisName + ".max");
+            rangeEditor.setAlias(axisName);
+            rangeEditor.setRange(axis.getRange());
 
             // enable or disable popup menus:
             updateRangeEditor(axis.getRange(), axis.getRangeModeOrDefault(), true);
@@ -163,7 +165,8 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable, Change
                 r.setMax(Double.NaN);
             }
             axisToEdit.setRange(r);
-            rangeEditor.setRange(r, axisToEdit.getName() + ".min", axisToEdit.getName() + ".max");
+            rangeEditor.setAlias(axisToEdit.getName());
+            rangeEditor.setRange(r);
         }
         updateRangeEditor(axisToEdit.getRange(), axisToEdit.getRangeMode());
         updateRangeList();
