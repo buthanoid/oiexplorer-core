@@ -15,6 +15,8 @@ import java.awt.Font;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JComponent;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +25,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author mella
  */
-public class AxisEditor extends javax.swing.JPanel implements Disposable, RangeEditor.UpdateListener {
+public class AxisEditor extends javax.swing.JPanel implements Disposable, ChangeListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1L;
@@ -51,6 +53,8 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable, RangeE
         parentToNotify = parent;
         nameComboBoxModel = new GenericListModel<String>(new ArrayList<String>(25), true);
         nameComboBox.setModel(nameComboBoxModel);
+
+        rangeEditor.addChangeListener(this);
 
         // hidden until request and valid code to get a correct behaviour
         final JComponent[] components = new JComponent[]{
@@ -101,7 +105,6 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable, RangeE
 
         if (axis == null) {
             rangeEditor.setRange(null, null, null);
-            rangeEditor.setUpdateListener(null);
             return;
         }
         try {
@@ -116,7 +119,6 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable, RangeE
             includeDataRangeCheckBox.setSelected(axis.isIncludeDataRangeOrDefault());
 
             rangeEditor.setRange(axis.getRange(), axisName + ".min", axisName + ".max");
-            rangeEditor.setUpdateListener(this);
 
             // enable or disable popup menus:
             updateRangeEditor(axis.getRange(), axis.getRangeModeOrDefault(), true);
@@ -198,9 +200,11 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable, RangeE
     }
 
     @Override
-    public void rangeEditorUpdated() {
-        if (notify) {
-            parentToNotify.updateModel(false); // false: no need to refresh plot definition names
+    public void stateChanged(ChangeEvent ce) {
+        if (ce.getSource() instanceof RangeEditor) {
+            if (notify) {
+                parentToNotify.updateModel(false); // false: no need to refresh plot definition names
+            }
         }
     }
 
