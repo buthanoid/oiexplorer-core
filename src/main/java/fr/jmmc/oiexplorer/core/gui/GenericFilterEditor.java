@@ -9,8 +9,10 @@ import fr.jmmc.oiexplorer.core.model.oi.DataType;
 import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
 import static fr.jmmc.oitools.OIFitsConstants.COLUMN_EFF_WAVE;
+import static fr.jmmc.oitools.OIFitsConstants.COLUMN_MJD;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -29,6 +31,8 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
      */
     //private static final Logger logger = LoggerFactory.getLogger(GenericFilterEditor.class);
 
+    private static final String[] supportedColumnNames = {COLUMN_EFF_WAVE, COLUMN_MJD};
+
     private GenericFilter genericFilter;
 
     private final List<RangeEditor> rangeEditors;
@@ -36,40 +40,55 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     private final RangeEditorChangeListener rangeEditorChangeListener;
 
     /**
+     * updatingGUI true disables the handlers and the listeners on the widgets. useful when updating the widgets
+     */
+    private boolean updatingGUI;
+
+    /**
      * Creates new form GenericFilterEditor
      */
     public GenericFilterEditor() {
         initComponents();
+        jComboBoxColumnName.setModel(new DefaultComboBoxModel<>(supportedColumnNames));
         rangeEditors = new ArrayList<>();
         rangeEditorChangeListener = new RangeEditorChangeListener();
+        updatingGUI = false;
     }
 
     public final void setGenericFilter(GenericFilter genericFilter) {
+
         this.genericFilter = genericFilter;
 
         final boolean modified = forceSupportedGenericFilter();
 
-        jCheckBoxEnabled.setSelected(genericFilter.isEnabled());
+        try {
+            updatingGUI = true;
 
-        final String columnName = genericFilter.getColumnName();
-        jLabelColumnName.setText(columnName);
+            jCheckBoxEnabled.setSelected(genericFilter.isEnabled());
 
-        rangeEditors.forEach(RangeEditor::dispose);
-        rangeEditors.clear();
-        jPanelRangeEditors.removeAll();
-        for (Range range : genericFilter.getAcceptedRanges()) {
-            RangeEditor rangeEditor = new RangeEditor();
-            rangeEditor.addChangeListener(rangeEditorChangeListener);
-            rangeEditor.setAlias(columnName);
-            rangeEditor.setRange(range);
-            rangeEditor.updateRangeEditor(range, true);
-            rangeEditor.updateRangeList(null);
-            rangeEditor.setEnabled(genericFilter.isEnabled());
-            rangeEditors.add(rangeEditor);
-            jPanelRangeEditors.add(rangeEditor);
+            final String columnName = genericFilter.getColumnName();
+            jComboBoxColumnName.setSelectedItem(columnName);
+
+            rangeEditors.forEach(RangeEditor::dispose);
+            rangeEditors.clear();
+            jPanelRangeEditors.removeAll();
+            for (Range range : genericFilter.getAcceptedRanges()) {
+                RangeEditor rangeEditor = new RangeEditor();
+                rangeEditor.addChangeListener(rangeEditorChangeListener);
+                rangeEditor.setAlias(columnName);
+                rangeEditor.setRange(range);
+                rangeEditor.updateRangeEditor(range, true);
+                rangeEditor.updateRangeList(null);
+                rangeEditor.setEnabled(genericFilter.isEnabled());
+                rangeEditors.add(rangeEditor);
+                jPanelRangeEditors.add(rangeEditor);
+            }
+
+            revalidate();
         }
-
-        revalidate();
+        finally {
+            updatingGUI = false;
+        }
 
         if (modified) {
             fireStateChanged();
@@ -83,7 +102,8 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     private boolean forceSupportedGenericFilter() {
         boolean modified = false;
 
-        if (!COLUMN_EFF_WAVE.equals(genericFilter.getColumnName())) {
+        if (!COLUMN_EFF_WAVE.equals(genericFilter.getColumnName())
+                && !COLUMN_MJD.equals(genericFilter.getColumnName())) {
             genericFilter.setColumnName(COLUMN_EFF_WAVE);
             modified = true;
         }
@@ -119,7 +139,7 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     }
 
     private void handlerEnabled() {
-        if (genericFilter != null) {
+        if (!updatingGUI && genericFilter != null) {
 
             final boolean enabled = jCheckBoxEnabled.isSelected();
 
@@ -129,6 +149,15 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
                 rangeEditor.setEnabled(enabled);
             }
 
+            fireStateChanged();
+        }
+    }
+
+    private void handlerColumnName() {
+        if (!updatingGUI && genericFilter != null) {
+            final String columnName = (String) jComboBoxColumnName.getSelectedItem();
+            genericFilter.setColumnName(columnName);
+            // TODO set dataType
             fireStateChanged();
         }
     }
@@ -180,7 +209,9 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     private class RangeEditorChangeListener implements ChangeListener {
         @Override
         public void stateChanged(ChangeEvent ce) {
-            GenericFilterEditor.this.fireStateChanged();
+            if (!updatingGUI) {
+                fireStateChanged();
+            }
         }
     }
 
@@ -194,8 +225,8 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         java.awt.GridBagConstraints gridBagConstraints;
 
         jCheckBoxEnabled = new javax.swing.JCheckBox();
-        jLabelColumnName = new javax.swing.JLabel();
         jPanelRangeEditors = new javax.swing.JPanel();
+        jComboBoxColumnName = new javax.swing.JComboBox<>();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -210,28 +241,38 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jCheckBoxEnabled, gridBagConstraints);
 
-        jLabelColumnName.setText("COLUMN_NAME");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        add(jLabelColumnName, gridBagConstraints);
-
         jPanelRangeEditors.setLayout(new javax.swing.BoxLayout(jPanelRangeEditors, javax.swing.BoxLayout.PAGE_AXIS));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jPanelRangeEditors, gridBagConstraints);
+
+        jComboBoxColumnName.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "COLUMN_NAME" }));
+        jComboBoxColumnName.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jComboBoxColumnNameActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        add(jComboBoxColumnName, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void jCheckBoxEnabledActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxEnabledActionPerformed
         handlerEnabled();
     }//GEN-LAST:event_jCheckBoxEnabledActionPerformed
 
+    private void jComboBoxColumnNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxColumnNameActionPerformed
+        handlerColumnName();
+    }//GEN-LAST:event_jComboBoxColumnNameActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JCheckBox jCheckBoxEnabled;
-    private javax.swing.JLabel jLabelColumnName;
+    private javax.swing.JComboBox<String> jComboBoxColumnName;
     private javax.swing.JPanel jPanelRangeEditors;
     // End of variables declaration//GEN-END:variables
 
