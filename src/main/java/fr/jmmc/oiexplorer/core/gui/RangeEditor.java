@@ -374,7 +374,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
         setLayout(new java.awt.GridBagLayout());
 
         jFieldMin.setColumns(4);
-        jFieldMin.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("###0.####"))));
+        jFieldMin.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(getNumberFieldFormatter()));
         jFieldMin.setMinimumSize(new java.awt.Dimension(30, 27));
         jFieldMin.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -390,7 +390,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
         add(jFieldMin, gridBagConstraints);
 
         jFieldMax.setColumns(4);
-        jFieldMax.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(new java.text.DecimalFormat("###0.####"))));
+        jFieldMax.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(getNumberFieldFormatter()));
         jFieldMax.setMinimumSize(new java.awt.Dimension(30, 27));
         jFieldMax.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -429,7 +429,6 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
                 if (r == null) {
                     rangeToEdit.setMin(Double.NaN);
                     jFieldMin.setValue(null);
-                    jFieldMin.requestFocus();
                 } else {
                     rangeToEdit.setMin(r.getMin());
                 }
@@ -442,7 +441,6 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
                 if (r == null) {
                     rangeToEdit.setMax(Double.NaN);
                     jFieldMax.setValue(null);
-                    jFieldMax.requestFocus();
                 } else {
                     rangeToEdit.setMax(r.getMax());
                 }
@@ -473,7 +471,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
      * @return number formatter
      */
     private static NumberFormatter getNumberFieldFormatter() {
-        final NumberFormatter nf = new NumberFormatter(new DecimalFormat("####.####")) {
+        final NumberFormatter nf = new NumberFormatter(new DecimalFormat("###0.####")) {
             /** default serial UID for Serializable interface */
             private static final long serialVersionUID = 1;
 
