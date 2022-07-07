@@ -428,7 +428,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
                 // update the Range
                 if (r == null) {
                     rangeToEdit.setMin(Double.NaN);
-                    jFieldMin.setValue(Double.NaN);
+                    jFieldMin.setValue(null);
                     jFieldMin.requestFocus();
                 } else {
                     rangeToEdit.setMin(r.getMin());
@@ -441,7 +441,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
                 // update the Range
                 if (r == null) {
                     rangeToEdit.setMax(Double.NaN);
-                    jFieldMax.setValue(Double.NaN);
+                    jFieldMax.setValue(null);
                     jFieldMax.requestFocus();
                 } else {
                     rangeToEdit.setMax(r.getMax());
