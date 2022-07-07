@@ -2255,13 +2255,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             final OIWavelength oiWavelength = oiData.getOiWavelength();
 
             wavelengthMask = (selectorResult == null || oiWavelength == null)
-                    ? IndexMask.FULL : selectorResult.getMask(oiWavelength);
+                    ? null : selectorResult.getWavelengthMaskNotFull(oiWavelength);
         }
-        final boolean checkWavelengthMask = (wavelengthMask != null && !wavelengthMask.isFull());
-
         if (isLogDebug) {
-            logger.debug("checkWavelengthMask: {}", checkWavelengthMask);
-            logger.debug("wavelengthMask:      {}", wavelengthMask);
+            logger.debug("wavelengthMask: {}", wavelengthMask);
         }
         // Get Global SharedSeriesAttributes:
         final SharedSeriesAttributes oixpAttrs = SharedSeriesAttributes.INSTANCE_OIXP;
@@ -2477,7 +2474,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
 
                     // check optional wavelength mask:
-                    if (checkWavelengthMask && !wavelengthMask.isRow(l)) {
+                    if ((wavelengthMask != null) && !wavelengthMask.isRow(l)) {
                         // if bit is false for this row, we hide this row
                         nSkipWavelength++;
                         continue;

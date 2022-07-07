@@ -17,6 +17,8 @@ import fr.jmmc.oiexplorer.core.model.plot.ColorMapping;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.util.ColorMappingListCellRenderer;
 import fr.jmmc.oitools.OIFitsConstants;
+import fr.jmmc.oitools.meta.OIFitsStandard;
+import fr.jmmc.oitools.model.DataModel;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.processing.SelectorResult;
 import java.awt.BorderLayout;
@@ -168,12 +170,10 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
     }
 
     /**
-     * Fill axes combo boxes with all distinct columns present in the available
-     * tables.
+     * Fill axes combo boxes with all distinct columns present in the OIFITS data model
      * @param plotDef plot definition to use
-     * @param selectorResult Selector result from plot's subset definition
      */
-    private void refreshForm(final PlotDefinition plotDef, final SelectorResult selectorResult) {
+    private void refreshForm(final PlotDefinition plotDef) {
         logger.debug("refreshForm : plotDefId = {} - plotDef {}", plotDefId, plotDef);
 
         if (plotDef == null) {
@@ -183,16 +183,12 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 // Leave programmatic changes on widgets ignored to prevent model changes
                 notify = false;
 
-                // Add column present in associated subset if any
-                // TODO generate one synthetic OiFitsSubset to give all available choices
-                if (selectorResult != null) {
-                    // Get whole available columns
-                    final Set<String> columns = getDistinctColumns(selectorResult);
+                // Get all available columns in OIFITS 2:
+                final Set<String> columns = DataModel.getInstance(OIFitsStandard.VERSION_2).getNumericalColumnNames();
 
-                    // Clear all content
-                    axisChoices.clear();
-                    axisChoices.addAll(columns);
-                }
+                // Clear all content
+                axisChoices.clear();
+                axisChoices.addAll(columns);
 
                 // Add choices present in the associated plotDef
                 final String currentX = plotDef.getXAxis().getName();
@@ -759,7 +755,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         // keep color mapping:
         plotDefCopy.setColorMapping(colorMapping);
 
-        refreshForm(plotDefCopy, null);
+        refreshForm(plotDefCopy);
         updateModel();
     }//GEN-LAST:event_plotDefinitionComboBoxActionPerformed
 
@@ -1068,7 +1064,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 // define id of associated plotDefinition
                 _setPlotDefId(event.getPlotDefinition().getId());
 
-                refreshForm(event.getPlotDefinition(), null);
+                refreshForm(event.getPlotDefinition());
                 break;
             case PLOT_CHANGED:
                 final PlotDefinition plotDef = event.getPlot().getPlotDefinition();
@@ -1076,7 +1072,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
                 // define id of associated plotDefinition
                 _setPlotDefId(plotDef.getId());
 
-                refreshForm(plotDef, event.getPlot().getSubsetDefinition().getSelectorResult());
+                refreshForm(plotDef);
                 break;
             case PLOT_VIEWPORT_CHANGED:
                 final PlotInfosData plotInfosData = event.getPlotInfosData();
