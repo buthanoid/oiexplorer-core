@@ -27,6 +27,8 @@ public final class ConverterFactory {
     public final static Converter CONVERTER_MEGA_LAMBDA = new ScalingConverter(1e-6d, SpecialChars.UNIT_MEGA_LAMBDA);
     /** meter to micro meter converter to convert wave lengths */
     public final static Converter CONVERTER_MICRO_METER = new ScalingConverter(1e6d, SpecialChars.UNIT_MICRO_METER);
+    /** micro meter to meter converter, inverse of CONVERTER_MICRO_METER */
+    public final static Converter INV_CONVERTER_MICRO_METER = new ScalingConverter(1e-6d, "m");
     /** Reflection converter (opposite sign) */
     public final static Converter CONVERTER_REFLECT = new ReflectConverter();
     /* converter keys */
@@ -43,6 +45,8 @@ public final class ConverterFactory {
     /* TODO: load configuration from XML file ?? */
     /** predefined converters */
     private final Map<String, Converter> converters = new LinkedHashMap<String, Converter>(4);
+    /** inverse of predefined converters */
+    private final Map<String, Converter> inverseConverters = new LinkedHashMap<String, Converter>(1);
     /** predefined converters by column names */
     private final Map<String, String> converterByColumns = new HashMap<String, String>(16);
 
@@ -74,6 +78,9 @@ public final class ConverterFactory {
         converters.put(KEY_MEGA_LAMBDA, CONVERTER_MEGA_LAMBDA);
         converters.put(KEY_MICRO_METER, CONVERTER_MICRO_METER);
 
+        // create inverse converters:
+        inverseConverters.put(KEY_MICRO_METER, INV_CONVERTER_MICRO_METER);
+
         // associate converters to columns by default:
         converterByColumns.put(OIFitsConstants.COLUMN_EFF_WAVE, KEY_MICRO_METER);
         converterByColumns.put(OIFitsConstants.COLUMN_SPATIAL_FREQ, KEY_MEGA_LAMBDA);
@@ -83,6 +90,7 @@ public final class ConverterFactory {
         converterByColumns.put(OIFitsConstants.COLUMN_V1COORD_SPATIAL, KEY_MEGA_LAMBDA);
         converterByColumns.put(OIFitsConstants.COLUMN_U2COORD_SPATIAL, KEY_MEGA_LAMBDA);
         converterByColumns.put(OIFitsConstants.COLUMN_V2COORD_SPATIAL, KEY_MEGA_LAMBDA);
+
     }
 
     /** 
@@ -105,6 +113,23 @@ public final class ConverterFactory {
         final Converter converter = converters.get(name);
         if (converter == null) {
             throw new IllegalArgumentException("Converter [" + name + "] not found !");
+        }
+        return converter;
+    }
+
+    /**
+     * Get the inverse converter given to its name.
+     *
+     * @param name name to look for
+     * @return Inverse Converter associated to given name.
+     */
+    public Converter getInverseDefault(final String name) {
+        if (name == null || name.length() == 0) {
+            return null;
+        }
+        final Converter converter = inverseConverters.get(name);
+        if (converter == null) {
+            throw new IllegalArgumentException("Inverse Converter [" + name + "] not found !");
         }
         return converter;
     }

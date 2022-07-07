@@ -31,8 +31,6 @@ import fr.jmmc.oiexplorer.core.model.oi.SubsetFilter;
 import fr.jmmc.oiexplorer.core.model.oi.TableUID;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import static fr.jmmc.oitools.OIFitsConstants.COLUMN_EFF_WAVE;
-import static fr.jmmc.oitools.image.FitsUnit.WAVELENGTH_METER;
-import static fr.jmmc.oitools.image.FitsUnit.WAVELENGTH_MICRO_METER;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsCollection;
@@ -1181,10 +1179,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                     }
                     // we convert every generic filter's ranges into oitools' ranges
                     for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
-                        // in the GUI ranges are expressed in micro meter, we convert them to meters
-                        final double minInMeter = WAVELENGTH_MICRO_METER.convert(range.getMin(), WAVELENGTH_METER);
-                        final double maxInMeter = WAVELENGTH_MICRO_METER.convert(range.getMax(), WAVELENGTH_METER);
-                        wavelengthRanges.add(new fr.jmmc.oitools.model.range.Range(minInMeter, maxInMeter));
+                        wavelengthRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
                     }
                 }
             }

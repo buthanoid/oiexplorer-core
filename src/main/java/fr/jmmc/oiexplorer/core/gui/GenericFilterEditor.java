@@ -5,6 +5,8 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.Disposable;
+import fr.jmmc.oiexplorer.core.function.Converter;
+import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.model.oi.DataType;
 import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
@@ -15,43 +17,36 @@ import java.util.List;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- *
- */
-public class GenericFilterEditor extends javax.swing.JPanel implements Disposable {
+/* */
+public class GenericFilterEditor extends javax.swing.JPanel implements Disposable, ChangeListener {
 
-    /**
-     * default serial UID for Serializable interface
-     */
+    /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
 
-    /**
-     * Logger
-     */
-    //private static final Logger logger = LoggerFactory.getLogger(GenericFilterEditor.class);
+    /** Logger */
+    private static final Logger logger = LoggerFactory.getLogger(GenericFilterEditor.class);
 
     private static final String[] supportedColumnNames = {COLUMN_EFF_WAVE, COLUMN_MJD};
+
+    private static final ConverterFactory CONVERTER_FACTORY = ConverterFactory.getInstance();
 
     private GenericFilter genericFilter;
 
     private final List<RangeEditor> rangeEditors;
-
-    private final RangeEditorChangeListener rangeEditorChangeListener;
 
     /**
      * updatingGUI true disables the handlers and the listeners on the widgets. useful when updating the widgets
      */
     private boolean updatingGUI;
 
-    /**
-     * Creates new form GenericFilterEditor
-     */
+    /** Creates new form GenericFilterEditor */
     public GenericFilterEditor() {
         initComponents();
         jComboBoxColumnName.setModel(new DefaultComboBoxModel<>(supportedColumnNames));
         rangeEditors = new ArrayList<>();
-        rangeEditorChangeListener = new RangeEditorChangeListener();
         updatingGUI = false;
     }
 
@@ -69,15 +64,30 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
             final String columnName = genericFilter.getColumnName();
             jComboBoxColumnName.setSelectedItem(columnName);
 
+            final Converter converter = CONVERTER_FACTORY.getDefault(CONVERTER_FACTORY.getDefaultByColumn(columnName));
+
             rangeEditors.forEach(RangeEditor::dispose);
             rangeEditors.clear();
             jPanelRangeEditors.removeAll();
             for (Range range : genericFilter.getAcceptedRanges()) {
                 RangeEditor rangeEditor = new RangeEditor();
-                rangeEditor.addChangeListener(rangeEditorChangeListener);
+                rangeEditor.addChangeListener(this);
                 rangeEditor.setAlias(columnName);
-                rangeEditor.setRange(range);
-                rangeEditor.updateRangeEditor(range, true);
+
+                // we create a new Range so it can have a different unit
+                Range microMeterRange = (Range) range.clone();
+                if (converter != null) {
+                    try {
+                        microMeterRange.setMin(converter.evaluate(microMeterRange.getMin()));
+                        microMeterRange.setMax(converter.evaluate(microMeterRange.getMax()));
+                    }
+                    catch (IllegalArgumentException e) {
+                        logger.error(e.getMessage());
+                    }
+                }
+                rangeEditor.setRange(microMeterRange);
+                rangeEditor.updateRangeEditor(microMeterRange, true);
+
                 rangeEditor.updateRangeList(null);
                 rangeEditor.setEnabled(genericFilter.isEnabled());
                 rangeEditors.add(rangeEditor);
@@ -99,6 +109,8 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         return genericFilter;
     }
 
+    // force values we currently support
+    // TODO: to be updated when we support other values
     private boolean forceSupportedGenericFilter() {
         boolean modified = false;
 
@@ -115,8 +127,8 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         
         if (genericFilter.getAcceptedRanges().isEmpty()) {
             final Range range = new Range();
-            range.setMin(0);
-            range.setMax(10);
+            range.setMin(Double.NaN);
+            range.setMax(Double.NaN);
             genericFilter.getAcceptedRanges().add(range);
             modified = true;
         } else if (genericFilter.getAcceptedRanges().size() > 1) {
@@ -171,6 +183,44 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         rangeEditors.forEach(RangeEditor::dispose);
     }
 
+    @Override
+    public void stateChanged(ChangeEvent ce) {
+        if (!updatingGUI) {
+
+            // some rangeEditor has changed. we need to update the corresponding range in genericFilter
+            // and we need to convert the unit
+
+            final RangeEditor rangeEditorChanged = (RangeEditor) ce.getSource();
+
+            final Converter invConverter = CONVERTER_FACTORY.getInverseDefault(
+                    CONVERTER_FACTORY.getDefaultByColumn(genericFilter.getColumnName()));
+
+            int index = 0;
+            for (RangeEditor rangeEditor : rangeEditors) {
+                if (rangeEditor.equals(rangeEditorChanged)) {
+
+                    Range rangeToModify = genericFilter.getAcceptedRanges().get(index);
+
+                    rangeToModify.copy(rangeEditorChanged.getRange());
+
+                    if (invConverter != null) {
+                        try {
+                            rangeToModify.setMin(invConverter.evaluate(rangeToModify.getMin()));
+                            rangeToModify.setMax(invConverter.evaluate(rangeToModify.getMax()));
+                        }
+                        catch (IllegalArgumentException e) {
+                            logger.error(e.getMessage());
+                        }
+                    }
+                    break;
+                }
+                index++;
+            }
+
+            fireStateChanged();
+        }
+    }
+
     /**
      * Listen to changes to Range.
      *
@@ -203,15 +253,6 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         ChangeEvent event = new ChangeEvent(this);
         for (ChangeListener changeListener : getChangeListeners()) {
             changeListener.stateChanged(event);
-        }
-    }
-
-    private class RangeEditorChangeListener implements ChangeListener {
-        @Override
-        public void stateChanged(ChangeEvent ce) {
-            if (!updatingGUI) {
-                fireStateChanged();
-            }
         }
     }
 
