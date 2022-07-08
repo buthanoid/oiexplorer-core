@@ -29,12 +29,13 @@ import org.slf4j.LoggerFactory;
 /**
  * Range editor widget. has a min field, a max field, a optional list of predefined ranges.
  */
-public class RangeEditor extends javax.swing.JPanel implements Disposable {
+public final class RangeEditor extends javax.swing.JPanel implements Disposable {
 
     /**
      * Predefined range for EFF_WAVE
      */
     public static final Map<String, double[]> EFF_WAVE_PREDEFINED_RANGES = new HashMap<>(11);
+
     static {
         for (AbsorptionLineRange r : AbsorptionLineRange.values()) {
             EFF_WAVE_PREDEFINED_RANGES.put(r.getName(), new double[]{r.getMin(), r.getMax()});
@@ -51,7 +52,6 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     private static final String RANGE_NONE = "[None]";
 
     /* members */
-
     /**
      * edited Range
      */
@@ -60,7 +60,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
      * predefined ranges
      */
     private final GenericListModel<String> rangeComboBoxModel;
-    private final Map<String, double[]> rangeList = new HashMap<>();
+    private final Map<String, double[]> rangeList = new HashMap<>(16);
 
     /**
      * Flag notification of associated UpdateListener
@@ -83,7 +83,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     public RangeEditor() {
         initComponents();
 
-        alias = "";
+        setAlias(null);
         rangeComboBoxModel = new GenericListModel<String>(new ArrayList<String>(10), true);
         rangeListComboBox.setModel(rangeComboBoxModel);
 
@@ -117,10 +117,6 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
         for (ChangeListener listener : getChangeListeners()) {
             removeChangeListener(listener);
         }
-        reset();
-    }
-
-    public void reset() {
         setRange(null);
     }
 
@@ -153,7 +149,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
             popupMenuMax = RecentValuesManager.getMenu(alias + ".max", popupListenerMax);
 
             // enable or disable popup menus:
-            updateRangeEditor(range, true);
+            updateRange(range, true);
             updateRangeList(null);
 
         } finally {
@@ -170,8 +166,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
 
             changed |= setFieldValue(jFieldMin, min);
             changed |= setFieldValue(jFieldMax, max);
-        }
-        finally {
+        } finally {
             notify = user_input = true;
         }
         return changed;
@@ -185,6 +180,13 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
         }
         field.setValue(newValue);
         return true;
+    }
+
+    /**
+     * @return true when rangeList is not empty, i.e when there exist some predefined ranges
+     */
+    private boolean hasRangeList() {
+        return !rangeList.isEmpty();
     }
 
     public void updateRangeList(final Map<String, double[]> predefinedRanges) {
@@ -206,8 +208,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
 
                 this.rangeList.putAll(predefinedRanges);
             }
-        }
-        finally {
+        } finally {
             this.notify = this.user_input = true;
         }
     }
@@ -231,22 +232,14 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
 
                     jFieldMin.setValue(Double.valueOf(min));
                     jFieldMax.setValue(Double.valueOf(max));
-                }
-                finally {
+                } finally {
                     user_input = true;
                 }
             }
         }
     }
 
-    /**
-     * @return true when rangeList is not empty, i.e when there exist some predefined ranges
-     */
-    private boolean hasRangeList() {
-        return !rangeList.isEmpty();
-    }
-
-    public void updateRangeEditor(final Range range, final boolean setRange) {
+    public void updateRange(final Range range, final boolean setRange) {
         if (setRange) {
             if (range == null) {
                 jFieldMin.setValue(null);
@@ -262,7 +255,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
         enablePopupMenu(jFieldMax, popupMenuMax);
     }
 
-    public Range getFieldRange() {
+    Range getFieldRange() {
         double min = Double.NaN;
         double max = Double.NaN;
 
@@ -315,8 +308,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     private static String parseField(final JFormattedTextField.AbstractFormatter fmt, final double value) {
         try {
             return fmt.valueToString(value);
-        }
-        catch (ParseException pe) {
+        } catch (ParseException pe) {
             logger.info("parseField: value = {}", value, pe);
         }
         return Double.toString(value);
@@ -350,11 +342,7 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
      * @param alias new alias for the range. if null, replaced by empty string.
      */
     public void setAlias(final String alias) {
-        if (alias == null) {
-            this.alias = "";
-        } else {
-            this.alias = alias;
-        }
+        this.alias = (alias == null) ? "" : alias;
     }
 
     /** This method is called from within the constructor to
@@ -547,8 +535,9 @@ public class RangeEditor extends javax.swing.JPanel implements Disposable {
     /**
      * Notify listeners that changes occured to Range
      */
-    protected void fireStateChanged() {
-        ChangeEvent event = new ChangeEvent(this);
+    void fireStateChanged() {
+        final ChangeEvent event = new ChangeEvent(this);
+
         for (ChangeListener changeListener : getChangeListeners()) {
             changeListener.stateChanged(event);
         }
