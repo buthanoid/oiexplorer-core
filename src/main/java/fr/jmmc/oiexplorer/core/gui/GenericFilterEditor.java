@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /* */
-public class GenericFilterEditor extends javax.swing.JPanel implements Disposable, ChangeListener {
+public final class GenericFilterEditor extends javax.swing.JPanel implements Disposable, ChangeListener {
 
     /** default serial UID for Serializable interface */
     private static final long serialVersionUID = 1;
@@ -84,7 +84,7 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         rangeEditors.forEach(RangeEditor::dispose);
     }
 
-    public final void setGenericFilter(final SelectorResult selectorResult, final GenericFilter genericFilter) {
+    public boolean setGenericFilter(final SelectorResult selectorResult, final GenericFilter genericFilter) {
         this.genericFilter = genericFilter;
 
         final boolean modified = forceSupportedGenericFilter(selectorResult);
@@ -141,6 +141,7 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         if (modified) {
             fireStateChanged();
         }
+        return modified;
     }
 
     public GenericFilter getGenericFilter() {
@@ -298,7 +299,7 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     /**
      * Notify listeners that changes occured to Range
      */
-    protected void fireStateChanged() {
+    void fireStateChanged() {
         final ChangeEvent event = new ChangeEvent(this);
         for (ChangeListener changeListener : getChangeListeners()) {
             changeListener.stateChanged(event);
@@ -329,14 +330,15 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new java.awt.Insets(4, 4, 4, 4);
         add(jCheckBoxEnabled, gridBagConstraints);
 
         jPanelRangeEditors.setLayout(new javax.swing.BoxLayout(jPanelRangeEditors, javax.swing.BoxLayout.PAGE_AXIS));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 0.7;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jPanelRangeEditors, gridBagConstraints);
@@ -350,6 +352,7 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jComboBoxColumnName, gridBagConstraints);

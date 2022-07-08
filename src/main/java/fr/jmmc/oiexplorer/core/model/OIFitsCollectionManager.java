@@ -29,8 +29,6 @@ import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetFilter;
 import fr.jmmc.oiexplorer.core.model.oi.TableUID;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
-import static fr.jmmc.oitools.OIFitsConstants.COLUMN_EFF_WAVE;
-import static fr.jmmc.oitools.OIFitsConstants.COLUMN_MJD;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsCollection;
@@ -51,8 +49,11 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1163,35 +1164,27 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     private SelectorResult findOIData(final SubsetDefinition subsetDefinition) {
+        final List<GenericFilter> filters = subsetDefinition.getGenericFilters();
 
         // translate SubsetDefinition's generic filters into Selector's wavelength and mjd ranges
-        List<fr.jmmc.oitools.model.range.Range> wavelengthRanges = null;
-        List<fr.jmmc.oitools.model.range.Range> mjdRanges = null;
+        List<fr.jmmc.oitools.model.range.Range> wavelengthRanges = getFilterRanges(filters, Selector.FILTER_EFFWAVE);
+        List<fr.jmmc.oitools.model.range.Range> mjdRanges = getFilterRanges(filters, Selector.FILTER_MJD);
 
-        for (GenericFilter genericFilter : subsetDefinition.getGenericFilters()) {
-            if (!genericFilter.isEnabled()) {
-                continue; // skip disabled generic filters
-            }
+        final Set<String> keys = new LinkedHashSet<>();
+        for (GenericFilter genericFilter : filters) {
+            keys.add(genericFilter.getColumnName());
+        }
+        keys.remove(Selector.FILTER_EFFWAVE);
+        keys.remove(Selector.FILTER_MJD);
 
-            // TODO: factorize code for columns (automatize datatype, and filling of Selector)
-            if (COLUMN_EFF_WAVE.equals(genericFilter.getColumnName())) {
-                if (wavelengthRanges == null) {
-                    wavelengthRanges = new ArrayList<>(2);
-                }
-                // we convert every generic filter's ranges into oitools' ranges
-                for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
-                    wavelengthRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
-                }
-            } else if (COLUMN_MJD.equals(genericFilter.getColumnName())) {
-                if (mjdRanges == null) {
-                    mjdRanges = new ArrayList<>(2);
-                }
-                // we convert every generic filter's ranges into oitools' ranges
-                for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
-                    mjdRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
-                }
+        final Map<String, List<fr.jmmc.oitools.model.range.Range>> filtersExtra = new LinkedHashMap<>();
+        for (String key : keys) {
+            List<fr.jmmc.oitools.model.range.Range> ranges = getFilterRanges(filters, key);
+            if (ranges != null) {
+                filtersExtra.put(key, ranges);
             }
         }
+        logger.debug("filtersExtra : {}", filtersExtra);
 
         SelectorResult result = null;
         final Selector selector = new Selector();
@@ -1217,16 +1210,42 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
             // Extra filters from generic filters:
             if (wavelengthRanges != null) {
-                selector.addFilter(Selector.FILTER_WAVELENGTH, wavelengthRanges);
+                selector.addFilter(Selector.FILTER_EFFWAVE, wavelengthRanges);
             }
             if (mjdRanges != null) {
                 selector.addFilter(Selector.FILTER_MJD, mjdRanges);
+            }
+            if (!filtersExtra.isEmpty()) {
+                for (Map.Entry<String, List<fr.jmmc.oitools.model.range.Range>> e : filtersExtra.entrySet()) {
+                    selector.addFilter(e.getKey(), e.getValue());
+                }
             }
 
             // Query OIData matching criteria:
             result = this.oiFitsCollection.findOIData(selector, result);
         }
         return result;
+    }
+
+    private static List<fr.jmmc.oitools.model.range.Range> getFilterRanges(List<GenericFilter> filters, final String key) {
+        List<fr.jmmc.oitools.model.range.Range> allRanges = null;
+
+        for (GenericFilter genericFilter : filters) {
+            if (!genericFilter.isEnabled()) {
+                continue; // skip disabled generic filters
+            }
+
+            if (key.equals(genericFilter.getColumnName())) {
+                if (allRanges == null) {
+                    allRanges = new ArrayList<>(2);
+                }
+                // we convert every generic filter's ranges into oitools' ranges
+                for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
+                    allRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
+                }
+            }
+        }
+        return allRanges;
     }
 
     /* --- plot definition handling --------- ---------------------------- */

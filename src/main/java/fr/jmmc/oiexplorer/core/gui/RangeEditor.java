@@ -55,7 +55,7 @@ public final class RangeEditor extends javax.swing.JPanel implements Disposable 
     /**
      * edited Range
      */
-    private Range rangeToEdit;
+    private Range rangeToEdit = new Range();
     /**
      * predefined ranges
      */
@@ -127,8 +127,6 @@ public final class RangeEditor extends javax.swing.JPanel implements Disposable 
      * @param range used to initialize widget states
      */
     public void setRange(final Range range) {
-        rangeToEdit = range;
-
         if (range == null) {
             // reset state
             // dispose popup menus:
@@ -138,6 +136,8 @@ public final class RangeEditor extends javax.swing.JPanel implements Disposable 
             popupMenuMin = popupMenuMax = null;
             return;
         }
+        rangeToEdit = range;
+
         try {
             notify = user_input = false;
 
@@ -330,10 +330,11 @@ public final class RangeEditor extends javax.swing.JPanel implements Disposable 
      */
     @Override
     public void setEnabled(boolean enabled) {
-/*        super.setEnabled(enabled);
-        this.jFieldMin.setEnabled(enabled);
-        this.jFieldMax.setEnabled(enabled);
-        */
+        super.setEnabled(enabled);
+        if (false) {
+            this.jFieldMin.setEnabled(enabled);
+            this.jFieldMax.setEnabled(enabled);
+        }
         this.rangeListComboBox.setEnabled(enabled);
     }
 
@@ -362,7 +363,7 @@ public final class RangeEditor extends javax.swing.JPanel implements Disposable 
 
         setLayout(new java.awt.GridBagLayout());
 
-        jFieldMin.setColumns(4);
+        jFieldMin.setColumns(2);
         jFieldMin.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(getNumberFieldFormatter()));
         jFieldMin.setMinimumSize(new java.awt.Dimension(30, 27));
         jFieldMin.addActionListener(new java.awt.event.ActionListener() {
@@ -378,7 +379,7 @@ public final class RangeEditor extends javax.swing.JPanel implements Disposable 
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 1);
         add(jFieldMin, gridBagConstraints);
 
-        jFieldMax.setColumns(4);
+        jFieldMax.setColumns(2);
         jFieldMax.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(getNumberFieldFormatter()));
         jFieldMax.setMinimumSize(new java.awt.Dimension(30, 27));
         jFieldMax.addActionListener(new java.awt.event.ActionListener() {
@@ -404,7 +405,7 @@ public final class RangeEditor extends javax.swing.JPanel implements Disposable 
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 0.3;
+        gridBagConstraints.weightx = 0.1;
         gridBagConstraints.insets = new java.awt.Insets(2, 1, 2, 2);
         add(rangeListComboBox, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
