@@ -126,8 +126,8 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable, Change
             updateRangeEditor(axis.getRange(), axis.getRangeModeOrDefault(), true);
             updateRangeList();
 
-        }
-        finally {
+
+        } finally {
             notify = true;
         }
     }
@@ -191,7 +191,7 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable, Change
         }
         final boolean enable = (mode == AxisRangeMode.RANGE);
         rangeEditor.setEnabled(enable);
-        rangeEditor.updateRangeEditor(range, setRange);
+        rangeEditor.updateRange(range, setRange);
     }
 
     /** 
@@ -204,8 +204,8 @@ public class AxisEditor extends javax.swing.JPanel implements Disposable, Change
 
     @Override
     public void stateChanged(ChangeEvent ce) {
-        if (ce.getSource() instanceof RangeEditor) {
-            if (notify) {
+        if (notify) {
+            if (ce.getSource() instanceof RangeEditor) {
                 parentToNotify.updateModel(false); // false: no need to refresh plot definition names
             }
         }

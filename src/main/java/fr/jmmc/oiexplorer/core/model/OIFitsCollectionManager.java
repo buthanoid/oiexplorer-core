@@ -20,7 +20,6 @@ import fr.jmmc.oiexplorer.core.gui.OIExplorerTaskRegistry;
 import fr.jmmc.oiexplorer.core.gui.PlotInfosData;
 import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
-import fr.jmmc.oiexplorer.core.model.oi.DataType;
 import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
@@ -864,22 +863,23 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
             for (OIData oiData : oiFitsFile.getOiDataList()) {
                 logger.debug("oiData: {}", oiData);
-
-                if (remove) {
-                    oiData.removeExpressionColumn(name);
-                } else {
-                    // only compute expression on working tables:
-                    if ((working[0] && oiData instanceof OIVis)
-                            || (working[1] && oiData instanceof OIVis2)
-                            || (working[2] && oiData instanceof OIT3)) {
-                        oiData.updateExpressionColumn(name, expression);
+                if (oiData != null) {
+                    if (remove) {
+                        oiData.removeExpressionColumn(name);
+                    } else {
+                        // only compute expression on working tables:
+                        if ((working[0] && oiData instanceof OIVis)
+                                || (working[1] && oiData instanceof OIVis2)
+                                || (working[2] && oiData instanceof OIT3)) {
+                            oiData.updateExpressionColumn(name, expression);
+                        }
                     }
                 }
             }
         }
 
         if (!remove) {
-            logger.info("updateExprColumnInOIFitsCollection[{}] computation time = {} ms.",
+            logger.info("modifyExprColumnInOIFitsCollection[{}] computation time = {} ms.",
                     expression, 1e-6d * (System.nanoTime() - startTime));
         }
 
@@ -1175,27 +1175,21 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
             // TODO: factorize code for columns (automatize datatype, and filling of Selector)
 
-            // if the filter is about wavelength and has correct data type
             if (COLUMN_EFF_WAVE.equals(genericFilter.getColumnName())) {
-                if (DataType.NUMERIC.equals(genericFilter.getDataType())) {
-                    if (wavelengthRanges == null) {
-                        wavelengthRanges = new ArrayList<>(2);
-                    }
-                    // we convert every generic filter's ranges into oitools' ranges
-                    for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
-                        wavelengthRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
-                    }
+                if (wavelengthRanges == null) {
+                    wavelengthRanges = new ArrayList<>(2);
                 }
-            } // if the filter is about mjd and has correct data type
-            else if (COLUMN_MJD.equals(genericFilter.getColumnName())) {
-                if (DataType.NUMERIC.equals(genericFilter.getDataType())) {
-                    if (mjdRanges == null) {
-                        mjdRanges = new ArrayList<>(2);
-                    }
-                    // we convert every generic filter's ranges into oitools' ranges
-                    for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
-                        mjdRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
-                    }
+                // we convert every generic filter's ranges into oitools' ranges
+                for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
+                    wavelengthRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
+                }
+            } else if (COLUMN_MJD.equals(genericFilter.getColumnName())) {
+                if (mjdRanges == null) {
+                    mjdRanges = new ArrayList<>(2);
+                }
+                // we convert every generic filter's ranges into oitools' ranges
+                for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
+                    mjdRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
                 }
             }
         }
@@ -1222,14 +1216,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                 }
             }
 
-            // set wavelength ranges from generic filters:
+            // Extra filters from generic filters:
             if (wavelengthRanges != null) {
-                selector.setWavelengthRanges(wavelengthRanges);
+                selector.addFilter(Selector.FILTER_WAVELENGTH, wavelengthRanges);
             }
-
-            // set mjd ranges from generic filters:
             if (mjdRanges != null) {
-                selector.setMJDRanges(mjdRanges);
+                selector.addFilter(Selector.FILTER_MJD, mjdRanges);
             }
 
             // Query OIData matching criteria:
