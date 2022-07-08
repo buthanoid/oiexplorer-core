@@ -61,7 +61,7 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         updatingGUI = false;
     }
 
-    public final void setGenericFilter(GenericFilter genericFilter) {
+    public final boolean setGenericFilter(GenericFilter genericFilter) {
 
         this.genericFilter = genericFilter;
 
@@ -115,6 +115,8 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         if (modified) {
             fireStateChanged();
         }
+
+        return modified;
     }
 
     public GenericFilter getGenericFilter() {
@@ -193,8 +195,6 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
             for (RangeEditor rangeEditor : rangeEditors) {
                 rangeEditor.updateRangeList(predefinedRanges);
             }
-
-            // TODO set dataType
 
             fireStateChanged();
         }
