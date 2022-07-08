@@ -878,7 +878,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         }
 
         if (!remove) {
-            logger.info("updateExprColumnInOIFitsCollection[{}] computation time = {} ms.",
+            logger.info("modifyExprColumnInOIFitsCollection[{}] computation time = {} ms.",
                     expression, 1e-6d * (System.nanoTime() - startTime));
         }
 
