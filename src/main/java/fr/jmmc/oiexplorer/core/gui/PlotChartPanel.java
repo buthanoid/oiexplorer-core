@@ -53,13 +53,9 @@ import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
 import fr.jmmc.oitools.model.IndexMask;
-import fr.jmmc.oitools.model.NightId;
-import fr.jmmc.oitools.model.NightIdMatcher;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIWavelength;
 import fr.jmmc.oitools.model.StaNamesDir;
-import fr.jmmc.oitools.model.TargetIdMatcher;
-import fr.jmmc.oitools.model.TargetManager;
 import fr.jmmc.oitools.processing.SelectorResult;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -2189,7 +2185,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         // Use staIndex (baseline or triplet) on each data row ?
         final int nStaIndexes = oiData.getDistinctStaIndexCount();
-        final boolean checkStaIndex = nStaIndexes > 1;
+        final boolean checkStaIndex = (nStaIndexes > 1);
 
         if (isLogDebug) {
             logger.debug("nStaIndexes: {}", nStaIndexes);
@@ -2202,64 +2198,32 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // Use flags on every 2D data ?
         final int nFlagged = oiData.getNFlagged();
         final boolean checkFlaggedData = (nFlagged > 0) && (isXData2D || isYData2D);
+        final boolean[][] flags = (checkFlaggedData) ? oiData.getFlag() : null;
 
         if (isLogDebug) {
             logger.debug("nFlagged: {}", nFlagged);
             logger.debug("checkFlaggedData: {}", checkFlaggedData);
         }
 
-        final boolean[][] flags = (checkFlaggedData) ? oiData.getFlag() : null;
-
-        // filter targetId on each data row ?
-        final TargetIdMatcher targetIdMatcher;
-        if (oiData.hasSingleTarget()) {
-            // implicitely matching selected target
-            targetIdMatcher = null;
-        } else {
-            // targetID can not be null as the OIData table is supposed to have the target:
-            final TargetIdMatcher matcher = oiData.getTargetIdMatcher(getTargetManager(), getFilterTargetUID());
-            if (matcher != null) {
-                targetIdMatcher = (matcher.matchAll(oiData.getDistinctTargetId())) ? null : matcher;
-
-                if (isLogDebug) {
-                    logger.debug("targetIdMatcher: {}", targetIdMatcher);
-                }
-            } else {
-                targetIdMatcher = null;
-            }
-        }
-
-        final short[] targetIds = (targetIdMatcher != null) ? oiData.getTargetId() : null;
-
-        // filter nightId on each data row ?
-        final NightIdMatcher nightIdMatcher;
-        if (oiData.hasSingleNight()) {
-            // implicitely matching selected night
-            nightIdMatcher = null;
-        } else {
-            // TODO: reuse ctx.selectorResult.getDistinctNightIds() to use nightIds associated to selected Granules ONLY
-            final NightId filterNightId = getFilterNightID();
-            if (filterNightId != null) {
-                nightIdMatcher = new NightIdMatcher(filterNightId);
-            } else {
-                nightIdMatcher = null;
-            }
-        }
-
-        final int[] nightIds = (nightIdMatcher != null) ? oiData.getNightId() : null;
-
-        // get the wavelength mask for this OIData:
-        final IndexMask wavelengthMask;
+        // get the masks for this OIData table:
+        final IndexMask maskOIData1D;
+        // get the wavelength mask related to this OIData table:
+        final IndexMask maskWavelength;
         {
             final SelectorResult selectorResult = getSelectorResult();
+
+            maskOIData1D = (selectorResult == null) ? null : selectorResult.getDataMask1DNotFull(oiData);
+
             final OIWavelength oiWavelength = oiData.getOiWavelength();
 
-            wavelengthMask = (selectorResult == null || oiWavelength == null)
+            maskWavelength = (selectorResult == null || oiWavelength == null)
                     ? null : selectorResult.getWavelengthMaskNotFull(oiWavelength);
         }
         if (isLogDebug) {
-            logger.debug("wavelengthMask: {}", wavelengthMask);
+            logger.debug("maskOIData1D:   {}", maskOIData1D);
+            logger.debug("maskWavelength: {}", maskWavelength);
         }
+
         // Get Global SharedSeriesAttributes:
         final SharedSeriesAttributes oixpAttrs = SharedSeriesAttributes.INSTANCE_OIXP;
 
@@ -2368,7 +2332,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         String staIndexName, staConfName;
 
-        int nSkipFlag = 0, nSkipTarget = 0, nSkipNight = 0, nSkipWavelength = 0;
+        int nSkipFlag = 0, nSkipRow = 0, nSkipWavelength = 0;
         boolean isFlag, isXErrValid, isYErrValid, useXErrInBounds, useYErrInBounds;
 
         int nData = 0;
@@ -2444,15 +2408,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     }
                 }
 
-                if ((targetIdMatcher != null) && !targetIdMatcher.match(targetIds[i])) {
-                    // data row does not correspond to current target so skip it:
-                    nSkipTarget++;
-                    continue;
-                }
-
-                if ((nightIdMatcher != null) && !nightIdMatcher.match(nightIds[i])) {
-                    // data row does not correspond to current night so skip it:
-                    nSkipNight++;
+                // check optional data mask 1D:
+                if ((maskOIData1D != null) && !maskOIData1D.isRow(i)) {
+                    // if bit is false for this row, we hide this row
+                    nSkipRow++;
                     continue;
                 }
 
@@ -2462,6 +2421,16 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 // Iterate on wave channels (l):
                 for (int l = 0; l < nWaveChannels; l++) {
 
+                    // check optional wavelength mask:
+                    if ((maskWavelength != null) && !maskWavelength.isRow(l)) {
+                        // if bit is false for this row, we hide this row
+                        nSkipWavelength++;
+                        continue;
+                    }
+
+                    /*
+                     * TODO: support OIData mask 2D HERE
+                     */
                     isFlag = false;
                     if (checkFlaggedData && flags[i][l]) {
                         if (skipFlaggedData) {
@@ -2471,13 +2440,6 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         }
                         hasDataFlag = true;
                         isFlag = true;
-                    }
-
-                    // check optional wavelength mask:
-                    if ((wavelengthMask != null) && !wavelengthMask.isRow(l)) {
-                        // if bit is false for this row, we hide this row
-                        nSkipWavelength++;
-                        continue;
                     }
 
                     // staConf corresponds to the baseline also:
@@ -2781,11 +2743,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             if (nSkipFlag != 0) {
                 logger.debug("Nb SkipFlag: {}", nSkipFlag);
             }
-            if (nSkipTarget != 0) {
-                logger.debug("Nb SkipTarget: {}", nSkipTarget);
-            }
-            if (nSkipNight != 0) {
-                logger.debug("Nb SkipNight: {}", nSkipNight);
+            if (nSkipRow != 0) {
+                logger.debug("Nb nSkipRow: {}", nSkipRow);
             }
             if (nSkipWavelength != 0) {
                 logger.debug("Nb SkipWavelength: {}", nSkipWavelength);
@@ -3126,25 +3085,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
     // reuse Selector Result instead ?
     private String getFilterTargetUID() {
-        if (getPlot() == null || getPlot().getSubsetDefinition() == null
-                || getPlot().getSubsetDefinition().getFilter().getTargetUID() == null) {
+        if (getPlot() == null || getPlot().getSubsetDefinition() == null) {
             return null;
         }
-        // TODO: handle multiple filters (TargetUID) ...
         return getPlot().getSubsetDefinition().getFilter().getTargetUID();
-    }
-
-    private NightId getFilterNightID() {
-        if (getPlot() == null || getPlot().getSubsetDefinition() == null
-                || getPlot().getSubsetDefinition().getFilter().getNightID() == null) {
-            return null;
-        }
-        // TODO: handle multiple filters (NightID) ...
-        return NightId.getCachedInstance(getPlot().getSubsetDefinition().getFilter().getNightID());
-    }
-
-    private static TargetManager getTargetManager() {
-        return ocm.getOIFitsCollection().getTargetManager();
     }
 
     /*
