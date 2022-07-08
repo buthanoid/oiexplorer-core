@@ -26,7 +26,7 @@ public final class ScalingConverter implements Converter {
     }
 
     /**
-     * Compute an output value given one input value using:
+     * Compute an output value given an input value using:
      * y = a.x
      * @param value input value (x)
      * @return output value (y)
@@ -34,6 +34,17 @@ public final class ScalingConverter implements Converter {
     @Override
     public double evaluate(final double value) {
         return scalingFactor * value;
+    }
+
+    /**
+     * Compute an input value given an output value using:
+     * y = a.x <=> x = (1/a).y
+     * @param value output value (y)
+     * @return input value (x)
+     */
+    @Override
+    public double invert(final double value) {
+        return value / scalingFactor;
     }
 
     /**

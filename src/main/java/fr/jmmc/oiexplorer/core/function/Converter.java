@@ -10,11 +10,18 @@ package fr.jmmc.oiexplorer.core.function;
 public interface Converter {
 
     /**
-     * Compute an output value given one input value
+     * Compute an output value given an input value
      * @param value input value
      * @return output value
      */
     public double evaluate(final double value);
+
+    /**
+     * Compute an input value given an output value
+     * @param value input value
+     * @return output value
+     */
+    public double invert(final double value);
 
     /**
      * Return the optional unit label
