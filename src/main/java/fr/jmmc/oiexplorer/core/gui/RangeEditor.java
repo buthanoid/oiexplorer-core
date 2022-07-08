@@ -330,9 +330,10 @@ public final class RangeEditor extends javax.swing.JPanel implements Disposable 
      */
     @Override
     public void setEnabled(boolean enabled) {
-        super.setEnabled(enabled);
+/*        super.setEnabled(enabled);
         this.jFieldMin.setEnabled(enabled);
         this.jFieldMax.setEnabled(enabled);
+        */
         this.rangeListComboBox.setEnabled(enabled);
     }
 

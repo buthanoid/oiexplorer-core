@@ -4,18 +4,23 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.Disposable;
+import fr.jmmc.jmcs.gui.component.GenericListModel;
 import fr.jmmc.oiexplorer.core.function.Converter;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.model.oi.DataType;
 import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
+import fr.jmmc.oitools.OIFitsConstants;
 import static fr.jmmc.oitools.OIFitsConstants.COLUMN_EFF_WAVE;
-import static fr.jmmc.oitools.OIFitsConstants.COLUMN_MJD;
+import fr.jmmc.oitools.model.DataModel;
+import fr.jmmc.oitools.processing.SelectorResult;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import javax.swing.DefaultComboBoxModel;
+import java.util.Set;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.slf4j.Logger;
@@ -30,7 +35,10 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(GenericFilterEditor.class);
 
-    private static final String[] supportedColumnNames = {COLUMN_EFF_WAVE, COLUMN_MJD};
+    private static final List<String> SPECIAL_COLUMN_NAMES = Arrays.asList(new String[]{
+        OIFitsConstants.COLUMN_EFF_WAVE,
+        OIFitsConstants.COLUMN_EFF_BAND}
+    );
 
     private static final ConverterFactory CONVERTER_FACTORY = ConverterFactory.getInstance();
 
@@ -45,6 +53,9 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     }
 
     // members:
+    /** Store all column choices available */
+    private final List<String> columnChoices = new LinkedList<String>();
+
     /* related GenericFilter */
     private GenericFilter genericFilter;
     /* associated Range editors */
@@ -58,13 +69,14 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     /** Creates new form GenericFilterEditor */
     public GenericFilterEditor() {
         initComponents();
-        jComboBoxColumnName.setModel(new DefaultComboBoxModel<>(supportedColumnNames));
+        jComboBoxColumnName.setModel(new GenericListModel<String>(columnChoices, true));
         rangeEditors = new ArrayList<>();
         updatingGUI = false;
     }
 
     @Override
     public void dispose() {
+        columnChoices.clear();
         genericFilter = null;
         for (ChangeListener listener : getChangeListeners()) {
             removeChangeListener(listener);
@@ -72,10 +84,10 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         rangeEditors.forEach(RangeEditor::dispose);
     }
 
-    public final void setGenericFilter(final GenericFilter genericFilter) {
+    public final void setGenericFilter(final SelectorResult selectorResult, final GenericFilter genericFilter) {
         this.genericFilter = genericFilter;
 
-        final boolean modified = forceSupportedGenericFilter();
+        final boolean modified = forceSupportedGenericFilter(selectorResult);
 
         try {
             updatingGUI = true;
@@ -85,6 +97,10 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
             jPanelRangeEditors.removeAll();
 
             jCheckBoxEnabled.setSelected(genericFilter.isEnabled());
+
+            columnChoices.clear();
+            columnChoices.addAll(SPECIAL_COLUMN_NAMES);
+            columnChoices.addAll(getDistinctColumns1D(selectorResult));
 
             final String columnName = genericFilter.getColumnName();
             jComboBoxColumnName.setSelectedItem(columnName);
@@ -97,17 +113,17 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
                 rangeEditor.addChangeListener(this);
 
                 // we create a new Range so it can have a different unit:
-                Range microMeterRange = (Range) range.clone();
+                Range convertedRange = (Range) range.clone();
                 if (converter != null) {
                     try {
-                        microMeterRange.setMin(converter.evaluate(microMeterRange.getMin()));
-                        microMeterRange.setMax(converter.evaluate(microMeterRange.getMax()));
+                        convertedRange.setMin(converter.evaluate(convertedRange.getMin()));
+                        convertedRange.setMax(converter.evaluate(convertedRange.getMax()));
                     } catch (IllegalArgumentException iae) {
                         logger.error("conversion failed: ", iae);
                     }
                 }
-                rangeEditor.setRange(microMeterRange);
-                rangeEditor.updateRange(microMeterRange, true);
+                rangeEditor.setRange(convertedRange);
+                rangeEditor.updateRange(convertedRange, true);
 
                 rangeEditor.updateRangeList(predefinedRangesByColumnName.get(columnName));
 
@@ -133,14 +149,23 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
 
     // force values we currently support
     // TODO: to be updated when we support other values
-    private boolean forceSupportedGenericFilter() {
+    private boolean forceSupportedGenericFilter(final SelectorResult selectorResult) {
         boolean modified = false;
 
         boolean columnNameIsSupported = false;
-        for (String supportedColumnName : supportedColumnNames) {
+
+        for (String supportedColumnName : SPECIAL_COLUMN_NAMES) {
             if (supportedColumnName.equals(genericFilter.getColumnName())) {
                 columnNameIsSupported = true;
                 break;
+            }
+        }
+        if (!columnNameIsSupported) {
+            for (String supportedColumnName : getDistinctColumns1D(selectorResult)) {
+                if (supportedColumnName.equals(genericFilter.getColumnName())) {
+                    columnNameIsSupported = true;
+                    break;
+                }
             }
         }
         if (!columnNameIsSupported) {
@@ -345,4 +370,15 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     private javax.swing.JPanel jPanelRangeEditors;
     // End of variables declaration//GEN-END:variables
 
+    /**
+     * Return the set of distinct columns available in tables of the given SelectorResult.
+     * @param selectorResult Selector result from plot's subset definition
+     * @return a Set of Strings with every distinct column names
+     */
+    private static Set<String> getDistinctColumns1D(final SelectorResult selectorResult) {
+        final DataModel dataModel = (selectorResult == null) ? DataModel.getInstance() : selectorResult.getDataModel();
+        logger.debug("datamodel : {}", dataModel);
+
+        return dataModel.getNumericalColumnNames1D();
+    }
 }
