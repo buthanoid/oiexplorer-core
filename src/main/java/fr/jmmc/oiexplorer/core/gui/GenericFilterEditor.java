@@ -13,7 +13,9 @@ import fr.jmmc.oiexplorer.core.model.plot.Range;
 import static fr.jmmc.oitools.OIFitsConstants.COLUMN_EFF_WAVE;
 import static fr.jmmc.oitools.OIFitsConstants.COLUMN_MJD;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -32,6 +34,15 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     private static final String[] supportedColumnNames = {COLUMN_EFF_WAVE, COLUMN_MJD};
 
     private static final ConverterFactory CONVERTER_FACTORY = ConverterFactory.getInstance();
+
+    /** Map giving a list of predefined ranges for a column name. Some column name don't have predefined ranges and
+     * receive a null value. TODO: move this to RangeEditor ?
+     */
+    private static final Map<String, Map<String, double[]>> predefinedRangesByColumnName;
+    static {
+        predefinedRangesByColumnName = new HashMap<>(1);
+        predefinedRangesByColumnName.put(COLUMN_EFF_WAVE, RangeEditor.EFF_WAVE_PREDEFINED_RANGES);
+    }
 
     private GenericFilter genericFilter;
 
@@ -88,7 +99,8 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
                 rangeEditor.setRange(microMeterRange);
                 rangeEditor.updateRangeEditor(microMeterRange, true);
 
-                rangeEditor.updateRangeList(null);
+                rangeEditor.updateRangeList(predefinedRangesByColumnName.get(columnName));
+
                 rangeEditor.setEnabled(genericFilter.isEnabled());
                 rangeEditors.add(rangeEditor);
                 jPanelRangeEditors.add(rangeEditor);
@@ -114,8 +126,14 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
     private boolean forceSupportedGenericFilter() {
         boolean modified = false;
 
-        if (!COLUMN_EFF_WAVE.equals(genericFilter.getColumnName())
-                && !COLUMN_MJD.equals(genericFilter.getColumnName())) {
+        boolean columnNameIsSupported = false;
+        for (String supportedColumnName : supportedColumnNames) {
+            if (supportedColumnName.equals(genericFilter.getColumnName())) {
+                columnNameIsSupported = true;
+                break;
+            }
+        }
+        if (!columnNameIsSupported) {
             genericFilter.setColumnName(COLUMN_EFF_WAVE);
             modified = true;
         }
@@ -167,9 +185,17 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
 
     private void handlerColumnName() {
         if (!updatingGUI && genericFilter != null) {
+
             final String columnName = (String) jComboBoxColumnName.getSelectedItem();
             genericFilter.setColumnName(columnName);
+
+            final Map<String, double[]> predefinedRanges = predefinedRangesByColumnName.get(columnName);
+            for (RangeEditor rangeEditor : rangeEditors) {
+                rangeEditor.updateRangeList(predefinedRanges);
+            }
+
             // TODO set dataType
+
             fireStateChanged();
         }
     }
@@ -278,7 +304,8 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jCheckBoxEnabled, gridBagConstraints);
 
@@ -286,6 +313,8 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.7;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jPanelRangeEditors, gridBagConstraints);
 
@@ -298,6 +327,7 @@ public class GenericFilterEditor extends javax.swing.JPanel implements Disposabl
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jComboBoxColumnName, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
