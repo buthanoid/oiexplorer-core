@@ -10,13 +10,24 @@ package fr.jmmc.oiexplorer.core.function;
 public final class ReflectConverter implements Converter {
 
     /**
-     * Compute an output value given one input value using:
+     * Compute an output value given an input value using:
      * y = -x
      * @param value input value (x)
      * @return output value (y)
      */
     @Override
     public double evaluate(final double value) {
+        return -value;
+    }
+
+    /**
+     * Compute an input value given an output value using:
+     * y = -x <=> x = -y
+     * @param value output value (y)
+     * @return input value (x)
+     */
+    @Override
+    public double invert(final double value) {
         return -value;
     }
 

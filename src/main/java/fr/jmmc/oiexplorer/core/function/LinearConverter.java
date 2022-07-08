@@ -30,7 +30,7 @@ public final class LinearConverter implements Converter {
     }
 
     /**
-     * Compute an output value given one input value using:
+     * Compute an output value given an input value using:
      * y = a.x + b
      * @param value input value (x)
      * @return output value (y)
@@ -38,6 +38,17 @@ public final class LinearConverter implements Converter {
     @Override
     public double evaluate(final double value) {
         return scalingFactor * value + constant;
+    }
+
+    /**
+     * Compute an input value given an output value using:
+     * y = a.x + b <=> x = (y - b)/a
+     * @param value output value (y)
+     * @return input value (x)
+     */
+    @Override
+    public double invert(final double value) {
+        return (value - constant) / scalingFactor;
     }
 
     /**
