@@ -31,6 +31,7 @@ import fr.jmmc.oiexplorer.core.model.oi.SubsetFilter;
 import fr.jmmc.oiexplorer.core.model.oi.TableUID;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import static fr.jmmc.oitools.OIFitsConstants.COLUMN_EFF_WAVE;
+import static fr.jmmc.oitools.OIFitsConstants.COLUMN_MJD;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsChecker;
 import fr.jmmc.oitools.model.OIFitsCollection;
@@ -1163,13 +1164,16 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
 
     private SelectorResult findOIData(final SubsetDefinition subsetDefinition) {
 
-        // translate SubsetDefinition's generic filters into Selector's wavelength ranges
+        // translate SubsetDefinition's generic filters into Selector's wavelength and mjd ranges
         List<fr.jmmc.oitools.model.range.Range> wavelengthRanges = null;
+        List<fr.jmmc.oitools.model.range.Range> mjdRanges = null;
 
         for (GenericFilter genericFilter : subsetDefinition.getGenericFilters()) {
             if (!genericFilter.isEnabled()) {
                 continue; // skip disabled generic filters
             }
+
+            // TODO: factorize code for columns (automatize datatype, and filling of Selector)
 
             // if the filter is about wavelength and has correct data type
             if (COLUMN_EFF_WAVE.equals(genericFilter.getColumnName())) {
@@ -1180,6 +1184,17 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
                     // we convert every generic filter's ranges into oitools' ranges
                     for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
                         wavelengthRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
+                    }
+                }
+            } // if the filter is about mjd and has correct data type
+            else if (COLUMN_MJD.equals(genericFilter.getColumnName())) {
+                if (DataType.NUMERIC.equals(genericFilter.getDataType())) {
+                    if (mjdRanges == null) {
+                        mjdRanges = new ArrayList<>(2);
+                    }
+                    // we convert every generic filter's ranges into oitools' ranges
+                    for (fr.jmmc.oiexplorer.core.model.plot.Range range : genericFilter.getAcceptedRanges()) {
+                        mjdRanges.add(new fr.jmmc.oitools.model.range.Range(range.getMin(), range.getMax()));
                     }
                 }
             }
@@ -1210,6 +1225,11 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             // set wavelength ranges from generic filters:
             if (wavelengthRanges != null) {
                 selector.setWavelengthRanges(wavelengthRanges);
+            }
+
+            // set mjd ranges from generic filters:
+            if (mjdRanges != null) {
+                selector.setMJDRanges(mjdRanges);
             }
 
             // Query OIData matching criteria:
