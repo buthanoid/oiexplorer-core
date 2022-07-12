@@ -4,23 +4,16 @@
 package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.Disposable;
-import fr.jmmc.jmcs.gui.component.GenericListModel;
 import fr.jmmc.oiexplorer.core.function.Converter;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.model.oi.DataType;
 import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
-import fr.jmmc.oitools.OIFitsConstants;
 import static fr.jmmc.oitools.OIFitsConstants.COLUMN_EFF_WAVE;
-import fr.jmmc.oitools.model.DataModel;
-import fr.jmmc.oitools.processing.SelectorResult;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.slf4j.Logger;
@@ -35,11 +28,6 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(GenericFilterEditor.class);
 
-    private static final List<String> SPECIAL_COLUMN_NAMES = Arrays.asList(new String[]{
-        OIFitsConstants.COLUMN_EFF_WAVE,
-        OIFitsConstants.COLUMN_EFF_BAND}
-    );
-
     private static final ConverterFactory CONVERTER_FACTORY = ConverterFactory.getInstance();
 
     /** Map giving a list of predefined ranges for a column name. Some column name don't have predefined ranges and
@@ -53,9 +41,6 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
     }
 
     // members:
-    /** Store all column choices available */
-    private final List<String> columnChoices = new LinkedList<String>();
-
     /* related GenericFilter */
     private GenericFilter genericFilter;
     /* associated Range editors */
@@ -69,14 +54,12 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
     /** Creates new form GenericFilterEditor */
     public GenericFilterEditor() {
         initComponents();
-        jComboBoxColumnName.setModel(new GenericListModel<String>(columnChoices, true));
         rangeEditors = new ArrayList<>();
         updatingGUI = false;
     }
 
     @Override
     public void dispose() {
-        columnChoices.clear();
         genericFilter = null;
         for (ChangeListener listener : getChangeListeners()) {
             removeChangeListener(listener);
@@ -84,10 +67,10 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
         rangeEditors.forEach(RangeEditor::dispose);
     }
 
-    public boolean setGenericFilter(final SelectorResult selectorResult, final GenericFilter genericFilter) {
+    public boolean setGenericFilter(final GenericFilter genericFilter) {
         this.genericFilter = genericFilter;
 
-        final boolean modified = forceSupportedGenericFilter(selectorResult);
+        final boolean modified = forceSupportedGenericFilter();
 
         try {
             updatingGUI = true;
@@ -98,12 +81,9 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
 
             jCheckBoxEnabled.setSelected(genericFilter.isEnabled());
 
-            columnChoices.clear();
-            columnChoices.addAll(SPECIAL_COLUMN_NAMES);
-            columnChoices.addAll(getDistinctColumns1D(selectorResult));
-
             final String columnName = genericFilter.getColumnName();
-            jComboBoxColumnName.setSelectedItem(columnName);
+
+            jLabelColumnName.setText(columnName);
 
             final Converter converter = CONVERTER_FACTORY.getDefault(CONVERTER_FACTORY.getDefaultByColumn(columnName));
 
@@ -150,29 +130,8 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
 
     // force values we currently support
     // TODO: to be updated when we support other values
-    private boolean forceSupportedGenericFilter(final SelectorResult selectorResult) {
+    private boolean forceSupportedGenericFilter() {
         boolean modified = false;
-
-        boolean columnNameIsSupported = false;
-
-        for (String supportedColumnName : SPECIAL_COLUMN_NAMES) {
-            if (supportedColumnName.equals(genericFilter.getColumnName())) {
-                columnNameIsSupported = true;
-                break;
-            }
-        }
-        if (!columnNameIsSupported) {
-            for (String supportedColumnName : getDistinctColumns1D(selectorResult)) {
-                if (supportedColumnName.equals(genericFilter.getColumnName())) {
-                    columnNameIsSupported = true;
-                    break;
-                }
-            }
-        }
-        if (!columnNameIsSupported) {
-            genericFilter.setColumnName(COLUMN_EFF_WAVE);
-            modified = true;
-        }
 
         if (!DataType.NUMERIC.equals(genericFilter.getDataType())) {
             genericFilter.setDataType(DataType.NUMERIC);
@@ -215,22 +174,6 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
                 rangeEditor.setEnabled(enabled);
             }
 
-            fireStateChanged();
-        }
-    }
-
-    private void handlerColumnName() {
-        if (!updatingGUI && genericFilter != null) {
-
-            final String columnName = (String) jComboBoxColumnName.getSelectedItem();
-            genericFilter.setColumnName(columnName);
-
-            final Map<String, double[]> predefinedRanges = predefinedRangesByColumnName.get(columnName);
-            for (RangeEditor rangeEditor : rangeEditors) {
-                rangeEditor.updateRangeList(predefinedRanges);
-            }
-
-            // TODO set dataType
             fireStateChanged();
         }
     }
@@ -316,8 +259,8 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
         java.awt.GridBagConstraints gridBagConstraints;
 
         jCheckBoxEnabled = new javax.swing.JCheckBox();
+        jLabelColumnName = new javax.swing.JLabel();
         jPanelRangeEditors = new javax.swing.JPanel();
-        jComboBoxColumnName = new javax.swing.JComboBox<>();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -334,6 +277,12 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
         gridBagConstraints.insets = new java.awt.Insets(4, 4, 4, 4);
         add(jCheckBoxEnabled, gridBagConstraints);
 
+        jLabelColumnName.setText("COLUMN_NAME");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
+        add(jLabelColumnName, gridBagConstraints);
+
         jPanelRangeEditors.setLayout(new javax.swing.BoxLayout(jPanelRangeEditors, javax.swing.BoxLayout.PAGE_AXIS));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
@@ -342,46 +291,16 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
         gridBagConstraints.weightx = 0.7;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jPanelRangeEditors, gridBagConstraints);
-
-        jComboBoxColumnName.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "COLUMN_NAME" }));
-        jComboBoxColumnName.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBoxColumnNameActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.VERTICAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
-        add(jComboBoxColumnName, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void jCheckBoxEnabledActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxEnabledActionPerformed
         handlerEnabled();
     }//GEN-LAST:event_jCheckBoxEnabledActionPerformed
 
-    private void jComboBoxColumnNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxColumnNameActionPerformed
-        handlerColumnName();
-    }//GEN-LAST:event_jComboBoxColumnNameActionPerformed
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JCheckBox jCheckBoxEnabled;
-    private javax.swing.JComboBox<String> jComboBoxColumnName;
+    private javax.swing.JLabel jLabelColumnName;
     private javax.swing.JPanel jPanelRangeEditors;
     // End of variables declaration//GEN-END:variables
-
-    /**
-     * Return the set of distinct columns available in tables of the given SelectorResult.
-     * @param selectorResult Selector result from plot's subset definition
-     * @return a Set of Strings with every distinct column names
-     */
-    private static Set<String> getDistinctColumns1D(final SelectorResult selectorResult) {
-        final DataModel dataModel = (selectorResult == null) ? DataModel.getInstance() : selectorResult.getDataModel();
-        logger.debug("datamodel : {}", dataModel);
-
-        return dataModel.getNumericalColumnNames1D();
-    }
 }
