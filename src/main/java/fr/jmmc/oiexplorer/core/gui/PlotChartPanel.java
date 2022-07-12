@@ -120,6 +120,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private static final Logger logger = LoggerFactory.getLogger(PlotChartPanel.class.getName());
     /** Debug setting */
     private static final boolean DEBUG = false;
+    /** Enable Error bars */
+    private static final boolean PLOT_ERR = true;
     /** use plot (true) or overlay (false) crosshair support (faster is overlay) */
     private static final boolean USE_PLOT_CROSSHAIR = false;
     /** enable mouse selection handling (DEV) TODO: enable selection ASAP (TODO sub plot support) */
@@ -202,8 +204,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     /** plot information(s) */
     private final List<PlotInfo> plotInfos = new ArrayList<PlotInfo>();
     /* plot data */
-    /** defered event handler (100ms delay) */
-    private final EDTDelayedEventHandler deferedHandler = new EDTDelayedEventHandler(100);
+    /** defered event handler (50ms delay) */
+    private final EDTDelayedEventHandler deferedHandler = new EDTDelayedEventHandler(50);
     /** jFreeChart instance */
     private JFreeChart chart;
     /** combined xy plot sharing domain axis */
@@ -1610,10 +1612,10 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     final FastXYErrorRenderer renderer = (FastXYErrorRenderer) xyPlot.getRenderer();
 
                     // enable/disable X error rendering (performance):
-                    renderer.setDrawXError(info.xAxisInfo.hasDataError);
+                    renderer.setDrawXError(PLOT_ERR && info.xAxisInfo.hasDataError);
 
                     // enable/disable Y error rendering (performance):
-                    renderer.setDrawYError(info.yAxisInfo.hasDataError);
+                    renderer.setDrawYError(PLOT_ERR && info.yAxisInfo.hasDataError);
 
                     // use deprecated method but defines shape once for ALL series (performance):
                     // define base shape as valid point (fallback):
@@ -2205,23 +2207,24 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
             logger.debug("checkFlaggedData: {}", checkFlaggedData);
         }
 
-        // get the masks for this OIData table:
-        final IndexMask maskOIData1D;
-        // get the wavelength mask related to this OIData table:
+        // get the optional wavelength mask related to this OIData table:
         final IndexMask maskWavelength;
+        // get the optional masks for this OIData table:
+        final IndexMask maskOIData1D;
         {
             final SelectorResult selectorResult = getSelectorResult();
 
-            maskOIData1D = (selectorResult == null) ? null : selectorResult.getDataMask1DNotFull(oiData);
-
-            final OIWavelength oiWavelength = oiData.getOiWavelength();
-
-            maskWavelength = (selectorResult == null || oiWavelength == null)
-                    ? null : selectorResult.getWavelengthMaskNotFull(oiWavelength);
+            if (selectorResult == null) {
+                maskWavelength = null;
+                maskOIData1D = null;
+            } else {
+                maskWavelength = selectorResult.getWavelengthMaskNotFull(oiData.getOiWavelength());
+                maskOIData1D = selectorResult.getDataMask1DNotFull(oiData);
+            }
         }
         if (isLogDebug) {
-            logger.debug("maskOIData1D:   {}", maskOIData1D);
             logger.debug("maskWavelength: {}", maskWavelength);
+            logger.debug("maskOIData1D:   {}", maskOIData1D);
         }
 
         // Get Global SharedSeriesAttributes:
@@ -2409,7 +2412,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 }
 
                 // check optional data mask 1D:
-                if ((maskOIData1D != null) && !maskOIData1D.isRow(i)) {
+                if ((maskOIData1D != null) && !maskOIData1D.accept(i)) {
                     // if bit is false for this row, we hide this row
                     nSkipRow++;
                     continue;
@@ -2422,7 +2425,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 for (int l = 0; l < nWaveChannels; l++) {
 
                     // check optional wavelength mask:
-                    if ((maskWavelength != null) && !maskWavelength.isRow(l)) {
+                    if ((maskWavelength != null) && !maskWavelength.accept(l)) {
                         // if bit is false for this row, we hide this row
                         nSkipWavelength++;
                         continue;
@@ -2876,7 +2879,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 case ChartProgressEvent.DRAWING_FINISHED:
                     logger.debug("Drawing chart time[{}] = {} ms.", getFilterTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
                     if (DEBUG) {
-                        logger.info("Drawing chart time[{}] = {} ms.", getFilterTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
+                        logger.info("Drawing chart time[{}] = {} ms. (PLOT_ERR = {})", getFilterTargetUID(),
+                                1e-6d * (System.nanoTime() - this.chartDrawStartTime), PLOT_ERR);
                     }
                     this.chartDrawStartTime = 0l;
                     break;
