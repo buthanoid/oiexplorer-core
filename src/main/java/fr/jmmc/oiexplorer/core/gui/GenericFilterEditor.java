@@ -228,6 +228,7 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
             final Map<String, double[]> predefinedRanges = predefinedRangesByColumnName.get(columnName);
             for (RangeEditor rangeEditor : rangeEditors) {
                 rangeEditor.updateRangeList(predefinedRanges);
+                rangeEditor.updateRange(null, true);
             }
 
             // TODO set dataType
