@@ -20,6 +20,7 @@ import fr.jmmc.oiexplorer.core.gui.OIExplorerTaskRegistry;
 import fr.jmmc.oiexplorer.core.gui.PlotInfosData;
 import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
+import fr.jmmc.oiexplorer.core.model.oi.DataType;
 import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
@@ -1170,21 +1171,35 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         List<fr.jmmc.oitools.model.range.Range> wavelengthRanges = getFilterRanges(filters, Selector.FILTER_EFFWAVE);
         List<fr.jmmc.oitools.model.range.Range> mjdRanges = getFilterRanges(filters, Selector.FILTER_MJD);
 
-        final Set<String> keys = new LinkedHashSet<>();
+        final Set<String> keysNumeric = new LinkedHashSet<>();
+        final Set<String> keysString = new LinkedHashSet<>();
         for (GenericFilter genericFilter : filters) {
-            keys.add(genericFilter.getColumnName());
-        }
-        keys.remove(Selector.FILTER_EFFWAVE);
-        keys.remove(Selector.FILTER_MJD);
-
-        final Map<String, List<fr.jmmc.oitools.model.range.Range>> filtersExtra = new LinkedHashMap<>();
-        for (String key : keys) {
-            List<fr.jmmc.oitools.model.range.Range> ranges = getFilterRanges(filters, key);
-            if (ranges != null) {
-                filtersExtra.put(key, ranges);
+            if (DataType.NUMERIC == genericFilter.getDataType()) {
+                keysNumeric.add(genericFilter.getColumnName());
+            } else if (DataType.STRING == genericFilter.getDataType()) {
+                keysString.add(genericFilter.getColumnName());
             }
         }
-        logger.debug("filtersExtra : {}", filtersExtra);
+        keysNumeric.remove(Selector.FILTER_EFFWAVE);
+        keysNumeric.remove(Selector.FILTER_MJD);
+
+        final Map<String, List<fr.jmmc.oitools.model.range.Range>> filtersRangesExtra = new LinkedHashMap<>();
+        for (String key : keysNumeric) {
+            List<fr.jmmc.oitools.model.range.Range> ranges = getFilterRanges(filters, key);
+            if (ranges != null) {
+                filtersRangesExtra.put(key, ranges);
+            }
+        }
+        logger.debug("filtersRangesExtra : {}", filtersRangesExtra);
+
+        final Map<String, List<String>> filtersValuesExtra = new LinkedHashMap<>();
+        for (String key : keysString) {
+            List<String> values = getFilterValues(filters, key);
+            if (values != null) {
+                filtersValuesExtra.put(key, values);
+            }
+        }
+        logger.debug("filtersValuesExtra : {}", filtersValuesExtra);
 
         SelectorResult result = null;
         final Selector selector = new Selector();
@@ -1215,8 +1230,13 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             if (mjdRanges != null) {
                 selector.addFilter(Selector.FILTER_MJD, mjdRanges);
             }
-            if (!filtersExtra.isEmpty()) {
-                for (Map.Entry<String, List<fr.jmmc.oitools.model.range.Range>> e : filtersExtra.entrySet()) {
+            if (!filtersRangesExtra.isEmpty()) {
+                for (Map.Entry<String, List<fr.jmmc.oitools.model.range.Range>> e : filtersRangesExtra.entrySet()) {
+                    selector.addFilter(e.getKey(), e.getValue());
+                }
+            }
+            if (!filtersValuesExtra.isEmpty()) {
+                for (Map.Entry<String, List<String>> e : filtersValuesExtra.entrySet()) {
                     selector.addFilter(e.getKey(), e.getValue());
                 }
             }
@@ -1246,6 +1266,25 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             }
         }
         return allRanges;
+    }
+
+    /* merging values of all filter of the column name `key` */
+    private static List<String> getFilterValues(List<GenericFilter> filters, final String key) {
+        List<String> allValues = null;
+
+        for (GenericFilter genericFilter : filters) {
+            if (!genericFilter.isEnabled()) {
+                continue; // skip disabled generic filters
+            }
+
+            if (key.equals(genericFilter.getColumnName())) {
+                if (allValues == null) {
+                    allValues = new ArrayList<>(2);
+                }
+                allValues.addAll(genericFilter.getAcceptedValues());
+            }
+        }
+        return allValues;
     }
 
     /* --- plot definition handling --------- ---------------------------- */

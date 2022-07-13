@@ -54,7 +54,6 @@ import fr.jmmc.oitools.meta.DataRange;
 import fr.jmmc.oitools.meta.Units;
 import fr.jmmc.oitools.model.IndexMask;
 import fr.jmmc.oitools.model.OIData;
-import fr.jmmc.oitools.model.OIWavelength;
 import fr.jmmc.oitools.model.StaNamesDir;
 import fr.jmmc.oitools.processing.SelectorResult;
 import java.awt.BorderLayout;
