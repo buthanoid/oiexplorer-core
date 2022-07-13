@@ -195,26 +195,33 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
             if (oitoolsRange != null) {
                 newMin = oitoolsRange.getMin();
                 newMax = oitoolsRange.getMax();
+            }
 
-                if (converter != null) {
-                    try {
-                        newMin = converter.evaluate(newMin);
-                        newMax = converter.evaluate(newMax);
-                    } catch (IllegalArgumentException iae) {
-                        logger.error("conversion failed: ", iae);
-                    }
+            // updating generic filter
+            for (Range range : genericFilter.getAcceptedRanges()) {
+                range.setMin(newMin);
+                range.setMax(newMax);
+            }
+
+            // updating range editors with converted new min and max
+
+            double convertedNewMin = Double.NaN, convertedNewMax = Double.NaN;
+            if (converter == null) {
+                convertedNewMin = newMin;
+                convertedNewMax = newMax;
+            } else {
+                try {
+                    convertedNewMin = converter.evaluate(newMin);
+                    convertedNewMax = converter.evaluate(newMax);
+                } catch (IllegalArgumentException iae) {
+                    logger.error("conversion failed: ", iae);
                 }
             }
 
             boolean modified = false;
 
-            // update both genericFilter and range editors
             for (RangeEditor rangeEditor : rangeEditors) {
-                modified |= rangeEditor.setRangeFieldValues(newMin, newMax);
-            }
-            for (Range range : genericFilter.getAcceptedRanges()) {
-                range.setMin(newMin);
-                range.setMax(newMax);
+                modified |= rangeEditor.setRangeFieldValues(convertedNewMin, convertedNewMax);
             }
 
             if (modified) {
