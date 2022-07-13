@@ -6,6 +6,7 @@ package fr.jmmc.oiexplorer.core.gui;
 import fr.jmmc.jmcs.gui.component.Disposable;
 import fr.jmmc.oiexplorer.core.function.Converter;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
+import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
 import fr.jmmc.oiexplorer.core.model.oi.DataType;
 import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
@@ -30,6 +31,9 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
 
     private static final ConverterFactory CONVERTER_FACTORY = ConverterFactory.getInstance();
 
+    /** OIFitsCollectionManager singleton reference. used for reset button. */
+    private final static OIFitsCollectionManager OCM = OIFitsCollectionManager.getInstance();
+
     /** Map giving a list of predefined ranges for a column name. Some column name don't have predefined ranges and
      * receive a null value. TODO: move this to RangeEditor ?
      */
@@ -45,6 +49,9 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
     private GenericFilter genericFilter;
     /* associated Range editors */
     private final List<RangeEditor> rangeEditors;
+    /** converter associated to the column name of the generic filter. It allows us to make the range editor use a
+     * different unit more user friendly. */
+    private Converter converter;
 
     /**
      * updatingGUI true disables the handlers and the listeners on the widgets. useful when updating the widgets
@@ -84,7 +91,7 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
             jCheckBoxEnabled.setSelected(genericFilter.isEnabled());
             jCheckBoxEnabled.setText(columnName);
 
-            final Converter converter = CONVERTER_FACTORY.getDefault(CONVERTER_FACTORY.getDefaultByColumn(columnName));
+            converter = CONVERTER_FACTORY.getDefault(CONVERTER_FACTORY.getDefaultByColumn(columnName));
 
             for (Range range : genericFilter.getAcceptedRanges()) {
                 final RangeEditor rangeEditor = new RangeEditor();
@@ -177,6 +184,45 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
         }
     }
 
+    private void handlerReset() {
+        if (!updatingGUI && genericFilter != null) {
+
+            final String columnName = genericFilter.getColumnName();
+
+            final fr.jmmc.oitools.model.range.Range oitoolsRange = OCM.getOIFitsCollection().getMinMaxRange(columnName);
+
+            double newMin = Double.NaN, newMax = Double.NaN;
+            if (oitoolsRange != null) {
+                newMin = oitoolsRange.getMin();
+                newMax = oitoolsRange.getMax();
+
+                if (converter != null) {
+                    try {
+                        newMin = converter.evaluate(newMin);
+                        newMax = converter.evaluate(newMax);
+                    } catch (IllegalArgumentException iae) {
+                        logger.error("conversion failed: ", iae);
+                    }
+                }
+            }
+
+            boolean modified = false;
+
+            // update both genericFilter and range editors
+            for (RangeEditor rangeEditor : rangeEditors) {
+                modified |= rangeEditor.setRangeFieldValues(newMin, newMax);
+            }
+            for (Range range : genericFilter.getAcceptedRanges()) {
+                range.setMin(newMin);
+                range.setMax(newMax);
+            }
+
+            if (modified) {
+                fireStateChanged();
+            }
+        }
+    }
+
     @Override
     public void stateChanged(ChangeEvent ce) {
         if (!updatingGUI) {
@@ -184,8 +230,6 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
             // some rangeEditor has changed. we need to update the corresponding range in genericFilter
             // and we need to convert the unit
             final RangeEditor rangeEditorChanged = (RangeEditor) ce.getSource();
-
-            final Converter converter = CONVERTER_FACTORY.getDefault(CONVERTER_FACTORY.getDefaultByColumn(genericFilter.getColumnName()));
 
             int index = 0;
             for (RangeEditor rangeEditor : rangeEditors) {
@@ -259,6 +303,7 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
 
         jCheckBoxEnabled = new javax.swing.JCheckBox();
         jPanelRangeEditors = new javax.swing.JPanel();
+        jButtonReset = new javax.swing.JButton();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -281,14 +326,29 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 0.8;
         add(jPanelRangeEditors, gridBagConstraints);
+
+        jButtonReset.setText("reset");
+        jButtonReset.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonResetActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        add(jButtonReset, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     private void jCheckBoxEnabledActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxEnabledActionPerformed
         handlerEnabled();
     }//GEN-LAST:event_jCheckBoxEnabledActionPerformed
 
+    private void jButtonResetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonResetActionPerformed
+        handlerReset();
+    }//GEN-LAST:event_jButtonResetActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButtonReset;
     private javax.swing.JCheckBox jCheckBoxEnabled;
     private javax.swing.JPanel jPanelRangeEditors;
     // End of variables declaration//GEN-END:variables
