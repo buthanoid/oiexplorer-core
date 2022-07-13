@@ -79,11 +79,10 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
             rangeEditors.clear();
             jPanelRangeEditors.removeAll();
 
-            jCheckBoxEnabled.setSelected(genericFilter.isEnabled());
-
             final String columnName = genericFilter.getColumnName();
 
-            jLabelColumnName.setText(columnName);
+            jCheckBoxEnabled.setSelected(genericFilter.isEnabled());
+            jCheckBoxEnabled.setText(columnName);
 
             final Converter converter = CONVERTER_FACTORY.getDefault(CONVERTER_FACTORY.getDefaultByColumn(columnName));
 
@@ -259,7 +258,6 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
         java.awt.GridBagConstraints gridBagConstraints;
 
         jCheckBoxEnabled = new javax.swing.JCheckBox();
-        jLabelColumnName = new javax.swing.JLabel();
         jPanelRangeEditors = new javax.swing.JPanel();
 
         setLayout(new java.awt.GridBagLayout());
@@ -273,23 +271,15 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.insets = new java.awt.Insets(4, 4, 4, 4);
+        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jCheckBoxEnabled, gridBagConstraints);
-
-        jLabelColumnName.setText("COLUMN_NAME");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        add(jLabelColumnName, gridBagConstraints);
 
         jPanelRangeEditors.setLayout(new javax.swing.BoxLayout(jPanelRangeEditors, javax.swing.BoxLayout.PAGE_AXIS));
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 0.7;
-        gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.8;
         add(jPanelRangeEditors, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
@@ -300,7 +290,6 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JCheckBox jCheckBoxEnabled;
-    private javax.swing.JLabel jLabelColumnName;
     private javax.swing.JPanel jPanelRangeEditors;
     // End of variables declaration//GEN-END:variables
 }
