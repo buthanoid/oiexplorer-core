@@ -189,10 +189,10 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
 
             final String columnName = genericFilter.getColumnName();
 
-            final fr.jmmc.oitools.model.range.Range oitoolsRange = OCM.getOIFitsCollection().getMinMaxRange(columnName);
+            final fr.jmmc.oitools.model.range.Range oitoolsRange = OCM.getOIFitsCollection().getColumnRange(columnName);
 
             double newMin = Double.NaN, newMax = Double.NaN;
-            if (oitoolsRange != null) {
+            if (oitoolsRange.isFinite()) {
                 newMin = oitoolsRange.getMin();
                 newMax = oitoolsRange.getMax();
             }
@@ -204,7 +204,6 @@ public final class GenericFilterEditor extends javax.swing.JPanel implements Dis
             }
 
             // updating range editors with converted new min and max
-
             double convertedNewMin = Double.NaN, convertedNewMax = Double.NaN;
             if (converter == null) {
                 convertedNewMin = newMin;
