@@ -47,7 +47,7 @@ import static fr.jmmc.oiexplorer.core.model.plot.ColorMapping.STATION_INDEX;
 import static fr.jmmc.oiexplorer.core.model.plot.ColorMapping.WAVELENGTH_RANGE;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.util.Constants;
-import fr.jmmc.oiexplorer.core.util.OIDataListHelper;
+import fr.jmmc.oitools.model.OIDataListHelper;
 import fr.jmmc.oitools.OIFitsConstants;
 import fr.jmmc.oitools.meta.ColumnMeta;
 import fr.jmmc.oitools.meta.DataRange;
@@ -1350,7 +1350,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 // Add wavelength ranges:
                 distinct.clear();
                 for (PlotInfo info : getPlotInfos()) {
-                    OIDataListHelper.getDistinctWaveLengthRange(info.oidataList, distinct);
+                    getDistinctWaveLengthRange(info.oidataList, distinct);
                 }
                 if (!distinct.isEmpty()) {
                     OIDataListHelper.toString(distinct, sb, " ", " / ", 3, "MULTI WAVELENGTH RANGE");
@@ -1401,6 +1401,32 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         }
 
         logger.info("updatePlot: duration = {} ms.", 1e-6d * (System.nanoTime() - start));
+    }
+
+    /**
+     * Return the unique wave length ranges from given OIData tables
+     * @param oiDataList OIData tables
+     * @param set set instance to use
+     */
+    public static void getDistinctWaveLengthRange(final List<OIData> oiDataList, final Set<String> set) {
+        final StringBuilder sb = new StringBuilder(20);
+
+        for (OIData oiData : oiDataList) {
+            final fr.jmmc.oitools.model.range.Range effWaveRange = oiData.getEffWaveRange();
+
+            if (effWaveRange.isFinite()) {
+                sb.append('[').append(df4.format(ConverterFactory.CONVERTER_MICRO_METER.evaluate(effWaveRange.getMin())))
+                        .append(' ').append(ConverterFactory.CONVERTER_MICRO_METER.getUnit());
+                sb.append(" - ").append(df4.format(ConverterFactory.CONVERTER_MICRO_METER.evaluate(effWaveRange.getMax())))
+                        .append(' ').append(ConverterFactory.CONVERTER_MICRO_METER.getUnit()).append(']');
+
+                final String wlenRange = sb.toString();
+                sb.setLength(0);
+                logger.debug("wlen range : {}", wlenRange);
+
+                set.add(wlenRange);
+            }
+        }
     }
 
     /**
@@ -1473,7 +1499,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         // Get distinct station configuration from OIFits subset (not filtered):
         final List<String> distinctStaConfNames = OIDataListHelper.getDistinctStaConfs(oiDataList);
 
-        final Range waveLengthRange = OIDataListHelper.getWaveLengthRange(oiDataList);
+        final Range waveLengthRange = convert(OIDataListHelper.getWaveLengthRange(oiDataList));
 
         logger.debug("distinctStaIndexNames: {}", distinctStaIndexNames);
         logger.debug("distinctStaConfNames: {}", distinctStaConfNames);
@@ -3161,4 +3187,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         OIFitsConstants.COLUMN_U2COORD_SPATIAL,
         OIFitsConstants.COLUMN_V2COORD_SPATIAL
     });
+
+    private static Range convert(final fr.jmmc.oitools.model.range.Range r) {
+        return new Range(r.getMin(), r.getMax());
+    }
 }
