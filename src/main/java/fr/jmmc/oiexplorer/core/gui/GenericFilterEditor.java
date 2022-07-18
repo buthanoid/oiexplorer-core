@@ -233,8 +233,6 @@ public final class GenericFilterEditor extends javax.swing.JPanel
                 if (initValues != null) {
                     genericFilter.getAcceptedValues().addAll(initValues);
                 }
-
-                jPanelRangesOrValues.add(jScrollPaneValues);
             }
 
             repaint();
