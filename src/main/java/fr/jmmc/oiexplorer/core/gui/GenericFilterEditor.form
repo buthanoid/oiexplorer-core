@@ -19,7 +19,6 @@
                 <StringItem index="3" value="B2"/>
               </StringArray>
             </Property>
-            <Property name="selectionMode" type="int" value="0"/>
             <Property name="clickInCheckBoxOnly" type="boolean" value="false"/>
             <Property name="visibleRowCount" type="int" value="4"/>
           </Properties>

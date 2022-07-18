@@ -349,7 +349,6 @@ public final class GenericFilterEditor extends javax.swing.JPanel
             public int getSize() { return strings.length; }
             public Object getElementAt(int i) { return strings[i]; }
         });
-        checkBoxListValues.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         checkBoxListValues.setClickInCheckBoxOnly(false);
         checkBoxListValues.setVisibleRowCount(4);
         jScrollPaneValues.setViewportView(checkBoxListValues);
