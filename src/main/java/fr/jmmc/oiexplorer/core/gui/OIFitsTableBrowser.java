@@ -19,11 +19,14 @@ import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.image.FitsImageHDU;
 import fr.jmmc.oitools.image.ImageOiParam;
 import fr.jmmc.oitools.model.DataModel;
+import fr.jmmc.oitools.model.IndexMask;
 import fr.jmmc.oitools.model.OIArray;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.jmmc.oitools.model.OITable;
+import fr.jmmc.oitools.model.OIWavelength;
+import fr.jmmc.oitools.processing.SelectorResult;
 import fr.nom.tam.fits.FitsException;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -55,6 +58,8 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
     private final FitsTableViewerPanel tableViewer;
     /** oifits (weak) file reference */
     private WeakReference<OIFitsFile> oiFitsFileRef = null;
+    /** selectorResult (weak) reference */
+    private WeakReference<SelectorResult> selectorResultRef = null;
 
     /** Creates new form FitsBrowserPanel */
     public OIFitsTableBrowser() {
@@ -87,7 +92,7 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
 
     private void reset() {
         this.jListTables.clearSelection();
-        this.tableViewer.setHdu(null);
+        this.tableViewer.setHdu(null, null);
         this.oiFitsFileRef = null;
     }
 
@@ -164,7 +169,14 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
     }
 
     public void setOiFitsFileRef(final WeakReference<OIFitsFile> oiFitsFileRef) {
+        setOiFitsFileRef(oiFitsFileRef, null); // no selector result: no masks given for OIDatas
+    }
+
+    public void setOiFitsFileRef(
+            final WeakReference<OIFitsFile> oiFitsFileRef, final WeakReference<SelectorResult> selectorResultRef) {
+
         final OIFitsFile oiFitsFile = (oiFitsFileRef != null) ? oiFitsFileRef.get() : null;
+        this.selectorResultRef = selectorResultRef;
 
         if (this.getOIFitsFile() != oiFitsFile) {
             reset();
@@ -265,6 +277,7 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
             // lazy resolve HDU:
             final OIFitsFile oiFitsFile = getOIFitsFile();
             final FitsHDU hdu;
+            IndexMask wavelengthMask = null; // null means we mask nothing
 
             logger.debug("oiFitsFile: {}", oiFitsFile);
 
@@ -275,11 +288,19 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
             }
             logger.debug("hdu: {}", hdu);
 
+            if (hdu != null && hdu instanceof OIData) {
+                final SelectorResult selectorResult = (selectorResultRef == null) ? null : selectorResultRef.get();
+                if (selectorResult != null) {
+                    final OIWavelength oiWavelength = ((OIData) hdu).getOiWavelength();
+                    wavelengthMask = selectorResult.getWavelengthMaskNotFull(oiWavelength);
+                }
+            }
+
             final boolean includeDerivedColumns = true;
             final boolean expandRows = isTableRowsExpanded(hdu);
 
             this.tableViewer.setViewerOptions(includeDerivedColumns, expandRows);
-            this.tableViewer.setHdu(hdu);
+            this.tableViewer.setHdu(hdu, wavelengthMask);
         }
     }
 

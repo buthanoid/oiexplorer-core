@@ -13,7 +13,12 @@ import static fr.jmmc.oiexplorer.core.gui.model.ColumnsTableModel.COLUMN_ROW_IND
 import fr.jmmc.oiexplorer.core.gui.model.KeywordsTableModel;
 import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.fits.FitsTable;
+import fr.jmmc.oitools.model.IndexMask;
+import java.awt.Color;
+import java.awt.Component;
 import javax.swing.JLabel;
+import javax.swing.JTable;
+import javax.swing.UIManager;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -31,13 +36,27 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(FitsTableViewerPanel.class.getName());
 
-    private static final TableCellRenderer RDR_NUM_INSTANCE = new TableCellNumberRenderer();
+    // colors for table cell rendering. we need to register the default colors.
+    private static final Color COLOR_MASKED = new Color(244, 244, 215);
+    private static final Color COLOR_SELECTED
+            = (UIManager.getColor("Table.selectionBackground") == null)
+            ? new Color(173, 216, 230)
+            : UIManager.getColor("Table.selectionBackground");
+    private static final Color COLOR_NORMAL
+            = (UIManager.getColor("Table.background") == null)
+            ? Color.WHITE
+            : UIManager.getColor("Table.background");
 
     /* members */
+    private final TableCellRenderer RDR_NUM_MASK_INSTANCE = new TableCellNumberMaskRenderer();
     private final KeywordsTableModel keywordsModel;
     private final BasicTableSorter keywordsTableSorter;
     private final ColumnsTableModel columnsModel;
     private final BasicTableSorter columnsTableSorter;
+
+    // optional Mask. If present, will color the rows of masked wavelengths.
+    // It is set to null when: there is no wavelength for this table, or every wavelength is masked.
+    private IndexMask wavelengthMask;
 
     private int lastSelRow = -1;
     private int lastSelCol = -1;
@@ -96,10 +115,14 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         SwingUtils.adjustRowHeight(jTableKeywords);
         SwingUtils.adjustRowHeight(jTableColumns);
 
-        jTableKeywords.setDefaultRenderer(Boolean.class, RDR_NUM_INSTANCE);
-        jTableKeywords.setDefaultRenderer(Double.class, RDR_NUM_INSTANCE);
-        jTableColumns.setDefaultRenderer(Float.class, RDR_NUM_INSTANCE);
-        jTableColumns.setDefaultRenderer(Double.class, RDR_NUM_INSTANCE);
+        jTableKeywords.setDefaultRenderer(Boolean.class, RDR_NUM_MASK_INSTANCE);
+        jTableKeywords.setDefaultRenderer(Double.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(Float.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(Double.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(Boolean.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(Integer.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(Short.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(String.class, RDR_NUM_MASK_INSTANCE);
     }
 
     public void setViewerOptions(boolean includeDerivedColumns, boolean expandRows) {
@@ -108,10 +131,12 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     }
 
     // Display Table
-    public void setHdu(final FitsHDU hdu) {
+    public void setHdu(final FitsHDU hdu, final IndexMask wavelengthMask) {
         // reset selection:
         lastSelRow = -1;
         lastSelCol = -1;
+
+        this.wavelengthMask = wavelengthMask; // optionnal wavelength mask
 
         keywordsModel.setFitsHdu(hdu);
 
@@ -253,19 +278,16 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     // End of variables declaration//GEN-END:variables
 
     /**
-     * Used to format numbers in cells.
+     * Used to format numbers in cells and highlight masked cells.
      *
      * @warning: No trace log implemented as this is very often called (performance).
      */
-    private final static class TableCellNumberRenderer extends DefaultTableCellRenderer {
+    private final class TableCellNumberMaskRenderer extends DefaultTableCellRenderer {
 
         /** default serial UID for Serializable interface */
         private static final long serialVersionUID = 1;
 
-        /**
-         * Constructor
-         */
-        private TableCellNumberRenderer() {
+        private TableCellNumberMaskRenderer() {
             super();
         }
 
@@ -292,6 +314,25 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
             }
             setText(text);
         }
-    }
 
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+
+            final Component component =
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            if (isSelected) {
+                component.setBackground(COLOR_SELECTED);
+            } else if (wavelengthMask != null
+                    && wavelengthMask.getNbRows() > 0     // needs modulo because several wavelengths series
+                    && !wavelengthMask.accept(row % wavelengthMask.getNbRows())) { // appear in the rows
+                component.setBackground(COLOR_MASKED);
+            } else {
+                component.setBackground(COLOR_NORMAL);
+            }
+
+            return component;
+        }
+    }
 }
