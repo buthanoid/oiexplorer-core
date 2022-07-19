@@ -39,16 +39,16 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     // colors for table cell rendering. we need to register the default colors.
     private static final Color COLOR_MASKED = new Color(244, 244, 215);
     private static final Color COLOR_SELECTED
-            = (UIManager.getColor("Table.selectionBackground") == null)
+                               = (UIManager.getColor("Table.selectionBackground") == null)
             ? new Color(173, 216, 230)
             : UIManager.getColor("Table.selectionBackground");
     private static final Color COLOR_NORMAL
-            = (UIManager.getColor("Table.background") == null)
+                               = (UIManager.getColor("Table.background") == null)
             ? Color.WHITE
             : UIManager.getColor("Table.background");
 
     /* members */
-    private final TableCellRenderer RDR_NUM_MASK_INSTANCE = new TableCellNumberMaskRenderer();
+    private final transient TableCellRenderer RDR_NUM_MASK_INSTANCE = new TableCellNumberMaskRenderer();
     private final KeywordsTableModel keywordsModel;
     private final BasicTableSorter keywordsTableSorter;
     private final ColumnsTableModel columnsModel;
@@ -56,7 +56,7 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
 
     // optional Mask. If present, will color the rows of masked wavelengths.
     // It is set to null when: there is no wavelength for this table, or every wavelength is masked.
-    private IndexMask wavelengthMask;
+    private transient IndexMask wavelengthMask;
 
     private int lastSelRow = -1;
     private int lastSelCol = -1;
@@ -319,19 +319,36 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         public Component getTableCellRendererComponent(
                 JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 
-            final Component component =
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            final Component component
+                            = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            Color bgColor = COLOR_NORMAL;
 
             if (isSelected) {
-                component.setBackground(COLOR_SELECTED);
-            } else if (wavelengthMask != null
-                    && wavelengthMask.getNbRows() > 0     // needs modulo because several wavelengths series
-                    && !wavelengthMask.accept(row % wavelengthMask.getNbRows())) { // appear in the rows
-                component.setBackground(COLOR_MASKED);
-            } else {
-                component.setBackground(COLOR_NORMAL);
-            }
+                bgColor = COLOR_SELECTED;
+            } else if (wavelengthMask != null) {
+                final int rowColIdx = columnsTableSorter.findColumn(COLUMN_ROW_INDEX);
+                final int colColIdx = (column != -1) ? columnsTableSorter.findColumn(COLUMN_COL_INDEX) : -1;
 
+                if (logger.isDebugEnabled()) {
+                    logger.debug("rowColIdx: {}", rowColIdx);
+                    logger.debug("colColIdx: {}", colColIdx);
+                }
+
+                final Integer rowValue = (Integer) columnsTableSorter.getValueAt(row, rowColIdx);
+                final Integer colValue = (colColIdx != -1) ? (Integer) columnsTableSorter.getValueAt(row, colColIdx) : null;
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("ColumnsModel (row, col): ({}, {})", rowValue, colValue);
+                }
+                // check masks:
+
+                // wavelength mask acts on colIdx:
+                if ((colValue != null) && wavelengthMask.accept(colValue)) {
+                    bgColor = COLOR_MASKED;
+                }
+            }
+            component.setBackground(bgColor);
             return component;
         }
     }
