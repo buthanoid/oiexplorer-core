@@ -18,9 +18,11 @@ import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.processing.SelectorResult;
 import java.awt.Color;
 import java.awt.Component;
+import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.UIManager;
+import javax.swing.border.Border;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -39,7 +41,7 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     private static final Logger logger = LoggerFactory.getLogger(FitsTableViewerPanel.class.getName());
 
     // colors for table cell rendering. we need to register the default colors.
-    private static final Color COLOR_MASKED = new Color(244, 244, 215);
+    private static final Color COLOR_MASKED = Color.YELLOW;
     private static final Color COLOR_SELECTED
                                = (UIManager.getColor("Table.selectionBackground") == null)
             ? new Color(173, 216, 230)
@@ -304,6 +306,9 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         /** default serial UID for Serializable interface */
         private static final long serialVersionUID = 1;
 
+        /** orange border for selected cell */
+        private final Border _orangeBorder = BorderFactory.createLineBorder(Color.ORANGE, 2);
+
         private TableCellNumberMaskRenderer() {
             super();
         }
@@ -336,8 +341,10 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         public Component getTableCellRendererComponent(
                 JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 
-            final Component component
-                            = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            // always use right alignment:
+            setHorizontalAlignment(JLabel.RIGHT);
 
             Color bgColor = COLOR_NORMAL;
 
@@ -382,8 +389,12 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
                     }
                 }
             }
-            component.setBackground(bgColor);
-            return component;
+
+            if (bgColor == COLOR_MASKED) {
+                setBorder(_orangeBorder);
+            }
+            setBackground(bgColor);
+            return this;
         }
     }
 }
