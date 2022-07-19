@@ -20,7 +20,6 @@ import fr.jmmc.oiexplorer.core.gui.OIExplorerTaskRegistry;
 import fr.jmmc.oiexplorer.core.gui.PlotInfosData;
 import fr.jmmc.oiexplorer.core.gui.selection.DataPointer;
 import fr.jmmc.oiexplorer.core.model.event.EventNotifier;
-import fr.jmmc.oiexplorer.core.model.oi.DataType;
 import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.oi.Identifiable;
 import fr.jmmc.oiexplorer.core.model.oi.OIDataFile;
@@ -51,10 +50,8 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.commons.httpclient.auth.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1167,39 +1164,49 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     private SelectorResult findOIData(final SubsetDefinition subsetDefinition) {
         final List<GenericFilter> filters = subsetDefinition.getGenericFilters();
 
-        // translate SubsetDefinition's generic filters into Selector's wavelength and mjd ranges
-        List<fr.jmmc.oitools.model.range.Range> wavelengthRanges = getFilterRanges(filters, Selector.FILTER_EFFWAVE);
-        List<fr.jmmc.oitools.model.range.Range> mjdRanges = getFilterRanges(filters, Selector.FILTER_MJD);
+        final int len = filters.size();
 
-        final Set<String> keysNumeric = new LinkedHashSet<>();
-        final Set<String> keysString = new LinkedHashSet<>();
-        for (GenericFilter genericFilter : filters) {
-            if (DataType.NUMERIC == genericFilter.getDataType()) {
-                keysNumeric.add(genericFilter.getColumnName());
-            } else if (DataType.STRING == genericFilter.getDataType()) {
-                keysString.add(genericFilter.getColumnName());
-            }
-        }
-        keysNumeric.remove(Selector.FILTER_EFFWAVE);
-        keysNumeric.remove(Selector.FILTER_MJD);
+        final List<fr.jmmc.oitools.model.range.Range> wavelengthRanges;
+        final List<fr.jmmc.oitools.model.range.Range> mjdRanges;
 
-        final Map<String, List<fr.jmmc.oitools.model.range.Range>> filtersRangesExtra = new LinkedHashMap<>();
-        for (String key : keysNumeric) {
-            List<fr.jmmc.oitools.model.range.Range> ranges = getFilterRanges(filters, key);
-            if (ranges != null) {
-                filtersRangesExtra.put(key, ranges);
-            }
-        }
-        logger.debug("filtersRangesExtra : {}", filtersRangesExtra);
+        final Map<String, List<fr.jmmc.oitools.model.range.Range>> filtersRangesExtra;
+        final Map<String, List<String>> filtersValuesExtra;
 
-        final Map<String, List<String>> filtersValuesExtra = new LinkedHashMap<>();
-        for (String key : keysString) {
-            List<String> values = getFilterValues(filters, key);
-            if (values != null) {
-                filtersValuesExtra.put(key, values);
+        if (len > 0) {
+            // translate SubsetDefinition's generic filters into Selector's wavelength and mjd ranges
+            wavelengthRanges = getFilterRanges(filters, Selector.FILTER_EFFWAVE);
+            mjdRanges = getFilterRanges(filters, Selector.FILTER_MJD);
+
+            filtersRangesExtra = new LinkedHashMap<>(len * 2);
+            filtersValuesExtra = new LinkedHashMap<>(8);
+
+            for (GenericFilter genericFilter : filters) {
+                final String key = genericFilter.getColumnName();
+
+                switch (genericFilter.getDataType()) {
+                    case NUMERIC:
+                        final List<fr.jmmc.oitools.model.range.Range> ranges = getFilterRanges(filters, key);
+                        if (ranges != null) {
+                            filtersRangesExtra.put(key, ranges);
+                        }
+                        break;
+                    case STRING:
+                        final List<String> values = getFilterValues(filters, key);
+                        if (values != null) {
+                            filtersValuesExtra.put(key, values);
+                        }
+                        break;
+                    default:
+                }
             }
+            logger.debug("filtersRangesExtra : {}", filtersRangesExtra);
+            logger.debug("filtersValuesExtra : {}", filtersValuesExtra);
+        } else {
+            wavelengthRanges = null;
+            mjdRanges = null;
+            filtersRangesExtra = null;
+            filtersValuesExtra = null;
         }
-        logger.debug("filtersValuesExtra : {}", filtersValuesExtra);
 
         SelectorResult result = null;
         final Selector selector = new Selector();
@@ -1230,12 +1237,12 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             if (mjdRanges != null) {
                 selector.addFilter(Selector.FILTER_MJD, mjdRanges);
             }
-            if (!filtersRangesExtra.isEmpty()) {
+            if ((filtersRangesExtra != null) && !filtersRangesExtra.isEmpty()) {
                 for (Map.Entry<String, List<fr.jmmc.oitools.model.range.Range>> e : filtersRangesExtra.entrySet()) {
                     selector.addFilter(e.getKey(), e.getValue());
                 }
             }
-            if (!filtersValuesExtra.isEmpty()) {
+            if ((filtersValuesExtra != null) && !filtersValuesExtra.isEmpty()) {
                 for (Map.Entry<String, List<String>> e : filtersValuesExtra.entrySet()) {
                     selector.addFilter(e.getKey(), e.getValue());
                 }
@@ -1247,7 +1254,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
         return result;
     }
 
-    private static List<fr.jmmc.oitools.model.range.Range> getFilterRanges(List<GenericFilter> filters, final String key) {
+    private static List<fr.jmmc.oitools.model.range.Range> getFilterRanges(final List<GenericFilter> filters, final String key) {
         List<fr.jmmc.oitools.model.range.Range> allRanges = null;
 
         for (GenericFilter genericFilter : filters) {
@@ -1269,7 +1276,7 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
     }
 
     /* merging values of all filter of the column name `key` */
-    private static List<String> getFilterValues(List<GenericFilter> filters, final String key) {
+    private static List<String> getFilterValues(final List<GenericFilter> filters, final String key) {
         List<String> allValues = null;
 
         for (GenericFilter genericFilter : filters) {

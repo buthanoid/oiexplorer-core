@@ -8,7 +8,6 @@ import fr.jmmc.jmcs.gui.component.GenericListModel;
 import fr.jmmc.oiexplorer.core.function.Converter;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
-import fr.jmmc.oiexplorer.core.model.oi.DataType;
 import fr.jmmc.oiexplorer.core.model.oi.GenericFilter;
 import fr.jmmc.oiexplorer.core.model.plot.Range;
 import static fr.jmmc.oitools.OIFitsConstants.COLUMN_EFF_WAVE;
@@ -50,16 +49,16 @@ public final class GenericFilterEditor extends javax.swing.JPanel
 
     // members:
     /* related GenericFilter */
-    private GenericFilter genericFilter;
+    private transient GenericFilter genericFilter;
     /* associated Range editors */
-    private final List<RangeEditor> rangeEditors;
+    private final transient List<RangeEditor> rangeEditors;
 
     /* for DataType.STRING list of checkboxes for accepted values */
-    private final List<String> checkBoxListValuesModel;
+    private final transient List<String> checkBoxListValuesModel;
 
     /** converter associated to the column name of the generic filter. It allows us to make the range editor use a
      * different unit more user friendly. */
-    private Converter converter;
+    private transient Converter converter;
 
     /**
      * updatingGUI true disables the handlers and the listeners on the widgets. useful when updating the widgets
@@ -105,56 +104,58 @@ public final class GenericFilterEditor extends javax.swing.JPanel
             jCheckBoxEnabled.setSelected(genericFilter.isEnabled());
             jCheckBoxEnabled.setText(columnName);
 
-            if (genericFilter.getDataType() == DataType.NUMERIC) {
-                converter = CONVERTER_FACTORY.getDefault(CONVERTER_FACTORY.getDefaultByColumn(columnName));
+            switch (genericFilter.getDataType()) {
+                case NUMERIC:
+                    converter = CONVERTER_FACTORY.getDefault(CONVERTER_FACTORY.getDefaultByColumn(columnName));
 
-                for (Range range : genericFilter.getAcceptedRanges()) {
-                    final RangeEditor rangeEditor = new RangeEditor();
-                    rangeEditor.setAlias(columnName);
-                    rangeEditor.addChangeListener(this);
+                    for (Range range : genericFilter.getAcceptedRanges()) {
+                        final RangeEditor rangeEditor = new RangeEditor();
+                        rangeEditor.setAlias(columnName);
+                        rangeEditor.addChangeListener(this);
 
-                    // we create a new Range so it can have a different unit:
-                    Range convertedRange = (Range) range.clone();
-                    if (converter != null) {
-                        try {
-                            convertedRange.setMin(converter.evaluate(convertedRange.getMin()));
-                            convertedRange.setMax(converter.evaluate(convertedRange.getMax()));
-                        } catch (IllegalArgumentException iae) {
-                            logger.error("conversion failed: ", iae);
+                        // we create a new Range so it can have a different unit:
+                        final Range convertedRange = (Range) range.clone();
+                        if (converter != null) {
+                            try {
+                                convertedRange.setMin(converter.evaluate(convertedRange.getMin()));
+                                convertedRange.setMax(converter.evaluate(convertedRange.getMax()));
+                            } catch (IllegalArgumentException iae) {
+                                logger.error("conversion failed: ", iae);
+                            }
                         }
+                        rangeEditor.setRange(convertedRange);
+                        rangeEditor.updateRange(convertedRange, true);
+
+                        rangeEditor.updateRangeList(predefinedRangesByColumnName.get(columnName));
+
+                        rangeEditor.setEnabled(genericFilter.isEnabled());
+                        // add editor:
+                        rangeEditors.add(rangeEditor);
+                        jPanelRangesOrValues.add(rangeEditor);
                     }
-                    rangeEditor.setRange(convertedRange);
-                    rangeEditor.updateRange(convertedRange, true);
-
-                    rangeEditor.updateRangeList(predefinedRangesByColumnName.get(columnName));
-
-                    rangeEditor.setEnabled(genericFilter.isEnabled());
-                    // add editor:
-                    rangeEditors.add(rangeEditor);
-                    jPanelRangesOrValues.add(rangeEditor);
-                }
-            } else if (genericFilter.getDataType() == DataType.STRING) {
-
-                // generating check box list possible values
-                final List<String> initValues = OCM.getOIFitsCollection().getDistinctValues(columnName);
-                if (initValues != null) {
-                    checkBoxListValuesModel.addAll(initValues);
-                }
-                jPanelRangesOrValues.add(jScrollPaneValues);
-
-                // selecting values in the check box list
-                for (String value : genericFilter.getAcceptedValues()) {
-                    if (!checkBoxListValuesModel.contains(value)) {
-                        // in case the generic filter has a selected value that does not
-                        // exist in the checkboxlist alternatives, we add it
-                        checkBoxListValuesModel.add(value);
+                    break;
+                case STRING:
+                    // generating check box list possible values
+                    final List<String> initValues = OCM.getOIFitsCollection().getDistinctValues(columnName);
+                    if (initValues != null) {
+                        checkBoxListValuesModel.addAll(initValues);
                     }
-                    checkBoxListValues.addCheckBoxListSelectedValue(value, false);
-                }
+                    jPanelRangesOrValues.add(jScrollPaneValues);
+
+                    // selecting values in the check box list
+                    for (String value : genericFilter.getAcceptedValues()) {
+                        if (!checkBoxListValuesModel.contains(value)) {
+                            // in case the generic filter has a selected value that does not
+                            // exist in the checkboxlist alternatives, we add it
+                            checkBoxListValuesModel.add(value);
+                        }
+                        checkBoxListValues.addCheckBoxListSelectedValue(value, false);
+                    }
+                    break;
+                default:
             }
-
-            revalidate();
         } finally {
+            revalidate();
             updatingGUI = false;
         }
     }
@@ -165,78 +166,76 @@ public final class GenericFilterEditor extends javax.swing.JPanel
 
     private void handlerEnabled() {
         if (!updatingGUI && genericFilter != null) {
-
             final boolean enabled = jCheckBoxEnabled.isSelected();
-
             genericFilter.setEnabled(enabled);
 
             for (RangeEditor rangeEditor : rangeEditors) {
                 rangeEditor.setEnabled(enabled);
             }
-
             fireStateChanged();
         }
     }
 
     private void handlerReset() {
         if (!updatingGUI && genericFilter != null) {
-
             final String columnName = genericFilter.getColumnName();
 
-            if (genericFilter.getDataType() == DataType.NUMERIC) {
+            switch (genericFilter.getDataType()) {
+                case NUMERIC:
+                    final fr.jmmc.oitools.model.range.Range oitoolsRange
+                                                            = OCM.getOIFitsCollection().getColumnRange(columnName);
 
-                final fr.jmmc.oitools.model.range.Range oitoolsRange
-                        = OCM.getOIFitsCollection().getColumnRange(columnName);
-
-                double newMin = Double.NaN, newMax = Double.NaN;
-                if (oitoolsRange.isFinite()) {
-                    newMin = oitoolsRange.getMin();
-                    newMax = oitoolsRange.getMax();
-                }
-
-                // updating generic filter
-                for (Range range : genericFilter.getAcceptedRanges()) {
-                    range.setMin(newMin);
-                    range.setMax(newMax);
-                }
-
-                // updating range editors with converted new min and max
-
-                double convertedNewMin = Double.NaN, convertedNewMax = Double.NaN;
-                if (converter == null) {
-                    convertedNewMin = newMin;
-                    convertedNewMax = newMax;
-                } else {
-                    try {
-                        convertedNewMin = converter.evaluate(newMin);
-                        convertedNewMax = converter.evaluate(newMax);
-                    } catch (IllegalArgumentException iae) {
-                        logger.error("conversion failed: ", iae);
+                    double newMin = Double.NaN,
+                     newMax = Double.NaN;
+                    if (oitoolsRange.isFinite()) {
+                        newMin = oitoolsRange.getMin();
+                        newMax = oitoolsRange.getMax();
                     }
-                }
 
-                for (RangeEditor rangeEditor : rangeEditors) {
-                    rangeEditor.setRangeFieldValues(convertedNewMin, convertedNewMax);
-                }
-            } else if (genericFilter.getDataType() == DataType.STRING) {
+                    // updating generic filter
+                    for (Range range : genericFilter.getAcceptedRanges()) {
+                        range.setMin(newMin);
+                        range.setMax(newMax);
+                    }
 
-                // update gui widget
-                checkBoxListValuesModel.clear();
-                final List<String> initValues = OCM.getOIFitsCollection().getDistinctValues(columnName);
-                if (initValues != null) {
-                    checkBoxListValuesModel.addAll(initValues);
-                }
-                checkBoxListValues.selectAll();
+                    // updating range editors with converted new min and max
+                    double convertedNewMin = Double.NaN,
+                     convertedNewMax = Double.NaN;
+                    if (converter == null) {
+                        convertedNewMin = newMin;
+                        convertedNewMax = newMax;
+                    } else {
+                        try {
+                            convertedNewMin = converter.evaluate(newMin);
+                            convertedNewMax = converter.evaluate(newMax);
+                        } catch (IllegalArgumentException iae) {
+                            logger.error("conversion failed: ", iae);
+                        }
+                    }
 
-                // update generic filter
-                genericFilter.getAcceptedValues().clear();
-                if (initValues != null) {
-                    genericFilter.getAcceptedValues().addAll(initValues);
-                }
+                    for (RangeEditor rangeEditor : rangeEditors) {
+                        rangeEditor.setRangeFieldValues(convertedNewMin, convertedNewMax);
+                    }
+                    break;
+                case STRING:
+                    // update gui widget
+                    checkBoxListValuesModel.clear();
+                    final List<String> initValues = OCM.getOIFitsCollection().getDistinctValues(columnName);
+                    if (initValues != null) {
+                        checkBoxListValuesModel.addAll(initValues);
+                    }
+                    checkBoxListValues.selectAll();
+
+                    // update generic filter
+                    genericFilter.getAcceptedValues().clear();
+                    if (initValues != null) {
+                        genericFilter.getAcceptedValues().addAll(initValues);
+                    }
+                    break;
+                default:
             }
 
             repaint();
-
             fireStateChanged();
         }
     }
