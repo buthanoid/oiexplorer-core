@@ -25,7 +25,6 @@ import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;
 import fr.jmmc.oitools.model.OIFitsLoader;
 import fr.jmmc.oitools.model.OITable;
-import fr.jmmc.oitools.model.OIWavelength;
 import fr.jmmc.oitools.processing.SelectorResult;
 import fr.nom.tam.fits.FitsException;
 import java.awt.Dimension;
@@ -57,9 +56,9 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
     /** table viewer panel */
     private final FitsTableViewerPanel tableViewer;
     /** oifits (weak) file reference */
-    private WeakReference<OIFitsFile> oiFitsFileRef = null;
+    private transient WeakReference<OIFitsFile> oiFitsFileRef = null;
     /** selectorResult (weak) reference */
-    private WeakReference<SelectorResult> selectorResultRef = null;
+    private transient WeakReference<SelectorResult> selectorResultRef = null;
 
     /** Creates new form FitsBrowserPanel */
     public OIFitsTableBrowser() {
@@ -288,19 +287,18 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
             }
             logger.debug("hdu: {}", hdu);
 
+            final SelectorResult selectorResult;
             if (hdu != null && hdu instanceof OIData) {
-                final SelectorResult selectorResult = (selectorResultRef == null) ? null : selectorResultRef.get();
-                if (selectorResult != null) {
-                    final OIWavelength oiWavelength = ((OIData) hdu).getOiWavelength();
-                    wavelengthMask = selectorResult.getWavelengthMaskNotFull(oiWavelength);
-                }
+                selectorResult = (selectorResultRef == null) ? null : selectorResultRef.get();
+            } else {
+                selectorResult = null;
             }
 
             final boolean includeDerivedColumns = true;
             final boolean expandRows = isTableRowsExpanded(hdu);
 
             this.tableViewer.setViewerOptions(includeDerivedColumns, expandRows);
-            this.tableViewer.setHdu(hdu, wavelengthMask);
+            this.tableViewer.setHdu(hdu, selectorResult);
         }
     }
 

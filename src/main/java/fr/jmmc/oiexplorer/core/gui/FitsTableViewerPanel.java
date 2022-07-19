@@ -14,6 +14,8 @@ import fr.jmmc.oiexplorer.core.gui.model.KeywordsTableModel;
 import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.fits.FitsTable;
 import fr.jmmc.oitools.model.IndexMask;
+import fr.jmmc.oitools.model.OIData;
+import fr.jmmc.oitools.processing.SelectorResult;
 import java.awt.Color;
 import java.awt.Component;
 import javax.swing.JLabel;
@@ -54,10 +56,14 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     private final ColumnsTableModel columnsModel;
     private final BasicTableSorter columnsTableSorter;
 
-    // optional Mask. If present, will color the rows of masked wavelengths.
+    // optional wavelength mask related to this OIData table:
+    // If present, renderer will set the bg color of masked wavelengths.
     // It is set to null when: there is no wavelength for this table, or every wavelength is masked.
-    private transient IndexMask wavelengthMask;
+    private transient IndexMask maskWavelength = null;
+    // optional masks for this OIData table:
+    private transient IndexMask maskOIData1D = null;
 
+    /* last selected cell */
     private int lastSelRow = -1;
     private int lastSelCol = -1;
 
@@ -131,13 +137,24 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     }
 
     // Display Table
-    public void setHdu(final FitsHDU hdu, final IndexMask wavelengthMask) {
+    public void setHdu(final FitsHDU hdu, final SelectorResult selectorResult) {
         // reset selection:
         lastSelRow = -1;
         lastSelCol = -1;
 
-        this.wavelengthMask = wavelengthMask; // optionnal wavelength mask
-
+        if ((selectorResult == null) || !(hdu instanceof OIData)) {
+            maskWavelength = null;
+            maskOIData1D = null;
+        } else {
+            final OIData oiData = (OIData) hdu;
+            maskWavelength = selectorResult.getWavelengthMask(oiData.getOiWavelength());
+            maskOIData1D = selectorResult.getDataMask1D(oiData);
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug("maskWavelength: {}", maskWavelength);
+            logger.debug("maskOIData1D:   {}", maskOIData1D);
+        }
+        // update table models:
         keywordsModel.setFitsHdu(hdu);
 
         final FitsTable table = (hdu instanceof FitsTable) ? (FitsTable) hdu : null;
@@ -326,26 +343,43 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
 
             if (isSelected) {
                 bgColor = COLOR_SELECTED;
-            } else if (wavelengthMask != null) {
-                final int rowColIdx = columnsTableSorter.findColumn(COLUMN_ROW_INDEX);
-                final int colColIdx = (column != -1) ? columnsTableSorter.findColumn(COLUMN_COL_INDEX) : -1;
-
-                if (logger.isDebugEnabled()) {
-                    logger.debug("rowColIdx: {}", rowColIdx);
-                    logger.debug("colColIdx: {}", colColIdx);
-                }
-
-                final Integer rowValue = (Integer) columnsTableSorter.getValueAt(row, rowColIdx);
-                final Integer colValue = (colColIdx != -1) ? (Integer) columnsTableSorter.getValueAt(row, colColIdx) : null;
-
-                if (logger.isDebugEnabled()) {
-                    logger.debug("ColumnsModel (row, col): ({}, {})", rowValue, colValue);
-                }
-                // check masks:
-
-                // wavelength mask acts on colIdx:
-                if ((colValue != null) && wavelengthMask.accept(colValue)) {
+            } else if ((maskOIData1D != null) || (maskWavelength != null)) {
+                if (maskOIData1D.isFull() && maskWavelength.isFull()) {
                     bgColor = COLOR_MASKED;
+                } else {
+                    final int rowColIdx = columnsTableSorter.findColumn(COLUMN_ROW_INDEX);
+                    final int colColIdx = (column != -1) ? columnsTableSorter.findColumn(COLUMN_COL_INDEX) : -1;
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("rowColIdx: {}", rowColIdx);
+                        logger.debug("colColIdx: {}", colColIdx);
+                    }
+
+                    final Integer rowValue = (Integer) columnsTableSorter.getValueAt(row, rowColIdx);
+                    final Integer colValue = (colColIdx != -1) ? (Integer) columnsTableSorter.getValueAt(row, colColIdx) : null;
+
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("ColumnsModel (row, col): ({}, {})", rowValue, colValue);
+                    }
+                    // check masks:
+
+                    // check optional data mask 1D:
+                    if ((maskOIData1D != null) && (maskOIData1D.isFull()
+                            || ((rowValue != null) && maskOIData1D.accept(rowValue)))) {
+                        // row is valid:
+                        bgColor = COLOR_MASKED;
+
+                        // check optional wavelength mask:
+                        if ((maskWavelength != null) && !maskWavelength.isFull()
+                                && (colValue != null) && !maskWavelength.accept(colValue)) {
+                            bgColor = COLOR_NORMAL;
+                        }
+                    } else {
+                        // check optional wavelength mask:
+                        if ((maskWavelength != null) && (maskWavelength.isFull()
+                                || ((colValue != null) && maskWavelength.accept(colValue)))) {
+                            bgColor = COLOR_MASKED;
+                        }
+                    }
                 }
             }
             component.setBackground(bgColor);
