@@ -275,11 +275,9 @@ public final class OIFitsTableBrowser extends javax.swing.JPanel implements OIFi
 
             // lazy resolve HDU:
             final OIFitsFile oiFitsFile = getOIFitsFile();
-            final FitsHDU hdu;
-            IndexMask wavelengthMask = null; // null means we mask nothing
-
             logger.debug("oiFitsFile: {}", oiFitsFile);
 
+            final FitsHDU hdu;
             if (oiFitsFile == null) {
                 hdu = null;
             } else {
