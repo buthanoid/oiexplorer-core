@@ -13,7 +13,16 @@ import static fr.jmmc.oiexplorer.core.gui.model.ColumnsTableModel.COLUMN_ROW_IND
 import fr.jmmc.oiexplorer.core.gui.model.KeywordsTableModel;
 import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.fits.FitsTable;
+import fr.jmmc.oitools.model.IndexMask;
+import fr.jmmc.oitools.model.OIData;
+import fr.jmmc.oitools.processing.SelectorResult;
+import java.awt.Color;
+import java.awt.Component;
+import javax.swing.BorderFactory;
 import javax.swing.JLabel;
+import javax.swing.JTable;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -31,14 +40,32 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     /** Class logger */
     private static final Logger logger = LoggerFactory.getLogger(FitsTableViewerPanel.class.getName());
 
-    private static final TableCellRenderer RDR_NUM_INSTANCE = new TableCellNumberRenderer();
+    // colors for table cell rendering. we need to register the default colors.
+    private static final Color COLOR_MASKED = Color.YELLOW;
+    private static final Color COLOR_SELECTED
+                               = (UIManager.getColor("Table.selectionBackground") == null)
+            ? new Color(173, 216, 230)
+            : UIManager.getColor("Table.selectionBackground");
+    private static final Color COLOR_NORMAL
+                               = (UIManager.getColor("Table.background") == null)
+            ? Color.WHITE
+            : UIManager.getColor("Table.background");
 
     /* members */
+    private final transient TableCellRenderer RDR_NUM_MASK_INSTANCE = new TableCellNumberMaskRenderer();
     private final KeywordsTableModel keywordsModel;
     private final BasicTableSorter keywordsTableSorter;
     private final ColumnsTableModel columnsModel;
     private final BasicTableSorter columnsTableSorter;
 
+    // optional wavelength mask related to this OIData table:
+    // If present, renderer will set the bg color of masked wavelengths.
+    // It is set to null when: there is no wavelength for this table, or every wavelength is masked.
+    private transient IndexMask maskWavelength = null;
+    // optional masks for this OIData table:
+    private transient IndexMask maskOIData1D = null;
+
+    /* last selected cell */
     private int lastSelRow = -1;
     private int lastSelCol = -1;
 
@@ -96,10 +123,14 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         SwingUtils.adjustRowHeight(jTableKeywords);
         SwingUtils.adjustRowHeight(jTableColumns);
 
-        jTableKeywords.setDefaultRenderer(Boolean.class, RDR_NUM_INSTANCE);
-        jTableKeywords.setDefaultRenderer(Double.class, RDR_NUM_INSTANCE);
-        jTableColumns.setDefaultRenderer(Float.class, RDR_NUM_INSTANCE);
-        jTableColumns.setDefaultRenderer(Double.class, RDR_NUM_INSTANCE);
+        jTableKeywords.setDefaultRenderer(Boolean.class, RDR_NUM_MASK_INSTANCE);
+        jTableKeywords.setDefaultRenderer(Double.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(Float.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(Double.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(Boolean.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(Integer.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(Short.class, RDR_NUM_MASK_INSTANCE);
+        jTableColumns.setDefaultRenderer(String.class, RDR_NUM_MASK_INSTANCE);
     }
 
     public void setViewerOptions(boolean includeDerivedColumns, boolean expandRows) {
@@ -108,11 +139,24 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     }
 
     // Display Table
-    public void setHdu(final FitsHDU hdu) {
+    public void setHdu(final FitsHDU hdu, final SelectorResult selectorResult) {
         // reset selection:
         lastSelRow = -1;
         lastSelCol = -1;
 
+        if ((selectorResult == null) || !(hdu instanceof OIData)) {
+            maskWavelength = null;
+            maskOIData1D = null;
+        } else {
+            final OIData oiData = (OIData) hdu;
+            maskWavelength = selectorResult.getWavelengthMask(oiData.getOiWavelength());
+            maskOIData1D = selectorResult.getDataMask1D(oiData);
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug("maskWavelength: {}", maskWavelength);
+            logger.debug("maskOIData1D:   {}", maskOIData1D);
+        }
+        // update table models:
         keywordsModel.setFitsHdu(hdu);
 
         final FitsTable table = (hdu instanceof FitsTable) ? (FitsTable) hdu : null;
@@ -253,19 +297,19 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     // End of variables declaration//GEN-END:variables
 
     /**
-     * Used to format numbers in cells.
+     * Used to format numbers in cells and highlight masked cells.
      *
      * @warning: No trace log implemented as this is very often called (performance).
      */
-    private final static class TableCellNumberRenderer extends DefaultTableCellRenderer {
+    private final class TableCellNumberMaskRenderer extends DefaultTableCellRenderer {
 
         /** default serial UID for Serializable interface */
         private static final long serialVersionUID = 1;
 
-        /**
-         * Constructor
-         */
-        private TableCellNumberRenderer() {
+        /** orange border for selected cell */
+        private final Border _orangeBorder = BorderFactory.createLineBorder(Color.ORANGE, 2);
+
+        private TableCellNumberMaskRenderer() {
             super();
         }
 
@@ -292,6 +336,65 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
             }
             setText(text);
         }
-    }
 
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            // always use right alignment:
+            setHorizontalAlignment(JLabel.RIGHT);
+
+            Color bgColor = COLOR_NORMAL;
+
+            if (isSelected) {
+                bgColor = COLOR_SELECTED;
+            } else if ((maskOIData1D != null) || (maskWavelength != null)) {
+                if (maskOIData1D.isFull() && maskWavelength.isFull()) {
+                    bgColor = COLOR_MASKED;
+                } else {
+                    final int rowColIdx = columnsTableSorter.findColumn(COLUMN_ROW_INDEX);
+                    final int colColIdx = (column != -1) ? columnsTableSorter.findColumn(COLUMN_COL_INDEX) : -1;
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("rowColIdx: {}", rowColIdx);
+                        logger.debug("colColIdx: {}", colColIdx);
+                    }
+
+                    final Integer rowValue = (Integer) columnsTableSorter.getValueAt(row, rowColIdx);
+                    final Integer colValue = (colColIdx != -1) ? (Integer) columnsTableSorter.getValueAt(row, colColIdx) : null;
+
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("ColumnsModel (row, col): ({}, {})", rowValue, colValue);
+                    }
+                    // check masks:
+
+                    // check optional data mask 1D:
+                    if ((maskOIData1D != null) && (maskOIData1D.isFull()
+                            || ((rowValue != null) && maskOIData1D.accept(rowValue)))) {
+                        // row is valid:
+                        bgColor = COLOR_MASKED;
+
+                        // check optional wavelength mask:
+                        if ((maskWavelength != null) && !maskWavelength.isFull()
+                                && (colValue != null) && !maskWavelength.accept(colValue)) {
+                            bgColor = COLOR_NORMAL;
+                        }
+                    } else {
+                        // check optional wavelength mask:
+                        if ((maskWavelength != null) && (maskWavelength.isFull()
+                                || ((colValue != null) && maskWavelength.accept(colValue)))) {
+                            bgColor = COLOR_MASKED;
+                        }
+                    }
+                }
+            }
+
+            if (bgColor == COLOR_MASKED) {
+                setBorder(_orangeBorder);
+            }
+            setBackground(bgColor);
+            return this;
+        }
+    }
 }

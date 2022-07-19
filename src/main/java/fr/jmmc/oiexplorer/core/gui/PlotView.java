@@ -11,6 +11,7 @@ import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventListener;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManagerEventType;
 import fr.jmmc.oiexplorer.core.model.oi.SubsetDefinition;
 import fr.jmmc.oitools.model.OIFitsFile;
+import fr.jmmc.oitools.processing.SelectorResult;
 import java.lang.ref.WeakReference;
 import javax.swing.JPanel;
 import org.slf4j.Logger;
@@ -121,7 +122,12 @@ public class PlotView extends javax.swing.JPanel implements OIFitsCollectionMana
             final OIFitsFile oiFitsFile = (subsetDefinition != null) ? subsetDefinition.getOIFitsSubset() : null;
 
             if (oiFitsBrowserPanel != null) {
-                this.oiFitsBrowserPanel.setOiFitsFileRef(new WeakReference<OIFitsFile>(oiFitsFile));
+
+                final SelectorResult selectorResult
+                        = (subsetDefinition == null) ? null : subsetDefinition.getSelectorResult();
+
+                this.oiFitsBrowserPanel.setOiFitsFileRef(
+                        new WeakReference<OIFitsFile>(oiFitsFile), new WeakReference<SelectorResult>(selectorResult));
             }
             if (oiFitsHtmlPanel != null) {
                 this.oiFitsHtmlPanel.updateOIFits(oiFitsFile);

@@ -35,7 +35,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
 
     /* members */
     /** FITS table (weak) reference */
-    private WeakReference<FitsTable> tableRef = null;
+    private transient WeakReference<FitsTable> tableRef = null;
     /** flag to include derived columns */
     private boolean includeDerivedColumns = true;
     /** flag to expand or not arrays (2D only) as columns */
@@ -43,7 +43,7 @@ public final class ColumnsTableModel extends AbstractTableModel {
     /** flag to expand or not arrays (2D only) as columns  (deprecated ?) */
     private boolean expandArrays = false;
     /** column mapping */
-    private final ArrayList<ColumnMapping> columnMap = new ArrayList<ColumnMapping>();
+    private final ArrayList<ColumnMapping> columnMap = new ArrayList<ColumnMapping>(16);
     /** column dimensions */
     private final int[] columnDims2d = new int[2]; // 2d max
     /** number of (virtual) rows */
