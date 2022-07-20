@@ -16,7 +16,6 @@ import fr.jmmc.oiexplorer.core.model.plot.AxisRangeMode;
 import fr.jmmc.oiexplorer.core.model.plot.ColorMapping;
 import fr.jmmc.oiexplorer.core.model.plot.PlotDefinition;
 import fr.jmmc.oiexplorer.core.model.util.ColorMappingListCellRenderer;
-import fr.jmmc.oitools.model.DataModel;
 import fr.jmmc.oitools.processing.SelectorResult;
 import java.awt.BorderLayout;
 import java.awt.Font;
@@ -361,12 +360,7 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
      * @return a Set of Strings with every distinct column names
      */
     private Set<String> getDistinctColumns(final SelectorResult selectorResult) {
-        final DataModel dataModel = (selectorResult == null) ? DataModel.getInstance() : selectorResult.getDataModel();
-        logger.debug("datamodel : {}", dataModel);
-
-        // refresh data model if needed:
-        dataModel.refresh(); // TODO: should be handled by en event !
-        return dataModel.getNumericalColumnNames();
+        return SelectorResult.getDataModel(selectorResult).getNumericalColumnNames();
     }
 
     /**
@@ -582,8 +576,9 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         extendedPanel.add(xLabel, gridBagConstraints);
 
-        addYAxisButton.setText("+");
-        addYAxisButton.setMargin(new java.awt.Insets(0, 1, 0, 1));
+        addYAxisButton.setIcon(fr.jmmc.jmcs.gui.util.ResourceImage.LIST_ADD.icon());
+        addYAxisButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        addYAxisButton.setOpaque(false);
         addYAxisButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 addYAxisButtonActionPerformed(evt);
@@ -592,13 +587,12 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_START;
-        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 0);
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         extendedPanel.add(addYAxisButton, gridBagConstraints);
 
-        delYAxisButton.setText("-");
-        delYAxisButton.setMargin(new java.awt.Insets(0, 4, 0, 4));
+        delYAxisButton.setIcon(fr.jmmc.jmcs.gui.util.ResourceImage.LIST_DEL.icon());
+        delYAxisButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        delYAxisButton.setOpaque(false);
         delYAxisButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 delYAxisButtonActionPerformed(evt);
@@ -607,9 +601,8 @@ public final class PlotDefinitionEditor extends javax.swing.JPanel implements OI
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.PAGE_END;
-        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 0);
+        gridBagConstraints.insets = new java.awt.Insets(0, 2, 0, 2);
         extendedPanel.add(delYAxisButton, gridBagConstraints);
 
         xAxisPanel.setLayout(new java.awt.BorderLayout());
