@@ -59,6 +59,8 @@ public final class GenericFilterEditor extends javax.swing.JPanel
         predefinedRangesByColumnName.put(COLUMN_EFF_WAVE, RangeEditor.EFF_WAVE_PREDEFINED_RANGES);
     }
 
+    private static final String BUTTON_PROP_INDEX = "rangeIndex";
+
     // members:
     /* related GenericFilter */
     private transient GenericFilter genericFilter;
@@ -183,25 +185,25 @@ public final class GenericFilterEditor extends javax.swing.JPanel
         rangeEditors.add(rangeEditor);
 
         // adding to GUI with add/delete button
-
         final JPanel panel = new JPanel(new GridBagLayout());
-        final GridBagConstraints layoutConsts = new GridBagConstraints();
-        layoutConsts.gridx = 0;
-        layoutConsts.fill = GridBagConstraints.HORIZONTAL;
-        layoutConsts.weightx = 0.9;
-        panel.add(rangeEditor, layoutConsts);
+        final GridBagConstraints gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 0.9;
+        panel.add(rangeEditor, gridBagConstraints);
 
         final JButton button = new JButton();
         button.setIcon(rangeIndex == 0 ? ResourceImage.LIST_ADD.icon() : ResourceImage.LIST_DEL.icon());
-        button.setMargin(new Insets(1, 1, 2, 1));
+        button.setMargin(new Insets(0, 0, 0, 0));
         button.setActionCommand(rangeIndex == 0 ? "add" : "del");
-        button.putClientProperty("rangeIndex", rangeIndex);
+        button.putClientProperty(BUTTON_PROP_INDEX, rangeIndex);
         button.addActionListener(this);
-        layoutConsts.gridx = 1;
-        layoutConsts.fill = GridBagConstraints.NONE;
-        layoutConsts.weightx = 0;
-        layoutConsts.insets = new Insets(2, 2, 2, 2);
-        panel.add(button, layoutConsts);
+
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.fill = GridBagConstraints.NONE;
+        gridBagConstraints.weightx = 0;
+        gridBagConstraints.insets = new Insets(2, 0, 2, 0);
+        panel.add(button, gridBagConstraints);
         // method `removeRange` relies on the fact that `button` is the component with index 1 in `panel`
 
         jPanelRanges.add(panel);
@@ -259,15 +261,12 @@ public final class GenericFilterEditor extends javax.swing.JPanel
         genericFilter.getAcceptedRanges().remove(rangeIndex);
 
         // updating index in all other buttons
-        try {
-            Component[] components = jPanelRanges.getComponents();
-            for (int i = rangeIndex; i < components.length; i++) {
-                final JPanel panel = (JPanel) components[i];
-                final JButton button = (JButton) panel.getComponent(1);
-                button.putClientProperty("rangeIndex", i); // update index
-            }
-        } catch (ClassCastException e) {
-            logger.error("Could not update generic filters, range editors, del buttons, indexes.");
+        final Component[] components = jPanelRanges.getComponents();
+
+        for (int i = rangeIndex; i < components.length; i++) {
+            final JPanel panel = (JPanel) components[i];
+            final JButton button = (JButton) panel.getComponent(1);
+            button.putClientProperty(BUTTON_PROP_INDEX, i); // update index
         }
     }
 
@@ -278,7 +277,7 @@ public final class GenericFilterEditor extends javax.swing.JPanel
         double[] minmax = new double[2];
 
         final fr.jmmc.oitools.model.range.Range oitoolsRange
-                = OCM.getOIFitsCollection().getColumnRange(genericFilter.getColumnName());
+                                                = OCM.getOIFitsCollection().getColumnRange(genericFilter.getColumnName());
 
         minmax[0] = Double.isFinite(oitoolsRange.getMin()) ? oitoolsRange.getMin() : Double.NaN;
         minmax[1] = Double.isFinite(oitoolsRange.getMax()) ? oitoolsRange.getMax() : Double.NaN;
@@ -403,7 +402,7 @@ public final class GenericFilterEditor extends javax.swing.JPanel
                     final Range modelRangeToChange = genericFilter.getAcceptedRanges().get(index);
                     modelRangeToChange.copy(guiRangeChanged);
                     final double[] convertedMinMax
-                            = convertRangeForModel(guiRangeChanged.getMin(), guiRangeChanged.getMax());
+                                   = convertRangeForModel(guiRangeChanged.getMin(), guiRangeChanged.getMax());
                     modelRangeToChange.setMin(convertedMinMax[0]);
                     modelRangeToChange.setMax(convertedMinMax[1]);
 
@@ -441,18 +440,17 @@ public final class GenericFilterEditor extends javax.swing.JPanel
             if (event.getSource() instanceof JButton) {
                 final JButton button = (JButton) event.getSource();
                 final String cmd = button.getActionCommand();
-                switch (cmd == null ? "" : cmd) {
+                switch ((cmd == null) ? "" : cmd) {
                     case "add":
                         addNewRange();
                         fireStateChanged();
                         break;
                     case "del": {
-                        try {
-                            final int rangeIndex = (Integer) button.getClientProperty("rangeIndex");
+                        final Object idx = button.getClientProperty(BUTTON_PROP_INDEX);
+                        if (idx instanceof Integer) {
+                            final int rangeIndex = (Integer) idx;
                             removeRange(rangeIndex);
                             fireStateChanged();
-                        } catch (ClassCastException | NullPointerException e) {
-                            logger.error("Could not find the index of the range to remove.");
                         }
                     }
                     break;
@@ -526,6 +524,7 @@ public final class GenericFilterEditor extends javax.swing.JPanel
         checkBoxListValues.setVisibleRowCount(4);
         jScrollPaneValues.setViewportView(checkBoxListValues);
 
+        setBorder(javax.swing.BorderFactory.createEtchedBorder());
         setLayout(new java.awt.GridBagLayout());
 
         jCheckBoxEnabled.setSelected(true);
@@ -549,14 +548,15 @@ public final class GenericFilterEditor extends javax.swing.JPanel
         gridBagConstraints.weightx = 0.8;
         add(jPanelRangesOrValues, gridBagConstraints);
 
-        jButtonReset.setText("reset");
+        jButtonReset.setIcon(fr.jmmc.jmcs.gui.util.ResourceImage.REFRESH_ICON.icon());
+        jButtonReset.setToolTipText("Reset ranges to default column range");
+        jButtonReset.setMargin(new java.awt.Insets(0, 0, 0, 0));
         jButtonReset.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonResetActionPerformed(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         add(jButtonReset, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
