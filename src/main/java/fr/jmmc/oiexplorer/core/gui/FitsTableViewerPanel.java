@@ -64,6 +64,7 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
     private transient IndexMask maskWavelength = null;
     // optional masks for this OIData table:
     private transient IndexMask maskOIData1D = null;
+    private transient IndexMask maskOIData2D = null;
 
     /* last selected cell */
     private int lastSelRow = -1;
@@ -147,14 +148,17 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         if ((selectorResult == null) || !(hdu instanceof OIData)) {
             maskWavelength = null;
             maskOIData1D = null;
+            maskOIData2D = null;
         } else {
             final OIData oiData = (OIData) hdu;
             maskWavelength = selectorResult.getWavelengthMask(oiData.getOiWavelength());
             maskOIData1D = selectorResult.getDataMask1D(oiData);
+            maskOIData2D = selectorResult.getDataMask2D(oiData);
         }
         if (logger.isDebugEnabled()) {
             logger.debug("maskWavelength: {}", maskWavelength);
             logger.debug("maskOIData1D:   {}", maskOIData1D);
+            logger.debug("maskOIData2D:   {}", maskOIData2D);
         }
         // update table models:
         keywordsModel.setFitsHdu(hdu);
@@ -307,7 +311,7 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
         private static final long serialVersionUID = 1;
 
         /** orange border for selected cell */
-        private final Border _orangeBorder = BorderFactory.createLineBorder(Color.ORANGE, 2);
+        private transient final Border _orangeBorder = BorderFactory.createLineBorder(Color.ORANGE, 2);
 
         private TableCellNumberMaskRenderer() {
             super();
@@ -348,10 +352,8 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
 
             Color bgColor = COLOR_NORMAL;
 
-            if (isSelected) {
-                bgColor = COLOR_SELECTED;
-            } else if ((maskOIData1D != null) || (maskWavelength != null)) {
-                if (maskOIData1D.isFull() && maskWavelength.isFull()) {
+            if ((maskOIData1D != null) || (maskOIData2D != null) || (maskWavelength != null)) {
+                if (IndexMask.isFull(maskOIData1D) && IndexMask.isFull(maskOIData2D) && IndexMask.isFull(maskWavelength)) {
                     bgColor = COLOR_MASKED;
                 } else {
                     final int rowColIdx = columnsTableSorter.findColumn(COLUMN_ROW_INDEX);
@@ -367,31 +369,54 @@ public final class FitsTableViewerPanel extends javax.swing.JPanel {
                     if (logger.isDebugEnabled()) {
                         logger.debug("ColumnsModel (row, col): ({}, {})", rowValue, colValue);
                     }
+
+                    final int idxNone = (maskOIData2D != null) ? maskOIData2D.getIndexNone() : -1;
+                    final int idxFull = (maskOIData2D != null) ? maskOIData2D.getIndexFull() : -1;
+
                     // check masks:
+                    boolean masked = true;
 
                     // check optional data mask 1D:
-                    if ((maskOIData1D != null) && (maskOIData1D.isFull()
-                            || ((rowValue != null) && maskOIData1D.accept(rowValue)))) {
-                        // row is valid:
-                        bgColor = COLOR_MASKED;
+                    if (masked && (maskOIData1D != null)) {
+                        if (IndexMask.isNotFull(maskOIData1D) && (rowValue != null) && !maskOIData1D.accept(rowValue)) {
+                            masked = false;
+                        }
+                    }
+                    // check mask 2D for row None flag:
+                    if (masked && (maskOIData2D != null)) {
+                        if (IndexMask.isNotFull(maskOIData2D) && (rowValue != null) && maskOIData2D.accept(rowValue, idxNone)) {
+                            // row flagged as None:
+                            masked = false;
+                        }
+                    }
 
-                        // check optional wavelength mask:
-                        if ((maskWavelength != null) && !maskWavelength.isFull()
-                                && (colValue != null) && !maskWavelength.accept(colValue)) {
-                            bgColor = COLOR_NORMAL;
+                    // check optional wavelength mask:
+                    if (masked && (maskWavelength != null)) {
+                        if (IndexMask.isNotFull(maskWavelength) && (colValue != null) && !maskWavelength.accept(colValue)) {
+                            masked = false;
                         }
-                    } else {
-                        // check optional wavelength mask:
-                        if ((maskWavelength != null) && (maskWavelength.isFull()
-                                || ((colValue != null) && maskWavelength.accept(colValue)))) {
-                            bgColor = COLOR_MASKED;
+                    }
+
+                    // check optional data mask 2D (and its Full flag):
+                    if (masked && (maskOIData2D != null)) {
+                        if (IndexMask.isNotFull(maskOIData2D)
+                                && (rowValue != null) && !maskOIData2D.accept(rowValue, idxFull)
+                                && (colValue != null) && !maskOIData2D.accept(rowValue, colValue)) {
+                            masked = false;
                         }
+                    }
+
+                    if (masked) {
+                        bgColor = COLOR_MASKED;
                     }
                 }
             }
 
             if (bgColor == COLOR_MASKED) {
                 setBorder(_orangeBorder);
+            }
+            if (isSelected) {
+                bgColor = COLOR_SELECTED;
             }
             setBackground(bgColor);
             return this;
