@@ -686,6 +686,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     public void updateExprColumnInOIFitsCollection(final String name, final String expression) {
         modifyExprColumnInOIFitsCollection(name, expression, false);
+
+        // fire Collection changed to force updating subset's result data model:
+        fireOIFitsCollectionChanged();
     }
 
     /**
@@ -694,6 +697,9 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
      */
     public void removeExprColumnInOIFitsCollection(final String name) {
         modifyExprColumnInOIFitsCollection(name, null, true);
+
+        // fire Collection changed to force updating subset's result data model:
+        fireOIFitsCollectionChanged();
     }
 
     /**
@@ -881,7 +887,6 @@ public final class OIFitsCollectionManager implements OIFitsCollectionManagerEve
             logger.info("modifyExprColumnInOIFitsCollection[{}] computation time = {} ms.",
                     expression, 1e-6d * (System.nanoTime() - startTime));
         }
-
         logger.debug("modifyExprColumnInOIFitsCollection: done.");
     }
 

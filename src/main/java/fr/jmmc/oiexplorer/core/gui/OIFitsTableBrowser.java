@@ -19,7 +19,6 @@ import fr.jmmc.oitools.fits.FitsHDU;
 import fr.jmmc.oitools.image.FitsImageHDU;
 import fr.jmmc.oitools.image.ImageOiParam;
 import fr.jmmc.oitools.model.DataModel;
-import fr.jmmc.oitools.model.IndexMask;
 import fr.jmmc.oitools.model.OIArray;
 import fr.jmmc.oitools.model.OIData;
 import fr.jmmc.oitools.model.OIFitsFile;

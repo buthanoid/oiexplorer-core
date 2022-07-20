@@ -230,6 +230,10 @@ public class SubsetDefinition
         for (SubsetFilter filter : getFilters()) {
             SubsetFilter.updateOIDataFileReferences(filter.getTables(), mapIdOiDataFiles);
         }
+        
+        if ((this.selectorResult != null) && !this.selectorResult.isEmpty()) {
+            this.selectorResult.getDataModel().refresh();
+        }
     }
 
 //--simple--preserve

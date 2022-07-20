@@ -119,6 +119,8 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
     private static final Logger logger = LoggerFactory.getLogger(PlotChartPanel.class.getName());
     /** Debug setting */
     private static final boolean DEBUG = false;
+    /** Debug setting to log plot rendering time */
+    private static final boolean PLOT_RDR_TIME = true;
     /** Enable Error bars */
     private static final boolean PLOT_ERR = true;
     /** use plot (true) or overlay (false) crosshair support (faster is overlay) */
@@ -2236,21 +2238,29 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
         final IndexMask maskWavelength;
         // get the optional masks for this OIData table:
         final IndexMask maskOIData1D;
+        final IndexMask maskOIData2D;
+        IndexMask maskOIData2DRow = null;
         {
             final SelectorResult selectorResult = getSelectorResult();
 
             if (selectorResult == null) {
                 maskWavelength = null;
                 maskOIData1D = null;
+                maskOIData2D = null;
             } else {
                 maskWavelength = selectorResult.getWavelengthMaskNotFull(oiData.getOiWavelength());
                 maskOIData1D = selectorResult.getDataMask1DNotFull(oiData);
+                maskOIData2D = selectorResult.getDataMask2DNotFull(oiData);
             }
         }
         if (isLogDebug) {
             logger.debug("maskWavelength: {}", maskWavelength);
             logger.debug("maskOIData1D:   {}", maskOIData1D);
+            logger.debug("maskOIData2D:   {}", maskOIData2D);
         }
+
+        final int idxNone = (maskOIData2D != null) ? maskOIData2D.getIndexNone() : -1;
+        final int idxFull = (maskOIData2D != null) ? maskOIData2D.getIndexFull() : -1;
 
         // Get Global SharedSeriesAttributes:
         final SharedSeriesAttributes oixpAttrs = SharedSeriesAttributes.INSTANCE_OIXP;
@@ -2360,7 +2370,7 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
 
         String staIndexName, staConfName;
 
-        int nSkipFlag = 0, nSkipRow = 0, nSkipWavelength = 0;
+        int nSkipFlag = 0, nSkipRow = 0, nSkipWavelength = 0, nSkipCell = 0;
         boolean isFlag, isXErrValid, isYErrValid, useXErrInBounds, useYErrInBounds;
 
         int nData = 0;
@@ -2443,6 +2453,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                     continue;
                 }
 
+                // check mask 2D for row None flag:
+                if (maskOIData2D != null) {
+                    if (maskOIData2D.accept(i, idxNone)) {
+                        // row flagged as None:
+                        nSkipRow++;
+                        continue;
+                    }
+                    // check row flagged as Full:
+                    maskOIData2DRow = (maskOIData2D.accept(i, idxFull)) ? null : maskOIData2D;
+                }
+
                 // previous channel index:
                 prevL = -1;
 
@@ -2456,9 +2477,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                         continue;
                     }
 
-                    /*
-                     * TODO: support OIData mask 2D HERE
-                     */
+                    // check optional data mask 2D (and its Full flag):
+                    if ((maskOIData2DRow != null) && !maskOIData2DRow.accept(i, l)) {
+                        // if bit is false for this row, we hide this row
+                        nSkipCell++;
+                        continue;
+                    }
+
                     isFlag = false;
                     if (checkFlaggedData && flags[i][l]) {
                         if (skipFlaggedData) {
@@ -2772,10 +2797,13 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
                 logger.debug("Nb SkipFlag: {}", nSkipFlag);
             }
             if (nSkipRow != 0) {
-                logger.debug("Nb nSkipRow: {}", nSkipRow);
+                logger.debug("Nb SkipRow: {}", nSkipRow);
             }
             if (nSkipWavelength != 0) {
                 logger.debug("Nb SkipWavelength: {}", nSkipWavelength);
+            }
+            if (nSkipCell != 0) {
+                logger.debug("Nb SkipCell: {}", nSkipCell);
             }
         }
 
@@ -2896,16 +2924,17 @@ public final class PlotChartPanel extends javax.swing.JPanel implements ChartPro
      */
     @Override
     public void chartProgress(final ChartProgressEvent event) {
-        if (DEBUG || logger.isDebugEnabled()) {
+        if (PLOT_RDR_TIME || logger.isDebugEnabled()) {
             switch (event.getType()) {
                 case ChartProgressEvent.DRAWING_STARTED:
                     this.chartDrawStartTime = System.nanoTime();
                     break;
                 case ChartProgressEvent.DRAWING_FINISHED:
-                    logger.debug("Drawing chart time[{}] = {} ms.", getFilterTargetUID(), 1e-6d * (System.nanoTime() - this.chartDrawStartTime));
-                    if (DEBUG) {
-                        logger.info("Drawing chart time[{}] = {} ms. (PLOT_ERR = {})", getFilterTargetUID(),
-                                1e-6d * (System.nanoTime() - this.chartDrawStartTime), PLOT_ERR);
+                    final long elapsed = System.nanoTime() - this.chartDrawStartTime;
+                    if (PLOT_RDR_TIME) {
+                        logger.info("Drawing chart time[{}] = {} ms.", this.plotId, 1e-6d * elapsed);
+                    } else {
+                        logger.debug("Drawing chart time[{}] = {} ms.", this.plotId, 1e-6d * elapsed);
                     }
                     this.chartDrawStartTime = 0l;
                     break;
