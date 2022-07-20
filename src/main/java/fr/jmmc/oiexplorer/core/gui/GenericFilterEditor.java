@@ -5,6 +5,7 @@ package fr.jmmc.oiexplorer.core.gui;
 
 import fr.jmmc.jmcs.gui.component.Disposable;
 import fr.jmmc.jmcs.gui.component.GenericListModel;
+import fr.jmmc.jmcs.gui.util.ResourceImage;
 import fr.jmmc.oiexplorer.core.function.Converter;
 import fr.jmmc.oiexplorer.core.function.ConverterFactory;
 import fr.jmmc.oiexplorer.core.model.OIFitsCollectionManager;
@@ -190,7 +191,9 @@ public final class GenericFilterEditor extends javax.swing.JPanel
         layoutConsts.weightx = 0.9;
         panel.add(rangeEditor, layoutConsts);
 
-        final JButton button = new JButton(rangeIndex == 0 ? "+" : "-");
+        final JButton button = new JButton();
+        button.setIcon(rangeIndex == 0 ? ResourceImage.LIST_ADD.icon() : ResourceImage.LIST_DEL.icon());
+        button.setMargin(new Insets(1, 1, 2, 1));
         button.setActionCommand(rangeIndex == 0 ? "add" : "del");
         button.putClientProperty("rangeIndex", rangeIndex);
         button.addActionListener(this);
